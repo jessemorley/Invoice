@@ -1,4 +1,9 @@
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
+} from "@/components/ui/empty";
 
 export default function ClientsPage() {
   return (
@@ -8,11 +13,12 @@ export default function ClientsPage() {
       </div>
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-4 md:px-6 py-6">
-          <Card>
-            <CardContent className="flex items-center justify-center h-48 text-muted-foreground text-sm">
-              Coming soon
-            </CardContent>
-          </Card>
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>Coming soon</EmptyTitle>
+              <EmptyDescription>Client management is on the way.</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         </div>
       </div>
     </div>

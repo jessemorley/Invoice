@@ -2,6 +2,7 @@
 
 import { DASHBOARD } from "@/lib/mock-data";
 import { formatAUD } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -17,12 +18,6 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Area, AreaChart, XAxis, YAxis } from "recharts";
-
-const STATUS_STYLES = {
-  draft: "bg-muted text-muted-foreground",
-  issued: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-  paid: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-};
 
 const chartConfig = {
   current: { label: "FY 25–26", color: "var(--color-primary)" },
@@ -42,28 +37,26 @@ export default function DashboardPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 space-y-4">
+        <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 flex flex-col gap-4">
           {/* MTD Earnings */}
           <Card>
             <CardHeader>
-              <CardDescription className="text-xs uppercase tracking-wider font-medium">
-                Month to date — April
-              </CardDescription>
-              <CardTitle className="text-3xl font-mono font-semibold tabular-nums">
+              <CardDescription>Month to date — April</CardDescription>
+              <CardTitle className="text-3xl tabular-nums">
                 {formatAUD(mtdEarnings)}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
                 {isUp ? (
-                  <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+                  <TrendingUp className="size-3.5 text-success" />
                 ) : (
-                  <TrendingDown className="h-3.5 w-3.5 text-red-500" />
+                  <TrendingDown className="size-3.5 text-destructive" />
                 )}
-                <span className={`text-xs font-mono ${isUp ? "text-emerald-500" : "text-red-500"}`}>
+                <span className={cn("text-xs", isUp ? "text-success" : "text-destructive")}>
                   {isUp ? "+" : ""}{deltaPercent}% vs Mar
                 </span>
-                <span className="text-xs text-muted-foreground font-mono ml-1">
+                <span className="text-xs text-muted-foreground ml-1">
                   (Mar MTD: {formatAUD(mtdPriorMonth)})
                 </span>
               </div>
@@ -81,7 +74,7 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             {outstanding.length > 0 && (
-              <CardContent className="space-y-2">
+              <CardContent className="flex flex-col gap-2">
                 {outstanding.map(({ invoice }) => (
                   <div
                     key={invoice.id}
@@ -89,17 +82,15 @@ export default function DashboardPage() {
                   >
                     <div className="flex items-center gap-2.5">
                       <div
-                        className="h-2 w-2 rounded-full"
+                        className="size-2 rounded-full"
                         style={{ backgroundColor: invoice.client.color }}
                       />
-                      <span className="text-sm font-mono font-medium">{invoice.number}</span>
+                      <span className="text-sm font-medium">{invoice.number}</span>
                       <span className="text-sm text-muted-foreground">{invoice.client.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono tabular-nums">{formatAUD(invoice.total)}</span>
-                      <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 font-medium ${STATUS_STYLES[invoice.status]}`}>
-                        {invoice.status}
-                      </Badge>
+                      <span className="text-sm tabular-nums">{formatAUD(invoice.total)}</span>
+                      <Badge variant="outline">{invoice.status}</Badge>
                     </div>
                   </div>
                 ))}

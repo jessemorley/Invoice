@@ -49,7 +49,7 @@ function EntryRow({ entry }: { entry: MockEntry }) {
     <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/50 transition-colors cursor-pointer">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground font-mono tabular-nums w-20 shrink-0">
+          <span className="text-xs text-muted-foreground tabular-nums w-20 shrink-0">
             {formatDate(entry.date)}
           </span>
           <span className="text-sm text-foreground truncate">
@@ -64,11 +64,11 @@ function EntryRow({ entry }: { entry: MockEntry }) {
           </span>
         )}
         {entry.billing_type === "hourly" && entry.hours && (
-          <span className="text-xs text-muted-foreground font-mono">
+          <span className="text-xs text-muted-foreground">
             {entry.hours}h
           </span>
         )}
-        <span className="text-sm font-mono tabular-nums text-foreground w-24 text-right">
+        <span className="text-sm tabular-nums text-foreground w-24 text-right">
           {formatAUD(entry.base_amount + entry.bonus_amount)}
         </span>
       </div>
@@ -81,24 +81,22 @@ function GroupHeader({ group }: { group: ClientWeekGroup }) {
     <div className="flex items-center justify-between px-4 py-3 bg-muted/40 rounded-t-lg first:rounded-t-lg">
       <div className="flex items-center gap-2.5">
         <div
-          className="h-2.5 w-2.5 rounded-full shrink-0"
+          className="size-2.5 rounded-full shrink-0"
           style={{ backgroundColor: group.clientColor }}
         />
         <span className="text-sm font-medium text-foreground">
           {group.clientName}
         </span>
-        <span className="text-xs text-muted-foreground font-mono">
+        <span className="text-xs text-muted-foreground">
           {group.isoWeek}
         </span>
       </div>
       <div className="flex items-center gap-3">
-        <span className="text-sm font-mono tabular-nums text-muted-foreground">
+        <span className="text-sm tabular-nums text-muted-foreground">
           {formatAUD(group.subtotal)}
         </span>
         {group.invoiced ? (
-          <Badge variant="outline" className="text-emerald-600 border-emerald-600/30 text-xs font-mono">
-            {group.invoiceNumber}
-          </Badge>
+          <Badge variant="secondary">{group.invoiceNumber}</Badge>
         ) : (
           <Button variant="outline" size="sm" className="h-7 text-xs">
             Invoice
@@ -117,15 +115,15 @@ export default function EntriesPage() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-4 md:px-6 border-b border-border">
         <h1 className="text-lg font-semibold text-foreground">Entries</h1>
-        <Button size="sm" className="hidden md:flex gap-1.5">
-          <Plus className="h-4 w-4" />
+        <Button size="sm" className="hidden md:flex">
+          <Plus data-icon="inline-start" />
           New entry
         </Button>
       </div>
 
       {/* Entry groups */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 space-y-4">
+        <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 flex flex-col gap-4">
           {/* Load earlier */}
           <div className="text-center">
             <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
@@ -151,8 +149,8 @@ export default function EntriesPage() {
 
       {/* Mobile FAB */}
       <div className="md:hidden fixed bottom-18 right-4 z-40">
-        <Button size="icon" className="h-14 w-14 rounded-full shadow-lg">
-          <Plus className="h-6 w-6" />
+        <Button size="icon" className="size-14 rounded-full shadow-lg">
+          <Plus />
         </Button>
       </div>
     </div>

@@ -61,7 +61,7 @@ export function Sidebar() {
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               )}
             >
-              <item.icon className="h-4 w-4" />
+              <item.icon className="size-4" />
               {item.label}
             </Link>
           );
@@ -91,7 +91,7 @@ export function BottomTabs() {
                   : "text-muted-foreground"
               )}
             >
-              <item.icon className={cn("h-5 w-5", active && "text-foreground")} />
+              <item.icon className={cn("size-5", active && "text-foreground")} />
               {item.label}
             </Link>
           );
@@ -100,7 +100,7 @@ export function BottomTabs() {
           <SheetTrigger
             className="flex flex-col items-center gap-0.5 px-3 py-1 text-[11px] font-medium text-muted-foreground"
           >
-            <MoreHorizontal className="h-5 w-5" />
+            <MoreHorizontal className="size-5" />
             More
           </SheetTrigger>
           <SheetContent side="bottom" className="pb-safe">
@@ -115,7 +115,7 @@ export function BottomTabs() {
                   onClick={() => setOverflowOpen(false)}
                   className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium text-foreground hover:bg-accent"
                 >
-                  <item.icon className="h-5 w-5 text-muted-foreground" />
+                  <item.icon className="size-5 text-muted-foreground" />
                   {item.label}
                 </Link>
               ))}
