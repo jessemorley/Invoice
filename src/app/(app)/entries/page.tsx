@@ -124,13 +124,6 @@ export default function EntriesPage() {
       {/* Entry groups */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 flex flex-col gap-4">
-          {/* Load earlier */}
-          <div className="text-center">
-            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
-              Load earlier
-            </Button>
-          </div>
-
           {groups.map((group) => (
             <Card key={group.key} className="overflow-hidden py-0 gap-0">
               <GroupHeader group={group} />
@@ -145,6 +138,12 @@ export default function EntriesPage() {
               </CardContent>
             </Card>
           ))}
+          {/* Load earlier */}
+          <div className="text-center py-2">
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
+              Load earlier
+            </Button>
+          </div>
         </div>
       </div>
 
