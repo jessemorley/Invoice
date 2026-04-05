@@ -2,6 +2,13 @@ import { INVOICES, ENTRIES } from "@/lib/mock-data";
 import { formatAUD, formatDateShort } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import {
   Table,
   TableBody,
   TableCell,
@@ -25,7 +32,7 @@ function uninvoicedGroupCount(): number {
 
 function InvoiceCard({ invoice }: { invoice: (typeof INVOICES)[number] }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3 border-b border-border hover:bg-accent/50 transition-colors cursor-pointer">
+    <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
       <div
         className="h-2.5 w-2.5 rounded-full shrink-0"
         style={{ backgroundColor: invoice.client.color }}
@@ -78,51 +85,57 @@ export default function InvoicesPage() {
       </div>
 
       {/* Desktop table */}
-      <div className="hidden md:block flex-1 overflow-y-auto px-6 py-4">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-24">Number</TableHead>
-              <TableHead>Client</TableHead>
-              <TableHead className="w-28">Dates</TableHead>
-              <TableHead className="w-28">Issued</TableHead>
-              <TableHead className="w-28 text-right">Total</TableHead>
-              <TableHead className="w-20 text-center">Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {INVOICES.map((inv) => (
-              <TableRow key={inv.id} className="cursor-pointer">
-                <TableCell className="font-mono font-medium text-sm">
-                  {inv.number}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="h-2 w-2 rounded-full shrink-0"
-                      style={{ backgroundColor: inv.client.color }}
-                    />
-                    <span className="text-sm">{inv.client.name}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="font-mono text-sm text-muted-foreground">
-                  {inv.date_range}
-                </TableCell>
-                <TableCell className="font-mono text-sm text-muted-foreground">
-                  {formatDateShort(inv.issued_date)}
-                </TableCell>
-                <TableCell className="font-mono text-sm text-right tabular-nums">
-                  {formatAUD(inv.total)}
-                </TableCell>
-                <TableCell className="text-center">
-                  <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 font-medium ${STATUS_STYLES[inv.status]}`}>
-                    {inv.status}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <div className="hidden md:block flex-1 overflow-y-auto">
+        <div className="max-w-3xl mx-auto px-4 md:px-6 py-6">
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-24">Number</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead className="w-28">Dates</TableHead>
+                    <TableHead className="w-28">Issued</TableHead>
+                    <TableHead className="w-28 text-right">Total</TableHead>
+                    <TableHead className="w-20 text-center">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {INVOICES.map((inv) => (
+                    <TableRow key={inv.id} className="cursor-pointer">
+                      <TableCell className="font-mono font-medium text-sm">
+                        {inv.number}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="h-2 w-2 rounded-full shrink-0"
+                            style={{ backgroundColor: inv.client.color }}
+                          />
+                          <span className="text-sm">{inv.client.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-sm text-muted-foreground">
+                        {inv.date_range}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm text-muted-foreground">
+                        {formatDateShort(inv.issued_date)}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm text-right tabular-nums">
+                        {formatAUD(inv.total)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 font-medium ${STATUS_STYLES[inv.status]}`}>
+                          {inv.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Mobile card list */}
@@ -133,7 +146,15 @@ export default function InvoicesPage() {
             <p className="text-sm">No invoices yet</p>
           </div>
         ) : (
-          INVOICES.map((inv) => <InvoiceCard key={inv.id} invoice={inv} />)
+          <div className="px-4 py-4 space-y-3">
+            {INVOICES.map((inv) => (
+              <Card key={inv.id} className="py-0">
+                <CardContent className="p-0">
+                  <InvoiceCard invoice={inv} />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         )}
       </div>
     </div>

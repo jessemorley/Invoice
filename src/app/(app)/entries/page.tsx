@@ -2,6 +2,7 @@ import { ENTRIES, type MockEntry } from "@/lib/mock-data";
 import { formatAUD, formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Plus } from "lucide-react";
 
@@ -40,7 +41,6 @@ function groupEntries(entries: MockEntry[]): ClientWeekGroup[] {
     });
   }
 
-  // Sort by most recent entry date descending
   return groups.sort((a, b) => b.entries[0].date.localeCompare(a.entries[0].date));
 }
 
@@ -78,7 +78,7 @@ function EntryRow({ entry }: { entry: MockEntry }) {
 
 function GroupHeader({ group }: { group: ClientWeekGroup }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-muted/40">
+    <div className="flex items-center justify-between px-4 py-3 bg-muted/40 rounded-t-lg first:rounded-t-lg">
       <div className="flex items-center gap-2.5">
         <div
           className="h-2.5 w-2.5 rounded-full shrink-0"
@@ -125,22 +125,28 @@ export default function EntriesPage() {
 
       {/* Entry groups */}
       <div className="flex-1 overflow-y-auto">
-        {/* Load earlier */}
-        <div className="px-4 py-3 text-center">
-          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
-            Load earlier
-          </Button>
-        </div>
-
-        {groups.map((group) => (
-          <div key={group.key}>
-            <GroupHeader group={group} />
-            {group.entries.map((entry) => (
-              <EntryRow key={entry.id} entry={entry} />
-            ))}
-            <Separator />
+        <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 space-y-4">
+          {/* Load earlier */}
+          <div className="text-center">
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
+              Load earlier
+            </Button>
           </div>
-        ))}
+
+          {groups.map((group) => (
+            <Card key={group.key} className="overflow-hidden py-0">
+              <GroupHeader group={group} />
+              <CardContent className="p-0">
+                {group.entries.map((entry, i) => (
+                  <div key={entry.id}>
+                    {i > 0 && <Separator />}
+                    <EntryRow entry={entry} />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
 
       {/* Mobile FAB */}

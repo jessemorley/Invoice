@@ -1,16 +1,22 @@
 "use client";
 
-import { DASHBOARD, INVOICES } from "@/lib/mock-data";
+import { DASHBOARD } from "@/lib/mock-data";
 import { formatAUD } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Bar, BarChart, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, XAxis, YAxis } from "recharts";
 
 const STATUS_STYLES = {
   draft: "bg-muted text-muted-foreground",
@@ -19,8 +25,8 @@ const STATUS_STYLES = {
 };
 
 const chartConfig = {
-  current: { label: "This year", color: "var(--color-foreground)" },
-  prior: { label: "Last year", color: "var(--color-muted-foreground)" },
+  current: { label: "FY 25–26", color: "var(--color-primary)" },
+  prior: { label: "FY 24–25", color: "var(--color-muted-foreground)" },
 };
 
 export default function DashboardPage() {
@@ -31,23 +37,24 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
       <div className="px-4 py-4 md:px-6 border-b border-border">
         <h1 className="text-lg font-semibold text-foreground">Dashboard</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 space-y-6">
+        <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 space-y-4">
           {/* MTD Earnings */}
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-              Month to date — April
-            </p>
-            <div className="flex items-baseline gap-3">
-              <span className="text-3xl font-mono font-semibold tabular-nums text-foreground">
+          <Card>
+            <CardHeader>
+              <CardDescription className="text-xs uppercase tracking-wider font-medium">
+                Month to date — April
+              </CardDescription>
+              <CardTitle className="text-3xl font-mono font-semibold tabular-nums">
                 {formatAUD(mtdEarnings)}
-              </span>
-              <div className="flex items-center gap-1">
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
                 {isUp ? (
                   <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
                 ) : (
@@ -56,24 +63,25 @@ export default function DashboardPage() {
                 <span className={`text-xs font-mono ${isUp ? "text-emerald-500" : "text-red-500"}`}>
                   {isUp ? "+" : ""}{deltaPercent}% vs Mar
                 </span>
+                <span className="text-xs text-muted-foreground font-mono ml-1">
+                  (Mar MTD: {formatAUD(mtdPriorMonth)})
+                </span>
               </div>
-            </div>
-            <p className="text-xs text-muted-foreground font-mono">
-              Mar MTD: {formatAUD(mtdPriorMonth)}
-            </p>
-          </div>
-
-          <Separator />
+            </CardContent>
+          </Card>
 
           {/* Outstanding invoices */}
-          <div className="space-y-3">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-              Outstanding
-            </p>
-            {outstanding.length === 0 ? (
-              <p className="text-sm text-muted-foreground">All invoices paid</p>
-            ) : (
-              <div className="space-y-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
+              <CardDescription>
+                {outstanding.length === 0
+                  ? "All invoices paid"
+                  : `${outstanding.length} unpaid invoices`}
+              </CardDescription>
+            </CardHeader>
+            {outstanding.length > 0 && (
+              <CardContent className="space-y-2">
                 {outstanding.map(({ invoice }) => (
                   <div
                     key={invoice.id}
@@ -95,59 +103,73 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 ))}
-              </div>
+              </CardContent>
             )}
-          </div>
-
-          <Separator />
+          </Card>
 
           {/* 6-month earnings chart */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-                6-month earnings
-              </p>
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2 w-6 rounded-sm bg-foreground" />
-                  <span>FY 25–26</span>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">6-month earnings</CardTitle>
+              <CardDescription>
+                <div className="flex items-center gap-4 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-2 w-6 rounded-sm bg-primary" />
+                    <span>FY 25–26</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-2 w-6 rounded-sm bg-muted-foreground/40" />
+                    <span>FY 24–25</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2 w-6 rounded-sm bg-muted-foreground/40" />
-                  <span>FY 24–25</span>
-                </div>
-              </div>
-            </div>
-            <ChartContainer config={chartConfig} className="h-48 w-full">
-              <BarChart data={monthlyEarnings} barGap={2}>
-                <XAxis
-                  dataKey="month"
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fontSize: 11 }}
-                />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fontSize: 11 }}
-                  tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-                  width={40}
-                />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar
-                  dataKey="prior"
-                  fill="var(--color-muted-foreground)"
-                  opacity={0.3}
-                  radius={[2, 2, 0, 0]}
-                />
-                <Bar
-                  dataKey="current"
-                  fill="var(--color-foreground)"
-                  radius={[2, 2, 0, 0]}
-                />
-              </BarChart>
-            </ChartContainer>
-          </div>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-48 w-full">
+                <AreaChart data={monthlyEarnings}>
+                  <defs>
+                    <linearGradient id="gradCurrent" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.02} />
+                    </linearGradient>
+                    <linearGradient id="gradPrior" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--color-muted-foreground)" stopOpacity={0.15} />
+                      <stop offset="100%" stopColor="var(--color-muted-foreground)" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="month"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 11 }}
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 11 }}
+                    tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                    width={40}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Area
+                    dataKey="prior"
+                    type="monotone"
+                    stroke="var(--color-muted-foreground)"
+                    strokeWidth={1.5}
+                    strokeOpacity={0.4}
+                    fill="url(#gradPrior)"
+                  />
+                  <Area
+                    dataKey="current"
+                    type="monotone"
+                    stroke="var(--color-primary)"
+                    strokeWidth={2}
+                    fill="url(#gradCurrent)"
+                  />
+                </AreaChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
