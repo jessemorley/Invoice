@@ -132,8 +132,9 @@ export default function EntriesPage() {
           </div>
 
           {groups.map((group) => (
-            <Card key={group.key} className="overflow-hidden py-0">
+            <Card key={group.key} className="overflow-hidden py-0 gap-0">
               <GroupHeader group={group} />
+              <Separator />
               <CardContent className="p-0">
                 {group.entries.map((entry, i) => (
                   <div key={entry.id}>
