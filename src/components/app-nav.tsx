@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -68,9 +69,18 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="none" className="hidden md:flex">
-      <SidebarHeader className="px-4 py-5">
-        <h1 className="text-sm font-semibold tracking-tight">Invoicing</h1>
+    <Sidebar collapsible="none" className="hidden md:flex border-r">
+      <SidebarHeader className="px-3 py-4">
+        <div className="flex items-center gap-2.5">
+          <Image
+            src="/app_icon.png"
+            alt="Invoicing"
+            width={28}
+            height={28}
+            className="size-7 rounded-md"
+          />
+          <span className="text-sm font-semibold tracking-tight">Invoicing</span>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
