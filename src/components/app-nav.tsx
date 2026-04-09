@@ -49,6 +49,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar";
+import { ModeToggle } from "@/components/mode-toggle";
 
 const mainTabs = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -69,7 +70,7 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="none" className="hidden md:flex border-r">
+    <Sidebar collapsible="icon" className="hidden md:flex border-r">
       <SidebarHeader className="px-3 py-4">
         <div className="flex items-center gap-2.5">
           <Image
@@ -104,6 +105,9 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
+        <div className="flex items-center justify-between px-1 py-1">
+          <ModeToggle />
+        </div>
         <NavUser />
       </SidebarFooter>
     </Sidebar>
@@ -218,6 +222,10 @@ export function BottomTabs() {
                   {item.label}
                 </Link>
               ))}
+              <div className="flex items-center gap-3 rounded-md px-3 py-3">
+                <ModeToggle />
+                <span className="text-sm font-medium text-foreground">Appearance</span>
+              </div>
             </div>
           </SheetContent>
         </Sheet>

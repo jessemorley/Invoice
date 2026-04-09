@@ -1,11 +1,20 @@
+"use client";
+
 import { INVOICES, ENTRIES } from "@/lib/mock-data";
 import { formatAUD, formatDateShort } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   Empty,
@@ -22,13 +31,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FileText } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
+import { FileText, Plus, Search } from "lucide-react";
 
 function uninvoicedGroupCount(): number {
   const uninvoiced = ENTRIES.filter((e) => !e.invoice_id);
   const groups = new Set(uninvoiced.map((e) => `${e.client.id}-${e.iso_week}`));
   return groups.size;
 }
+
+const uniqueClients = Array.from(
+  new Map(INVOICES.map((inv) => [inv.client.id, inv.client])).values()
+);
 
 function InvoiceCard({ invoice }: { invoice: (typeof INVOICES)[number] }) {
   return (
@@ -72,72 +86,110 @@ export default function InvoicesPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-4 md:px-6 border-b border-border">
-        <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold text-foreground">Invoices</h1>
-          {uninvoicedCount > 0 && (
-            <Badge variant="secondary">
-              {uninvoicedCount} groups ready to invoice
-            </Badge>
-          )}
-        </div>
-      </div>
+      <PageHeader title="Invoices">
+        {uninvoicedCount > 0 && (
+          <Badge variant="secondary">
+            {uninvoicedCount} groups ready to invoice
+          </Badge>
+        )}
+        <Button size="sm" className="hidden md:flex">
+          <Plus className="size-4" />
+          New invoice
+        </Button>
+      </PageHeader>
 
       {/* Desktop table */}
-      <div className="hidden md:block flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-4 md:px-6 py-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">All invoices</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-24">Number</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead className="w-28">Dates</TableHead>
-                    <TableHead className="w-28">Issued</TableHead>
-                    <TableHead className="w-28 text-right">Total</TableHead>
-                    <TableHead className="w-20 text-center">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {INVOICES.map((inv) => (
-                    <TableRow key={inv.id} className="cursor-pointer">
-                      <TableCell className="font-medium text-sm">
-                        {inv.number}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="size-2 rounded-full shrink-0"
-                            style={{ backgroundColor: inv.client.color }}
-                          />
-                          <span className="text-sm">{inv.client.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {inv.date_range}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDateShort(inv.issued_date)}
-                      </TableCell>
-                      <TableCell className="text-sm text-right tabular-nums">
-                        {formatAUD(inv.total)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant={inv.status === "paid" ? "secondary" : "outline"}>
-                          {inv.status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
+      <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
+        <div className="px-4 md:px-6 py-6 flex flex-col gap-4 flex-1">
+          <div className="rounded-lg border bg-card">
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b">
+              <div className="relative flex-1 min-w-48">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input placeholder="Search invoices..." className="pl-8" />
+              </div>
+              <Select defaultValue="all-time">
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder="Timeframe" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-time">All time</SelectItem>
+                  <SelectItem value="this-week">This week</SelectItem>
+                  <SelectItem value="this-month">This month</SelectItem>
+                  <SelectItem value="last-month">Last month</SelectItem>
+                  <SelectItem value="this-year">This year</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select defaultValue="all-clients">
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder="Client" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-clients">All clients</SelectItem>
+                  {uniqueClients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
+                    </SelectItem>
                   ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                </SelectContent>
+              </Select>
+              <Select defaultValue="all-status">
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-status">All status</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="overdue">Overdue</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-24">Number</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead className="w-28">Dates</TableHead>
+                  <TableHead className="w-28">Issued</TableHead>
+                  <TableHead className="w-28 text-right">Total</TableHead>
+                  <TableHead className="w-20 text-center">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {INVOICES.map((inv) => (
+                  <TableRow key={inv.id} className="cursor-pointer">
+                    <TableCell className="font-medium text-sm">
+                      {inv.number}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="size-2 rounded-full shrink-0"
+                          style={{ backgroundColor: inv.client.color }}
+                        />
+                        <span className="text-sm">{inv.client.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {inv.date_range}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDateShort(inv.issued_date)}
+                    </TableCell>
+                    <TableCell className="text-sm text-right tabular-nums">
+                      {formatAUD(inv.total)}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={inv.status === "paid" ? "secondary" : "outline"}>
+                        {inv.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </div>
 

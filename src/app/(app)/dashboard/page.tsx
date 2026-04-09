@@ -12,6 +12,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { TrendingDown, TrendingUp } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import {
   ChartContainer,
   ChartTooltip,
@@ -32,12 +33,10 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 py-4 md:px-6 border-b border-border">
-        <h1 className="text-lg font-semibold text-foreground">Dashboard</h1>
-      </div>
+      <PageHeader title="Dashboard" />
 
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 flex flex-col gap-4">
+        <div className="px-4 md:px-6 py-6 flex flex-col gap-4">
           {/* MTD Earnings */}
           <Card>
             <CardHeader>
