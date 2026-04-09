@@ -148,21 +148,21 @@ export default function InvoicesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-24">Number</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead className="w-28">Dates</TableHead>
-                  <TableHead className="w-28">Issued</TableHead>
-                  <TableHead className="w-28 text-right">Total</TableHead>
-                  <TableHead className="w-20 text-center">Status</TableHead>
+                  <TableHead className="w-24 py-4 px-6">Number</TableHead>
+                  <TableHead className="py-4 px-6">Client</TableHead>
+                  <TableHead className="w-28 py-4 px-6">Dates</TableHead>
+                  <TableHead className="w-28 py-4 px-6">Issued</TableHead>
+                  <TableHead className="w-28 text-right py-4 px-6">Total</TableHead>
+                  <TableHead className="w-20 text-center py-4 px-6">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {INVOICES.map((inv) => (
                   <TableRow key={inv.id} className="cursor-pointer">
-                    <TableCell className="font-medium text-sm">
+                    <TableCell className="font-medium text-sm py-4 px-6">
                       {inv.number}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-4 px-6">
                       <div className="flex items-center gap-2">
                         <div
                           className="size-2 rounded-full shrink-0"
@@ -171,16 +171,16 @@ export default function InvoicesPage() {
                         <span className="text-sm">{inv.client.name}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-sm text-muted-foreground py-4 px-6">
                       {inv.date_range}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-sm text-muted-foreground py-4 px-6">
                       {formatDateShort(inv.issued_date)}
                     </TableCell>
-                    <TableCell className="text-sm text-right tabular-nums">
+                    <TableCell className="text-sm text-right tabular-nums py-4 px-6">
                       {formatAUD(inv.total)}
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center py-4 px-6">
                       <Badge variant={inv.status === "paid" ? "secondary" : "outline"}>
                         {inv.status}
                       </Badge>
