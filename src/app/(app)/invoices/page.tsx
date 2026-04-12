@@ -36,8 +36,29 @@ import { SortableTableHead } from "@/components/sortable-table-head";
 import { PageHeader } from "@/components/page-header";
 import { FileText, Plus, Search } from "lucide-react";
 
-type SortKey = "number" | "client" | "issued" | "total" | "status";
+type SortKey = "number" | "client" | "dates" | "issued" | "total" | "status";
 type SortDir = "asc" | "desc";
+
+function computeDateRange(invoiceId: string, fallback: string): string {
+  const dates = ENTRIES.filter((e) => e.invoice_id === invoiceId)
+    .map((e) => e.date)
+    .sort();
+  if (dates.length === 0) return fallback;
+  const first = new Date(dates[0] + "T00:00:00");
+  const last = new Date(dates[dates.length - 1] + "T00:00:00");
+  const firstDay = first.getDate();
+  const lastDay = last.getDate();
+  const firstMonth = first.toLocaleDateString("en-AU", { month: "short" });
+  const lastMonth = last.toLocaleDateString("en-AU", { month: "short" });
+  if (dates[0] === dates[dates.length - 1]) return `${firstDay} ${firstMonth}`;
+  if (first.getMonth() === last.getMonth()) return `${firstDay}–${lastDay} ${firstMonth}`;
+  return `${firstDay} ${firstMonth} – ${lastDay} ${lastMonth}`;
+}
+
+function computeEntryCount(invoiceId: string, fallback: number): number {
+  const count = ENTRIES.filter((e) => e.invoice_id === invoiceId).length;
+  return count > 0 ? count : fallback;
+}
 
 function uninvoicedGroupCount(): number {
   const uninvoiced = ENTRIES.filter((e) => !e.invoice_id);
@@ -88,7 +109,7 @@ function InvoiceCard({ invoice }: { invoice: (typeof INVOICES)[number] }) {
 
 export default function InvoicesPage() {
   const uninvoicedCount = uninvoicedGroupCount();
-  const [sortKey, setSortKey] = useState<SortKey>("issued");
+  const [sortKey, setSortKey] = useState<SortKey>("dates");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   function handleSort(key: SortKey) {
@@ -105,6 +126,7 @@ export default function InvoicesPage() {
     switch (sortKey) {
       case "number":  cmp = a.number.localeCompare(b.number); break;
       case "client":  cmp = a.client.name.localeCompare(b.client.name); break;
+      case "dates":   cmp = a.issued_date.localeCompare(b.issued_date); break;
       case "issued":  cmp = a.issued_date.localeCompare(b.issued_date); break;
       case "total":   cmp = a.total - b.total; break;
       case "status":  cmp = a.status.localeCompare(b.status); break;
@@ -182,7 +204,8 @@ export default function InvoicesPage() {
                 <TableRow>
                   <SortableTableHead className="w-24 py-4 px-6" {...sh("number")}>Number</SortableTableHead>
                   <SortableTableHead className="py-4 px-6" {...sh("client")}>Client</SortableTableHead>
-                  <TableHead className="w-28 py-4 px-6">Dates</TableHead>
+                  <SortableTableHead className="w-36 py-4 px-6" {...sh("dates")}>Dates</SortableTableHead>
+                  <TableHead className="w-16 text-right py-4 px-6">Lines</TableHead>
                   <SortableTableHead className="w-28 py-4 px-6" {...sh("issued")}>Issued</SortableTableHead>
                   <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("total")}>Total</SortableTableHead>
                   <SortableTableHead className="w-20 py-4 px-6" align="right" {...sh("status")}>Status</SortableTableHead>
@@ -204,7 +227,10 @@ export default function InvoicesPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground py-4 px-6">
-                      {inv.date_range}
+                      {computeDateRange(inv.id, inv.date_range)}
+                    </TableCell>
+                    <TableCell className="text-sm text-right text-muted-foreground tabular-nums py-4 px-6">
+                      {computeEntryCount(inv.id, inv.entry_count)}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground py-4 px-6">
                       {formatDateShort(inv.issued_date)}
