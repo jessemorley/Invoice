@@ -187,13 +187,15 @@ export default function ExpensesPage() {
                       {formatDateShort(exp.date)}
                     </TableCell>
                     <TableCell className="py-4 px-6">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="size-2 rounded-full shrink-0"
-                          style={{ backgroundColor: CATEGORY_COLORS[exp.category] }}
-                        />
-                        <span className="text-sm">{EXPENSE_CATEGORY_LABELS[exp.category]}</span>
-                      </div>
+                      <span
+                        className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                        style={{
+                          backgroundColor: `${CATEGORY_COLORS[exp.category]}22`,
+                          color: CATEGORY_COLORS[exp.category],
+                        }}
+                      >
+                        {EXPENSE_CATEGORY_LABELS[exp.category]}
+                      </span>
                     </TableCell>
                     <TableCell className="text-sm py-4 px-6">
                       <div>
