@@ -26,15 +26,15 @@ export type MockEntry = {
 export const ENTRIES: MockEntry[] = [
   // Week 14 — 2026-03-30 to 2026-04-05
   {
-    id: "e1", client: CLIENTS.iconic, date: "2026-04-03", description: "Apparel — Summer campaign hero shots", billing_type: "day_rate", day_type: "full",
+    id: "e1", client: CLIENTS.iconic, date: "2026-04-03", description: "Apparel", billing_type: "day_rate", day_type: "full",
     base_amount: 850, bonus_amount: 120, super_amount: 116.40, total: 1086.40, iso_week: "W14",
   },
   {
-    id: "e2", client: CLIENTS.iconic, date: "2026-04-02", description: "Apparel — Summer campaign flatlays", billing_type: "day_rate", day_type: "full",
+    id: "e2", client: CLIENTS.iconic, date: "2026-04-02", description: "Own Brand - Dazie", billing_type: "day_rate", day_type: "full",
     base_amount: 850, bonus_amount: 95, super_amount: 113.40, total: 1058.40, iso_week: "W14",
   },
   {
-    id: "e3", client: CLIENTS.iconic, date: "2026-04-01", description: "ICONIC — Accessories reshoot", billing_type: "day_rate", day_type: "half",
+    id: "e3", client: CLIENTS.iconic, date: "2026-04-01", description: "Product", billing_type: "day_rate", day_type: "half",
     base_amount: 425, bonus_amount: 0, super_amount: 51.00, total: 476.00, iso_week: "W14",
   },
   {
@@ -111,6 +111,91 @@ export const INVOICES: MockInvoice[] = [
     id: "inv6", number: "INV-037", client: CLIENTS.countryRoad,
     issued_date: "2026-02-28", date_range: "24–28 Feb",
     subtotal: 4500, super_amount: 540, total: 5040, status: "paid", entry_count: 5,
+  },
+];
+
+export type ExpenseCategory = "gear" | "gear_hire" | "software" | "office";
+
+export type MockExpense = {
+  id: string;
+  date: string;
+  category: ExpenseCategory;
+  description: string;
+  amount: number;
+  gst_included: boolean;
+  notes?: string;
+  receipt_path?: string;
+  is_billable: boolean;
+  invoice_id?: string;
+};
+
+export const EXPENSE_CATEGORY_LABELS: Record<ExpenseCategory, string> = {
+  gear: "Gear",
+  gear_hire: "Gear Hire",
+  software: "Software",
+  office: "Office",
+};
+
+export const EXPENSES: MockExpense[] = [
+  {
+    id: "2448ffab", date: "2026-02-20", category: "gear",
+    description: "Tiffen Glimmer Glass Filter (82mm, Grade 1/2)",
+    amount: 231.37, gst_included: true, is_billable: false,
+    receipt_path: "glimmerglassreceipt.pdf",
+  },
+  {
+    id: "2a4ab2af", date: "2026-03-01", category: "gear",
+    description: "Nikon NIKKOR Z MC 105mm f/2.8 VR S Macro Lens",
+    amount: 950, gst_included: false, is_billable: false,
+    notes: "Purchased from Marketplace",
+  },
+  {
+    id: "2ea402c5", date: "2025-11-22", category: "software",
+    description: "Capture One Pro - Annual Subscription",
+    amount: 299.69, gst_included: false, is_billable: false,
+    receipt_path: "captureone2025invoice.pdf",
+  },
+  {
+    id: "37fcab42", date: "2025-08-15", category: "gear_hire",
+    description: "Base-Cast Gear Hire - Camera Hire",
+    amount: 309.10, gst_included: true, is_billable: false,
+    receipt_path: "Invoice INV11388.pdf",
+  },
+  {
+    id: "3c97b1da", date: "2026-02-25", category: "gear",
+    description: "QUMOX BG-R10 Camera Grip",
+    amount: 104.99, gst_included: true, is_billable: false,
+    notes: "QUMOX BG-R10 R5 R6 Vertical Multi-function Battery Grip",
+    receipt_path: "canon_grip.pdf",
+  },
+  {
+    id: "8b24e736", date: "2026-03-18", category: "gear",
+    description: "Aputure MC RGBWW",
+    amount: 143, gst_included: true, is_billable: false,
+    receipt_path: "Invoice_2030409_20260318.pdf",
+  },
+  {
+    id: "a407344c", date: "2026-02-09", category: "office",
+    description: "Logitech Studio Series Mouse Pad",
+    amount: 9, gst_included: true, is_billable: false,
+    receipt_path: "logitechmousepad.pdf",
+  },
+  {
+    id: "c9cd6e53", date: "2025-07-28", category: "gear_hire",
+    description: "Ace Stokoe Lens Hire - RENTaCAM",
+    amount: 43, gst_included: true, is_billable: false,
+    receipt_path: "tax-invoice-26283.pdf",
+  },
+  {
+    id: "dc588df9", date: "2025-11-07", category: "office",
+    description: "Logitech MX Master 3S",
+    amount: 92, gst_included: true, is_billable: false,
+    receipt_path: "logitechmxmasterreceipt.pdf",
+  },
+  {
+    id: "dd1624a2", date: "2025-07-17", category: "software",
+    description: "Adobe Creative Cloud - Photography Plan",
+    amount: 287.88, gst_included: true, is_billable: false,
   },
 ];
 

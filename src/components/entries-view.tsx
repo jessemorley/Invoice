@@ -81,7 +81,7 @@ function groupByWeek(entries: MockEntry[]): WeekGroup[] {
 
 function EntryRow({ entry, showClient = false }: { entry: MockEntry; showClient?: boolean }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/50 transition-colors cursor-pointer">
+    <div className="flex items-center gap-3 px-4 py-3.5 hover:bg-accent/50 transition-colors cursor-pointer">
       {showClient && (
         <div className="flex items-center gap-2 w-32 shrink-0">
           <div
