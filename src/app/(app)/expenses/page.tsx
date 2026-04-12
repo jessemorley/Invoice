@@ -4,7 +4,7 @@ import { useState } from "react";
 import { EXPENSES, EXPENSE_CATEGORY_LABELS, type ExpenseCategory } from "@/lib/mock-data";
 import { formatAUD, formatDateShort } from "@/lib/format";
 
-type SortKey = "date" | "category" | "description" | "gst" | "amount";
+type SortKey = "date" | "category" | "gst" | "amount";
 type SortDir = "asc" | "desc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,10 +63,6 @@ function ExpenseCard({ expense }: { expense: (typeof EXPENSES)[number] }) {
   const gst = gstAmount(expense);
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
-      <div
-        className="size-2.5 rounded-full shrink-0"
-        style={{ backgroundColor: CATEGORY_COLORS[expense.category] }}
-      />
       <div className="flex-1 min-w-0">
         <span className="text-sm font-medium text-foreground truncate block">
           {expense.description}
@@ -75,7 +71,13 @@ function ExpenseCard({ expense }: { expense: (typeof EXPENSES)[number] }) {
           <span className="text-xs text-muted-foreground">
             {formatDateShort(expense.date)}
           </span>
-          <span className="text-xs text-muted-foreground">
+          <span
+            className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+            style={{
+              backgroundColor: `${CATEGORY_COLORS[expense.category]}22`,
+              color: CATEGORY_COLORS[expense.category],
+            }}
+          >
             {EXPENSE_CATEGORY_LABELS[expense.category]}
           </span>
           {expense.receipt_path && (
@@ -113,7 +115,6 @@ export default function ExpensesPage() {
     switch (sortKey) {
       case "date":        cmp = a.date.localeCompare(b.date); break;
       case "category":    cmp = a.category.localeCompare(b.category); break;
-      case "description": cmp = a.description.localeCompare(b.description); break;
       case "gst":         cmp = (a.gst_included ? a.amount / 11 : 0) - (b.gst_included ? b.amount / 11 : 0); break;
       case "amount":      cmp = a.amount - b.amount; break;
     }
@@ -174,7 +175,7 @@ export default function ExpensesPage() {
                 <TableRow>
                   <SortableTableHead className="w-28 py-4 px-6" {...sh("date")}>Date</SortableTableHead>
                   <SortableTableHead className="w-32 py-4 px-6" {...sh("category")}>Category</SortableTableHead>
-                  <SortableTableHead className="py-4 px-6" {...sh("description")}>Description</SortableTableHead>
+                  <TableHead className="py-4 px-6">Description</TableHead>
                   <TableHead className="py-4 px-6">Receipt</TableHead>
                   <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("gst")}>GST</SortableTableHead>
                   <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("amount")}>Amount</SortableTableHead>
