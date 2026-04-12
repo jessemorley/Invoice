@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { INVOICES, ENTRIES } from "@/lib/mock-data";
 import { formatAUD, formatDateShort } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -31,8 +32,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { SortableTableHead } from "@/components/sortable-table-head";
 import { PageHeader } from "@/components/page-header";
 import { FileText, Plus, Search } from "lucide-react";
+
+type SortKey = "number" | "client" | "issued" | "total" | "status";
+type SortDir = "asc" | "desc";
 
 function uninvoicedGroupCount(): number {
   const uninvoiced = ENTRIES.filter((e) => !e.invoice_id);
@@ -83,6 +88,33 @@ function InvoiceCard({ invoice }: { invoice: (typeof INVOICES)[number] }) {
 
 export default function InvoicesPage() {
   const uninvoicedCount = uninvoicedGroupCount();
+  const [sortKey, setSortKey] = useState<SortKey>("issued");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  const sorted = [...INVOICES].sort((a, b) => {
+    let cmp = 0;
+    switch (sortKey) {
+      case "number":  cmp = a.number.localeCompare(b.number); break;
+      case "client":  cmp = a.client.name.localeCompare(b.client.name); break;
+      case "issued":  cmp = a.issued_date.localeCompare(b.issued_date); break;
+      case "total":   cmp = a.total - b.total; break;
+      case "status":  cmp = a.status.localeCompare(b.status); break;
+    }
+    return sortDir === "asc" ? cmp : -cmp;
+  });
+
+  function sh(key: SortKey) {
+    return { active: sortKey === key, dir: sortDir, onSort: () => handleSort(key) };
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -148,16 +180,16 @@ export default function InvoicesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-24 py-4 px-6">Number</TableHead>
-                  <TableHead className="py-4 px-6">Client</TableHead>
+                  <SortableTableHead className="w-24 py-4 px-6" {...sh("number")}>Number</SortableTableHead>
+                  <SortableTableHead className="py-4 px-6" {...sh("client")}>Client</SortableTableHead>
                   <TableHead className="w-28 py-4 px-6">Dates</TableHead>
-                  <TableHead className="w-28 py-4 px-6">Issued</TableHead>
-                  <TableHead className="w-28 text-right py-4 px-6">Total</TableHead>
-                  <TableHead className="w-20 text-center py-4 px-6">Status</TableHead>
+                  <SortableTableHead className="w-28 py-4 px-6" {...sh("issued")}>Issued</SortableTableHead>
+                  <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("total")}>Total</SortableTableHead>
+                  <SortableTableHead className="w-20 py-4 px-6" align="right" {...sh("status")}>Status</SortableTableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {INVOICES.map((inv) => (
+                {sorted.map((inv) => (
                   <TableRow key={inv.id} className="cursor-pointer">
                     <TableCell className="font-medium text-sm py-4 px-6">
                       {inv.number}

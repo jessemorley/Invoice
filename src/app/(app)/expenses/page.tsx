@@ -1,7 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { EXPENSES, EXPENSE_CATEGORY_LABELS, type ExpenseCategory } from "@/lib/mock-data";
 import { formatAUD, formatDateShort } from "@/lib/format";
+
+type SortKey = "date" | "category" | "description" | "gst" | "amount";
+type SortDir = "asc" | "desc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -30,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { SortableTableHead } from "@/components/sortable-table-head";
 import { PageHeader } from "@/components/page-header";
 import { Paperclip, Plus, Receipt, Search } from "lucide-react";
 
@@ -91,6 +96,34 @@ function ExpenseCard({ expense }: { expense: (typeof EXPENSES)[number] }) {
 }
 
 export default function ExpensesPage() {
+  const [sortKey, setSortKey] = useState<SortKey>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  const sorted = [...EXPENSES].sort((a, b) => {
+    let cmp = 0;
+    switch (sortKey) {
+      case "date":        cmp = a.date.localeCompare(b.date); break;
+      case "category":    cmp = a.category.localeCompare(b.category); break;
+      case "description": cmp = a.description.localeCompare(b.description); break;
+      case "gst":         cmp = (a.gst_included ? a.amount / 11 : 0) - (b.gst_included ? b.amount / 11 : 0); break;
+      case "amount":      cmp = a.amount - b.amount; break;
+    }
+    return sortDir === "asc" ? cmp : -cmp;
+  });
+
+  function sh(key: SortKey) {
+    return { active: sortKey === key, dir: sortDir, onSort: () => handleSort(key) };
+  }
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Expenses">
@@ -139,16 +172,16 @@ export default function ExpensesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-28 py-4 px-6">Date</TableHead>
-                  <TableHead className="w-32 py-4 px-6">Category</TableHead>
-                  <TableHead className="py-4 px-6">Description</TableHead>
+                  <SortableTableHead className="w-28 py-4 px-6" {...sh("date")}>Date</SortableTableHead>
+                  <SortableTableHead className="w-32 py-4 px-6" {...sh("category")}>Category</SortableTableHead>
+                  <SortableTableHead className="py-4 px-6" {...sh("description")}>Description</SortableTableHead>
                   <TableHead className="py-4 px-6">Receipt</TableHead>
-                  <TableHead className="w-28 text-right py-4 px-6">GST</TableHead>
-                  <TableHead className="w-28 text-right py-4 px-6">Amount</TableHead>
+                  <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("gst")}>GST</SortableTableHead>
+                  <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("amount")}>Amount</SortableTableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {EXPENSES.map((exp) => (
+                {sorted.map((exp) => (
                   <TableRow key={exp.id} className="cursor-pointer">
                     <TableCell className="text-sm text-muted-foreground py-4 px-6">
                       {formatDateShort(exp.date)}
