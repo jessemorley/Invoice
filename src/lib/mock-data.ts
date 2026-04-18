@@ -83,32 +83,32 @@ export type MockInvoice = {
 
 export const INVOICES: MockInvoice[] = [
   {
-    id: "inv1", number: "INV-042", client: CLIENTS.countryRoad,
+    id: "inv1", number: "JM42", client: CLIENTS.countryRoad,
     issued_date: "2026-03-29", date_range: "24–25 Mar",
     subtotal: 1800, super_amount: 216, total: 2016, status: "paid", entry_count: 2,
   },
   {
-    id: "inv2", number: "INV-041", client: CLIENTS.iconic,
+    id: "inv2", number: "JM41", client: CLIENTS.iconic,
     issued_date: "2026-03-28", date_range: "26–27 Mar",
     subtotal: 1915, super_amount: 229.80, total: 2144.80, status: "issued", entry_count: 2,
   },
   {
-    id: "inv3", number: "INV-040", client: CLIENTS.sportscraft,
+    id: "inv3", number: "JM40", client: CLIENTS.sportscraft,
     issued_date: "2026-03-20", date_range: "17–19 Mar",
     subtotal: 1687.50, super_amount: 202.50, total: 1890.00, status: "issued", entry_count: 3,
   },
   {
-    id: "inv4", number: "INV-039", client: CLIENTS.iconic,
+    id: "inv4", number: "JM39", client: CLIENTS.iconic,
     issued_date: "2026-03-14", date_range: "10–14 Mar",
     subtotal: 4370, super_amount: 524.40, total: 4894.40, status: "paid", entry_count: 5,
   },
   {
-    id: "inv5", number: "INV-038", client: CLIENTS.mimco,
+    id: "inv5", number: "JM38", client: CLIENTS.mimco,
     issued_date: "2026-03-07", date_range: "3–7 Mar",
     subtotal: 3200, super_amount: 384, total: 3584, status: "paid", entry_count: 4,
   },
   {
-    id: "inv6", number: "INV-037", client: CLIENTS.countryRoad,
+    id: "inv6", number: "JM37", client: CLIENTS.countryRoad,
     issued_date: "2026-02-28", date_range: "24–28 Feb",
     subtotal: 4500, super_amount: 540, total: 5040, status: "paid", entry_count: 5,
   },

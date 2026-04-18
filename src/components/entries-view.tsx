@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ENTRIES, type MockEntry } from "@/lib/mock-data";
+import { ENTRIES, INVOICES, type MockEntry } from "@/lib/mock-data";
 import { formatAUD, formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,14 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Plus } from "lucide-react";
 
 type ViewMode = "invoice" | "week" | "none";
+
+const INVOICE_MAP = new Map(INVOICES.map((inv) => [inv.id, inv]));
+
+const INVOICE_STATUS_CLASS = {
+  draft:  "border-border text-muted-foreground",
+  issued: "border-orange-400/40 bg-orange-500/10 text-orange-500",
+  paid:   "border-emerald-400/40 bg-emerald-500/10 text-emerald-500",
+};
 
 type ClientWeekGroup = {
   key: string;
@@ -82,6 +90,9 @@ function groupByWeek(entries: MockEntry[]): WeekGroup[] {
 function EntryRow({ entry, showClient = false }: { entry: MockEntry; showClient?: boolean }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3.5 hover:bg-accent/50 transition-colors cursor-pointer">
+      <span className="text-xs text-muted-foreground tabular-nums w-20 shrink-0">
+        {formatDate(entry.date)}
+      </span>
       {showClient && (
         <div className="flex items-center gap-2 w-32 shrink-0">
           <div
@@ -92,16 +103,20 @@ function EntryRow({ entry, showClient = false }: { entry: MockEntry; showClient?
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground tabular-nums w-20 shrink-0">
-            {formatDate(entry.date)}
-          </span>
-          <span className="text-sm text-foreground truncate">
-            {entry.description}
-          </span>
-        </div>
+        <span className="text-sm text-foreground truncate block">
+          {entry.description}
+        </span>
       </div>
       <div className="flex items-center gap-3 shrink-0">
+        {showClient && (() => {
+          const inv = entry.invoice_id ? INVOICE_MAP.get(entry.invoice_id) : undefined;
+          if (!inv) return null;
+          return (
+            <Badge variant="outline" className={INVOICE_STATUS_CLASS[inv.status]}>
+              {inv.number}
+            </Badge>
+          );
+        })()}
         {entry.billing_type === "day_rate" && (
           <span className="text-xs text-muted-foreground">
             {entry.day_type === "full" ? "Full day" : "Half day"}

@@ -68,23 +68,26 @@ const allItems = [...mainTabs, ...overflowItems];
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { open } = useSidebar();
 
   return (
     <Sidebar collapsible="icon" className="hidden md:flex border-r">
-      <SidebarHeader className="px-3 py-4">
-        <div className="flex items-center gap-2.5">
+      <SidebarHeader className="px-4 py-4">
+        <div className="flex items-center gap-2.5 h-8">
           <Image
             src="/app_icon.png"
             alt="Invoicing"
             width={28}
             height={28}
-            className="size-7 rounded-md"
+            className="size-7 rounded-md shrink-0"
           />
-          <span className="text-sm font-semibold tracking-tight">Invoicing</span>
+          {open && (
+            <span className="text-sm font-semibold tracking-tight">Invoicing</span>
+          )}
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
+        <SidebarGroup className="px-3 py-1">
           <SidebarGroupContent>
             <SidebarMenu>
               {allItems.map((item) => (

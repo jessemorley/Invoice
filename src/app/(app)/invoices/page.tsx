@@ -202,9 +202,9 @@ export default function InvoicesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <SortableTableHead className="w-36 py-4 px-6" {...sh("dates")}>Dates</SortableTableHead>
                   <SortableTableHead className="w-24 py-4 px-6" {...sh("number")}>Number</SortableTableHead>
                   <SortableTableHead className="py-4 px-6" {...sh("client")}>Client</SortableTableHead>
-                  <SortableTableHead className="w-36 py-4 px-6" {...sh("dates")}>Dates</SortableTableHead>
                   <TableHead className="w-16 text-right py-4 px-6">Lines</TableHead>
                   <SortableTableHead className="w-28 py-4 px-6" {...sh("issued")}>Issued</SortableTableHead>
                   <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("total")}>Total</SortableTableHead>
@@ -214,6 +214,9 @@ export default function InvoicesPage() {
               <TableBody>
                 {sorted.map((inv) => (
                   <TableRow key={inv.id} className="cursor-pointer">
+                    <TableCell className="text-sm text-muted-foreground py-4 px-6">
+                      {computeDateRange(inv.id, inv.date_range)}
+                    </TableCell>
                     <TableCell className="font-medium text-sm py-4 px-6">
                       {inv.number}
                     </TableCell>
@@ -225,9 +228,6 @@ export default function InvoicesPage() {
                         />
                         <span className="text-sm">{inv.client.name}</span>
                       </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground py-4 px-6">
-                      {computeDateRange(inv.id, inv.date_range)}
                     </TableCell>
                     <TableCell className="text-sm text-right text-muted-foreground tabular-nums py-4 px-6">
                       {computeEntryCount(inv.id, inv.entry_count)}
