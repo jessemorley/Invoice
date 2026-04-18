@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { EntriesView } from "@/components/entries-view";
 import { fetchEntries, fetchInvoices } from "@/lib/queries";
 import { fetchClients } from "./actions";

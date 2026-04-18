@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { fetchEntries, fetchInvoices, fetchExpenses, fetchDashboardData } from "@/lib/queries";
 import { PROTOTYPE_USER_ID } from "@/lib/supabase";
 import { DashboardClient } from "./dashboard-client";
