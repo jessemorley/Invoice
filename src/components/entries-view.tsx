@@ -32,7 +32,8 @@ type ClientWeekGroup = {
 
 type WeekGroup = {
   key: string;
-  isoWeek: string;
+  dateRange: string;
+  latestDate: string;
   entries: Entry[];
   subtotal: number;
 };
@@ -65,6 +66,19 @@ function groupByClientWeek(entries: Entry[], invoiceMap: Map<string, Invoice>): 
   return groups.sort((a, b) => b.entries[0].date.localeCompare(a.entries[0].date));
 }
 
+function weekDateRange(dates: string[]): string {
+  const sorted = [...dates].sort();
+  const first = new Date(sorted[0] + "T00:00:00");
+  const last = new Date(sorted[sorted.length - 1] + "T00:00:00");
+  const firstDay = first.getDate();
+  const lastDay = last.getDate();
+  const firstMonth = first.toLocaleDateString("en-AU", { month: "short" });
+  const lastMonth = last.toLocaleDateString("en-AU", { month: "short" });
+  if (sorted[0] === sorted[sorted.length - 1]) return `${firstDay} ${firstMonth}`;
+  if (first.getMonth() === last.getMonth()) return `${firstDay}–${lastDay} ${firstMonth}`;
+  return `${firstDay} ${firstMonth} – ${lastDay} ${lastMonth}`;
+}
+
 function groupByWeek(entries: Entry[]): WeekGroup[] {
   const map = new Map<string, Entry[]>();
   for (const entry of entries) {
@@ -75,15 +89,17 @@ function groupByWeek(entries: Entry[]): WeekGroup[] {
 
   const groups: WeekGroup[] = [];
   for (const [key, groupEntries] of map) {
+    const sorted = groupEntries.sort((a, b) => b.date.localeCompare(a.date));
     groups.push({
       key,
-      isoWeek: key,
-      entries: groupEntries.sort((a, b) => b.date.localeCompare(a.date)),
+      dateRange: weekDateRange(groupEntries.map((e) => e.date)),
+      latestDate: sorted[0].date,
+      entries: sorted,
       subtotal: groupEntries.reduce((sum, e) => sum + e.base_amount + e.bonus_amount, 0),
     });
   }
 
-  return groups.sort((a, b) => b.isoWeek.localeCompare(a.isoWeek));
+  return groups.sort((a, b) => b.latestDate.localeCompare(a.latestDate));
 }
 
 function EntryRow({
@@ -148,7 +164,6 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
           style={{ backgroundColor: group.clientColor }}
         />
         <span className="text-sm font-medium text-foreground">{group.clientName}</span>
-        <span className="text-xs text-muted-foreground">{group.isoWeek}</span>
       </div>
       <div className="flex items-center gap-3">
         <span className="text-sm tabular-nums text-muted-foreground">
@@ -169,7 +184,7 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
 function WeekGroupHeader({ group }: { group: WeekGroup }) {
   return (
     <div className="flex items-center justify-between px-4 py-3 bg-muted/40 rounded-t-lg">
-      <span className="text-sm font-medium text-foreground">{group.isoWeek}</span>
+      <span className="text-sm font-medium text-foreground">{group.dateRange}</span>
       <span className="text-sm tabular-nums text-muted-foreground">
         {formatAUD(group.subtotal)}
       </span>

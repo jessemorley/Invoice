@@ -25,7 +25,8 @@ export function isoWeek(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
   const dayOfWeek = d.getDay() || 7;
   d.setDate(d.getDate() + 4 - dayOfWeek);
-  const yearStart = new Date(d.getFullYear(), 0, 1);
+  const year = d.getFullYear();
+  const yearStart = new Date(year, 0, 1);
   const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  return `W${weekNo}`;
+  return `${year}-W${String(weekNo).padStart(2, "0")}`;
 }
