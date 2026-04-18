@@ -15,10 +15,10 @@ type ViewMode = "invoice" | "week" | "none";
 
 const INVOICE_MAP = new Map(INVOICES.map((inv) => [inv.id, inv]));
 
-const INVOICE_STATUS_CLASS = {
-  draft:  "border-border text-muted-foreground",
-  issued: "border-orange-400/40 bg-orange-500/10 text-orange-500",
-  paid:   "border-emerald-400/40 bg-emerald-500/10 text-emerald-500",
+const INVOICE_STATUS_VARIANT: Record<string, "outline" | "secondary" | "default"> = {
+  draft:  "outline",
+  issued: "secondary",
+  paid:   "default",
 };
 
 type ClientWeekGroup = {
@@ -110,23 +110,20 @@ function EntryRow({ entry, showClient = false }: { entry: MockEntry; showClient?
       <div className="flex items-center gap-3 shrink-0">
         {showClient && (() => {
           const inv = entry.invoice_id ? INVOICE_MAP.get(entry.invoice_id) : undefined;
-          if (!inv) return null;
           return (
-            <Badge variant="outline" className={INVOICE_STATUS_CLASS[inv.status]}>
-              {inv.number}
-            </Badge>
+            <div className="w-20 flex justify-start">
+              {inv ? (
+                <Badge variant={INVOICE_STATUS_VARIANT[inv.status]}>{inv.number}</Badge>
+              ) : (
+                <Badge variant="outline">Draft</Badge>
+              )}
+            </div>
           );
         })()}
-        {entry.billing_type === "day_rate" && (
-          <span className="text-xs text-muted-foreground">
-            {entry.day_type === "full" ? "Full day" : "Half day"}
-          </span>
-        )}
-        {entry.billing_type === "hourly" && entry.hours && (
-          <span className="text-xs text-muted-foreground">
-            {entry.hours}h
-          </span>
-        )}
+        <span className="text-xs text-muted-foreground w-16 text-right">
+          {entry.billing_type === "day_rate" && (entry.day_type === "full" ? "Full day" : "Half day")}
+          {entry.billing_type === "hourly" && entry.hours && `${entry.hours}h`}
+        </span>
         <span className="text-sm tabular-nums text-foreground w-24 text-right">
           {formatAUD(entry.base_amount + entry.bonus_amount)}
         </span>

@@ -46,10 +46,10 @@ type SortKey = "number" | "client" | "dates" | "issued" | "total" | "status";
 type SortDir = "asc" | "desc";
 type InvoiceStatus = MockInvoice["status"];
 
-const STATUS_CLASS: Record<InvoiceStatus, string> = {
-  draft:  "border-border text-muted-foreground",
-  issued: "border-orange-400/40 bg-orange-500/10 text-orange-500",
-  paid:   "border-emerald-400/40 bg-emerald-500/10 text-emerald-500",
+const STATUS_VARIANT: Record<InvoiceStatus, "outline" | "secondary" | "default"> = {
+  draft:  "outline",
+  issued: "secondary",
+  paid:   "default",
 };
 
 const STATUS_LABEL: Record<InvoiceStatus, string> = {
@@ -101,8 +101,8 @@ function StatusBadge({
       <DropdownMenuTrigger asChild>
         <button className="focus:outline-none" onClick={(e) => e.stopPropagation()}>
           <Badge
-            variant="outline"
-            className={`cursor-pointer gap-0.5 pr-1 ${STATUS_CLASS[status]}`}
+            variant={STATUS_VARIANT[status]}
+            className="cursor-pointer gap-0.5 pr-1"
           >
             {STATUS_LABEL[status]}
             <ChevronDown className="size-3 opacity-60" />
@@ -149,7 +149,7 @@ function InvoiceCard({ invoice }: { invoice: MockInvoice }) {
         <span className="text-sm tabular-nums text-foreground">
           {formatAUD(invoice.total)}
         </span>
-        <Badge variant="outline" className={STATUS_CLASS[invoice.status]}>
+        <Badge variant={STATUS_VARIANT[invoice.status]}>
           {STATUS_LABEL[invoice.status]}
         </Badge>
       </div>
