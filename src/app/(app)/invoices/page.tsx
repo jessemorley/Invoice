@@ -111,14 +111,8 @@ function StatusBadge({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
         {(Object.keys(STATUS_LABEL) as InvoiceStatus[]).map((s) => (
-          <DropdownMenuItem
-            key={s}
-            onSelect={() => onStatusChange(s)}
-            className="gap-2"
-          >
-            <Badge variant="outline" className={`pointer-events-none ${STATUS_CLASS[s]}`}>
-              {STATUS_LABEL[s]}
-            </Badge>
+          <DropdownMenuItem key={s} onSelect={() => onStatusChange(s)}>
+            {STATUS_LABEL[s]}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
