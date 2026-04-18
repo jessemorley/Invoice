@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ENTRIES, INVOICES, type MockEntry } from "@/lib/mock-data";
+import type { Entry, Invoice } from "@/lib/types";
 import { formatAUD, formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,6 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Plus } from "lucide-react";
 
 type ViewMode = "invoice" | "week" | "none";
-
-const INVOICE_MAP = new Map(INVOICES.map((inv) => [inv.id, inv]));
 
 const INVOICE_STATUS_VARIANT: Record<string, "outline" | "secondary" | "default"> = {
   draft:  "outline",
@@ -26,7 +24,7 @@ type ClientWeekGroup = {
   clientName: string;
   clientColor: string;
   isoWeek: string;
-  entries: MockEntry[];
+  entries: Entry[];
   subtotal: number;
   invoiced: boolean;
   invoiceNumber?: string;
@@ -35,12 +33,12 @@ type ClientWeekGroup = {
 type WeekGroup = {
   key: string;
   isoWeek: string;
-  entries: MockEntry[];
+  entries: Entry[];
   subtotal: number;
 };
 
-function groupByClientWeek(entries: MockEntry[]): ClientWeekGroup[] {
-  const map = new Map<string, MockEntry[]>();
+function groupByClientWeek(entries: Entry[], invoiceMap: Map<string, Invoice>): ClientWeekGroup[] {
+  const map = new Map<string, Entry[]>();
   for (const entry of entries) {
     const key = `${entry.client.id}-${entry.iso_week}`;
     if (!map.has(key)) map.set(key, []);
@@ -51,6 +49,7 @@ function groupByClientWeek(entries: MockEntry[]): ClientWeekGroup[] {
   for (const [key, groupEntries] of map) {
     const first = groupEntries[0];
     const invoiced = groupEntries.every((e) => !!e.invoice_id);
+    const inv = invoiced && first.invoice_id ? invoiceMap.get(first.invoice_id) : undefined;
     groups.push({
       key,
       clientName: first.client.name,
@@ -59,15 +58,15 @@ function groupByClientWeek(entries: MockEntry[]): ClientWeekGroup[] {
       entries: groupEntries.sort((a, b) => b.date.localeCompare(a.date)),
       subtotal: groupEntries.reduce((sum, e) => sum + e.base_amount + e.bonus_amount, 0),
       invoiced,
-      invoiceNumber: invoiced ? "INV-042" : undefined,
+      invoiceNumber: inv?.number,
     });
   }
 
   return groups.sort((a, b) => b.entries[0].date.localeCompare(a.entries[0].date));
 }
 
-function groupByWeek(entries: MockEntry[]): WeekGroup[] {
-  const map = new Map<string, MockEntry[]>();
+function groupByWeek(entries: Entry[]): WeekGroup[] {
+  const map = new Map<string, Entry[]>();
   for (const entry of entries) {
     const key = entry.iso_week;
     if (!map.has(key)) map.set(key, []);
@@ -87,7 +86,15 @@ function groupByWeek(entries: MockEntry[]): WeekGroup[] {
   return groups.sort((a, b) => b.isoWeek.localeCompare(a.isoWeek));
 }
 
-function EntryRow({ entry, showClient = false }: { entry: MockEntry; showClient?: boolean }) {
+function EntryRow({
+  entry,
+  showClient = false,
+  invoiceMap,
+}: {
+  entry: Entry;
+  showClient?: boolean;
+  invoiceMap: Map<string, Invoice>;
+}) {
   return (
     <div className="flex items-center gap-3 px-4 py-3.5 hover:bg-accent/50 transition-colors cursor-pointer">
       <span className="text-xs text-muted-foreground tabular-nums w-20 shrink-0">
@@ -109,7 +116,7 @@ function EntryRow({ entry, showClient = false }: { entry: MockEntry; showClient?
       </div>
       <div className="flex items-center gap-3 shrink-0">
         {showClient && (() => {
-          const inv = entry.invoice_id ? INVOICE_MAP.get(entry.invoice_id) : undefined;
+          const inv = entry.invoice_id ? invoiceMap.get(entry.invoice_id) : undefined;
           return (
             <div className="w-20 flex justify-start">
               {inv ? (
@@ -170,8 +177,8 @@ function WeekGroupHeader({ group }: { group: WeekGroup }) {
   );
 }
 
-function InvoiceView() {
-  const groups = groupByClientWeek(ENTRIES);
+function InvoiceView({ entries, invoiceMap }: { entries: Entry[]; invoiceMap: Map<string, Invoice> }) {
+  const groups = groupByClientWeek(entries, invoiceMap);
 
   return (
     <div className="px-4 md:px-6 py-6 flex flex-col gap-4">
@@ -183,7 +190,7 @@ function InvoiceView() {
             {group.entries.map((entry, i) => (
               <div key={entry.id}>
                 {i > 0 && <Separator />}
-                <EntryRow entry={entry} />
+                <EntryRow entry={entry} invoiceMap={invoiceMap} />
               </div>
             ))}
           </CardContent>
@@ -198,8 +205,8 @@ function InvoiceView() {
   );
 }
 
-function WeekView() {
-  const groups = groupByWeek(ENTRIES);
+function WeekView({ entries, invoiceMap }: { entries: Entry[]; invoiceMap: Map<string, Invoice> }) {
+  const groups = groupByWeek(entries);
 
   return (
     <div className="px-4 md:px-6 py-6 flex flex-col gap-4">
@@ -211,7 +218,7 @@ function WeekView() {
             {group.entries.map((entry, i) => (
               <div key={entry.id}>
                 {i > 0 && <Separator />}
-                <EntryRow entry={entry} showClient />
+                <EntryRow entry={entry} showClient invoiceMap={invoiceMap} />
               </div>
             ))}
           </CardContent>
@@ -226,17 +233,17 @@ function WeekView() {
   );
 }
 
-function ListView() {
-  const entries = [...ENTRIES].sort((a, b) => b.date.localeCompare(a.date));
+function ListView({ entries, invoiceMap }: { entries: Entry[]; invoiceMap: Map<string, Invoice> }) {
+  const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <div className="px-4 md:px-6 py-6">
       <Card className="overflow-hidden py-0 gap-0">
         <CardContent className="p-0">
-          {entries.map((entry, i) => (
+          {sorted.map((entry, i) => (
             <div key={entry.id}>
               {i > 0 && <Separator />}
-              <EntryRow entry={entry} showClient />
+              <EntryRow entry={entry} showClient invoiceMap={invoiceMap} />
             </div>
           ))}
         </CardContent>
@@ -250,8 +257,9 @@ function ListView() {
   );
 }
 
-export function EntriesView() {
+export function EntriesView({ entries, invoices }: { entries: Entry[]; invoices: Invoice[] }) {
   const [viewMode, setViewMode] = useState<ViewMode>("invoice");
+  const invoiceMap = new Map(invoices.map((inv) => [inv.id, inv]));
 
   return (
     <div className="flex flex-col h-full">
@@ -277,9 +285,9 @@ export function EntriesView() {
       </header>
 
       <div className="flex-1 overflow-y-auto">
-        {viewMode === "invoice" && <InvoiceView />}
-        {viewMode === "week" && <WeekView />}
-        {viewMode === "none" && <ListView />}
+        {viewMode === "invoice" && <InvoiceView entries={entries} invoiceMap={invoiceMap} />}
+        {viewMode === "week" && <WeekView entries={entries} invoiceMap={invoiceMap} />}
+        {viewMode === "none" && <ListView entries={entries} invoiceMap={invoiceMap} />}
       </div>
 
       <div className="md:hidden fixed bottom-18 right-4 z-40">

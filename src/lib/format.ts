@@ -20,3 +20,12 @@ export function formatDateShort(dateStr: string): string {
   const month = d.toLocaleDateString("en-AU", { month: "short" });
   return `${day} ${month}`;
 }
+
+export function isoWeek(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  const dayOfWeek = d.getDay() || 7;
+  d.setDate(d.getDate() + 4 - dayOfWeek);
+  const yearStart = new Date(d.getFullYear(), 0, 1);
+  const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `W${weekNo}`;
+}
