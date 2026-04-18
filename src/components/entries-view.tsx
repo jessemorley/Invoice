@@ -117,7 +117,7 @@ function EntryRow({
         {formatDate(entry.date)}
       </span>
       {showClient && (
-        <div className="flex items-center gap-2 w-32 shrink-0">
+        <div className="flex items-center gap-2 w-40 shrink-0">
           <div
             className="size-2 rounded-full shrink-0"
             style={{ backgroundColor: entry.client.color }}
@@ -130,6 +130,10 @@ function EntryRow({
           {entry.description}
         </span>
       </div>
+      <span className="text-xs text-muted-foreground w-20 shrink-0">
+        {entry.billing_type === "day_rate" && (entry.day_type === "full" ? "Full day" : "Half day")}
+        {entry.billing_type === "hourly" && entry.hours && `${entry.hours}h`}
+      </span>
       <div className="flex items-center gap-3 shrink-0">
         {showClient && (() => {
           const inv = entry.invoice_id ? invoiceMap.get(entry.invoice_id) : undefined;
@@ -143,10 +147,6 @@ function EntryRow({
             </div>
           );
         })()}
-        <span className="text-xs text-muted-foreground w-16 text-right">
-          {entry.billing_type === "day_rate" && (entry.day_type === "full" ? "Full day" : "Half day")}
-          {entry.billing_type === "hourly" && entry.hours && `${entry.hours}h`}
-        </span>
         <span className="text-sm tabular-nums text-foreground w-24 text-right">
           {formatAUD(entry.base_amount + entry.bonus_amount)}
         </span>
