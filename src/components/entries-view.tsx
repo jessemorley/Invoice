@@ -196,7 +196,7 @@ function InvoiceView({ entries, invoiceMap }: { entries: Entry[]; invoiceMap: Ma
   const groups = groupByClientWeek(entries, invoiceMap);
 
   return (
-    <div className="px-4 md:px-6 py-6 flex flex-col gap-4">
+    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       {groups.map((group) => (
         <Card key={group.key} className="overflow-hidden py-0 gap-0">
           <ClientWeekGroupHeader group={group} />
@@ -224,7 +224,7 @@ function WeekView({ entries, invoiceMap }: { entries: Entry[]; invoiceMap: Map<s
   const groups = groupByWeek(entries);
 
   return (
-    <div className="px-4 md:px-6 py-6 flex flex-col gap-4">
+    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       {groups.map((group) => (
         <Card key={group.key} className="overflow-hidden py-0 gap-0">
           <WeekGroupHeader group={group} />
@@ -252,7 +252,7 @@ function ListView({ entries, invoiceMap }: { entries: Entry[]; invoiceMap: Map<s
   const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
-    <div className="px-4 md:px-6 py-6">
+    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl">
       <Card className="overflow-hidden py-0 gap-0">
         <CardContent className="p-0">
           {sorted.map((entry, i) => (

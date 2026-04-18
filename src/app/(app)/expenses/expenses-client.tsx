@@ -142,7 +142,7 @@ export function ExpensesClient({ expenses }: { expenses: Expense[] }) {
 
       {/* Desktop table */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
-        <div className="px-4 md:px-6 py-6 flex flex-col gap-4 flex-1">
+        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
           <div className="rounded-lg border bg-card">
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b">

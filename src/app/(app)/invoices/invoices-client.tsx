@@ -189,7 +189,7 @@ export function InvoicesClient({ invoices, entries }: { invoices: Invoice[]; ent
 
       {/* Desktop table */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
-        <div className="px-4 md:px-6 py-6 flex flex-col gap-4 flex-1">
+        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1 min-w-48">
