@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { INVOICES, ENTRIES } from "@/lib/mock-data";
+import { INVOICES, ENTRIES, type MockInvoice } from "@/lib/mock-data";
 import { formatAUD, formatDateShort } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,12 +32,31 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { SortableTableHead } from "@/components/sortable-table-head";
 import { PageHeader } from "@/components/page-header";
-import { FileText, Plus, Search } from "lucide-react";
+import { ChevronDown, FileText, Plus, Search } from "lucide-react";
 
 type SortKey = "number" | "client" | "dates" | "issued" | "total" | "status";
 type SortDir = "asc" | "desc";
+type InvoiceStatus = MockInvoice["status"];
+
+const STATUS_CLASS: Record<InvoiceStatus, string> = {
+  draft:  "border-border text-muted-foreground",
+  issued: "border-orange-400/40 bg-orange-500/10 text-orange-500",
+  paid:   "border-emerald-400/40 bg-emerald-500/10 text-emerald-500",
+};
+
+const STATUS_LABEL: Record<InvoiceStatus, string> = {
+  draft:  "Draft",
+  issued: "Issued",
+  paid:   "Paid",
+};
 
 function computeDateRange(invoiceId: string, fallback: string): string {
   const dates = ENTRIES.filter((e) => e.invoice_id === invoiceId)
@@ -70,7 +89,44 @@ const uniqueClients = Array.from(
   new Map(INVOICES.map((inv) => [inv.client.id, inv.client])).values()
 );
 
-function InvoiceCard({ invoice }: { invoice: (typeof INVOICES)[number] }) {
+function StatusBadge({
+  status,
+  onStatusChange,
+}: {
+  status: InvoiceStatus;
+  onStatusChange: (s: InvoiceStatus) => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="focus:outline-none" onClick={(e) => e.stopPropagation()}>
+          <Badge
+            variant="outline"
+            className={`cursor-pointer gap-0.5 pr-1 ${STATUS_CLASS[status]}`}
+          >
+            {STATUS_LABEL[status]}
+            <ChevronDown className="size-3 opacity-60" />
+          </Badge>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+        {(Object.keys(STATUS_LABEL) as InvoiceStatus[]).map((s) => (
+          <DropdownMenuItem
+            key={s}
+            onSelect={() => onStatusChange(s)}
+            className="gap-2"
+          >
+            <Badge variant="outline" className={`pointer-events-none ${STATUS_CLASS[s]}`}>
+              {STATUS_LABEL[s]}
+            </Badge>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function InvoiceCard({ invoice }: { invoice: MockInvoice }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
       <div
@@ -99,8 +155,8 @@ function InvoiceCard({ invoice }: { invoice: (typeof INVOICES)[number] }) {
         <span className="text-sm tabular-nums text-foreground">
           {formatAUD(invoice.total)}
         </span>
-        <Badge variant={invoice.status === "paid" ? "secondary" : "outline"}>
-          {invoice.status}
+        <Badge variant="outline" className={STATUS_CLASS[invoice.status]}>
+          {STATUS_LABEL[invoice.status]}
         </Badge>
       </div>
     </div>
@@ -111,6 +167,9 @@ export default function InvoicesPage() {
   const uninvoicedCount = uninvoicedGroupCount();
   const [sortKey, setSortKey] = useState<SortKey>("dates");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [statuses, setStatuses] = useState<Record<string, InvoiceStatus>>(
+    () => Object.fromEntries(INVOICES.map((inv) => [inv.id, inv.status]))
+  );
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
@@ -121,6 +180,10 @@ export default function InvoicesPage() {
     }
   }
 
+  function handleStatusChange(id: string, status: InvoiceStatus) {
+    setStatuses((prev) => ({ ...prev, [id]: status }));
+  }
+
   const sorted = [...INVOICES].sort((a, b) => {
     let cmp = 0;
     switch (sortKey) {
@@ -129,7 +192,7 @@ export default function InvoicesPage() {
       case "dates":   cmp = a.issued_date.localeCompare(b.issued_date); break;
       case "issued":  cmp = a.issued_date.localeCompare(b.issued_date); break;
       case "total":   cmp = a.total - b.total; break;
-      case "status":  cmp = a.status.localeCompare(b.status); break;
+      case "status":  cmp = (statuses[a.id] ?? a.status).localeCompare(statuses[b.id] ?? b.status); break;
     }
     return sortDir === "asc" ? cmp : -cmp;
   });
@@ -155,50 +218,51 @@ export default function InvoicesPage() {
       {/* Desktop table */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
         <div className="px-4 md:px-6 py-6 flex flex-col gap-4 flex-1">
-          <div className="rounded-lg border bg-card">
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b">
-              <div className="relative flex-1 min-w-48">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <Input placeholder="Search invoices..." className="pl-8" />
-              </div>
-              <Select defaultValue="all-time">
-                <SelectTrigger className="w-36">
-                  <SelectValue placeholder="Timeframe" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all-time">All time</SelectItem>
-                  <SelectItem value="this-week">This week</SelectItem>
-                  <SelectItem value="this-month">This month</SelectItem>
-                  <SelectItem value="last-month">Last month</SelectItem>
-                  <SelectItem value="this-year">This year</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select defaultValue="all-clients">
-                <SelectTrigger className="w-36">
-                  <SelectValue placeholder="Client" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all-clients">All clients</SelectItem>
-                  {uniqueClients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select defaultValue="all-status">
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all-status">All status</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="overdue">Overdue</SelectItem>
-                </SelectContent>
-              </Select>
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-48">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input placeholder="Search invoices..." className="pl-8" />
             </div>
+            <Select defaultValue="all-time">
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Timeframe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-time">All time</SelectItem>
+                <SelectItem value="this-week">This week</SelectItem>
+                <SelectItem value="this-month">This month</SelectItem>
+                <SelectItem value="last-month">Last month</SelectItem>
+                <SelectItem value="this-year">This year</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select defaultValue="all-clients">
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Client" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-clients">All clients</SelectItem>
+                {uniqueClients.map((client) => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select defaultValue="all-status">
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-status">All status</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="issued">Issued</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="rounded-lg border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -208,7 +272,7 @@ export default function InvoicesPage() {
                   <TableHead className="w-16 text-right py-4 px-6">Lines</TableHead>
                   <SortableTableHead className="w-28 py-4 px-6" {...sh("issued")}>Issued</SortableTableHead>
                   <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("total")}>Total</SortableTableHead>
-                  <SortableTableHead className="w-20 py-4 px-6" align="right" {...sh("status")}>Status</SortableTableHead>
+                  <SortableTableHead className="w-24 py-4 px-6" align="right" {...sh("status")}>Status</SortableTableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -238,10 +302,11 @@ export default function InvoicesPage() {
                     <TableCell className="text-sm text-right tabular-nums py-4 px-6">
                       {formatAUD(inv.total)}
                     </TableCell>
-                    <TableCell className="text-center py-4 px-6">
-                      <Badge variant={inv.status === "paid" ? "secondary" : "outline"}>
-                        {inv.status}
-                      </Badge>
+                    <TableCell className="py-4 px-6 text-right">
+                      <StatusBadge
+                        status={statuses[inv.id] ?? inv.status}
+                        onStatusChange={(s) => handleStatusChange(inv.id, s)}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
