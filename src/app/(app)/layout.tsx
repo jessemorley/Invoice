@@ -6,7 +6,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider className="h-full">
       <AppSidebar />
       <SidebarInset className="overflow-y-auto pb-16 md:pb-0 bg-background">
-        {children}
+        <div className="mx-auto w-full max-w-6xl flex flex-col h-full">
+          {children}
+        </div>
       </SidebarInset>
       <BottomTabs />
     </SidebarProvider>
