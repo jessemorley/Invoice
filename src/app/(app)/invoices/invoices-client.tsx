@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SortableTableHead } from "@/components/sortable-table-head";
 import { PageHeader } from "@/components/page-header";
+import { InvoiceSheet } from "@/components/invoice-sheet";
 import { ChevronDown, FileText, Plus, Search } from "lucide-react";
 
 type SortKey = "number" | "client" | "dates" | "issued" | "total" | "status";
@@ -138,6 +139,13 @@ export function InvoicesClient({ invoices, entries }: { invoices: Invoice[]; ent
   const [statuses, setStatuses] = useState<Record<string, InvoiceStatus>>(
     () => Object.fromEntries(invoices.map((inv) => [inv.id, inv.status]))
   );
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+
+  function openInvoice(inv: Invoice) {
+    setSelectedInvoice(inv);
+    setSheetOpen(true);
+  }
 
   const uniqueClients = Array.from(
     new Map(invoices.map((inv) => [inv.client.id, inv.client])).values()
@@ -249,7 +257,7 @@ export function InvoicesClient({ invoices, entries }: { invoices: Invoice[]; ent
               </TableHeader>
               <TableBody>
                 {sorted.map((inv) => (
-                  <TableRow key={inv.id} className="cursor-pointer">
+                  <TableRow key={inv.id} className="cursor-pointer" onClick={() => openInvoice(inv)}>
                     <TableCell className="text-sm text-muted-foreground py-4 px-6">
                       {inv.date_range}
                     </TableCell>
@@ -301,7 +309,7 @@ export function InvoicesClient({ invoices, entries }: { invoices: Invoice[]; ent
         ) : (
           <div className="px-4 py-4 flex flex-col gap-3">
             {invoices.map((inv) => (
-              <Card key={inv.id} className="py-0">
+              <Card key={inv.id} className="py-0" onClick={() => openInvoice(inv)}>
                 <CardContent className="p-0">
                   <InvoiceCard invoice={inv} />
                 </CardContent>
@@ -310,6 +318,12 @@ export function InvoicesClient({ invoices, entries }: { invoices: Invoice[]; ent
           </div>
         )}
       </div>
+
+      <InvoiceSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        invoice={selectedInvoice}
+      />
     </div>
   );
 }

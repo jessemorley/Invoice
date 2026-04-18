@@ -9,7 +9,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { EntrySheet } from "@/components/entry-sheet";
 import { Plus } from "lucide-react";
+
+type Client = { id: string; name: string; billing_type: string; color: string | null };
 
 type ViewMode = "invoice" | "week" | "none";
 
@@ -106,13 +109,18 @@ function EntryRow({
   entry,
   showClient = false,
   invoiceMap,
+  onEdit,
 }: {
   entry: Entry;
   showClient?: boolean;
   invoiceMap: Map<string, Invoice>;
+  onEdit: (entry: Entry) => void;
 }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3.5 hover:bg-accent/50 transition-colors cursor-pointer">
+    <div
+      className="flex items-center gap-3 px-4 py-3.5 hover:bg-accent/50 transition-colors cursor-pointer"
+      onClick={() => onEdit(entry)}
+    >
       <span className="text-xs text-muted-foreground tabular-nums w-20 shrink-0">
         {formatDate(entry.date)}
       </span>
@@ -192,7 +200,15 @@ function WeekGroupHeader({ group }: { group: WeekGroup }) {
   );
 }
 
-function InvoiceView({ entries, invoiceMap }: { entries: Entry[]; invoiceMap: Map<string, Invoice> }) {
+function InvoiceView({
+  entries,
+  invoiceMap,
+  onEdit,
+}: {
+  entries: Entry[];
+  invoiceMap: Map<string, Invoice>;
+  onEdit: (entry: Entry) => void;
+}) {
   const groups = groupByClientWeek(entries, invoiceMap);
 
   return (
@@ -205,7 +221,7 @@ function InvoiceView({ entries, invoiceMap }: { entries: Entry[]; invoiceMap: Ma
             {group.entries.map((entry, i) => (
               <div key={entry.id}>
                 {i > 0 && <Separator />}
-                <EntryRow entry={entry} invoiceMap={invoiceMap} />
+                <EntryRow entry={entry} invoiceMap={invoiceMap} onEdit={onEdit} />
               </div>
             ))}
           </CardContent>
@@ -220,7 +236,15 @@ function InvoiceView({ entries, invoiceMap }: { entries: Entry[]; invoiceMap: Ma
   );
 }
 
-function WeekView({ entries, invoiceMap }: { entries: Entry[]; invoiceMap: Map<string, Invoice> }) {
+function WeekView({
+  entries,
+  invoiceMap,
+  onEdit,
+}: {
+  entries: Entry[];
+  invoiceMap: Map<string, Invoice>;
+  onEdit: (entry: Entry) => void;
+}) {
   const groups = groupByWeek(entries);
 
   return (
@@ -233,7 +257,7 @@ function WeekView({ entries, invoiceMap }: { entries: Entry[]; invoiceMap: Map<s
             {group.entries.map((entry, i) => (
               <div key={entry.id}>
                 {i > 0 && <Separator />}
-                <EntryRow entry={entry} showClient invoiceMap={invoiceMap} />
+                <EntryRow entry={entry} showClient invoiceMap={invoiceMap} onEdit={onEdit} />
               </div>
             ))}
           </CardContent>
@@ -248,7 +272,15 @@ function WeekView({ entries, invoiceMap }: { entries: Entry[]; invoiceMap: Map<s
   );
 }
 
-function ListView({ entries, invoiceMap }: { entries: Entry[]; invoiceMap: Map<string, Invoice> }) {
+function ListView({
+  entries,
+  invoiceMap,
+  onEdit,
+}: {
+  entries: Entry[];
+  invoiceMap: Map<string, Invoice>;
+  onEdit: (entry: Entry) => void;
+}) {
   const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
@@ -258,7 +290,7 @@ function ListView({ entries, invoiceMap }: { entries: Entry[]; invoiceMap: Map<s
           {sorted.map((entry, i) => (
             <div key={entry.id}>
               {i > 0 && <Separator />}
-              <EntryRow entry={entry} showClient invoiceMap={invoiceMap} />
+              <EntryRow entry={entry} showClient invoiceMap={invoiceMap} onEdit={onEdit} />
             </div>
           ))}
         </CardContent>
@@ -272,9 +304,29 @@ function ListView({ entries, invoiceMap }: { entries: Entry[]; invoiceMap: Map<s
   );
 }
 
-export function EntriesView({ entries, invoices }: { entries: Entry[]; invoices: Invoice[] }) {
+export function EntriesView({
+  entries,
+  invoices,
+  clients,
+}: {
+  entries: Entry[];
+  invoices: Invoice[];
+  clients: { id: string; name: string; billing_type: string; color: string | null }[];
+}) {
   const [viewMode, setViewMode] = useState<ViewMode>("invoice");
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const invoiceMap = new Map(invoices.map((inv) => [inv.id, inv]));
+
+  function openEdit(entry: Entry) {
+    setSelectedEntry(entry);
+    setSheetOpen(true);
+  }
+
+  function openNew() {
+    setSelectedEntry(null);
+    setSheetOpen(true);
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -293,23 +345,30 @@ export function EntriesView({ entries, invoices }: { entries: Entry[]; invoices:
           <ToggleGroupItem value="week">Week</ToggleGroupItem>
           <ToggleGroupItem value="none">None</ToggleGroupItem>
         </ToggleGroup>
-        <Button size="sm" className="hidden md:flex">
+        <Button size="sm" className="hidden md:flex" onClick={openNew}>
           <Plus className="size-4" />
           New entry
         </Button>
       </header>
 
       <div className="flex-1 overflow-y-auto">
-        {viewMode === "invoice" && <InvoiceView entries={entries} invoiceMap={invoiceMap} />}
-        {viewMode === "week" && <WeekView entries={entries} invoiceMap={invoiceMap} />}
-        {viewMode === "none" && <ListView entries={entries} invoiceMap={invoiceMap} />}
+        {viewMode === "invoice" && <InvoiceView entries={entries} invoiceMap={invoiceMap} onEdit={openEdit} />}
+        {viewMode === "week" && <WeekView entries={entries} invoiceMap={invoiceMap} onEdit={openEdit} />}
+        {viewMode === "none" && <ListView entries={entries} invoiceMap={invoiceMap} onEdit={openEdit} />}
       </div>
 
       <div className="md:hidden fixed bottom-18 right-4 z-40">
-        <Button size="icon" className="size-14 rounded-full shadow-lg">
+        <Button size="icon" className="size-14 rounded-full shadow-lg" onClick={openNew}>
           <Plus />
         </Button>
       </div>
+
+      <EntrySheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        entry={selectedEntry}
+        clients={clients}
+      />
     </div>
   );
 }
