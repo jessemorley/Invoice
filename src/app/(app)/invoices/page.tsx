@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import { Suspense } from "react";
 import { fetchInvoices, fetchUninvoicedCount, fetchClients, type InvoiceFilters } from "@/lib/queries";
 import { PROTOTYPE_USER_ID } from "@/lib/supabase";
 import { InvoicesClient } from "./invoices-client";
@@ -7,6 +8,23 @@ import { InvoicesClient } from "./invoices-client";
 type PageProps = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
+
+async function InvoicesData({ filters }: { filters: InvoiceFilters }) {
+  const [invoices, uninvoicedCount, clients] = await Promise.all([
+    fetchInvoices(PROTOTYPE_USER_ID, filters),
+    fetchUninvoicedCount(PROTOTYPE_USER_ID),
+    fetchClients(PROTOTYPE_USER_ID),
+  ]);
+
+  return (
+    <InvoicesClient
+      invoices={invoices}
+      uninvoicedCount={uninvoicedCount}
+      clients={clients}
+      filters={filters}
+    />
+  );
+}
 
 export default async function InvoicesPage({ searchParams }: PageProps) {
   const sp = await searchParams;
@@ -21,18 +39,9 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
     sortDir: sp.dir === "asc" ? "asc" : "desc",
   };
 
-  const [invoices, uninvoicedCount, clients] = await Promise.all([
-    fetchInvoices(PROTOTYPE_USER_ID, filters),
-    fetchUninvoicedCount(PROTOTYPE_USER_ID),
-    fetchClients(PROTOTYPE_USER_ID),
-  ]);
-
   return (
-    <InvoicesClient
-      invoices={invoices}
-      uninvoicedCount={uninvoicedCount}
-      clients={clients}
-      filters={filters}
-    />
+    <Suspense fallback={<InvoicesClient filters={filters} loading />}>
+      <InvoicesData filters={filters} />
+    </Suspense>
   );
 }

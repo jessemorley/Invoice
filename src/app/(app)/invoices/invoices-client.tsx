@@ -9,6 +9,7 @@ import { formatAUD, formatDateShort } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -164,14 +165,65 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
   );
 }
 
+function SkeletonTableRows({ count = 8 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell className="py-4 px-6"><Skeleton className="h-3 w-24" /></TableCell>
+          <TableCell className="py-4 px-6"><Skeleton className="h-3 w-16" /></TableCell>
+          <TableCell className="py-4 px-6">
+            <div className="flex items-center gap-2">
+              <Skeleton className="size-2 rounded-full shrink-0" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+          </TableCell>
+          <TableCell className="py-4 px-6 text-right"><Skeleton className="h-3 w-6 ml-auto" /></TableCell>
+          <TableCell className="py-4 px-6"><Skeleton className="h-3 w-20" /></TableCell>
+          <TableCell className="py-4 px-6 text-right"><Skeleton className="h-3 w-16 ml-auto" /></TableCell>
+          <TableCell className="py-4 px-6 text-right"><Skeleton className="h-5 w-14 ml-auto rounded-full" /></TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
+function SkeletonMobileCards({ count = 6 }: { count?: number }) {
+  return (
+    <div className="px-4 py-4 flex flex-col gap-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <Card key={i} className="py-0">
+          <CardContent className="p-0">
+            <div className="flex items-center gap-3 px-4 py-3">
+              <Skeleton className="size-2.5 rounded-full shrink-0" />
+              <div className="flex-1 min-w-0 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+                <Skeleton className="h-3 w-32" />
+              </div>
+              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-5 w-12 rounded-full" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 type Props = {
-  invoices: Invoice[];
-  uninvoicedCount: number;
-  clients: { id: string; name: string }[];
+  invoices?: Invoice[];
+  uninvoicedCount?: number;
+  clients?: { id: string; name: string }[];
   filters: InvoiceFilters;
+  loading?: boolean;
 };
 
-export function InvoicesClient({ invoices: initialInvoices, uninvoicedCount, clients, filters }: Props) {
+export function InvoicesClient({ invoices: initialInvoices = [], uninvoicedCount = 0, clients = [], filters, loading = false }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [, startTransition] = useTransition();
@@ -222,7 +274,6 @@ export function InvoicesClient({ invoices: initialInvoices, uninvoicedCount, cli
       sort: filters.sortKey,
       dir: filters.sortDir,
     };
-    // Rebuild from existing + updates, dropping undefined/empty
     const merged = { ...current, ...updates };
     for (const [k, v] of Object.entries(merged)) {
       if (v && v !== "all" && v !== "issued_date" && !(k === "dir" && v === "desc")) {
@@ -274,7 +325,7 @@ export function InvoicesClient({ invoices: initialInvoices, uninvoicedCount, cli
             {uninvoicedCount} groups ready to invoice
           </Badge>
         )}
-        <Button size="sm" className="hidden md:flex">
+        <Button size="sm" className="hidden md:flex" disabled={loading}>
           <Plus className="size-4" />
           New invoice
         </Button>
@@ -294,6 +345,7 @@ export function InvoicesClient({ invoices: initialInvoices, uninvoicedCount, cli
                 onChange={(e) => setSearchValue(e.target.value)}
                 onBlur={() => handleSearchCommit(searchValue)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearchCommit(searchValue)}
+                disabled={loading}
               />
             </div>
             <Select
@@ -302,6 +354,7 @@ export function InvoicesClient({ invoices: initialInvoices, uninvoicedCount, cli
                 const range = timeframeToDateRange(v);
                 pushParams({ from: range.from, to: range.to });
               }}
+              disabled={loading}
             >
               <SelectTrigger className="w-36">
                 <SelectValue placeholder="Timeframe" />
@@ -315,6 +368,7 @@ export function InvoicesClient({ invoices: initialInvoices, uninvoicedCount, cli
             <Select
               value={filters.clientId ?? "all"}
               onValueChange={(v) => pushParams({ client: v === "all" ? undefined : v })}
+              disabled={loading}
             >
               <SelectTrigger className="w-36">
                 <SelectValue placeholder="Client" />
@@ -329,6 +383,7 @@ export function InvoicesClient({ invoices: initialInvoices, uninvoicedCount, cli
             <Select
               value={filters.status ?? "all"}
               onValueChange={(v) => pushParams({ status: v === "all" ? undefined : v })}
+              disabled={loading}
             >
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="Status" />
@@ -356,7 +411,9 @@ export function InvoicesClient({ invoices: initialInvoices, uninvoicedCount, cli
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoices.length === 0 ? (
+                {loading ? (
+                  <SkeletonTableRows />
+                ) : invoices.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
                       No invoices match these filters.
@@ -401,23 +458,30 @@ export function InvoicesClient({ invoices: initialInvoices, uninvoicedCount, cli
               </TableBody>
             </Table>
           </div>
-          <div className="text-center py-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs text-muted-foreground"
-              onClick={handleLoadMore}
-              disabled={loadPending}
-            >
-              {loadPending ? "Loading…" : "Load more"}
-            </Button>
-          </div>
+          {!loading && (
+            loadPending ? (
+              <SkeletonTableRows count={4} />
+            ) : (
+              <div className="text-center py-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground"
+                  onClick={handleLoadMore}
+                >
+                  Load more
+                </Button>
+              </div>
+            )
+          )}
         </div>
       </div>
 
       {/* Mobile card list */}
       <div className="md:hidden flex-1 overflow-y-auto">
-        {invoices.length === 0 ? (
+        {loading ? (
+          <SkeletonMobileCards />
+        ) : invoices.length === 0 ? (
           <Empty className="h-64">
             <EmptyHeader>
               <EmptyMedia variant="icon"><FileText /></EmptyMedia>
@@ -434,17 +498,20 @@ export function InvoicesClient({ invoices: initialInvoices, uninvoicedCount, cli
                 </CardContent>
               </Card>
             ))}
-            <div className="text-center py-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs text-muted-foreground"
-                onClick={handleLoadMore}
-                disabled={loadPending}
-              >
-                {loadPending ? "Loading…" : "Load more"}
-              </Button>
-            </div>
+            {loadPending ? (
+              <SkeletonMobileCards count={3} />
+            ) : (
+              <div className="text-center py-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground"
+                  onClick={handleLoadMore}
+                >
+                  Load more
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
