@@ -60,7 +60,7 @@ function ReceiptChip({ path }: { path: string }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs text-muted-foreground font-normal max-w-full">
       <Paperclip className="size-3 shrink-0" />
-      <span className="truncate">{path}</span>
+      <span className="truncate">{path.split("/").pop()}</span>
     </span>
   );
 }
