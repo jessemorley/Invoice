@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { EntrySheet } from "@/components/entry-sheet";
@@ -105,6 +106,55 @@ function groupByWeek(entries: Entry[]): WeekGroup[] {
   return groups.sort((a, b) => b.latestDate.localeCompare(a.latestDate));
 }
 
+function SkeletonRow() {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3.5">
+      <Skeleton className="h-3 w-20 shrink-0" />
+      <Skeleton className="h-3 flex-1" />
+      <Skeleton className="h-3 w-16 shrink-0" />
+      <Skeleton className="h-3 w-20 shrink-0" />
+    </div>
+  );
+}
+
+function SkeletonCard({ rows = 3 }: { rows?: number }) {
+  return (
+    <Card className="overflow-hidden py-0 gap-0">
+      <div className="flex items-center justify-between px-4 py-3 bg-muted/40 rounded-t-lg">
+        <div className="flex items-center gap-2.5">
+          <Skeleton className="size-2.5 rounded-full shrink-0" />
+          <Skeleton className="h-3 w-28" />
+        </div>
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-7 w-16 rounded-md" />
+        </div>
+      </div>
+      <Separator />
+      <CardContent className="p-0">
+        {Array.from({ length: rows }).map((_, i) => (
+          <div key={i}>
+            {i > 0 && <Separator />}
+            <SkeletonRow />
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ContentSkeleton() {
+  return (
+    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+      <SkeletonCard rows={2} />
+      <SkeletonCard rows={3} />
+      <SkeletonCard rows={1} />
+      <SkeletonCard rows={4} />
+      <SkeletonCard rows={2} />
+    </div>
+  );
+}
+
 function EntryRow({
   entry,
   showClient = false,
@@ -196,6 +246,14 @@ function WeekGroupHeader({ group }: { group: WeekGroup }) {
 }
 
 function LoadEarlierButton({ onLoad, isPending }: { onLoad: () => void; isPending: boolean }) {
+  if (isPending) {
+    return (
+      <>
+        <SkeletonCard rows={2} />
+        <SkeletonCard rows={3} />
+      </>
+    );
+  }
   return (
     <div className="text-center py-2">
       <Button
@@ -203,9 +261,8 @@ function LoadEarlierButton({ onLoad, isPending }: { onLoad: () => void; isPendin
         size="sm"
         className="text-xs text-muted-foreground"
         onClick={onLoad}
-        disabled={isPending}
       >
-        {isPending ? "Loading…" : "Load earlier"}
+        Load earlier
       </Button>
     </div>
   );
@@ -312,14 +369,16 @@ function ListView({
 export function EntriesView({
   entries: initialEntries,
   clients,
+  loading = false,
 }: {
-  entries: Entry[];
-  clients: { id: string; name: string; billing_type: string; color: string | null }[];
+  entries?: Entry[];
+  clients: Client[];
+  loading?: boolean;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("invoice");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
-  const [entries, setEntries] = useState<Entry[]>(initialEntries);
+  const [entries, setEntries] = useState<Entry[]>(initialEntries ?? []);
   const [isPending, startTransition] = useTransition();
 
   function openEdit(entry: Entry) {
@@ -353,25 +412,32 @@ export function EntriesView({
           onValueChange={(value) => value && setViewMode(value as ViewMode)}
           variant="outline"
           size="sm"
+          disabled={loading}
         >
           <ToggleGroupItem value="invoice">Invoice</ToggleGroupItem>
           <ToggleGroupItem value="week">Week</ToggleGroupItem>
           <ToggleGroupItem value="none">None</ToggleGroupItem>
         </ToggleGroup>
-        <Button size="sm" className="hidden md:flex" onClick={openNew}>
+        <Button size="sm" className="hidden md:flex" onClick={openNew} disabled={loading}>
           <Plus className="size-4" />
           New entry
         </Button>
       </header>
 
       <div className="flex-1 overflow-y-auto">
-        {viewMode === "invoice" && <InvoiceView entries={entries} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
-        {viewMode === "week" && <WeekView entries={entries} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
-        {viewMode === "none" && <ListView entries={entries} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
+        {loading ? (
+          <ContentSkeleton />
+        ) : (
+          <>
+            {viewMode === "invoice" && <InvoiceView entries={entries} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
+            {viewMode === "week" && <WeekView entries={entries} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
+            {viewMode === "none" && <ListView entries={entries} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
+          </>
+        )}
       </div>
 
       <div className="md:hidden fixed bottom-18 right-4 z-40">
-        <Button size="icon" className="size-14 rounded-full shadow-lg" onClick={openNew}>
+        <Button size="icon" className="size-14 rounded-full shadow-lg" onClick={openNew} disabled={loading}>
           <Plus />
         </Button>
       </div>
