@@ -20,6 +20,7 @@ export type Entry = {
   client: ClientRef;
   date: string;
   description: string | null;
+  workflow_type: string | null;
   billing_type: BillingType;
   day_type?: DayType | null;
   hours?: number | null;

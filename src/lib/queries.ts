@@ -57,6 +57,7 @@ export async function fetchEntries(userId: string, before?: string): Promise<Ent
       client: toClientRef(client ?? { id: e.client_id, name: "Unknown", billing_type: "day_rate" }),
       date: e.date,
       description: e.description,
+      workflow_type: e.workflow_type,
       billing_type: e.billing_type_snapshot,
       day_type: e.day_type,
       hours: e.hours_worked,
