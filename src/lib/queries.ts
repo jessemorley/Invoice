@@ -142,16 +142,9 @@ export async function fetchInvoices(userId: string, filters: InvoiceFilters = {}
 
 export async function fetchUninvoicedCount(userId: string): Promise<number> {
   const supabase = createServerClient();
-  const { data, error } = await supabase
-    .from("entries")
-    .select("client_id, date")
-    .eq("user_id", userId)
-    .is("invoice_id", null);
-
+  const { data, error } = await supabase.rpc("uninvoiced_group_count", { p_user_id: userId });
   if (error) throw new Error(`fetchUninvoicedCount: ${error.message}`);
-
-  const groups = new Set((data ?? []).map((e) => `${e.client_id}-${isoWeek(e.date)}`));
-  return groups.size;
+  return data ?? 0;
 }
 
 export async function fetchExpenses(userId: string): Promise<Expense[]> {
