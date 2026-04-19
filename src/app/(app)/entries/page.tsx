@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import { Suspense } from "react";
 import { EntriesView } from "@/components/entries-view";
 import { fetchEntries } from "@/lib/queries";

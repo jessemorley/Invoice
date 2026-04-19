@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import { Suspense } from "react";
 import { fetchInvoices, fetchUninvoicedCount, fetchClients, type InvoiceFilters } from "@/lib/queries";
 import { PROTOTYPE_USER_ID } from "@/lib/supabase";

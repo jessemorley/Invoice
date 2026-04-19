@@ -1,10 +1,10 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
 import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
 import { isoWeek } from "@/lib/format";
 import type { BillingType, DayType } from "@/lib/types";
-import { fetchEntries } from "@/lib/queries";
+import { fetchEntries, CACHE_TAGS } from "@/lib/queries";
 import type { Entry } from "@/lib/types";
 
 export async function loadEarlierEntries(before: string): Promise<Entry[]> {
@@ -44,7 +44,7 @@ export async function updateEntry(id: string, data: EntryFormData) {
     .eq("user_id", PROTOTYPE_USER_ID);
 
   if (error) throw new Error(`updateEntry: ${error.message}`);
-  revalidatePath("/entries");
+  updateTag(CACHE_TAGS.entries);
 }
 
 export async function createEntry(data: EntryFormData) {
@@ -63,7 +63,7 @@ export async function createEntry(data: EntryFormData) {
   });
 
   if (error) throw new Error(`createEntry: ${error.message}`);
-  revalidatePath("/entries");
+  updateTag(CACHE_TAGS.entries);
 }
 
 export async function fetchClients() {
