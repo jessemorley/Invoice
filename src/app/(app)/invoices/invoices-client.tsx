@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import type { Entry, Invoice, InvoiceStatus } from "@/lib/types";
+import { useCallback, useState, useTransition } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import type { Invoice, InvoiceStatus } from "@/lib/types";
+import type { InvoiceFilters } from "@/lib/queries";
 import { formatAUD, formatDateShort } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,8 +45,43 @@ import { PageHeader } from "@/components/page-header";
 import { InvoiceSheet } from "@/components/invoice-sheet";
 import { ChevronDown, FileText, Plus, Search } from "lucide-react";
 
-type SortKey = "number" | "client" | "dates" | "issued" | "total" | "status";
-type SortDir = "asc" | "desc";
+type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
+
+const TIMEFRAME_OPTIONS = [
+  { value: "all", label: "All time" },
+  { value: "this-week", label: "This week" },
+  { value: "this-month", label: "This month" },
+  { value: "last-month", label: "Last month" },
+  { value: "this-year", label: "This year" },
+] as const;
+
+function timeframeToDateRange(value: string): { from?: string; to?: string } {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  if (value === "all") return { from: "all" };
+
+  switch (value) {
+    case "this-week": {
+      const day = now.getDay() || 7;
+      const mon = new Date(now); mon.setDate(now.getDate() - day + 1);
+      const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+      return { from: fmt(mon), to: fmt(sun) };
+    }
+    case "this-month":
+      return { from: fmt(new Date(now.getFullYear(), now.getMonth(), 1)), to: fmt(now) };
+    case "last-month": {
+      const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const last = new Date(now.getFullYear(), now.getMonth(), 0);
+      return { from: fmt(first), to: fmt(last) };
+    }
+    case "this-year":
+      return { from: `${now.getFullYear()}-01-01`, to: fmt(now) };
+    default:
+      return {};
+  }
+}
 
 const STATUS_VARIANT: Record<InvoiceStatus, "outline" | "secondary" | "default"> = {
   draft:  "outline",
@@ -57,12 +94,6 @@ const STATUS_LABEL: Record<InvoiceStatus, string> = {
   issued: "Issued",
   paid:   "Paid",
 };
-
-function uninvoicedGroupCount(entries: Entry[]): number {
-  const uninvoiced = entries.filter((e) => !e.invoice_id);
-  const groups = new Set(uninvoiced.map((e) => `${e.client.id}-${e.iso_week}`));
-  return groups.size;
-}
 
 function StatusBadge({
   status,
@@ -132,54 +163,83 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
   );
 }
 
-export function InvoicesClient({ invoices, entries }: { invoices: Invoice[]; entries: Entry[] }) {
-  const uninvoicedCount = uninvoicedGroupCount(entries);
-  const [sortKey, setSortKey] = useState<SortKey>("dates");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const [statuses, setStatuses] = useState<Record<string, InvoiceStatus>>(
+type Props = {
+  invoices: Invoice[];
+  uninvoicedCount: number;
+  clients: { id: string; name: string }[];
+  filters: InvoiceFilters;
+};
+
+export function InvoicesClient({ invoices, uninvoicedCount, clients, filters }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [, startTransition] = useTransition();
+
+  const [localStatuses, setLocalStatuses] = useState<Record<string, InvoiceStatus>>(
     () => Object.fromEntries(invoices.map((inv) => [inv.id, inv.status]))
   );
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+
+  const [searchValue, setSearchValue] = useState(filters.search ?? "");
 
   function openInvoice(inv: Invoice) {
     setSelectedInvoice(inv);
     setSheetOpen(true);
   }
 
-  const uniqueClients = Array.from(
-    new Map(invoices.map((inv) => [inv.client.id, inv.client])).values()
-  );
+  const pushParams = useCallback((updates: Record<string, string | undefined>) => {
+    const params = new URLSearchParams();
+    const current: Record<string, string | undefined> = {
+      search: filters.search,
+      status: filters.status,
+      client: filters.clientId,
+      sort: filters.sortKey,
+      dir: filters.sortDir,
+    };
+    // Rebuild from existing + updates, dropping undefined/empty
+    const merged = { ...current, ...updates };
+    for (const [k, v] of Object.entries(merged)) {
+      if (v && v !== "all" && v !== "issued_date" && !(k === "dir" && v === "desc")) {
+        params.set(k, v);
+      }
+    }
+    startTransition(() => router.push(`${pathname}?${params.toString()}`));
+  }, [filters, pathname, router]);
 
   function handleSort(key: SortKey) {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
+    const newDir = filters.sortKey === key && filters.sortDir === "asc" ? "desc" : "asc";
+    pushParams({ sort: key, dir: newDir });
+  }
+
+  function handleSearchCommit(value: string) {
+    pushParams({ search: value || undefined });
   }
 
   function handleStatusChange(id: string, status: InvoiceStatus) {
-    setStatuses((prev) => ({ ...prev, [id]: status }));
+    setLocalStatuses((prev) => ({ ...prev, [id]: status }));
   }
-
-  const sorted = [...invoices].sort((a, b) => {
-    let cmp = 0;
-    switch (sortKey) {
-      case "number":  cmp = a.number.localeCompare(b.number); break;
-      case "client":  cmp = a.client.name.localeCompare(b.client.name); break;
-      case "dates":   cmp = a.issued_date.localeCompare(b.issued_date); break;
-      case "issued":  cmp = a.issued_date.localeCompare(b.issued_date); break;
-      case "total":   cmp = a.total - b.total; break;
-      case "status":  cmp = (statuses[a.id] ?? a.status).localeCompare(statuses[b.id] ?? b.status); break;
-    }
-    return sortDir === "asc" ? cmp : -cmp;
-  });
 
   function sh(key: SortKey) {
-    return { active: sortKey === key, dir: sortDir, onSort: () => handleSort(key) };
+    return {
+      active: filters.sortKey === key,
+      dir: (filters.sortDir ?? "desc") as "asc" | "desc",
+      onSort: () => handleSort(key),
+    };
   }
+
+  const currentTimeframe = (() => {
+    if (!filters.from || filters.from === "all") return "all";
+    const { from, to } = timeframeToDateRange("this-week");
+    if (filters.from === from && filters.to === to) return "this-week";
+    const { from: fm, to: tm } = timeframeToDateRange("this-month");
+    if (filters.from === fm && filters.to === tm) return "this-month";
+    const { from: fl, to: tl } = timeframeToDateRange("last-month");
+    if (filters.from === fl && filters.to === tl) return "last-month";
+    const { from: fy } = timeframeToDateRange("this-year");
+    if (filters.from === fy) return "this-year";
+    return "all";
+  })();
 
   return (
     <div className="flex flex-col h-full">
@@ -202,39 +262,54 @@ export function InvoicesClient({ invoices, entries }: { invoices: Invoice[]; ent
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1 min-w-48">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input placeholder="Search invoices..." className="pl-8" />
+              <Input
+                placeholder="Search invoices..."
+                className="pl-8"
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                onBlur={() => handleSearchCommit(searchValue)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearchCommit(searchValue)}
+              />
             </div>
-            <Select defaultValue="all-time">
+            <Select
+              value={currentTimeframe}
+              onValueChange={(v) => {
+                const range = timeframeToDateRange(v);
+                pushParams({ from: range.from, to: range.to });
+              }}
+            >
               <SelectTrigger className="w-36">
                 <SelectValue placeholder="Timeframe" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all-time">All time</SelectItem>
-                <SelectItem value="this-week">This week</SelectItem>
-                <SelectItem value="this-month">This month</SelectItem>
-                <SelectItem value="last-month">Last month</SelectItem>
-                <SelectItem value="this-year">This year</SelectItem>
+                {TIMEFRAME_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
-            <Select defaultValue="all-clients">
+            <Select
+              value={filters.clientId ?? "all"}
+              onValueChange={(v) => pushParams({ client: v === "all" ? undefined : v })}
+            >
               <SelectTrigger className="w-36">
                 <SelectValue placeholder="Client" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all-clients">All clients</SelectItem>
-                {uniqueClients.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.name}
-                  </SelectItem>
+                <SelectItem value="all">All clients</SelectItem>
+                {clients.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Select defaultValue="all-status">
+            <Select
+              value={filters.status ?? "all"}
+              onValueChange={(v) => pushParams({ status: v === "all" ? undefined : v })}
+            >
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all-status">All status</SelectItem>
+                <SelectItem value="all">All status</SelectItem>
                 <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="issued">Issued</SelectItem>
                 <SelectItem value="paid">Paid</SelectItem>
@@ -246,50 +321,58 @@ export function InvoicesClient({ invoices, entries }: { invoices: Invoice[]; ent
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableTableHead className="w-36 py-4 px-6" {...sh("dates")}>Dates</SortableTableHead>
+                  <SortableTableHead className="w-36 py-4 px-6" {...sh("issued_date")}>Dates</SortableTableHead>
                   <SortableTableHead className="w-24 py-4 px-6" {...sh("number")}>Number</SortableTableHead>
                   <SortableTableHead className="py-4 px-6" {...sh("client")}>Client</SortableTableHead>
                   <TableHead className="w-16 text-right py-4 px-6">Lines</TableHead>
-                  <SortableTableHead className="w-28 py-4 px-6" {...sh("issued")}>Issued</SortableTableHead>
+                  <SortableTableHead className="w-28 py-4 px-6" {...sh("issued_date")}>Issued</SortableTableHead>
                   <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("total")}>Total</SortableTableHead>
                   <SortableTableHead className="w-24 py-4 px-6" align="right" {...sh("status")}>Status</SortableTableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sorted.map((inv) => (
-                  <TableRow key={inv.id} className="cursor-pointer" onClick={() => openInvoice(inv)}>
-                    <TableCell className="text-sm text-muted-foreground py-4 px-6">
-                      {inv.date_range}
-                    </TableCell>
-                    <TableCell className="font-medium text-sm py-4 px-6">
-                      {inv.number}
-                    </TableCell>
-                    <TableCell className="py-4 px-6">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="size-2 rounded-full shrink-0"
-                          style={{ backgroundColor: inv.client.color }}
-                        />
-                        <span className="text-sm">{inv.client.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-right text-muted-foreground tabular-nums py-4 px-6">
-                      {inv.entry_count}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground py-4 px-6">
-                      {formatDateShort(inv.issued_date)}
-                    </TableCell>
-                    <TableCell className="text-sm text-right tabular-nums py-4 px-6">
-                      {formatAUD(inv.total)}
-                    </TableCell>
-                    <TableCell className="py-4 px-6 text-right">
-                      <StatusBadge
-                        status={statuses[inv.id] ?? inv.status}
-                        onStatusChange={(s) => handleStatusChange(inv.id, s)}
-                      />
+                {invoices.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
+                      No invoices match these filters.
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  invoices.map((inv) => (
+                    <TableRow key={inv.id} className="cursor-pointer" onClick={() => openInvoice(inv)}>
+                      <TableCell className="text-sm text-muted-foreground py-4 px-6">
+                        {inv.date_range}
+                      </TableCell>
+                      <TableCell className="font-medium text-sm py-4 px-6">
+                        {inv.number}
+                      </TableCell>
+                      <TableCell className="py-4 px-6">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="size-2 rounded-full shrink-0"
+                            style={{ backgroundColor: inv.client.color }}
+                          />
+                          <span className="text-sm">{inv.client.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-right text-muted-foreground tabular-nums py-4 px-6">
+                        {inv.entry_count}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground py-4 px-6">
+                        {formatDateShort(inv.issued_date)}
+                      </TableCell>
+                      <TableCell className="text-sm text-right tabular-nums py-4 px-6">
+                        {formatAUD(inv.total)}
+                      </TableCell>
+                      <TableCell className="py-4 px-6 text-right">
+                        <StatusBadge
+                          status={localStatuses[inv.id] ?? inv.status}
+                          onStatusChange={(s) => handleStatusChange(inv.id, s)}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { loadEarlierEntries } from "@/app/(app)/entries/actions";
 import type { Entry, Invoice } from "@/lib/types";
 import { formatAUD, formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -200,14 +201,34 @@ function WeekGroupHeader({ group }: { group: WeekGroup }) {
   );
 }
 
+function LoadEarlierButton({ onLoad, isPending }: { onLoad: () => void; isPending: boolean }) {
+  return (
+    <div className="text-center py-2">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="text-xs text-muted-foreground"
+        onClick={onLoad}
+        disabled={isPending}
+      >
+        {isPending ? "Loading…" : "Load earlier"}
+      </Button>
+    </div>
+  );
+}
+
 function InvoiceView({
   entries,
   invoiceMap,
   onEdit,
+  onLoadEarlier,
+  isPending,
 }: {
   entries: Entry[];
   invoiceMap: Map<string, Invoice>;
   onEdit: (entry: Entry) => void;
+  onLoadEarlier: () => void;
+  isPending: boolean;
 }) {
   const groups = groupByClientWeek(entries, invoiceMap);
 
@@ -227,11 +248,7 @@ function InvoiceView({
           </CardContent>
         </Card>
       ))}
-      <div className="text-center py-2">
-        <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
-          Load earlier
-        </Button>
-      </div>
+      <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
     </div>
   );
 }
@@ -240,10 +257,14 @@ function WeekView({
   entries,
   invoiceMap,
   onEdit,
+  onLoadEarlier,
+  isPending,
 }: {
   entries: Entry[];
   invoiceMap: Map<string, Invoice>;
   onEdit: (entry: Entry) => void;
+  onLoadEarlier: () => void;
+  isPending: boolean;
 }) {
   const groups = groupByWeek(entries);
 
@@ -263,11 +284,7 @@ function WeekView({
           </CardContent>
         </Card>
       ))}
-      <div className="text-center py-2">
-        <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
-          Load earlier
-        </Button>
-      </div>
+      <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
     </div>
   );
 }
@@ -276,10 +293,14 @@ function ListView({
   entries,
   invoiceMap,
   onEdit,
+  onLoadEarlier,
+  isPending,
 }: {
   entries: Entry[];
   invoiceMap: Map<string, Invoice>;
   onEdit: (entry: Entry) => void;
+  onLoadEarlier: () => void;
+  isPending: boolean;
 }) {
   const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
 
@@ -295,17 +316,13 @@ function ListView({
           ))}
         </CardContent>
       </Card>
-      <div className="text-center py-4">
-        <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
-          Load earlier
-        </Button>
-      </div>
+      <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
     </div>
   );
 }
 
 export function EntriesView({
-  entries,
+  entries: initialEntries,
   invoices,
   clients,
 }: {
@@ -316,6 +333,8 @@ export function EntriesView({
   const [viewMode, setViewMode] = useState<ViewMode>("invoice");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
+  const [entries, setEntries] = useState<Entry[]>(initialEntries);
+  const [isPending, startTransition] = useTransition();
   const invoiceMap = new Map(invoices.map((inv) => [inv.id, inv]));
 
   function openEdit(entry: Entry) {
@@ -326,6 +345,15 @@ export function EntriesView({
   function openNew() {
     setSelectedEntry(null);
     setSheetOpen(true);
+  }
+
+  function handleLoadEarlier() {
+    const oldest = entries.reduce((min, e) => e.date < min ? e.date : min, entries[0]?.date ?? new Date().toISOString().slice(0, 10));
+    startTransition(async () => {
+      const earlier = await loadEarlierEntries(oldest);
+      const existingIds = new Set(entries.map((e) => e.id));
+      setEntries((prev) => [...prev, ...earlier.filter((e) => !existingIds.has(e.id))]);
+    });
   }
 
   return (
@@ -352,9 +380,9 @@ export function EntriesView({
       </header>
 
       <div className="flex-1 overflow-y-auto">
-        {viewMode === "invoice" && <InvoiceView entries={entries} invoiceMap={invoiceMap} onEdit={openEdit} />}
-        {viewMode === "week" && <WeekView entries={entries} invoiceMap={invoiceMap} onEdit={openEdit} />}
-        {viewMode === "none" && <ListView entries={entries} invoiceMap={invoiceMap} onEdit={openEdit} />}
+        {viewMode === "invoice" && <InvoiceView entries={entries} invoiceMap={invoiceMap} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
+        {viewMode === "week" && <WeekView entries={entries} invoiceMap={invoiceMap} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
+        {viewMode === "none" && <ListView entries={entries} invoiceMap={invoiceMap} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
       </div>
 
       <div className="md:hidden fixed bottom-18 right-4 z-40">

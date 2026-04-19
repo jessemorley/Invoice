@@ -4,6 +4,15 @@ import { revalidatePath } from "next/cache";
 import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
 import { isoWeek } from "@/lib/format";
 import type { BillingType, DayType } from "@/lib/types";
+import { fetchEntries } from "@/lib/queries";
+import type { Entry } from "@/lib/types";
+
+export async function loadEarlierEntries(before: string): Promise<Entry[]> {
+  const d = new Date(before + "T00:00:00");
+  d.setDate(d.getDate() - 1);
+  const newBefore = d.toISOString().slice(0, 10);
+  return fetchEntries(PROTOTYPE_USER_ID, newBefore);
+}
 
 export type EntryFormData = {
   client_id: string;

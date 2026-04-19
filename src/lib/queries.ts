@@ -1,6 +1,6 @@
 import { createServerClient } from "./supabase";
 import { isoWeek } from "./format";
-import type { Entry, Invoice, Expense, DashboardData, ClientRef, MonthlyEarning } from "./types";
+import type { Entry, Invoice, Expense, DashboardData, ClientRef, MonthlyEarning, InvoiceStatus } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -27,14 +27,22 @@ function computeDateRange(dates: string[]): string {
   return `${firstDay} ${firstMonth} – ${lastDay} ${lastMonth}`;
 }
 
-export async function fetchEntries(userId: string): Promise<Entry[]> {
+export async function fetchEntries(userId: string, before?: string): Promise<Entry[]> {
   const supabase = createServerClient();
+  const windowEnd = before ?? new Date().toISOString().slice(0, 10);
+  const windowStart = (() => {
+    const d = new Date(windowEnd + "T00:00:00");
+    d.setDate(d.getDate() - 28);
+    return d.toISOString().slice(0, 10);
+  })();
+
   const { data, error } = await supabase
     .from("entries")
     .select("*, clients(id, name, billing_type)")
     .eq("user_id", userId)
-    .order("date", { ascending: false })
-    .limit(200);
+    .gte("date", windowStart)
+    .lte("date", windowEnd)
+    .order("date", { ascending: false });
 
   if (error) throw new Error(`fetchEntries: ${error.message}`);
 
@@ -58,32 +66,130 @@ export async function fetchEntries(userId: string): Promise<Entry[]> {
   });
 }
 
-export async function fetchInvoices(userId: string, entries: Entry[]): Promise<Invoice[]> {
+export async function fetchInvoicesByIds(ids: string[]): Promise<Invoice[]> {
+  if (ids.length === 0) return [];
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("invoices")
     .select("*, clients(id, name, billing_type)")
-    .eq("user_id", userId)
-    .order("issued_date", { ascending: false });
+    .in("id", ids);
 
-  if (error) throw new Error(`fetchInvoices: ${error.message}`);
+  if (error) throw new Error(`fetchInvoicesByIds: ${error.message}`);
 
   return (data ?? []).map((inv) => {
     const client = Array.isArray(inv.clients) ? inv.clients[0] : inv.clients;
-    const invoiceEntries = entries.filter((e) => e.invoice_id === inv.id);
     return {
       id: inv.id,
       number: inv.invoice_number,
       client: toClientRef(client ?? { id: inv.client_id, name: "Unknown", billing_type: "day_rate" }),
       issued_date: inv.issued_date,
-      date_range: computeDateRange(invoiceEntries.map((e) => e.date)),
+      date_range: "",
       subtotal: inv.subtotal,
       super_amount: inv.super_amount,
       total: inv.total,
       status: inv.status,
-      entry_count: invoiceEntries.length,
+      entry_count: 0,
     };
   });
+}
+
+export type InvoiceFilters = {
+  search?: string;
+  status?: InvoiceStatus | "all";
+  clientId?: string;
+  from?: string;
+  to?: string;
+  sortKey?: "issued_date" | "total" | "number" | "client" | "status";
+  sortDir?: "asc" | "desc";
+};
+
+export async function fetchInvoices(userId: string, filters: InvoiceFilters = {}): Promise<Invoice[]> {
+  const supabase = createServerClient();
+
+  const {
+    search,
+    status,
+    clientId,
+    sortKey = "issued_date",
+    sortDir = "desc",
+  } = filters;
+
+  // Default to last 6 months unless an explicit timeframe is provided.
+  // Pass from="all" to bypass this default and load all invoices.
+  const from = filters.from === "all" ? undefined : (filters.from ?? (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 6);
+    return d.toISOString().slice(0, 10);
+  })());
+  const to = filters.from === "all" ? undefined : filters.to;
+
+  let query = supabase
+    .from("invoices")
+    .select("*, clients(id, name, billing_type)")
+    .eq("user_id", userId);
+
+  if (status && status !== "all") query = query.eq("status", status);
+  if (clientId && clientId !== "all") query = query.eq("client_id", clientId);
+  if (from) query = query.gte("issued_date", from);
+  if (to) query = query.lte("issued_date", to);
+  if (search) query = query.ilike("invoice_number", `%${search}%`);
+
+  const dbSortKey = sortKey === "number" ? "invoice_number"
+    : sortKey === "client" ? "client_id"
+    : sortKey;
+
+  query = query.order(dbSortKey, { ascending: sortDir === "asc" });
+
+  const { data, error } = await query;
+  if (error) throw new Error(`fetchInvoices: ${error.message}`);
+
+  const invoiceIds = (data ?? []).map((inv) => inv.id);
+  let entryDatesByInvoice: Record<string, string[]> = {};
+
+  if (invoiceIds.length > 0) {
+    const { data: entryRows, error: entryError } = await supabase
+      .from("entries")
+      .select("invoice_id, date")
+      .in("invoice_id", invoiceIds);
+
+    if (entryError) throw new Error(`fetchInvoices entries: ${entryError.message}`);
+
+    for (const row of entryRows ?? []) {
+      if (!row.invoice_id) continue;
+      (entryDatesByInvoice[row.invoice_id] ??= []).push(row.date);
+    }
+  }
+
+  return (data ?? []).map((inv) => {
+    const client = Array.isArray(inv.clients) ? inv.clients[0] : inv.clients;
+    const dates = entryDatesByInvoice[inv.id] ?? [];
+    return {
+      id: inv.id,
+      number: inv.invoice_number,
+      client: toClientRef(client ?? { id: inv.client_id, name: "Unknown", billing_type: "day_rate" }),
+      issued_date: inv.issued_date,
+      date_range: computeDateRange(dates),
+      subtotal: inv.subtotal,
+      super_amount: inv.super_amount,
+      total: inv.total,
+      status: inv.status,
+      entry_count: dates.length,
+    };
+  });
+}
+
+export async function fetchUninvoicedCount(userId: string): Promise<number> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("entries")
+    .select("client_id, date")
+    .eq("user_id", userId)
+    .is("invoice_id", null);
+
+  if (error) throw new Error(`fetchUninvoicedCount: ${error.message}`);
+
+  const groups = new Set((data ?? []).map((e) => `${e.client_id}-${isoWeek(e.date)}`));
+  return groups.size;
 }
 
 export async function fetchExpenses(userId: string): Promise<Expense[]> {
@@ -108,6 +214,19 @@ export async function fetchExpenses(userId: string): Promise<Expense[]> {
     is_billable: e.is_billable,
     invoice_id: e.invoice_id,
   }));
+}
+
+export async function fetchClients(userId: string): Promise<{ id: string; name: string }[]> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("clients")
+    .select("id, name")
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .order("name");
+
+  if (error) throw new Error(`fetchClients: ${error.message}`);
+  return data ?? [];
 }
 
 export async function fetchDashboardData(userId: string, entries: Entry[], invoices: Invoice[]): Promise<DashboardData> {
