@@ -1,6 +1,6 @@
 import { createServerClient } from "./supabase";
 import { isoWeek } from "./format";
-import type { Entry, Invoice, Expense, DashboardData, ClientRef, MonthlyEarning, InvoiceStatus } from "./types";
+import type { Entry, Invoice, Expense, DashboardData, ClientRef, MonthlyEarning, InvoiceStatus, InvoiceRef } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -38,7 +38,7 @@ export async function fetchEntries(userId: string, before?: string): Promise<Ent
 
   const { data, error } = await supabase
     .from("entries")
-    .select("*, clients(id, name, billing_type)")
+    .select("*, clients(id, name, billing_type), invoices(id, invoice_number, status)")
     .eq("user_id", userId)
     .gte("date", windowStart)
     .lte("date", windowEnd)
@@ -48,6 +48,10 @@ export async function fetchEntries(userId: string, before?: string): Promise<Ent
 
   return (data ?? []).map((e) => {
     const client = Array.isArray(e.clients) ? e.clients[0] : e.clients;
+    const inv = Array.isArray(e.invoices) ? e.invoices[0] : e.invoices;
+    const invoiceRef: InvoiceRef | null = inv
+      ? { id: inv.id, number: inv.invoice_number, status: inv.status as InvoiceStatus }
+      : null;
     return {
       id: e.id,
       client: toClientRef(client ?? { id: e.client_id, name: "Unknown", billing_type: "day_rate" }),
@@ -61,6 +65,7 @@ export async function fetchEntries(userId: string, before?: string): Promise<Ent
       super_amount: e.super_amount,
       total: e.total_amount,
       invoice_id: e.invoice_id,
+      invoice: invoiceRef,
       iso_week: isoWeek(e.date),
     };
   });

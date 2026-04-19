@@ -9,6 +9,12 @@ export type ClientRef = {
   billing_type: BillingType;
 };
 
+export type InvoiceRef = {
+  id: string;
+  number: string;
+  status: InvoiceStatus;
+};
+
 export type Entry = {
   id: string;
   client: ClientRef;
@@ -22,6 +28,7 @@ export type Entry = {
   super_amount: number;
   total: number;
   invoice_id?: string | null;
+  invoice?: InvoiceRef | null;
   iso_week: string;
 };
 

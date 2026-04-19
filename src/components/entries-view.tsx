@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { loadEarlierEntries } from "@/app/(app)/entries/actions";
-import type { Entry, Invoice } from "@/lib/types";
+import type { Entry } from "@/lib/types";
 import { formatAUD, formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,7 @@ type WeekGroup = {
   subtotal: number;
 };
 
-function groupByClientWeek(entries: Entry[], invoiceMap: Map<string, Invoice>): ClientWeekGroup[] {
+function groupByClientWeek(entries: Entry[]): ClientWeekGroup[] {
   const map = new Map<string, Entry[]>();
   for (const entry of entries) {
     const key = `${entry.client.id}-${entry.iso_week}`;
@@ -54,7 +54,6 @@ function groupByClientWeek(entries: Entry[], invoiceMap: Map<string, Invoice>): 
   for (const [key, groupEntries] of map) {
     const first = groupEntries[0];
     const invoiced = groupEntries.every((e) => !!e.invoice_id);
-    const inv = invoiced && first.invoice_id ? invoiceMap.get(first.invoice_id) : undefined;
     groups.push({
       key,
       clientName: first.client.name,
@@ -63,7 +62,7 @@ function groupByClientWeek(entries: Entry[], invoiceMap: Map<string, Invoice>): 
       entries: groupEntries.sort((a, b) => b.date.localeCompare(a.date)),
       subtotal: groupEntries.reduce((sum, e) => sum + e.base_amount + e.bonus_amount, 0),
       invoiced,
-      invoiceNumber: inv?.number,
+      invoiceNumber: invoiced ? first.invoice?.number : undefined,
     });
   }
 
@@ -109,12 +108,10 @@ function groupByWeek(entries: Entry[]): WeekGroup[] {
 function EntryRow({
   entry,
   showClient = false,
-  invoiceMap,
   onEdit,
 }: {
   entry: Entry;
   showClient?: boolean;
-  invoiceMap: Map<string, Invoice>;
   onEdit: (entry: Entry) => void;
 }) {
   return (
@@ -144,18 +141,15 @@ function EntryRow({
         {entry.billing_type === "hourly" && entry.hours && `${entry.hours}h`}
       </span>
       <div className="flex items-center gap-3 shrink-0">
-        {showClient && (() => {
-          const inv = entry.invoice_id ? invoiceMap.get(entry.invoice_id) : undefined;
-          return (
-            <div className="w-20 flex justify-start">
-              {inv ? (
-                <Badge variant={INVOICE_STATUS_VARIANT[inv.status]}>{inv.number}</Badge>
-              ) : (
-                <Badge variant="outline">Draft</Badge>
-              )}
-            </div>
-          );
-        })()}
+        {showClient && (
+          <div className="w-20 flex justify-start">
+            {entry.invoice ? (
+              <Badge variant={INVOICE_STATUS_VARIANT[entry.invoice.status]}>{entry.invoice.number}</Badge>
+            ) : (
+              <Badge variant="outline">Draft</Badge>
+            )}
+          </div>
+        )}
         <span className="text-sm tabular-nums text-foreground w-24 text-right">
           {formatAUD(entry.base_amount + entry.bonus_amount)}
         </span>
@@ -219,18 +213,16 @@ function LoadEarlierButton({ onLoad, isPending }: { onLoad: () => void; isPendin
 
 function InvoiceView({
   entries,
-  invoiceMap,
   onEdit,
   onLoadEarlier,
   isPending,
 }: {
   entries: Entry[];
-  invoiceMap: Map<string, Invoice>;
   onEdit: (entry: Entry) => void;
   onLoadEarlier: () => void;
   isPending: boolean;
 }) {
-  const groups = groupByClientWeek(entries, invoiceMap);
+  const groups = groupByClientWeek(entries);
 
   return (
     <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
@@ -242,7 +234,7 @@ function InvoiceView({
             {group.entries.map((entry, i) => (
               <div key={entry.id}>
                 {i > 0 && <Separator />}
-                <EntryRow entry={entry} invoiceMap={invoiceMap} onEdit={onEdit} />
+                <EntryRow entry={entry} onEdit={onEdit} />
               </div>
             ))}
           </CardContent>
@@ -255,13 +247,11 @@ function InvoiceView({
 
 function WeekView({
   entries,
-  invoiceMap,
   onEdit,
   onLoadEarlier,
   isPending,
 }: {
   entries: Entry[];
-  invoiceMap: Map<string, Invoice>;
   onEdit: (entry: Entry) => void;
   onLoadEarlier: () => void;
   isPending: boolean;
@@ -278,7 +268,7 @@ function WeekView({
             {group.entries.map((entry, i) => (
               <div key={entry.id}>
                 {i > 0 && <Separator />}
-                <EntryRow entry={entry} showClient invoiceMap={invoiceMap} onEdit={onEdit} />
+                <EntryRow entry={entry} showClient onEdit={onEdit} />
               </div>
             ))}
           </CardContent>
@@ -291,13 +281,11 @@ function WeekView({
 
 function ListView({
   entries,
-  invoiceMap,
   onEdit,
   onLoadEarlier,
   isPending,
 }: {
   entries: Entry[];
-  invoiceMap: Map<string, Invoice>;
   onEdit: (entry: Entry) => void;
   onLoadEarlier: () => void;
   isPending: boolean;
@@ -311,7 +299,7 @@ function ListView({
           {sorted.map((entry, i) => (
             <div key={entry.id}>
               {i > 0 && <Separator />}
-              <EntryRow entry={entry} showClient invoiceMap={invoiceMap} onEdit={onEdit} />
+              <EntryRow entry={entry} showClient onEdit={onEdit} />
             </div>
           ))}
         </CardContent>
@@ -323,11 +311,9 @@ function ListView({
 
 export function EntriesView({
   entries: initialEntries,
-  invoices,
   clients,
 }: {
   entries: Entry[];
-  invoices: Invoice[];
   clients: { id: string; name: string; billing_type: string; color: string | null }[];
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("invoice");
@@ -335,7 +321,6 @@ export function EntriesView({
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const [entries, setEntries] = useState<Entry[]>(initialEntries);
   const [isPending, startTransition] = useTransition();
-  const invoiceMap = new Map(invoices.map((inv) => [inv.id, inv]));
 
   function openEdit(entry: Entry) {
     setSelectedEntry(entry);
@@ -380,9 +365,9 @@ export function EntriesView({
       </header>
 
       <div className="flex-1 overflow-y-auto">
-        {viewMode === "invoice" && <InvoiceView entries={entries} invoiceMap={invoiceMap} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
-        {viewMode === "week" && <WeekView entries={entries} invoiceMap={invoiceMap} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
-        {viewMode === "none" && <ListView entries={entries} invoiceMap={invoiceMap} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
+        {viewMode === "invoice" && <InvoiceView entries={entries} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
+        {viewMode === "week" && <WeekView entries={entries} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
+        {viewMode === "none" && <ListView entries={entries} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
       </div>
 
       <div className="md:hidden fixed bottom-18 right-4 z-40">
