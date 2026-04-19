@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useState, useTransition, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { loadMoreInvoices } from "./actions";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
 import type { InvoiceFilters } from "@/lib/queries";
 import { formatAUD, formatDateShort } from "@/lib/format";
@@ -170,18 +171,42 @@ type Props = {
   filters: InvoiceFilters;
 };
 
-export function InvoicesClient({ invoices, uninvoicedCount, clients, filters }: Props) {
+export function InvoicesClient({ invoices: initialInvoices, uninvoicedCount, clients, filters }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [, startTransition] = useTransition();
+  const [loadPending, startLoadTransition] = useTransition();
 
+  const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
   const [localStatuses, setLocalStatuses] = useState<Record<string, InvoiceStatus>>(
-    () => Object.fromEntries(invoices.map((inv) => [inv.id, inv.status]))
+    () => Object.fromEntries(initialInvoices.map((inv) => [inv.id, inv.status]))
   );
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-
   const [searchValue, setSearchValue] = useState(filters.search ?? "");
+
+  // Reset invoice list when server-side filters change (URL navigation)
+  useEffect(() => {
+    setInvoices(initialInvoices);
+    setLocalStatuses(Object.fromEntries(initialInvoices.map((inv) => [inv.id, inv.status])));
+  }, [initialInvoices]);
+
+  function handleLoadMore() {
+    const oldest = invoices.reduce(
+      (min, inv) => inv.issued_date < min ? inv.issued_date : min,
+      invoices[0]?.issued_date ?? new Date().toISOString().slice(0, 10)
+    );
+    startLoadTransition(async () => {
+      const more = await loadMoreInvoices(oldest, filters);
+      const existingIds = new Set(invoices.map((inv) => inv.id));
+      const fresh = more.filter((inv) => !existingIds.has(inv.id));
+      setInvoices((prev) => [...prev, ...fresh]);
+      setLocalStatuses((prev) => ({
+        ...prev,
+        ...Object.fromEntries(fresh.map((inv) => [inv.id, inv.status])),
+      }));
+    });
+  }
 
   function openInvoice(inv: Invoice) {
     setSelectedInvoice(inv);
@@ -317,7 +342,7 @@ export function InvoicesClient({ invoices, uninvoicedCount, clients, filters }: 
             </Select>
           </div>
 
-          <div className="rounded-lg border bg-card">
+          <div className="rounded-lg border bg-card overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -376,6 +401,17 @@ export function InvoicesClient({ invoices, uninvoicedCount, clients, filters }: 
               </TableBody>
             </Table>
           </div>
+          <div className="text-center py-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground"
+              onClick={handleLoadMore}
+              disabled={loadPending}
+            >
+              {loadPending ? "Loading…" : "Load more"}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -398,6 +434,17 @@ export function InvoicesClient({ invoices, uninvoicedCount, clients, filters }: 
                 </CardContent>
               </Card>
             ))}
+            <div className="text-center py-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs text-muted-foreground"
+                onClick={handleLoadMore}
+                disabled={loadPending}
+              >
+                {loadPending ? "Loading…" : "Load more"}
+              </Button>
+            </div>
           </div>
         )}
       </div>

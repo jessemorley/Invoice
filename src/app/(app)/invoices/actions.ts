@@ -2,7 +2,20 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
-import type { InvoiceStatus } from "@/lib/types";
+import { fetchInvoices, type InvoiceFilters } from "@/lib/queries";
+import type { Invoice, InvoiceStatus } from "@/lib/types";
+
+export async function loadMoreInvoices(before: string, filters: InvoiceFilters): Promise<Invoice[]> {
+  const d = new Date(before + "T00:00:00");
+  d.setMonth(d.getMonth() - 3);
+  const windowEnd = before;
+  const windowStart = d.toISOString().slice(0, 10);
+  return fetchInvoices(PROTOTYPE_USER_ID, {
+    ...filters,
+    from: windowStart,
+    to: windowEnd,
+  });
+}
 
 export type InvoiceFormData = {
   status: InvoiceStatus;

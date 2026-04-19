@@ -93,11 +93,11 @@ export async function fetchInvoices(userId: string, filters: InvoiceFilters = {}
     sortDir = "desc",
   } = filters;
 
-  // Default to last 6 months unless an explicit timeframe is provided.
+  // Default to last 3 months unless an explicit timeframe is provided.
   // Pass from="all" to bypass this default and load all invoices.
   const from = filters.from === "all" ? undefined : (filters.from ?? (() => {
     const d = new Date();
-    d.setMonth(d.getMonth() - 6);
+    d.setMonth(d.getMonth() - 3);
     return d.toISOString().slice(0, 10);
   })());
   const to = filters.from === "all" ? undefined : filters.to;
