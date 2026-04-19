@@ -71,32 +71,6 @@ export async function fetchEntries(userId: string, before?: string): Promise<Ent
   });
 }
 
-export async function fetchInvoicesByIds(ids: string[]): Promise<Invoice[]> {
-  if (ids.length === 0) return [];
-  const supabase = createServerClient();
-  const { data, error } = await supabase
-    .from("invoices")
-    .select("*, clients(id, name, billing_type)")
-    .in("id", ids);
-
-  if (error) throw new Error(`fetchInvoicesByIds: ${error.message}`);
-
-  return (data ?? []).map((inv) => {
-    const client = Array.isArray(inv.clients) ? inv.clients[0] : inv.clients;
-    return {
-      id: inv.id,
-      number: inv.invoice_number,
-      client: toClientRef(client ?? { id: inv.client_id, name: "Unknown", billing_type: "day_rate" }),
-      issued_date: inv.issued_date,
-      date_range: "",
-      subtotal: inv.subtotal,
-      super_amount: inv.super_amount,
-      total: inv.total,
-      status: inv.status,
-      entry_count: 0,
-    };
-  });
-}
 
 export type InvoiceFilters = {
   search?: string;
@@ -130,7 +104,7 @@ export async function fetchInvoices(userId: string, filters: InvoiceFilters = {}
 
   let query = supabase
     .from("invoices")
-    .select("*, clients(id, name, billing_type)")
+    .select("*, clients(id, name, billing_type), entries(date)")
     .eq("user_id", userId);
 
   if (status && status !== "all") query = query.eq("status", status);
@@ -148,26 +122,9 @@ export async function fetchInvoices(userId: string, filters: InvoiceFilters = {}
   const { data, error } = await query;
   if (error) throw new Error(`fetchInvoices: ${error.message}`);
 
-  const invoiceIds = (data ?? []).map((inv) => inv.id);
-  let entryDatesByInvoice: Record<string, string[]> = {};
-
-  if (invoiceIds.length > 0) {
-    const { data: entryRows, error: entryError } = await supabase
-      .from("entries")
-      .select("invoice_id, date")
-      .in("invoice_id", invoiceIds);
-
-    if (entryError) throw new Error(`fetchInvoices entries: ${entryError.message}`);
-
-    for (const row of entryRows ?? []) {
-      if (!row.invoice_id) continue;
-      (entryDatesByInvoice[row.invoice_id] ??= []).push(row.date);
-    }
-  }
-
   return (data ?? []).map((inv) => {
     const client = Array.isArray(inv.clients) ? inv.clients[0] : inv.clients;
-    const dates = entryDatesByInvoice[inv.id] ?? [];
+    const dates = (inv.entries ?? []).map((e: { date: string }) => e.date);
     return {
       id: inv.id,
       number: inv.invoice_number,
