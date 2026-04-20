@@ -206,17 +206,17 @@ export const fetchExpenses = unstable_cache(
   { tags: [CACHE_TAGS.expenses] }
 );
 
-async function _fetchClients(userId: string): Promise<{ id: string; name: string }[]> {
+async function _fetchClients(userId: string): Promise<{ id: string; name: string; billing_type: string; color: string | null }[]> {
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("clients")
-    .select("id, name")
+    .select("id, name, billing_type")
     .eq("user_id", userId)
     .eq("is_active", true)
     .order("name");
 
   if (error) throw new Error(`fetchClients: ${error.message}`);
-  return data ?? [];
+  return (data ?? []).map((c) => ({ ...c, color: null }));
 }
 
 export const fetchClients = unstable_cache(

@@ -1,10 +1,10 @@
 "use server";
 
-import { updateTag } from "next/cache";
+import { revalidateTag, updateTag } from "next/cache";
 import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
 import { isoWeek } from "@/lib/format";
 import type { BillingType, DayType } from "@/lib/types";
-import { fetchEntries, CACHE_TAGS } from "@/lib/queries";
+import { fetchEntries, fetchClients as _fetchClients, CACHE_TAGS } from "@/lib/queries";
 import type { Entry } from "@/lib/types";
 
 export async function loadEarlierEntries(before: string): Promise<Entry[]> {
@@ -44,6 +44,7 @@ export async function updateEntry(id: string, data: EntryFormData) {
     .eq("user_id", PROTOTYPE_USER_ID);
 
   if (error) throw new Error(`updateEntry: ${error.message}`);
+  revalidateTag(CACHE_TAGS.entries, {});
   updateTag(CACHE_TAGS.entries);
 }
 
@@ -63,18 +64,10 @@ export async function createEntry(data: EntryFormData) {
   });
 
   if (error) throw new Error(`createEntry: ${error.message}`);
+  revalidateTag(CACHE_TAGS.entries, {});
   updateTag(CACHE_TAGS.entries);
 }
 
 export async function fetchClients() {
-  const supabase = createServerClient();
-  const { data, error } = await supabase
-    .from("clients")
-    .select("id, name, billing_type")
-    .eq("user_id", PROTOTYPE_USER_ID)
-    .eq("is_active", true)
-    .order("name");
-
-  if (error) throw new Error(`fetchClients: ${error.message}`);
-  return (data ?? []).map((c) => ({ ...c, color: null as string | null }));
+  return _fetchClients(PROTOTYPE_USER_ID);
 }
