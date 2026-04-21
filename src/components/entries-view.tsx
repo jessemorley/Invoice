@@ -29,6 +29,7 @@ type ClientWeekGroup = {
   clientName: string;
   clientColor: string;
   isoWeek: string;
+  dateRange: string;
   entries: Entry[];
   subtotal: number;
   invoiced: boolean;
@@ -60,6 +61,7 @@ function groupByClientWeek(entries: Entry[]): ClientWeekGroup[] {
       clientName: first.client.name,
       clientColor: first.client.color,
       isoWeek: first.iso_week,
+      dateRange: weekDateRange(groupEntries.map((e) => e.date)),
       entries: groupEntries.sort((a, b) => b.date.localeCompare(a.date)),
       subtotal: groupEntries.reduce((sum, e) => sum + e.base_amount + e.bonus_amount, 0),
       invoiced,
@@ -119,8 +121,8 @@ function SkeletonRow() {
 
 function SkeletonCard({ rows = 3 }: { rows?: number }) {
   return (
-    <Card className="overflow-hidden py-0 gap-0">
-      <div className="flex items-center justify-between px-4 py-3 bg-muted/40 rounded-t-lg">
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2.5">
           <Skeleton className="size-2.5 rounded-full shrink-0" />
           <Skeleton className="h-3 w-28" />
@@ -130,16 +132,17 @@ function SkeletonCard({ rows = 3 }: { rows?: number }) {
           <Skeleton className="h-7 w-16 rounded-md" />
         </div>
       </div>
-      <Separator />
-      <CardContent className="p-0">
-        {Array.from({ length: rows }).map((_, i) => (
-          <div key={i}>
-            {i > 0 && <Separator />}
-            <SkeletonRow />
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+      <Card className="overflow-hidden py-0 gap-0">
+        <CardContent className="p-0">
+          {Array.from({ length: rows }).map((_, i) => (
+            <div key={i}>
+              {i > 0 && <Separator />}
+              <SkeletonRow />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -208,15 +211,15 @@ function EntryRow({
   );
 }
 
-function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
+function ClientWeekGroupAbove({ group }: { group: ClientWeekGroup }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-muted/40 rounded-t-lg">
+    <div className="flex items-center justify-between px-1 pb-1">
       <div className="flex items-center gap-2.5">
         <div
           className="size-2.5 rounded-full shrink-0"
           style={{ backgroundColor: group.clientColor }}
         />
-        <span className="text-sm font-medium text-foreground">{group.clientName}</span>
+        <span className="font-semibold text-foreground">{group.clientName}</span>
       </div>
       <div className="flex items-center gap-3">
         <span className="text-sm tabular-nums text-muted-foreground">
@@ -234,10 +237,10 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
   );
 }
 
-function WeekGroupHeader({ group }: { group: WeekGroup }) {
+function WeekGroupAbove({ group }: { group: WeekGroup }) {
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-muted/40 rounded-t-lg">
-      <span className="text-sm font-medium text-foreground">{group.dateRange}</span>
+    <div className="flex items-center justify-between px-1 pb-1">
+      <span className="font-semibold text-foreground">{group.dateRange}</span>
       <span className="text-sm tabular-nums text-muted-foreground">
         {formatAUD(group.subtotal)}
       </span>
@@ -282,20 +285,21 @@ function InvoiceView({
   const groups = groupByClientWeek(entries);
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
       {groups.map((group) => (
-        <Card key={group.key} className="overflow-hidden py-0 gap-0">
-          <ClientWeekGroupHeader group={group} />
-          <Separator />
-          <CardContent className="p-0">
-            {group.entries.map((entry, i) => (
-              <div key={entry.id}>
-                {i > 0 && <Separator />}
-                <EntryRow entry={entry} onEdit={onEdit} />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        <div key={group.key} className="flex flex-col gap-2">
+          <ClientWeekGroupAbove group={group} />
+          <Card className="overflow-hidden py-0 gap-0">
+            <CardContent className="p-0">
+              {group.entries.map((entry, i) => (
+                <div key={entry.id}>
+                  {i > 0 && <Separator />}
+                  <EntryRow entry={entry} onEdit={onEdit} />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       ))}
       <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
     </div>
@@ -316,20 +320,21 @@ function WeekView({
   const groups = groupByWeek(entries);
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
       {groups.map((group) => (
-        <Card key={group.key} className="overflow-hidden py-0 gap-0">
-          <WeekGroupHeader group={group} />
-          <Separator />
-          <CardContent className="p-0">
-            {group.entries.map((entry, i) => (
-              <div key={entry.id}>
-                {i > 0 && <Separator />}
-                <EntryRow entry={entry} showClient onEdit={onEdit} />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        <div key={group.key} className="flex flex-col gap-2">
+          <WeekGroupAbove group={group} />
+          <Card className="overflow-hidden py-0 gap-0">
+            <CardContent className="p-0">
+              {group.entries.map((entry, i) => (
+                <div key={entry.id}>
+                  {i > 0 && <Separator />}
+                  <EntryRow entry={entry} showClient onEdit={onEdit} />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       ))}
       <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
     </div>
