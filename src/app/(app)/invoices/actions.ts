@@ -39,6 +39,6 @@ export async function updateInvoice(id: string, data: InvoiceFormData) {
     .eq("user_id", PROTOTYPE_USER_ID);
 
   if (error) throw new Error(`updateInvoice: ${error.message}`);
-  revalidateTag(CACHE_TAGS.invoices);
-  revalidateTag(CACHE_TAGS.uninvoicedCount);
+  revalidateTag(CACHE_TAGS.invoices, "max");
+  revalidateTag(CACHE_TAGS.uninvoicedCount, "max");
 }
