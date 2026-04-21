@@ -296,7 +296,7 @@ function InvoiceView({
   const groups = groupByClientWeek(entries);
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
+    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6 min-w-[600px]">
       {groups.map((group) => (
         <Card key={group.key} className="overflow-hidden py-0 gap-0">
           <ClientWeekGroupHeader group={group} />
@@ -329,7 +329,7 @@ function WeekView({
   const groups = groupByWeek(entries);
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
+    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6 min-w-[600px]">
       {groups.map((group) => (
         <Card key={group.key} className="overflow-hidden py-0 gap-0">
           <WeekGroupHeader group={group} />
@@ -362,7 +362,7 @@ function ListView({
   const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl">
+    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl min-w-[600px]">
       <Card className="overflow-hidden py-0 gap-0">
         <CardContent className="p-0">
           {sorted.map((entry, i) => (
@@ -436,7 +436,7 @@ export function EntriesView({
         </Button>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-auto">
         {loading ? (
           <ContentSkeleton />
         ) : (
