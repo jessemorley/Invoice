@@ -194,7 +194,7 @@ function EntryRow({
           <span className="text-sm font-medium truncate">{entry.client.name}</span>
         </div>
       )}
-      <div className="flex-1 min-w-0 flex items-center gap-2">
+      <div className="hidden md:flex flex-1 min-w-0 items-center gap-2">
         <span className="text-sm text-foreground truncate">
           {entry.description ?? entry.workflow_type}
         </span>
@@ -204,13 +204,13 @@ function EntryRow({
           </span>
         )}
       </div>
-      <span className="text-xs text-muted-foreground w-20 shrink-0">
+      <span className="hidden md:block text-xs text-muted-foreground w-20 shrink-0">
         {entry.billing_type === "day_rate" && (entry.day_type === "full" ? "Full day" : "Half day")}
         {entry.billing_type === "hourly" && entry.hours && `${entry.hours}h`}
       </span>
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-3 shrink-0 ml-auto">
         {showClient && (
-          <div className="w-20 flex justify-start">
+          <div className="hidden md:flex w-20 justify-start">
             {entry.invoice ? (
               <Badge variant={INVOICE_STATUS_VARIANT[entry.invoice.status]}>{entry.invoice.number}</Badge>
             ) : (
@@ -218,7 +218,7 @@ function EntryRow({
             )}
           </div>
         )}
-        <span className="text-sm tabular-nums text-foreground w-24 text-right">
+        <span className="text-sm tabular-nums text-foreground text-right shrink-0">
           {formatAUD(entry.base_amount + entry.bonus_amount)}
         </span>
       </div>
@@ -240,7 +240,7 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
       />
       <span className="text-sm font-semibold text-foreground">{group.clientName}</span>
       <div className="flex-1" />
-      <span className="text-xs tabular-nums font-semibold text-foreground w-24 text-right">
+      <span className="text-xs tabular-nums font-semibold text-foreground text-right shrink-0">
         {formatAUD(group.subtotal)}
       </span>
     </div>
@@ -252,7 +252,7 @@ function WeekGroupHeader({ group }: { group: WeekGroup }) {
     <div className="flex items-center gap-3 px-4 py-2.5 border-b">
       <span className="text-sm font-semibold text-foreground">{group.dateRange}</span>
       <div className="flex-1" />
-      <span className="text-xs tabular-nums font-semibold text-foreground w-24 text-right">
+      <span className="text-xs tabular-nums font-semibold text-foreground text-right shrink-0">
         {formatAUD(group.subtotal)}
       </span>
     </div>
@@ -296,7 +296,7 @@ function InvoiceView({
   const groups = groupByClientWeek(entries);
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6 min-w-[600px]">
+    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
       {groups.map((group) => (
         <Card key={group.key} className="overflow-hidden py-0 gap-0">
           <ClientWeekGroupHeader group={group} />
@@ -329,7 +329,7 @@ function WeekView({
   const groups = groupByWeek(entries);
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6 min-w-[600px]">
+    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
       {groups.map((group) => (
         <Card key={group.key} className="overflow-hidden py-0 gap-0">
           <WeekGroupHeader group={group} />
@@ -362,7 +362,7 @@ function ListView({
   const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl min-w-[600px]">
+    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl">
       <Card className="overflow-hidden py-0 gap-0">
         <CardContent className="p-0">
           {sorted.map((entry, i) => (
@@ -436,7 +436,7 @@ export function EntriesView({
         </Button>
       </header>
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-y-auto">
         {loading ? (
           <ContentSkeleton />
         ) : (
