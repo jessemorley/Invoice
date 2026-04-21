@@ -67,6 +67,7 @@ async function _fetchEntries(userId: string, before?: string): Promise<Entry[]> 
       client: toClientRef(client ?? { id: e.client_id, name: "Unknown", billing_type: "day_rate" }),
       date: e.date,
       description: e.description,
+      role: e.role,
       workflow_type: e.workflow_type,
       billing_type: e.billing_type_snapshot,
       day_type: e.day_type,

@@ -183,10 +183,15 @@ function EntryRow({
           <span className="text-sm font-medium truncate">{entry.client.name}</span>
         </div>
       )}
-      <div className="flex-1 min-w-0">
-        <span className="text-sm text-foreground truncate block">
+      <div className="flex-1 min-w-0 flex items-center gap-2">
+        <span className="text-sm text-foreground truncate">
           {entry.description ?? entry.workflow_type}
         </span>
+        {entry.role && (
+          <span className="text-sm text-muted-foreground shrink-0">
+            ({entry.role === "Photographer" ? "P" : entry.role === "Operator" || entry.role === "O" ? "O" : entry.role})
+          </span>
+        )}
       </div>
       <span className="text-xs text-muted-foreground w-20 shrink-0">
         {entry.billing_type === "day_rate" && (entry.day_type === "full" ? "Full day" : "Half day")}
