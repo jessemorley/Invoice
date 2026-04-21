@@ -48,7 +48,7 @@ async function _fetchEntries(userId: string, before?: string): Promise<Entry[]> 
 
   const { data, error } = await supabase
     .from("entries")
-    .select("*, clients(id, name, billing_type), invoices(id, invoice_number, status)")
+    .select("*, clients(id, name, billing_type, color), invoices(id, invoice_number, status)")
     .eq("user_id", userId)
     .gte("date", windowStart)
     .lte("date", windowEnd)
@@ -121,7 +121,7 @@ async function _fetchInvoices(userId: string, filters: InvoiceFilters = {}): Pro
 
   let query = supabase
     .from("invoices")
-    .select("*, clients(id, name, billing_type), entries(date)")
+    .select("*, clients(id, name, billing_type, color), entries(date)")
     .eq("user_id", userId);
 
   if (status && status !== "all") query = query.eq("status", status);
@@ -210,13 +210,13 @@ async function _fetchClients(userId: string): Promise<{ id: string; name: string
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("clients")
-    .select("id, name, billing_type")
+    .select("id, name, billing_type, color")
     .eq("user_id", userId)
     .eq("is_active", true)
     .order("name");
 
   if (error) throw new Error(`fetchClients: ${error.message}`);
-  return (data ?? []).map((c) => ({ ...c, color: null }));
+  return (data ?? []).map((c) => ({ ...c, color: c.color ?? null }));
 }
 
 export const fetchClients = unstable_cache(

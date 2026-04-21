@@ -108,6 +108,7 @@ export type Database = {
           abn: string | null
           address: string
           billing_type: Database["public"]["Enums"]["billing_type"]
+          color: string | null
           contact_name: string | null
           created_at: string
           default_finish_time: string | null
@@ -134,6 +135,7 @@ export type Database = {
           abn?: string | null
           address?: string
           billing_type: Database["public"]["Enums"]["billing_type"]
+          color?: string | null
           contact_name?: string | null
           created_at?: string
           default_finish_time?: string | null
@@ -160,6 +162,7 @@ export type Database = {
           abn?: string | null
           address?: string
           billing_type?: Database["public"]["Enums"]["billing_type"]
+          color?: string | null
           contact_name?: string | null
           created_at?: string
           default_finish_time?: string | null
