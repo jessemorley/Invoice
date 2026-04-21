@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { EntrySheet } from "@/components/entry-sheet";
-import { Plus } from "lucide-react";
+import { Plus, FileText } from "lucide-react";
 
 type Client = { id: string; name: string; billing_type: string; color: string | null };
 
@@ -219,7 +219,7 @@ function ClientWeekGroupAbove({ group }: { group: ClientWeekGroup }) {
           className="size-2.5 rounded-full shrink-0"
           style={{ backgroundColor: group.clientColor }}
         />
-        <span className="font-semibold text-foreground">{group.clientName}</span>
+        <span className="text-sm font-medium text-foreground">{group.clientName}</span>
       </div>
       <div className="flex items-center gap-3">
         <span className="text-sm tabular-nums text-muted-foreground">
@@ -228,7 +228,8 @@ function ClientWeekGroupAbove({ group }: { group: ClientWeekGroup }) {
         {group.invoiced ? (
           <Badge variant="secondary">{group.invoiceNumber}</Badge>
         ) : (
-          <Button variant="outline" size="sm" className="h-7 text-xs">
+          <Button variant="outline" className="rounded-lg">
+            <FileText className="size-4" />
             Invoice
           </Button>
         )}
@@ -240,7 +241,7 @@ function ClientWeekGroupAbove({ group }: { group: ClientWeekGroup }) {
 function WeekGroupAbove({ group }: { group: WeekGroup }) {
   return (
     <div className="flex items-center justify-between px-1 pb-1">
-      <span className="font-semibold text-foreground">{group.dateRange}</span>
+      <span className="text-sm font-medium text-foreground">{group.dateRange}</span>
       <span className="text-sm tabular-nums text-muted-foreground">
         {formatAUD(group.subtotal)}
       </span>
