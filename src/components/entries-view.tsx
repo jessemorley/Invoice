@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { EntrySheet } from "@/components/entry-sheet";
-import { Plus, FileText } from "lucide-react";
+import { Plus } from "lucide-react";
 
 type Client = { id: string; name: string; billing_type: string; color: string | null };
 
@@ -121,28 +121,25 @@ function SkeletonRow() {
 
 function SkeletonCard({ rows = 3 }: { rows?: number }) {
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2.5">
-          <Skeleton className="size-2.5 rounded-full shrink-0" />
-          <Skeleton className="h-3 w-28" />
-        </div>
-        <div className="flex items-center gap-3">
-          <Skeleton className="h-3 w-16" />
-          <Skeleton className="h-7 w-16 rounded-md" />
-        </div>
+    <Card className="overflow-hidden py-0 gap-0">
+      <div className="flex items-center gap-2.5 px-4 py-2.5 border-b">
+        <Skeleton className="size-2.5 rounded-full shrink-0" />
+        <Skeleton className="h-3 w-28" />
+        <Skeleton className="h-3 w-14" />
+        <div className="flex-1" />
+        <Skeleton className="h-6 w-16 rounded-md" />
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="h-3 w-24" />
       </div>
-      <Card className="overflow-hidden py-0 gap-0">
-        <CardContent className="p-0">
-          {Array.from({ length: rows }).map((_, i) => (
-            <div key={i}>
-              {i > 0 && <Separator />}
-              <SkeletonRow />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-    </div>
+      <CardContent className="p-0">
+        {Array.from({ length: rows }).map((_, i) => (
+          <div key={i}>
+            {i > 0 && <Separator />}
+            <SkeletonRow />
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -211,38 +208,36 @@ function EntryRow({
   );
 }
 
-function ClientWeekGroupAbove({ group }: { group: ClientWeekGroup }) {
+function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
   return (
-    <div className="flex items-center justify-between px-1 pb-1">
-      <div className="flex items-center gap-2.5">
-        <div
-          className="size-2.5 rounded-full shrink-0"
-          style={{ backgroundColor: group.clientColor }}
-        />
-        <span className="text-sm font-medium text-foreground">{group.clientName}</span>
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="text-sm tabular-nums text-muted-foreground">
-          {formatAUD(group.subtotal)}
-        </span>
-        {group.invoiced ? (
-          <Badge variant="secondary">{group.invoiceNumber}</Badge>
-        ) : (
-          <Button variant="outline" className="rounded-lg">
-            <FileText className="size-4" />
-            Invoice
-          </Button>
-        )}
-      </div>
+    <div className="flex items-center gap-3 px-4 py-2.5 border-b">
+      <div
+        className="size-2.5 rounded-full shrink-0"
+        style={{ backgroundColor: group.clientColor }}
+      />
+      <span className="text-sm font-semibold text-foreground">{group.clientName}</span>
+      {group.invoiced ? (
+        <Badge variant="secondary">{group.invoiceNumber}</Badge>
+      ) : (
+        <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+          <Plus className="size-3" />
+          Invoice
+        </Button>
+      )}
+      <div className="flex-1" />
+      <span className="text-xs tabular-nums font-semibold text-foreground w-24 text-right">
+        {formatAUD(group.subtotal)}
+      </span>
     </div>
   );
 }
 
-function WeekGroupAbove({ group }: { group: WeekGroup }) {
+function WeekGroupHeader({ group }: { group: WeekGroup }) {
   return (
-    <div className="flex items-center justify-between px-1 pb-1">
-      <span className="text-sm font-medium text-foreground">{group.dateRange}</span>
-      <span className="text-sm tabular-nums text-muted-foreground">
+    <div className="flex items-center gap-3 px-4 py-2.5 border-b">
+      <span className="text-sm font-semibold text-foreground">{group.dateRange}</span>
+      <div className="flex-1" />
+      <span className="text-xs tabular-nums font-semibold text-foreground w-24 text-right">
         {formatAUD(group.subtotal)}
       </span>
     </div>
@@ -288,19 +283,17 @@ function InvoiceView({
   return (
     <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
       {groups.map((group) => (
-        <div key={group.key} className="flex flex-col gap-2">
-          <ClientWeekGroupAbove group={group} />
-          <Card className="overflow-hidden py-0 gap-0">
-            <CardContent className="p-0">
-              {group.entries.map((entry, i) => (
-                <div key={entry.id}>
-                  {i > 0 && <Separator />}
-                  <EntryRow entry={entry} onEdit={onEdit} />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+        <Card key={group.key} className="overflow-hidden py-0 gap-0">
+          <ClientWeekGroupHeader group={group} />
+          <CardContent className="p-0">
+            {group.entries.map((entry, i) => (
+              <div key={entry.id}>
+                {i > 0 && <Separator />}
+                <EntryRow entry={entry} onEdit={onEdit} />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       ))}
       <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
     </div>
@@ -323,19 +316,17 @@ function WeekView({
   return (
     <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
       {groups.map((group) => (
-        <div key={group.key} className="flex flex-col gap-2">
-          <WeekGroupAbove group={group} />
-          <Card className="overflow-hidden py-0 gap-0">
-            <CardContent className="p-0">
-              {group.entries.map((entry, i) => (
-                <div key={entry.id}>
-                  {i > 0 && <Separator />}
-                  <EntryRow entry={entry} showClient onEdit={onEdit} />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+        <Card key={group.key} className="overflow-hidden py-0 gap-0">
+          <WeekGroupHeader group={group} />
+          <CardContent className="p-0">
+            {group.entries.map((entry, i) => (
+              <div key={entry.id}>
+                {i > 0 && <Separator />}
+                <EntryRow entry={entry} showClient onEdit={onEdit} />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       ))}
       <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
     </div>
