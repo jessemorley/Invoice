@@ -223,7 +223,10 @@ type Props = {
   loading?: boolean;
 };
 
-export function InvoicesClient({ invoices: initialInvoices = [], uninvoicedCount = 0, clients = [], filters, loading = false }: Props) {
+const EMPTY_INVOICES: Invoice[] = [];
+const EMPTY_CLIENTS: { id: string; name: string }[] = [];
+
+export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uninvoicedCount = 0, clients = EMPTY_CLIENTS, filters, loading = false }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [, startTransition] = useTransition();

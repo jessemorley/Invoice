@@ -1,8 +1,7 @@
 "use server";
 
-import { revalidateTag, updateTag } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
-import { isoWeek } from "@/lib/format";
 import type { BillingType, DayType } from "@/lib/types";
 import { fetchEntries, fetchClients as _fetchClients, CACHE_TAGS } from "@/lib/queries";
 import type { Entry } from "@/lib/types";
@@ -44,8 +43,7 @@ export async function updateEntry(id: string, data: EntryFormData) {
     .eq("user_id", PROTOTYPE_USER_ID);
 
   if (error) throw new Error(`updateEntry: ${error.message}`);
-  revalidateTag(CACHE_TAGS.entries, {});
-  updateTag(CACHE_TAGS.entries);
+  revalidateTag(CACHE_TAGS.entries);
 }
 
 export async function createEntry(data: EntryFormData) {
@@ -64,8 +62,7 @@ export async function createEntry(data: EntryFormData) {
   });
 
   if (error) throw new Error(`createEntry: ${error.message}`);
-  revalidateTag(CACHE_TAGS.entries, {});
-  updateTag(CACHE_TAGS.entries);
+  revalidateTag(CACHE_TAGS.entries);
 }
 
 export async function fetchClients() {

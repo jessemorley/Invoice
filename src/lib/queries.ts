@@ -39,9 +39,9 @@ function computeDateRange(dates: string[]): string {
 
 async function _fetchEntries(userId: string, before?: string): Promise<Entry[]> {
   const supabase = createServerClient();
-  const windowEnd = before ?? new Date().toISOString().slice(0, 10);
+  const windowEnd = before ?? "9999-12-31";
   const windowStart = (() => {
-    const d = new Date(windowEnd + "T00:00:00");
+    const d = new Date();
     d.setDate(d.getDate() - 28);
     return d.toISOString().slice(0, 10);
   })();

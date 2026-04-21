@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidateTag, updateTag } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
 import { fetchInvoices, CACHE_TAGS, type InvoiceFilters } from "@/lib/queries";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
@@ -39,8 +39,6 @@ export async function updateInvoice(id: string, data: InvoiceFormData) {
     .eq("user_id", PROTOTYPE_USER_ID);
 
   if (error) throw new Error(`updateInvoice: ${error.message}`);
-  revalidateTag(CACHE_TAGS.invoices, {});
-  revalidateTag(CACHE_TAGS.uninvoicedCount, {});
-  updateTag(CACHE_TAGS.invoices);
-  updateTag(CACHE_TAGS.uninvoicedCount);
+  revalidateTag(CACHE_TAGS.invoices);
+  revalidateTag(CACHE_TAGS.uninvoicedCount);
 }
