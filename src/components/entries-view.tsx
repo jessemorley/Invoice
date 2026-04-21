@@ -87,6 +87,17 @@ function weekDateRange(dates: string[]): string {
   return `${firstDay} ${firstMonth} – ${lastDay} ${lastMonth}`;
 }
 
+function isoWeekDateRange(isoWeek: string): string {
+  const [year, week] = isoWeek.split("-W").map(Number);
+  const jan4 = new Date(year, 0, 4);
+  const monday = new Date(jan4);
+  monday.setDate(jan4.getDate() - ((jan4.getDay() || 7) - 1) + (week - 1) * 7);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const fmt = (d: Date) => `${d.getDate()} ${d.toLocaleDateString("en-AU", { month: "short" })}`;
+  return `${fmt(monday)} – ${fmt(sunday)}`;
+}
+
 function groupByWeek(entries: Entry[]): WeekGroup[] {
   const map = new Map<string, Entry[]>();
   for (const entry of entries) {
@@ -100,7 +111,7 @@ function groupByWeek(entries: Entry[]): WeekGroup[] {
     const sorted = groupEntries.sort((a, b) => b.date.localeCompare(a.date));
     groups.push({
       key,
-      dateRange: weekDateRange(groupEntries.map((e) => e.date)),
+      dateRange: isoWeekDateRange(key),
       latestDate: sorted[0].date,
       entries: sorted,
       subtotal: groupEntries.reduce((sum, e) => sum + e.base_amount + e.bonus_amount, 0),
