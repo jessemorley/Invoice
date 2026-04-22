@@ -58,7 +58,7 @@ function LoadingSkeleton() {
           <CardHeader>
             <Skeleton className="h-5 w-32" />
           </CardHeader>
-          <CardContent className="flex flex-col gap-4 pt-6">
+          <CardContent className="flex flex-col gap-4 pt-6 pb-6">
             {[1, 2, 3].map((j) => (
               <div key={j} className="flex flex-col gap-1.5">
                 <Skeleton className="h-4 w-24" />
@@ -117,7 +117,7 @@ function InfoTab({
         <CardHeader>
           <CardTitle>Business Details</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4 pt-6">
+        <CardContent className="flex flex-col gap-4 pt-6 pb-6">
           <Field
             label="Name"
             id="name"
@@ -167,7 +167,7 @@ function InfoTab({
         <CardHeader>
           <CardTitle>Super Details</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4 pt-6">
+        <CardContent className="flex flex-col gap-4 pt-6 pb-6">
           <Field
             label="Fund Name"
             id="super_fund"
@@ -209,7 +209,7 @@ function InfoTab({
         <CardHeader>
           <CardTitle>Payment Details</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4 pt-6">
+        <CardContent className="flex flex-col gap-4 pt-6 pb-6">
           <Field
             label="BSB"
             id="bsb"
@@ -265,7 +265,7 @@ function InvoicingTab({
         <CardHeader>
           <CardTitle>Invoice Sequence</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4 pt-6">
+        <CardContent className="flex flex-col gap-4 pt-6 pb-6">
           <Field
             label="Invoice Prefix"
             id="invoice_prefix"
