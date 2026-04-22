@@ -12,6 +12,7 @@ export const CACHE_TAGS = {
   expenses: "expenses",
   clients: "clients",
   uninvoicedCount: "uninvoiced-count",
+  settings: "settings",
 } as const;
 
 function toClientRef(client: { id: string; name: string; billing_type: string; color?: string | null }): ClientRef {
@@ -284,3 +285,61 @@ export async function fetchDashboardData(userId: string, entries: Entry[], invoi
 
   return { mtdEarnings, mtdPriorMonth, outstanding, monthlyEarnings };
 }
+
+export type BusinessDetails = {
+  id: string;
+  user_id: string;
+  name: string;
+  business_name: string;
+  abn: string;
+  address: string;
+  email: string;
+  super_fund: string;
+  super_fund_abn: string;
+  super_usi: string;
+  super_member_number: string;
+  bsb: string;
+  account_number: string;
+  include_super_in_totals: boolean;
+};
+
+export type InvoiceSequence = {
+  id: string;
+  user_id: string;
+  invoice_prefix: string;
+  last_number: number;
+};
+
+async function _fetchBusinessDetails(userId: string): Promise<BusinessDetails | null> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("business_details")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error(`fetchBusinessDetails: ${error.message}`);
+  return data as BusinessDetails | null;
+}
+
+export const fetchBusinessDetails = unstable_cache(
+  _fetchBusinessDetails,
+  [CACHE_TAGS.settings],
+  { tags: [CACHE_TAGS.settings] }
+);
+
+async function _fetchInvoiceSequence(userId: string): Promise<InvoiceSequence | null> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("invoice_sequence")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error(`fetchInvoiceSequence: ${error.message}`);
+  return data as InvoiceSequence | null;
+}
+
+export const fetchInvoiceSequence = unstable_cache(
+  _fetchInvoiceSequence,
+  [CACHE_TAGS.settings],
+  { tags: [CACHE_TAGS.settings] }
+);
