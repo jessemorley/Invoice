@@ -12,6 +12,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -27,7 +32,7 @@ const BILLING_LABEL: Record<string, string> = {
   manual: "Manual",
 };
 
-function ColorPicker({ clientId, current }: { clientId: string; current: string | null }) {
+function ColorDot({ clientId, current }: { clientId: string; current: string | null }) {
   const [isPending, startTransition] = useTransition();
   const active = current ?? CLIENT_COLOR_FALLBACK;
 
@@ -36,21 +41,32 @@ function ColorPicker({ clientId, current }: { clientId: string; current: string 
   }
 
   return (
-    <div className={`flex gap-1.5 flex-wrap${isPending ? " opacity-60 pointer-events-none" : ""}`}>
-      {PALETTE.map((color) => (
+    <Popover>
+      <PopoverTrigger asChild>
         <button
-          key={color}
-          onClick={() => pick(color)}
-          className="size-6 rounded-full border-2 transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          style={{
-            backgroundColor: color,
-            borderColor: active === color ? "white" : "transparent",
-            boxShadow: active === color ? `0 0 0 2px ${color}` : undefined,
-          }}
-          aria-label={color}
+          className="size-3 rounded-full shrink-0 ring-offset-background transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          style={{ backgroundColor: active }}
+          aria-label="Change client colour"
         />
-      ))}
-    </div>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-2.5" align="start">
+        <div className={`flex gap-1.5 flex-wrap w-40${isPending ? " opacity-60 pointer-events-none" : ""}`}>
+          {PALETTE.map((color) => (
+            <button
+              key={color}
+              onClick={() => pick(color)}
+              className="size-6 rounded-full border-2 transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              style={{
+                backgroundColor: color,
+                borderColor: active === color ? "white" : "transparent",
+                boxShadow: active === color ? `0 0 0 2px ${color}` : undefined,
+              }}
+              aria-label={color}
+            />
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -106,10 +122,7 @@ export function ClientSheet({
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
         <SheetHeader className="px-6 py-5 border-b">
           <div className="flex items-center gap-3">
-            <div
-              className="size-3 rounded-full shrink-0"
-              style={{ backgroundColor: client.color ?? CLIENT_COLOR_FALLBACK }}
-            />
+            <ColorDot clientId={client.id} current={client.color} />
             <SheetTitle>{client.name}</SheetTitle>
             {!client.is_active && (
               <span className="ml-auto text-xs text-muted-foreground border rounded-full px-2 py-0.5">Inactive</span>
@@ -119,13 +132,6 @@ export function ClientSheet({
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-6">
-          {/* Color */}
-          <Section title="Colour">
-            <ColorPicker clientId={client.id} current={client.color} />
-          </Section>
-
-          <Separator />
-
           {/* Contact */}
           <Section title="Contact">
             {client.contact_name && <Row label="Contact" value={client.contact_name} />}
