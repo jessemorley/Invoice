@@ -36,7 +36,7 @@ import { SortableTableHead } from "@/components/sortable-table-head";
 import { PageHeader } from "@/components/page-header";
 import { Paperclip, Plus, Receipt, Search } from "lucide-react";
 
-type SortKey = "date" | "category" | "gst" | "amount";
+type SortKey = "date" | "category" | "amount";
 type SortDir = "asc" | "desc";
 
 const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
@@ -57,11 +57,17 @@ function gstAmount(expense: Expense): string | null {
 }
 
 function ReceiptChip({ path }: { path: string }) {
+  const name = path.split("/").pop();
   return (
-    <span className="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs text-muted-foreground font-normal max-w-full">
-      <Paperclip className="size-3 shrink-0" />
-      <span className="truncate">{path.split("/").pop()}</span>
-    </span>
+    <>
+      <span className="hidden xl:inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs text-muted-foreground font-normal max-w-full">
+        <Paperclip className="size-3 shrink-0" />
+        <span className="truncate">{name}</span>
+      </span>
+      <span className="xl:hidden inline-flex items-center justify-center rounded-md border p-1 text-muted-foreground" title={name}>
+        <Paperclip className="size-3" />
+      </span>
+    </>
   );
 }
 
@@ -121,7 +127,7 @@ export function ExpensesClient({ expenses }: { expenses: Expense[] }) {
     switch (sortKey) {
       case "date":     cmp = a.date.localeCompare(b.date); break;
       case "category": cmp = a.category.localeCompare(b.category); break;
-      case "gst":      cmp = (a.gst_included ? a.amount / 11 : 0) - (b.gst_included ? b.amount / 11 : 0); break;
+
       case "amount":   cmp = a.amount - b.amount; break;
     }
     return sortDir === "asc" ? cmp : -cmp;
@@ -180,10 +186,9 @@ export function ExpensesClient({ expenses }: { expenses: Expense[] }) {
               <TableHeader>
                 <TableRow>
                   <SortableTableHead className="w-28 py-4 px-6" {...sh("date")}>Date</SortableTableHead>
-                  <SortableTableHead className="w-32 py-4 px-6" {...sh("category")}>Category</SortableTableHead>
+                  <SortableTableHead className="w-24 py-4 px-6" {...sh("category")}>Category</SortableTableHead>
                   <TableHead className="py-4 px-6">Description</TableHead>
                   <TableHead className="py-4 px-6">Receipt</TableHead>
-                  <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("gst")}>GST</SortableTableHead>
                   <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("amount")}>Amount</SortableTableHead>
                 </TableRow>
               </TableHeader>
@@ -214,9 +219,6 @@ export function ExpensesClient({ expenses }: { expenses: Expense[] }) {
                     </TableCell>
                     <TableCell className="py-4 px-6">
                       {exp.receipt_path && <ReceiptChip path={exp.receipt_path} />}
-                    </TableCell>
-                    <TableCell className="text-sm text-right tabular-nums text-muted-foreground py-4 px-6">
-                      {gstAmount(exp) ?? "—"}
                     </TableCell>
                     <TableCell className="text-sm text-right tabular-nums py-4 px-6">
                       {formatAUD(exp.amount)}
