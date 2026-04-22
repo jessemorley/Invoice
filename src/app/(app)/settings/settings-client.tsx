@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import {
   saveBusinessDetails,
   saveInvoicingSettings,
@@ -244,6 +245,8 @@ function InvoicingTab({
   const [form, setForm] = useState<InvoicingFormData>({
     invoice_prefix: invoiceSequence?.invoice_prefix ?? "",
     next_invoice_number: (invoiceSequence?.last_number ?? 0) + 1,
+    due_date_offset: invoiceSequence?.due_date_offset ?? 30,
+    mark_as_issued_on_send: invoiceSequence?.mark_as_issued_on_send ?? false,
   });
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -286,6 +289,32 @@ function InvoicingTab({
             }
             disabled={pending}
           />
+          <Field
+            label="Due Date Offset (days)"
+            id="due_date_offset"
+            type="number"
+            value={form.due_date_offset}
+            onChange={(v) =>
+              setForm((prev) => ({
+                ...prev,
+                due_date_offset: parseInt(v, 10) || 0,
+              }))
+            }
+            disabled={pending}
+          />
+          <div className="flex items-center justify-between gap-4">
+            <label htmlFor="mark_as_issued_on_send" className="text-sm font-medium">
+              Mark as issued after sending email
+            </label>
+            <Switch
+              id="mark_as_issued_on_send"
+              checked={form.mark_as_issued_on_send}
+              onCheckedChange={(v) =>
+                setForm((prev) => ({ ...prev, mark_as_issued_on_send: v }))
+              }
+              disabled={pending}
+            />
+          </div>
         </CardContent>
         <CardFooter className="border-t py-3 flex-col items-start gap-2">
           {error && <p className="text-sm text-destructive">{error}</p>}

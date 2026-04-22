@@ -27,6 +27,8 @@ export type BusinessDetailsFormData = {
 export type InvoicingFormData = {
   invoice_prefix: string;
   next_invoice_number: number;
+  due_date_offset: number;
+  mark_as_issued_on_send: boolean;
 };
 
 export async function fetchSettings(): Promise<{
@@ -74,6 +76,8 @@ export async function saveInvoicingSettings(data: InvoicingFormData) {
         user_id: PROTOTYPE_USER_ID,
         invoice_prefix: data.invoice_prefix,
         last_number: data.next_invoice_number - 1,
+        due_date_offset: data.due_date_offset,
+        mark_as_issued_on_send: data.mark_as_issued_on_send,
       },
       { onConflict: "user_id" }
     );

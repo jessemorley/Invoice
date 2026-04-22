@@ -350,6 +350,8 @@ export type InvoiceSequence = {
   user_id: string;
   invoice_prefix: string;
   last_number: number;
+  due_date_offset: number;
+  mark_as_issued_on_send: boolean;
 };
 
 async function _fetchBusinessDetails(userId: string): Promise<BusinessDetails | null> {
