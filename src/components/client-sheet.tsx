@@ -1,10 +1,13 @@
 "use client";
 
-import { useTransition } from "react";
+import { useTransition, useEffect, useState } from "react";
+import Link from "next/link";
 import type { Client } from "@/lib/types";
 import { formatAUD } from "@/lib/format";
-import { updateClientColor } from "@/app/(app)/clients/actions";
+import { updateClientColor, fetchClientInvoices, type RecentInvoice } from "@/app/(app)/clients/actions";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Sheet,
   SheetContent,
@@ -70,6 +73,37 @@ function ColorDot({ clientId, current }: { clientId: string; current: string | n
   );
 }
 
+const STATUS_LABEL: Record<string, string> = {
+  draft: "Draft",
+  issued: "Issued",
+  paid: "Paid",
+};
+
+const STATUS_VARIANT: Record<string, "secondary" | "outline" | "default"> = {
+  draft: "secondary",
+  issued: "outline",
+  paid: "default",
+};
+
+function RecentInvoiceRow({ invoice }: { invoice: RecentInvoice }) {
+  return (
+    <div className="flex items-center gap-3 text-sm">
+      <div className="flex-1 min-w-0">
+        <p className="font-medium">{invoice.number}</p>
+        <p className="text-xs text-muted-foreground">
+          {new Date(invoice.issued_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+        </p>
+      </div>
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        <Badge variant={STATUS_VARIANT[invoice.status] ?? "secondary"} className="text-xs font-normal">
+          {STATUS_LABEL[invoice.status] ?? invoice.status}
+        </Badge>
+        <span className="text-xs tabular-nums text-muted-foreground">{formatAUD(invoice.total)}</span>
+      </div>
+    </div>
+  );
+}
+
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex justify-between gap-4 text-sm">
@@ -97,6 +131,14 @@ export function ClientSheet({
   onOpenChange: (open: boolean) => void;
   client: Client | null;
 }) {
+  const [recentInvoices, setRecentInvoices] = useState<RecentInvoice[] | null>(null);
+
+  useEffect(() => {
+    if (!open || !client) return;
+    setRecentInvoices(null);
+    fetchClientInvoices(client.id).then(setRecentInvoices).catch(() => setRecentInvoices([]));
+  }, [open, client]);
+
   if (!client) return null;
 
   const primaryRate = (() => {
@@ -170,6 +212,44 @@ export function ClientSheet({
               </Section>
             </>
           )}
+
+          <Separator />
+
+          <Section title="Recent Invoices">
+            {recentInvoices === null ? (
+              <div className="flex flex-col gap-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <Skeleton className="h-3.5 w-20" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <Skeleton className="h-5 w-12 rounded-full" />
+                      <Skeleton className="h-3 w-14" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : recentInvoices.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No invoices yet.</p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {recentInvoices.map((inv) => (
+                  <RecentInvoiceRow key={inv.id} invoice={inv} />
+                ))}
+                {client.invoice_count > 5 && (
+                  <Link
+                    href={`/invoices?client=${client.id}`}
+                    onClick={() => onOpenChange(false)}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-1"
+                  >
+                    View all {client.invoice_count} invoices →
+                  </Link>
+                )}
+              </div>
+            )}
+          </Section>
         </div>
       </SheetContent>
     </Sheet>
