@@ -147,8 +147,8 @@ if (statusFilter === "active" && !c.is_active) return false;
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableTableHead className="py-4 px-6" {...sh("name")}>Name</SortableTableHead>
-                  <TableHead className="w-48 py-4 px-6">Contact</TableHead>
+                  <SortableTableHead className="w-64 py-4 px-6" {...sh("name")}>Name</SortableTableHead>
+                  <TableHead className="py-4 px-6">Contact</TableHead>
                   <SortableTableHead className="w-28 py-4 px-6" {...sh("billing_type")}>Billing</SortableTableHead>
                   <TableHead className="w-24 py-4 px-6 text-right">Invoices</TableHead>
                   <TableHead className="w-24 py-4 px-6 text-right">Status</TableHead>
