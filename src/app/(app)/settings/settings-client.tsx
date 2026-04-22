@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -52,13 +52,13 @@ function Field({
 
 function LoadingSkeleton() {
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6 max-w-2xl">
+    <div className="flex flex-col gap-4 p-4 md:p-6">
       {[1, 2, 3].map((i) => (
         <Card key={i}>
           <CardHeader>
             <Skeleton className="h-5 w-32" />
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
+          <CardContent className="flex flex-col gap-4 pt-6">
             {[1, 2, 3].map((j) => (
               <div key={j} className="flex flex-col gap-1.5">
                 <Skeleton className="h-4 w-24" />
@@ -112,12 +112,12 @@ function InfoTab({
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6 max-w-2xl">
-      <Card>
+    <div className="flex flex-col gap-4 p-4 md:p-6">
+      <Card className="pb-0 gap-0">
         <CardHeader>
           <CardTitle>Business Details</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-4 pt-6">
           <Field
             label="Name"
             id="name"
@@ -154,22 +154,20 @@ function InfoTab({
             onChange={(v) => setBiz("email", v)}
             disabled={bizPending}
           />
-          {bizError && (
-            <p className="text-sm text-destructive">{bizError}</p>
-          )}
-          <div className="flex justify-end">
-            <Button onClick={handleSaveBiz} disabled={bizPending} size="sm">
-              {bizPending ? "Saving…" : "Save"}
-            </Button>
-          </div>
         </CardContent>
+        <CardFooter className="border-t py-3 flex-col items-start gap-2">
+          {bizError && <p className="text-sm text-destructive">{bizError}</p>}
+          <Button onClick={handleSaveBiz} disabled={bizPending} size="sm">
+            {bizPending ? "Saving…" : "Save"}
+          </Button>
+        </CardFooter>
       </Card>
 
-      <Card>
+      <Card className="pb-0 gap-0">
         <CardHeader>
           <CardTitle>Super Details</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-4 pt-6">
           <Field
             label="Fund Name"
             id="super_fund"
@@ -198,22 +196,20 @@ function InfoTab({
             onChange={(v) => setBiz("super_usi", v)}
             disabled={bizPending}
           />
-          {bizError && (
-            <p className="text-sm text-destructive">{bizError}</p>
-          )}
-          <div className="flex justify-end">
-            <Button onClick={handleSaveBiz} disabled={bizPending} size="sm">
-              {bizPending ? "Saving…" : "Save"}
-            </Button>
-          </div>
         </CardContent>
+        <CardFooter className="border-t py-3 flex-col items-start gap-2">
+          {bizError && <p className="text-sm text-destructive">{bizError}</p>}
+          <Button onClick={handleSaveBiz} disabled={bizPending} size="sm">
+            {bizPending ? "Saving…" : "Save"}
+          </Button>
+        </CardFooter>
       </Card>
 
-      <Card>
+      <Card className="pb-0 gap-0">
         <CardHeader>
           <CardTitle>Payment Details</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-4 pt-6">
           <Field
             label="BSB"
             id="bsb"
@@ -228,15 +224,13 @@ function InfoTab({
             onChange={(v) => setBiz("account_number", v)}
             disabled={bizPending}
           />
-          {bizError && (
-            <p className="text-sm text-destructive">{bizError}</p>
-          )}
-          <div className="flex justify-end">
-            <Button onClick={handleSaveBiz} disabled={bizPending} size="sm">
-              {bizPending ? "Saving…" : "Save"}
-            </Button>
-          </div>
         </CardContent>
+        <CardFooter className="border-t py-3 flex-col items-start gap-2">
+          {bizError && <p className="text-sm text-destructive">{bizError}</p>}
+          <Button onClick={handleSaveBiz} disabled={bizPending} size="sm">
+            {bizPending ? "Saving…" : "Save"}
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   );
@@ -266,12 +260,12 @@ function InvoicingTab({
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6 max-w-2xl">
-      <Card>
+    <div className="flex flex-col gap-4 p-4 md:p-6">
+      <Card className="pb-0 gap-0">
         <CardHeader>
           <CardTitle>Invoice Sequence</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-4 pt-6">
           <Field
             label="Invoice Prefix"
             id="invoice_prefix"
@@ -292,13 +286,13 @@ function InvoicingTab({
             }
             disabled={pending}
           />
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={pending} size="sm">
-              {pending ? "Saving…" : "Save"}
-            </Button>
-          </div>
         </CardContent>
+        <CardFooter className="border-t py-3 flex-col items-start gap-2">
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <Button onClick={handleSave} disabled={pending} size="sm">
+            {pending ? "Saving…" : "Save"}
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   );
@@ -313,8 +307,8 @@ export function SettingsClient({
     <div className="flex flex-col h-full">
       <PageHeader title="Settings" />
       <Tabs defaultValue="info" className="flex flex-col flex-1 overflow-hidden gap-0">
-        <div className="border-b px-4">
-          <TabsList variant="line" className="h-10">
+        <div className="px-4 md:px-6 pt-4">
+          <TabsList>
             <TabsTrigger value="info">Info</TabsTrigger>
             <TabsTrigger value="invoicing">Invoicing</TabsTrigger>
             <TabsTrigger value="account">Account</TabsTrigger>
@@ -332,7 +326,7 @@ export function SettingsClient({
                 <InvoicingTab invoiceSequence={invoiceSequence ?? null} />
               </TabsContent>
               <TabsContent value="account">
-                <div className="flex flex-col gap-4 p-4 md:p-6 max-w-2xl">
+                <div className="flex flex-col gap-4 p-4 md:p-6">
                   <Card>
                     <CardHeader>
                       <CardTitle>Account</CardTitle>
