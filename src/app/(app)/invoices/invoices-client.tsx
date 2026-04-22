@@ -462,10 +462,10 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             </Table>
           </div>
           {!loading && (
-            loadPending ? (
-              <SkeletonTableRows count={4} />
-            ) : (
-              <div className="text-center py-2">
+            <div className="text-center py-2">
+              {loadPending ? (
+                <span className="text-xs text-muted-foreground">Loading…</span>
+              ) : (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -474,8 +474,8 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                 >
                   Load more
                 </Button>
-              </div>
-            )
+              )}
+            </div>
           )}
         </div>
       </div>
