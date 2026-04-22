@@ -89,7 +89,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup className="px-3 py-1">
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-2">
               {allItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
