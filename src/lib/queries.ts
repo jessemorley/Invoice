@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { createServerClient } from "./supabase";
 import { isoWeek } from "./format";
-import type { Entry, Invoice, Expense, DashboardData, ClientRef, MonthlyEarning, InvoiceStatus, InvoiceRef } from "./types";
+import type { Entry, Invoice, Expense, DashboardData, ClientRef, MonthlyEarning, InvoiceStatus, InvoiceRef, Client } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -223,6 +223,48 @@ async function _fetchClients(userId: string): Promise<{ id: string; name: string
 
 export const fetchClients = unstable_cache(
   _fetchClients,
+  [CACHE_TAGS.clients],
+  { tags: [CACHE_TAGS.clients] }
+);
+
+async function _fetchFullClients(userId: string): Promise<Client[]> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("clients")
+    .select("id, name, color, billing_type, rate_full_day, rate_half_day, rate_hourly, rate_hourly_photographer, rate_hourly_operator, pays_super, super_rate, invoice_frequency, address, suburb, email, abn, contact_name, notes, entry_label, show_role, is_active, created_at, invoices(id)")
+    .eq("user_id", userId)
+    .order("name");
+
+  if (error) throw new Error(`fetchFullClients: ${error.message}`);
+  return (data ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    color: c.color ?? null,
+    billing_type: c.billing_type,
+    rate_full_day: c.rate_full_day ?? null,
+    rate_half_day: c.rate_half_day ?? null,
+    rate_hourly: c.rate_hourly ?? null,
+    rate_hourly_photographer: c.rate_hourly_photographer ?? null,
+    rate_hourly_operator: c.rate_hourly_operator ?? null,
+    pays_super: c.pays_super,
+    super_rate: Number(c.super_rate),
+    invoice_frequency: c.invoice_frequency,
+    address: c.address,
+    suburb: c.suburb,
+    email: c.email,
+    abn: c.abn ?? null,
+    contact_name: c.contact_name ?? null,
+    notes: c.notes ?? null,
+    entry_label: c.entry_label ?? null,
+    show_role: c.show_role,
+    is_active: c.is_active,
+    created_at: c.created_at,
+    invoice_count: Array.isArray(c.invoices) ? c.invoices.length : 0,
+  }));
+}
+
+export const fetchFullClients = unstable_cache(
+  _fetchFullClients,
   [CACHE_TAGS.clients],
   { tags: [CACHE_TAGS.clients] }
 );

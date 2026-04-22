@@ -1,0 +1,171 @@
+"use client";
+
+import { useTransition } from "react";
+import type { Client } from "@/lib/types";
+import { formatAUD } from "@/lib/format";
+import { updateClientColor } from "@/app/(app)/clients/actions";
+import { Separator } from "@/components/ui/separator";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+
+const CLIENT_COLOR_FALLBACK = "#9ca3af";
+
+const PALETTE = [
+  "#ef4444", "#f97316", "#eab308", "#22c55e",
+  "#14b8a6", "#06b6d4", "#3b82f6", "#6366f1",
+  "#8b5cf6", "#ec4899", "#10b981", "#64748b",
+];
+
+const BILLING_LABEL: Record<string, string> = {
+  day_rate: "Day rate",
+  hourly: "Hourly",
+  manual: "Manual",
+};
+
+function ColorPicker({ clientId, current }: { clientId: string; current: string | null }) {
+  const [isPending, startTransition] = useTransition();
+  const active = current ?? CLIENT_COLOR_FALLBACK;
+
+  function pick(color: string) {
+    startTransition(() => updateClientColor(clientId, color));
+  }
+
+  return (
+    <div className={`flex gap-1.5 flex-wrap${isPending ? " opacity-60 pointer-events-none" : ""}`}>
+      {PALETTE.map((color) => (
+        <button
+          key={color}
+          onClick={() => pick(color)}
+          className="size-6 rounded-full border-2 transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          style={{
+            backgroundColor: color,
+            borderColor: active === color ? "white" : "transparent",
+            boxShadow: active === color ? `0 0 0 2px ${color}` : undefined,
+          }}
+          aria-label={color}
+        />
+      ))}
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex justify-between gap-4 text-sm">
+      <span className="text-muted-foreground shrink-0">{label}</span>
+      <span className="text-right">{value}</span>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
+      {children}
+    </div>
+  );
+}
+
+export function ClientSheet({
+  open,
+  onOpenChange,
+  client,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  client: Client | null;
+}) {
+  if (!client) return null;
+
+  const primaryRate = (() => {
+    if (client.billing_type === "day_rate") {
+      const parts = [];
+      if (client.rate_full_day) parts.push(`${formatAUD(client.rate_full_day)} full`);
+      if (client.rate_half_day) parts.push(`${formatAUD(client.rate_half_day)} half`);
+      return parts.join(" / ") || "—";
+    }
+    if (client.billing_type === "hourly") {
+      const rates = [
+        client.rate_hourly && `${formatAUD(client.rate_hourly)}/hr`,
+        client.rate_hourly_photographer && `${formatAUD(client.rate_hourly_photographer)}/hr photo`,
+        client.rate_hourly_operator && `${formatAUD(client.rate_hourly_operator)}/hr op`,
+      ].filter(Boolean);
+      return rates.join(", ") || "—";
+    }
+    return "Manual";
+  })();
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
+        <SheetHeader className="px-6 py-5 border-b">
+          <div className="flex items-center gap-3">
+            <div
+              className="size-3 rounded-full shrink-0"
+              style={{ backgroundColor: client.color ?? CLIENT_COLOR_FALLBACK }}
+            />
+            <SheetTitle>{client.name}</SheetTitle>
+            {!client.is_active && (
+              <span className="ml-auto text-xs text-muted-foreground border rounded-full px-2 py-0.5">Inactive</span>
+            )}
+          </div>
+          <SheetDescription>{BILLING_LABEL[client.billing_type]}</SheetDescription>
+        </SheetHeader>
+
+        <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-6">
+          {/* Color */}
+          <Section title="Colour">
+            <ColorPicker clientId={client.id} current={client.color} />
+          </Section>
+
+          <Separator />
+
+          {/* Contact */}
+          <Section title="Contact">
+            {client.contact_name && <Row label="Contact" value={client.contact_name} />}
+            {client.email && <Row label="Email" value={<a href={`mailto:${client.email}`} className="underline underline-offset-2">{client.email}</a>} />}
+            {(client.address || client.suburb) && (
+              <Row label="Address" value={[client.address, client.suburb].filter(Boolean).join(", ")} />
+            )}
+            {client.abn && <Row label="ABN" value={client.abn} />}
+          </Section>
+
+          <Separator />
+
+          {/* Billing rates */}
+          <Section title="Billing Rates">
+            <Row label="Type" value={BILLING_LABEL[client.billing_type]} />
+            <Row label="Rate" value={primaryRate} />
+            <Row label="Invoice frequency" value={client.invoice_frequency === "weekly" ? "Weekly" : "Per job"} />
+            {client.pays_super && (
+              <Row label="Super" value={`${(client.super_rate * 100).toFixed(1)}%`} />
+            )}
+          </Section>
+
+          <Separator />
+
+          {/* Settings */}
+          <Section title="Settings">
+            {client.entry_label && <Row label="Entry label" value={client.entry_label} />}
+            <Row label="Show role" value={client.show_role ? "Yes" : "No"} />
+          </Section>
+
+          {client.notes && (
+            <>
+              <Separator />
+              <Section title="Notes">
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{client.notes}</p>
+              </Section>
+            </>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}

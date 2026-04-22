@@ -60,6 +60,32 @@ export type Expense = {
   invoice_id?: string | null;
 };
 
+export type Client = {
+  id: string;
+  name: string;
+  color: string | null;
+  billing_type: BillingType;
+  rate_full_day: number | null;
+  rate_half_day: number | null;
+  rate_hourly: number | null;
+  rate_hourly_photographer: number | null;
+  rate_hourly_operator: number | null;
+  pays_super: boolean;
+  super_rate: number;
+  invoice_frequency: "weekly" | "per_job";
+  address: string;
+  suburb: string;
+  email: string;
+  abn: string | null;
+  contact_name: string | null;
+  notes: string | null;
+  entry_label: string | null;
+  show_role: boolean;
+  is_active: boolean;
+  created_at: string;
+  invoice_count: number;
+};
+
 export type MonthlyEarning = {
   month: string;
   current: number;
