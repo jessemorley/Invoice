@@ -149,39 +149,40 @@ export function ExpensesClient({ expenses }: { expenses: Expense[] }) {
       {/* Desktop table */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
         <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
-          <div className="rounded-lg border bg-card">
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b">
-              <div className="relative flex-1 min-w-48">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <Input placeholder="Search expenses..." className="pl-8" />
-              </div>
-              <Select defaultValue="all-time">
-                <SelectTrigger className="w-36">
-                  <SelectValue placeholder="Timeframe" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all-time">All time</SelectItem>
-                  <SelectItem value="this-week">This week</SelectItem>
-                  <SelectItem value="this-month">This month</SelectItem>
-                  <SelectItem value="last-month">Last month</SelectItem>
-                  <SelectItem value="this-year">This year</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select defaultValue="all-categories">
-                <SelectTrigger className="w-36">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all-categories">All categories</SelectItem>
-                  {(Object.keys(EXPENSE_CATEGORY_LABELS) as ExpenseCategory[]).map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {EXPENSE_CATEGORY_LABELS[cat]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-48">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input placeholder="Search expenses..." className="pl-8" />
             </div>
+            <Select defaultValue="all-time">
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Timeframe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-time">All time</SelectItem>
+                <SelectItem value="this-week">This week</SelectItem>
+                <SelectItem value="this-month">This month</SelectItem>
+                <SelectItem value="last-month">Last month</SelectItem>
+                <SelectItem value="this-year">This year</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select defaultValue="all-categories">
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-categories">All categories</SelectItem>
+                {(Object.keys(EXPENSE_CATEGORY_LABELS) as ExpenseCategory[]).map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {EXPENSE_CATEGORY_LABELS[cat]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="rounded-lg border bg-card overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
