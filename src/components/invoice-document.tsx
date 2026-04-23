@@ -39,7 +39,7 @@ const s = StyleSheet.create({
 
   metaContainer: {
     flexDirection: "row",
-    marginBottom: 120,
+    marginBottom: 95,
     fontSize: 10,
   },
   datesBlock: { width: "28%" },
