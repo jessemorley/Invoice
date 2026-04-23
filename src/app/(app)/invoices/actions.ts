@@ -19,9 +19,9 @@ export async function loadMoreInvoices(before: string, filters: InvoiceFilters):
 }
 
 export async function revalidateInvoices() {
-  revalidateTag(CACHE_TAGS.invoices);
-  revalidateTag(CACHE_TAGS.uninvoicedCount);
-  revalidateTag(CACHE_TAGS.clients);
+  revalidateTag(CACHE_TAGS.invoices, "max");
+  revalidateTag(CACHE_TAGS.uninvoicedCount, "max");
+  revalidateTag(CACHE_TAGS.clients, "max");
 }
 
 export type InvoiceFormData = {
@@ -46,6 +46,6 @@ export async function updateInvoice(id: string, data: InvoiceFormData) {
     .eq("user_id", PROTOTYPE_USER_ID);
 
   if (error) throw new Error(`updateInvoice: ${error.message}`);
-  revalidateTag(CACHE_TAGS.invoices);
-  revalidateTag(CACHE_TAGS.uninvoicedCount);
+  revalidateTag(CACHE_TAGS.invoices, "max");
+  revalidateTag(CACHE_TAGS.uninvoicedCount, "max");
 }

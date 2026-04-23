@@ -62,7 +62,7 @@ export async function updateEntry(id: string, data: EntryFormData) {
     .eq("user_id", PROTOTYPE_USER_ID);
 
   if (error) throw new Error(`updateEntry: ${error.message}`);
-  revalidateTag(CACHE_TAGS.entries);
+  revalidateTag(CACHE_TAGS.entries, "max");
 }
 
 export async function createEntry(data: EntryFormData) {
@@ -90,7 +90,7 @@ export async function createEntry(data: EntryFormData) {
   });
 
   if (error) throw new Error(`createEntry: ${error.message}`);
-  revalidateTag(CACHE_TAGS.entries);
+  revalidateTag(CACHE_TAGS.entries, "max");
 }
 
 export async function deleteEntry(id: string) {
@@ -102,12 +102,12 @@ export async function deleteEntry(id: string) {
     .eq("user_id", PROTOTYPE_USER_ID);
 
   if (error) throw new Error(`deleteEntry: ${error.message}`);
-  revalidateTag(CACHE_TAGS.entries);
+  revalidateTag(CACHE_TAGS.entries, "max");
 }
 
 export async function revalidateEntries() {
-  revalidateTag(CACHE_TAGS.entries);
-  revalidateTag(CACHE_TAGS.clients);
+  revalidateTag(CACHE_TAGS.entries, "max");
+  revalidateTag(CACHE_TAGS.clients, "max");
 }
 
 export async function fetchClients() {

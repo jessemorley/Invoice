@@ -64,7 +64,7 @@ export async function saveBusinessDetails(data: BusinessDetailsFormData) {
       { onConflict: "user_id" }
     );
   if (error) throw new Error(`saveBusinessDetails: ${error.message}`);
-  revalidateTag(CACHE_TAGS.settings);
+  revalidateTag(CACHE_TAGS.settings, "max");
 }
 
 export async function saveInvoicingSettings(data: InvoicingFormData) {
@@ -82,5 +82,5 @@ export async function saveInvoicingSettings(data: InvoicingFormData) {
       { onConflict: "user_id" }
     );
   if (error) throw new Error(`saveInvoicingSettings: ${error.message}`);
-  revalidateTag(CACHE_TAGS.settings);
+  revalidateTag(CACHE_TAGS.settings, "max");
 }
