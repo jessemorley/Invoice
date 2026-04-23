@@ -174,7 +174,7 @@ function entryDescription(entry: Entry): string {
   return entry.description ?? "";
 }
 
-function EntryRow({ entry, clientRateHourly }: { entry: Entry; clientRateHourly: number }) {
+function EntryRow({ entry, clientRateHourly, showHours }: { entry: Entry; clientRateHourly: number; showHours: boolean }) {
   const description = entryDescription(entry);
   const hours = entry.billing_type === "hourly" && entry.hours_worked != null
     ? String(entry.hours_worked)
@@ -190,7 +190,7 @@ function EntryRow({ entry, clientRateHourly }: { entry: Entry; clientRateHourly:
     <View style={s.tableRow}>
       <Text style={s.colDate}>{fmtDateDay(entry.date)}</Text>
       <Text style={s.colItem}>{description}</Text>
-      <Text style={s.colQty}>{hours}</Text>
+      {showHours ? <Text style={s.colQty}>{hours}</Text> : null}
       <Text style={s.colRate}>{rate}</Text>
       <Text style={s.colAmount}>{amount}</Text>
     </View>
@@ -248,6 +248,7 @@ export function InvoiceDocument({ invoice, business }: Props) {
   const superRatePct = Math.round(client.super_rate * 100);
   const descriptionHeader = client.entry_label ?? "Description";
   const clientRateHourly = client.rate_hourly ?? 0;
+  const showHours = invoice.entries.some((e) => e.billing_type === "hourly");
 
   const rows = buildRows(invoice.entries, invoice.line_items, clientRateHourly);
 
@@ -259,7 +260,8 @@ export function InvoiceDocument({ invoice, business }: Props) {
           <View style={s.addressBlock}>
             <Text style={s.addressLine}>{business.business_name || business.name}</Text>
             {business.abn ? <Text style={s.addressLine}>ABN {business.abn}</Text> : null}
-            {business.address ? <Text style={s.addressLine}>{business.address}</Text> : null}
+            {business.address ? <Text style={s.addressLine}>{[business.address, business.suburb].filter(Boolean).join(", ")}</Text> : null}
+            {business.suburb ? <Text style={s.addressLine}>{business.suburb}</Text> : null}
           </View>
           <View style={s.addressBlock}>
             <Text style={s.addressLine}>{client.name}</Text>
@@ -298,14 +300,14 @@ export function InvoiceDocument({ invoice, business }: Props) {
           <View style={s.tableHeader}>
             <Text style={s.colDate}>Item</Text>
             <Text style={s.colItem}>{descriptionHeader}</Text>
-            <Text style={s.colQty}>Hours</Text>
+            {showHours ? <Text style={s.colQty}>Hours</Text> : null}
             <Text style={s.colRate}>Rate</Text>
             <Text style={s.colAmount}>Amount</Text>
           </View>
 
           {rows.map((row, i) => {
             if (row.type === "entry") {
-              return <EntryRow key={`e-${row.entry.id}`} entry={row.entry} clientRateHourly={clientRateHourly} />;
+              return <EntryRow key={`e-${row.entry.id}`} entry={row.entry} clientRateHourly={clientRateHourly} showHours={showHours} />;
             }
             if (row.type === "sku_bonus") {
               return <SkuBonusRow key={`sku-${row.entry.id}`} entry={row.entry} />;
