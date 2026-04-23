@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { createServerClient } from "./supabase";
 import { isoWeek } from "./format";
-import type { Entry, Invoice, Expense, DashboardData, ClientRef, MonthlyEarning, InvoiceStatus, InvoiceRef, Client } from "./types";
+import type { Entry, Invoice, Expense, DashboardData, ClientRef, MonthlyEarning, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -73,6 +73,12 @@ async function _fetchEntries(userId: string, before?: string): Promise<Entry[]> 
       billing_type: e.billing_type_snapshot,
       day_type: e.day_type,
       hours: e.hours_worked,
+      shoot_client: e.shoot_client,
+      skus: e.skus,
+      brand: e.brand,
+      start_time: e.start_time,
+      finish_time: e.finish_time,
+      break_minutes: e.break_minutes,
       base_amount: e.base_amount,
       bonus_amount: e.bonus_amount,
       super_amount: e.super_amount,
@@ -227,7 +233,7 @@ async function _fetchFullClients(userId: string): Promise<Client[]> {
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("clients")
-    .select("id, name, color, billing_type, rate_full_day, rate_half_day, rate_hourly, rate_hourly_photographer, rate_hourly_operator, pays_super, super_rate, invoice_frequency, address, suburb, email, abn, contact_name, notes, entry_label, show_role, is_active, created_at, invoices(id)")
+    .select("id, name, color, billing_type, rate_full_day, rate_half_day, rate_hourly, rate_hourly_photographer, rate_hourly_operator, pays_super, super_rate, invoice_frequency, address, suburb, email, abn, contact_name, notes, entry_label, show_role, is_active, created_at, default_start_time, default_finish_time, invoices(id)")
     .eq("user_id", userId)
     .order("name");
 
@@ -256,11 +262,37 @@ async function _fetchFullClients(userId: string): Promise<Client[]> {
     is_active: c.is_active,
     created_at: c.created_at,
     invoice_count: Array.isArray(c.invoices) ? c.invoices.length : 0,
+    default_start_time: c.default_start_time ?? null,
+    default_finish_time: c.default_finish_time ?? null,
   }));
 }
 
 export const fetchFullClients = unstable_cache(
   _fetchFullClients,
+  [CACHE_TAGS.clients],
+  { tags: [CACHE_TAGS.clients] }
+);
+
+async function _fetchWorkflowRates(): Promise<WorkflowRate[]> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("client_workflow_rates")
+    .select("id, client_id, workflow, is_flat_bonus, kpi, upper_limit_skus, incentive_rate_per_sku, max_bonus");
+  if (error) throw new Error(`fetchWorkflowRates: ${error.message}`);
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    client_id: r.client_id,
+    workflow: r.workflow,
+    is_flat_bonus: r.is_flat_bonus,
+    kpi: r.kpi,
+    upper_limit_skus: r.upper_limit_skus,
+    incentive_rate_per_sku: Number(r.incentive_rate_per_sku),
+    max_bonus: Number(r.max_bonus),
+  }));
+}
+
+export const fetchWorkflowRates = unstable_cache(
+  _fetchWorkflowRates,
   [CACHE_TAGS.clients],
   { tags: [CACHE_TAGS.clients] }
 );

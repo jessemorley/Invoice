@@ -25,6 +25,12 @@ export type Entry = {
   billing_type: BillingType;
   day_type?: DayType | null;
   hours?: number | null;
+  shoot_client: string | null;
+  skus: number | null;
+  brand: string | null;
+  start_time: string | null;
+  finish_time: string | null;
+  break_minutes: number | null;
   base_amount: number;
   bonus_amount: number;
   super_amount: number;
@@ -84,6 +90,19 @@ export type Client = {
   is_active: boolean;
   created_at: string;
   invoice_count: number;
+  default_start_time: string | null;
+  default_finish_time: string | null;
+};
+
+export type WorkflowRate = {
+  id: string;
+  client_id: string;
+  workflow: string;
+  is_flat_bonus: boolean;
+  kpi: number;
+  upper_limit_skus: number;
+  incentive_rate_per_sku: number;
+  max_bonus: number;
 };
 
 export type MonthlyEarning = {

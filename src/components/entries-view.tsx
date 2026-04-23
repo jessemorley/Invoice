@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { loadEarlierEntries, revalidateEntries } from "@/app/(app)/entries/actions";
-import type { Entry } from "@/lib/types";
+import type { Entry, Client, WorkflowRate } from "@/lib/types";
 import { formatAUD, formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,6 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { EntrySheet } from "@/components/entry-sheet";
 import { Plus, RefreshCw } from "lucide-react";
-
-type Client = { id: string; name: string; billing_type: string; color: string | null };
 
 type ViewMode = "invoice" | "week" | "none";
 
@@ -395,10 +393,12 @@ function ListView({
 export function EntriesView({
   entries: initialEntries,
   clients,
+  workflowRates,
   loading = false,
 }: {
   entries?: Entry[];
   clients: Client[];
+  workflowRates: WorkflowRate[];
   loading?: boolean;
 }) {
   const router = useRouter();
@@ -481,6 +481,7 @@ export function EntriesView({
         onOpenChange={setSheetOpen}
         entry={selectedEntry}
         clients={clients}
+        workflowRates={workflowRates}
       />
     </div>
   );

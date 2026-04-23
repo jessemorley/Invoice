@@ -3,7 +3,7 @@
 import { revalidateTag } from "next/cache";
 import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
 import type { BillingType, DayType } from "@/lib/types";
-import { fetchEntries, fetchClients as _fetchClients, CACHE_TAGS } from "@/lib/queries";
+import { fetchEntries, fetchFullClients, fetchWorkflowRates as _fetchWorkflowRates, CACHE_TAGS } from "@/lib/queries";
 import type { Entry } from "@/lib/types";
 
 export async function loadEarlierEntries(before: string): Promise<Entry[]> {
@@ -16,12 +16,22 @@ export async function loadEarlierEntries(before: string): Promise<Entry[]> {
 export type EntryFormData = {
   client_id: string;
   date: string;
-  description: string;
   billing_type: BillingType;
   day_type: DayType | null;
-  hours: number | null;
+  workflow_type: string | null;
+  skus: number | null;
+  brand: string | null;
+  shoot_client: string | null;
+  description: string | null;
+  role: string | null;
+  start_time: string | null;
+  finish_time: string | null;
+  break_minutes: number | null;
+  hours_worked: number | null;
   base_amount: number;
   bonus_amount: number;
+  super_amount: number;
+  total_amount: number;
 };
 
 export async function updateEntry(id: string, data: EntryFormData) {
@@ -31,13 +41,22 @@ export async function updateEntry(id: string, data: EntryFormData) {
     .update({
       client_id: data.client_id,
       date: data.date,
-      description: data.description || null,
       billing_type_snapshot: data.billing_type,
       day_type: data.day_type,
-      hours_worked: data.hours,
+      workflow_type: data.workflow_type,
+      skus: data.skus,
+      brand: data.brand ?? null,
+      shoot_client: data.shoot_client ?? null,
+      description: data.description ?? null,
+      role: data.role ?? null,
+      start_time: data.start_time ?? null,
+      finish_time: data.finish_time ?? null,
+      break_minutes: data.break_minutes ?? null,
+      hours_worked: data.hours_worked,
       base_amount: data.base_amount,
       bonus_amount: data.bonus_amount,
-      total_amount: data.base_amount + data.bonus_amount,
+      super_amount: data.super_amount,
+      total_amount: data.total_amount,
     })
     .eq("id", id)
     .eq("user_id", PROTOTYPE_USER_ID);
@@ -52,16 +71,37 @@ export async function createEntry(data: EntryFormData) {
     user_id: PROTOTYPE_USER_ID,
     client_id: data.client_id,
     date: data.date,
-    description: data.description || null,
     billing_type_snapshot: data.billing_type,
     day_type: data.day_type,
-    hours_worked: data.hours,
+    workflow_type: data.workflow_type,
+    skus: data.skus,
+    brand: data.brand ?? null,
+    shoot_client: data.shoot_client ?? null,
+    description: data.description ?? null,
+    role: data.role ?? null,
+    start_time: data.start_time ?? null,
+    finish_time: data.finish_time ?? null,
+    break_minutes: data.break_minutes ?? null,
+    hours_worked: data.hours_worked,
     base_amount: data.base_amount,
     bonus_amount: data.bonus_amount,
-    total_amount: data.base_amount + data.bonus_amount,
+    super_amount: data.super_amount,
+    total_amount: data.total_amount,
   });
 
   if (error) throw new Error(`createEntry: ${error.message}`);
+  revalidateTag(CACHE_TAGS.entries);
+}
+
+export async function deleteEntry(id: string) {
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("entries")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", PROTOTYPE_USER_ID);
+
+  if (error) throw new Error(`deleteEntry: ${error.message}`);
   revalidateTag(CACHE_TAGS.entries);
 }
 
@@ -71,5 +111,9 @@ export async function revalidateEntries() {
 }
 
 export async function fetchClients() {
-  return _fetchClients(PROTOTYPE_USER_ID);
+  return fetchFullClients(PROTOTYPE_USER_ID);
+}
+
+export async function loadWorkflowRates() {
+  return _fetchWorkflowRates();
 }
