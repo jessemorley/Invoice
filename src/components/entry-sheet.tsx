@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { Entry, BillingType, DayType, ClientRef } from "@/lib/types";
 import { createEntry, updateEntry } from "@/app/(app)/entries/actions";
 import type { EntryFormData } from "@/app/(app)/entries/actions";
@@ -63,6 +64,7 @@ export function EntrySheet({
   entry: Entry | null;
   clients: Client[];
 }) {
+  const router = useRouter();
   const [form, setForm] = useState<EntryFormData>(() => defaultForm(entry, clients));
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +105,7 @@ export function EntrySheet({
         } else {
           await createEntry(form);
         }
+        router.refresh();
         onOpenChange(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");

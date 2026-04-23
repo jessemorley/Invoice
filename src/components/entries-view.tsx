@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { loadEarlierEntries } from "@/app/(app)/entries/actions";
+import { useState, useEffect, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { loadEarlierEntries, revalidateEntries } from "@/app/(app)/entries/actions";
 import type { Entry } from "@/lib/types";
 import { formatAUD, formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { EntrySheet } from "@/components/entry-sheet";
-import { Plus } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 
 type Client = { id: string; name: string; billing_type: string; color: string | null };
 
@@ -400,11 +401,16 @@ export function EntriesView({
   clients: Client[];
   loading?: boolean;
 }) {
+  const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>("invoice");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const [entries, setEntries] = useState<Entry[]>(initialEntries ?? []);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setEntries(initialEntries ?? []);
+  }, [initialEntries]);
 
   function openEdit(entry: Entry) {
     setSelectedEntry(entry);
@@ -443,6 +449,9 @@ export function EntriesView({
           <ToggleGroupItem value="week">Week</ToggleGroupItem>
           <ToggleGroupItem value="none">None</ToggleGroupItem>
         </ToggleGroup>
+        <Button size="icon" variant="ghost" className="size-8" onClick={async () => { await revalidateEntries(); router.refresh(); }} disabled={loading}>
+          <RefreshCw className="size-4" />
+        </Button>
         <Button size="sm" className="hidden md:flex" onClick={openNew} disabled={loading}>
           <Plus className="size-4" />
           New entry

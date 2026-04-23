@@ -2,7 +2,7 @@
 
 import { useCallback, useState, useTransition, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { loadMoreInvoices } from "./actions";
+import { loadMoreInvoices, revalidateInvoices } from "./actions";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
 import type { InvoiceFilters } from "@/lib/queries";
 import { formatAUD, formatDateShort } from "@/lib/format";
@@ -45,7 +45,7 @@ import {
 import { SortableTableHead } from "@/components/sortable-table-head";
 import { PageHeader } from "@/components/page-header";
 import { InvoiceSheet } from "@/components/invoice-sheet";
-import { ChevronDown, FileText, Plus, Search } from "lucide-react";
+import { ChevronDown, FileText, Plus, RefreshCw, Search } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
 
@@ -328,6 +328,9 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             {uninvoicedCount} groups ready to invoice
           </Badge>
         )}
+        <Button size="icon" variant="ghost" className="size-8" onClick={async () => { await revalidateInvoices(); router.refresh(); }} disabled={loading}>
+          <RefreshCw className="size-4" />
+        </Button>
         <Button size="sm" className="hidden md:flex" disabled={loading}>
           <Plus className="size-4" />
           New invoice

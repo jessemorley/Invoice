@@ -36,6 +36,6 @@ export async function updateClientColor(clientId: string, color: string) {
     .eq("user_id", PROTOTYPE_USER_ID);
 
   if (error) throw new Error(`updateClientColor: ${error.message}`);
-  revalidateTag(CACHE_TAGS.clients, "max");
-  revalidateTag(CACHE_TAGS.entries, "max");
+  revalidateTag(CACHE_TAGS.clients);
+  revalidateTag(CACHE_TAGS.entries);
 }
