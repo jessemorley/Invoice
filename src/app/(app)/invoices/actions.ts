@@ -14,6 +14,7 @@ export async function loadMoreInvoices(before: string, filters: InvoiceFilters):
     ...filters,
     from: windowStart,
     to: windowEnd,
+    limit: 25,
   });
 }
 

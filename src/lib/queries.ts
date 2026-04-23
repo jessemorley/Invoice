@@ -99,6 +99,7 @@ export type InvoiceFilters = {
   to?: string;
   sortKey?: "issued_date" | "total" | "number" | "client" | "status";
   sortDir?: "asc" | "desc";
+  limit?: number;
 };
 
 async function _fetchInvoices(userId: string, filters: InvoiceFilters = {}): Promise<Invoice[]> {
@@ -110,6 +111,7 @@ async function _fetchInvoices(userId: string, filters: InvoiceFilters = {}): Pro
     clientId,
     sortKey = "issued_date",
     sortDir = "desc",
+    limit = 25,
   } = filters;
 
   const from = filters.from === "all" ? undefined : filters.from;
@@ -130,7 +132,7 @@ async function _fetchInvoices(userId: string, filters: InvoiceFilters = {}): Pro
     : sortKey === "client" ? "client_id"
     : sortKey;
 
-  query = query.order(dbSortKey, { ascending: sortDir === "asc" });
+  query = query.order(dbSortKey, { ascending: sortDir === "asc" }).limit(limit);
 
   const { data, error } = await query;
   if (error) throw new Error(`fetchInvoices: ${error.message}`);
