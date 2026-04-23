@@ -24,6 +24,7 @@ export type Database = {
           id: string
           include_super_in_totals: boolean
           name: string
+          suburb: string
           super_fund: string
           super_fund_abn: string
           super_member_number: string
@@ -39,6 +40,7 @@ export type Database = {
           id?: string
           include_super_in_totals?: boolean
           name?: string
+          suburb?: string
           super_fund?: string
           super_fund_abn?: string
           super_member_number?: string
@@ -54,6 +56,7 @@ export type Database = {
           id?: string
           include_super_in_totals?: boolean
           name?: string
+          suburb?: string
           super_fund?: string
           super_fund_abn?: string
           super_member_number?: string
@@ -127,6 +130,7 @@ export type Database = {
           rate_hourly_operator: number | null
           rate_hourly_photographer: number | null
           show_role: boolean
+          show_super_on_invoice: boolean
           suburb: string
           super_rate: number
           user_id: string
@@ -154,6 +158,7 @@ export type Database = {
           rate_hourly_operator?: number | null
           rate_hourly_photographer?: number | null
           show_role?: boolean
+          show_super_on_invoice?: boolean
           suburb?: string
           super_rate?: number
           user_id: string
@@ -181,6 +186,7 @@ export type Database = {
           rate_hourly_operator?: number | null
           rate_hourly_photographer?: number | null
           show_role?: boolean
+          show_super_on_invoice?: boolean
           suburb?: string
           super_rate?: number
           user_id?: string

@@ -233,7 +233,7 @@ async function _fetchFullClients(userId: string): Promise<Client[]> {
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("clients")
-    .select("id, name, color, billing_type, rate_full_day, rate_half_day, rate_hourly, rate_hourly_photographer, rate_hourly_operator, pays_super, super_rate, invoice_frequency, address, suburb, email, abn, contact_name, notes, entry_label, show_role, is_active, created_at, default_start_time, default_finish_time, invoices(id)")
+    .select("id, name, color, billing_type, rate_full_day, rate_half_day, rate_hourly, rate_hourly_photographer, rate_hourly_operator, pays_super, super_rate, show_super_on_invoice, invoice_frequency, address, suburb, email, abn, contact_name, notes, entry_label, show_role, is_active, created_at, default_start_time, default_finish_time, invoices(id)")
     .eq("user_id", userId)
     .order("name");
 
@@ -250,6 +250,7 @@ async function _fetchFullClients(userId: string): Promise<Client[]> {
     rate_hourly_operator: c.rate_hourly_operator ?? null,
     pays_super: c.pays_super,
     super_rate: Number(c.super_rate),
+    show_super_on_invoice: c.show_super_on_invoice,
     invoice_frequency: c.invoice_frequency,
     address: c.address,
     suburb: c.suburb,
@@ -363,6 +364,7 @@ export type BusinessDetails = {
   business_name: string;
   abn: string;
   address: string;
+  suburb: string;
   email: string;
   super_fund: string;
   super_fund_abn: string;
