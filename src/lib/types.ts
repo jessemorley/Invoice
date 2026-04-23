@@ -105,6 +105,64 @@ export type WorkflowRate = {
   max_bonus: number;
 };
 
+export type InvoiceLineItem = {
+  id: string;
+  invoice_id: string;
+  description: string;
+  quantity: number | null;
+  amount: number;
+  sort_order: number;
+};
+
+export type InvoiceEntry = {
+  id: string;
+  date: string;
+  description: string | null;
+  billing_type: BillingType;
+  day_type: DayType | null;
+  workflow_type: string | null;
+  brand: string | null;
+  shoot_client: string | null;
+  role: string | null;
+  skus: number | null;
+  hours_worked: number | null;
+  start_time: string | null;
+  finish_time: string | null;
+  break_minutes: number | null;
+  base_amount: number;
+  bonus_amount: number;
+  super_amount: number;
+  total_amount: number;
+};
+
+export type InvoiceDetail = {
+  id: string;
+  number: string;
+  issued_date: string;
+  due_date: string | null;
+  status: InvoiceStatus;
+  subtotal: number;
+  super_amount: number;
+  total: number;
+  notes: string | null;
+  client: {
+    id: string;
+    name: string;
+    color: string;
+    address: string;
+    suburb: string;
+    email: string;
+    abn: string | null;
+    entry_label: string | null;
+    pays_super: boolean;
+    super_rate: number;
+    show_super_on_invoice: boolean;
+    rate_hourly: number | null;
+  };
+  entries: InvoiceEntry[];
+  line_items: InvoiceLineItem[];
+};
+
 export type MonthlyEarning = {
   month: string;
   current: number;

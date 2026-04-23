@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { createServerClient } from "./supabase";
 import { isoWeek } from "./format";
-import type { Entry, Invoice, Expense, DashboardData, ClientRef, MonthlyEarning, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
+import type { Entry, Invoice, InvoiceDetail, Expense, DashboardData, ClientRef, MonthlyEarning, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -398,6 +398,86 @@ export const fetchBusinessDetails = unstable_cache(
   [CACHE_TAGS.settings],
   { tags: [CACHE_TAGS.settings] }
 );
+
+export async function fetchInvoiceDetail(invoiceId: string, userId: string): Promise<InvoiceDetail | null> {
+  const supabase = createServerClient();
+
+  const { data, error } = await supabase
+    .from("invoices")
+    .select(`
+      *,
+      clients (id, name, color, address, suburb, email, abn, entry_label, pays_super, super_rate, show_super_on_invoice, rate_hourly),
+      entries (id, date, description, billing_type_snapshot, day_type, workflow_type, brand, shoot_client, role, skus, hours_worked, start_time, finish_time, break_minutes, base_amount, bonus_amount, super_amount, total_amount),
+      invoice_line_items (id, invoice_id, description, quantity, amount, sort_order)
+    `)
+    .eq("id", invoiceId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) throw new Error(`fetchInvoiceDetail: ${error.message}`);
+  if (!data) return null;
+
+  const client = Array.isArray(data.clients) ? data.clients[0] : data.clients;
+  const entries = (data.entries ?? []).map((e: {
+    id: string; date: string; description: string | null;
+    billing_type_snapshot: string; day_type: string | null;
+    workflow_type: string | null; brand: string | null;
+    shoot_client: string | null; role: string | null; skus: number | null;
+    hours_worked: number | null; start_time: string | null;
+    finish_time: string | null; break_minutes: number | null;
+    base_amount: number; bonus_amount: number; super_amount: number; total_amount: number;
+  }) => ({
+    id: e.id,
+    date: e.date,
+    description: e.description,
+    billing_type: e.billing_type_snapshot as InvoiceDetail["entries"][0]["billing_type"],
+    day_type: e.day_type as InvoiceDetail["entries"][0]["day_type"],
+    workflow_type: e.workflow_type,
+    brand: e.brand,
+    shoot_client: e.shoot_client,
+    role: e.role,
+    skus: e.skus,
+    hours_worked: e.hours_worked,
+    start_time: e.start_time,
+    finish_time: e.finish_time,
+    break_minutes: e.break_minutes,
+    base_amount: e.base_amount,
+    bonus_amount: e.bonus_amount,
+    super_amount: e.super_amount,
+    total_amount: e.total_amount,
+  }));
+
+  const lineItems = (data.invoice_line_items ?? [])
+    .sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order);
+
+  return {
+    id: data.id,
+    number: data.invoice_number,
+    issued_date: data.issued_date,
+    due_date: data.due_date ?? null,
+    status: data.status,
+    subtotal: data.subtotal,
+    super_amount: data.super_amount,
+    total: data.total,
+    notes: data.notes ?? null,
+    client: {
+      id: client.id,
+      name: client.name,
+      color: client.color ?? CLIENT_COLOR_FALLBACK,
+      address: client.address,
+      suburb: client.suburb,
+      email: client.email,
+      abn: client.abn ?? null,
+      entry_label: client.entry_label ?? null,
+      pays_super: client.pays_super,
+      super_rate: client.super_rate,
+      show_super_on_invoice: client.show_super_on_invoice,
+      rate_hourly: client.rate_hourly ?? null,
+    },
+    entries,
+    line_items: lineItems,
+  };
+}
 
 async function _fetchInvoiceSequence(userId: string): Promise<InvoiceSequence | null> {
   const supabase = createServerClient();

@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Download } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -128,6 +129,16 @@ export function InvoiceSheet({
                 <span className="tabular-nums">{formatAUD(invoice.super_amount)}</span>
               </div>
             )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" asChild className="gap-1.5">
+              <a href={`/api/invoices/${invoice.id}/pdf`} download>
+                <Download className="size-3.5" />
+                Download PDF
+              </a>
+            </Button>
           </div>
 
           {/* Status */}

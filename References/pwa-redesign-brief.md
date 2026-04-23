@@ -99,6 +99,8 @@ Generate (from Entries group) →
     Preview    → /invoices/[id] — full HTML render of invoice template
     Download   → /api/invoices/[id]/pdf — react-pdf, streams as download
     Send       → email compose Sheet (pre-filled: client email, subject, body)
+                   Fields: To (pre-filled), CC, BCC, Subject, Body
+                   Checkbox: "Send me a copy" (pre-fills BCC with user's email)
                  → confirm → creates scheduled_emails row (scheduled_for = now by default,
                    or user-picked future time) → status advances to issued
     Mark Paid  → date picker (defaults to today) → status → paid
@@ -264,6 +266,16 @@ Removes Browserless dependency entirely. Email Edge Function fetches invoice dat
 - **Switchover is atomic** — deploy rewritten function and stop writing `invoice_html` in the same release. Legacy rows with `invoice_html` are ignored by the new function (it fetches invoice data directly). Drop `invoice_html` column in a follow-up migration once legacy rows are cleared.
 - Next.js app only creates/cancels `scheduled_emails` rows — does not send directly
 - `scheduled_emails.error text` column already exists — no migration needed
+
+**Email compose fields:**
+- **To** — pre-filled from `client.email`
+- **CC** — optional free-text field
+- **BCC** — optional free-text field
+- **"Send me a copy"** checkbox — when checked, appends user's own email to BCC
+- **Subject** — pre-filled
+- **Body** — pre-filled, editable
+
+**Schema:** `scheduled_emails` needs `cc text` and `bcc text` columns (migration required). Edge Function passes these to Resend's `cc`/`bcc` fields.
 
 ---
 
