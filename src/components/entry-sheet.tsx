@@ -111,7 +111,7 @@ function ClientPicker({
 
   return (
     <div className="flex flex-col">
-      <div className="px-4 py-3 border-b">
+      <div className="px-4 py-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
@@ -126,7 +126,7 @@ function ClientPicker({
         {filtered.map((c) => (
           <button
             key={c.id}
-            className="flex items-center gap-3 w-full px-4 py-3.5 hover:bg-accent/50 transition-colors text-left"
+            className="flex items-center gap-3 w-full px-6 py-3.5 hover:bg-accent/50 transition-colors text-left"
             onClick={() => onSelect(c)}
           >
             <span
@@ -377,7 +377,7 @@ export function EntrySheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="flex flex-col gap-0 p-0 w-full sm:max-w-md">
-        <SheetHeader className="px-4 py-4 border-b flex-row items-center gap-2">
+        <SheetHeader className={cn("px-4 py-4 flex-row items-center gap-2", selectedClient && "border-b")}>
           {!entry && selectedClient && (
             <Button
               variant="ghost"
