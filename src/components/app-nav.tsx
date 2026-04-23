@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -66,6 +66,40 @@ const overflowItems = [
 
 const allItems = [...mainTabs, ...overflowItems];
 
+type NavItem = (typeof allItems)[number];
+
+function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string }) {
+  const { pending } = useLinkStatus();
+  const isActive = pending || pathname.startsWith(item.href);
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild isActive={isActive}>
+        <Link href={item.href}>
+          <item.icon />
+          <span>{item.label}</span>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
+
+function BottomTabItem({ item, pathname }: { item: NavItem; pathname: string }) {
+  const { pending } = useLinkStatus();
+  const active = pending || pathname.startsWith(item.href);
+  return (
+    <Link
+      href={item.href}
+      className={cn(
+        "flex flex-col items-center gap-0.5 px-3 py-1 text-[11px] font-medium transition-colors",
+        active ? "text-foreground" : "text-muted-foreground"
+      )}
+    >
+      <item.icon className={cn("size-5", active && "text-foreground")} />
+      {item.label}
+    </Link>
+  );
+}
+
 export function AppSidebar() {
   const pathname = usePathname();
   const { open } = useSidebar();
@@ -91,17 +125,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="gap-2">
               {allItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith(item.href)}
-                  >
-                    <Link href={item.href}>
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <SidebarNavItem key={item.href} item={item} pathname={pathname} />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
@@ -184,24 +208,9 @@ export function BottomTabs() {
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-border bg-background">
       <div className="flex items-center justify-around h-14">
-        {mainTabs.map((item) => {
-          const active = pathname.startsWith(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex flex-col items-center gap-0.5 px-3 py-1 text-[11px] font-medium transition-colors",
-                active
-                  ? "text-foreground"
-                  : "text-muted-foreground"
-              )}
-            >
-              <item.icon className={cn("size-5", active && "text-foreground")} />
-              {item.label}
-            </Link>
-          );
-        })}
+        {mainTabs.map((item) => (
+          <BottomTabItem key={item.href} item={item} pathname={pathname} />
+        ))}
         <Sheet open={overflowOpen} onOpenChange={setOverflowOpen}>
           <SheetTrigger
             className="flex flex-col items-center gap-0.5 px-3 py-1 text-[11px] font-medium text-muted-foreground"
