@@ -15,6 +15,7 @@ export type BusinessDetailsFormData = {
   business_name: string;
   abn: string;
   address: string;
+  suburb: string;
   email: string;
   super_fund: string;
   super_fund_abn: string;
@@ -53,6 +54,7 @@ export async function saveBusinessDetails(data: BusinessDetailsFormData) {
         business_name: data.business_name,
         abn: data.abn,
         address: data.address,
+        suburb: data.suburb,
         email: data.email,
         super_fund: data.super_fund,
         super_fund_abn: data.super_fund_abn,

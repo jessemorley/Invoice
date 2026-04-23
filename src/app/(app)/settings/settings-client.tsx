@@ -83,6 +83,7 @@ function InfoTab({
     business_name: businessDetails?.business_name ?? "",
     abn: businessDetails?.abn ?? "",
     address: businessDetails?.address ?? "",
+    suburb: businessDetails?.suburb ?? "",
     email: businessDetails?.email ?? "",
     super_fund: businessDetails?.super_fund ?? "",
     super_fund_abn: businessDetails?.super_fund_abn ?? "",
@@ -145,6 +146,13 @@ function InfoTab({
             id="address"
             value={bizForm.address}
             onChange={(v) => setBiz("address", v)}
+            disabled={bizPending}
+          />
+          <Field
+            label="Suburb"
+            id="suburb"
+            value={bizForm.suburb}
+            onChange={(v) => setBiz("suburb", v)}
             disabled={bizPending}
           />
           <Field
