@@ -102,9 +102,12 @@ function ClientPicker({
   onSelect: (client: Client) => void;
 }) {
   const [query, setQuery] = useState("");
-  const filtered = query
-    ? clients.filter((c) => c.name.toLowerCase().includes(query.toLowerCase()))
-    : clients;
+  const active = clients
+    .filter((c) => c.is_active)
+    .sort((a, b) => b.invoice_count - a.invoice_count);
+  const filtered = active.filter((c) =>
+    !query || c.name.toLowerCase().includes(query.toLowerCase())
+  );
 
   return (
     <div className="flex flex-col">
@@ -112,7 +115,6 @@ function ClientPicker({
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
-            autoFocus
             className="pl-9"
             placeholder="Search clients…"
             value={query}
@@ -124,15 +126,20 @@ function ClientPicker({
         {filtered.map((c) => (
           <button
             key={c.id}
-            className="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-accent/50 transition-colors text-left"
+            className="flex items-center gap-3 w-full px-4 py-3.5 hover:bg-accent/50 transition-colors text-left"
             onClick={() => onSelect(c)}
           >
             <span
               className="size-2.5 rounded-full shrink-0"
               style={{ backgroundColor: c.color ?? "#9ca3af" }}
             />
-            <span className="text-sm font-medium">{c.name}</span>
-            <span className="ml-auto text-xs text-muted-foreground capitalize">
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm font-medium">{c.name}</span>
+              <span className="text-xs text-muted-foreground">
+                {c.invoice_count} {c.invoice_count === 1 ? "invoice" : "invoices"}
+              </span>
+            </div>
+            <span className="ml-auto text-xs text-muted-foreground capitalize shrink-0">
               {c.billing_type.replace("_", " ")}
             </span>
           </button>
