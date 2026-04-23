@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import type { Entry, Client, WorkflowRate, BillingType, DayType } from "@/lib/types";
+import type { Entry, Client, WorkflowRate, BillingType } from "@/lib/types";
 import { createEntry, updateEntry, deleteEntry } from "@/app/(app)/entries/actions";
 import type { EntryFormData } from "@/app/(app)/entries/actions";
 import { calcDayRate, calcHourly, calcManual, formatDuration } from "@/lib/entry-calc";
@@ -11,13 +11,14 @@ import { formatAUD } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Minus, Plus, Search, ChevronLeft, Trash2 } from "lucide-react";
+import { ChevronLeft, Minus, Plus, Search, Trash2 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -106,13 +107,13 @@ function ClientPicker({
     : clients;
 
   return (
-    <div className="flex flex-col gap-0">
+    <div className="flex flex-col">
       <div className="px-4 py-3 border-b">
-        <div className="flex items-center gap-2 bg-muted rounded-lg px-3 py-2">
-          <Search className="size-4 text-muted-foreground shrink-0" />
-          <input
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input
             autoFocus
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            className="pl-9"
             placeholder="Search clients…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -123,11 +124,11 @@ function ClientPicker({
         {filtered.map((c) => (
           <button
             key={c.id}
-            className="flex items-center gap-3 w-full px-4 min-h-[56px] hover:bg-accent/50 transition-colors text-left"
+            className="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-accent/50 transition-colors text-left"
             onClick={() => onSelect(c)}
           >
             <span
-              className="size-3 rounded-full shrink-0"
+              className="size-2.5 rounded-full shrink-0"
               style={{ backgroundColor: c.color ?? "#9ca3af" }}
             />
             <span className="text-sm font-medium">{c.name}</span>
@@ -144,69 +145,9 @@ function ClientPicker({
   );
 }
 
-function ToggleButtons<T extends string>({
-  options,
-  value,
-  onChange,
-}: {
-  options: { label: string; value: T }[];
-  value: T;
-  onChange: (v: T) => void;
-}) {
-  return (
-    <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }}>
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          type="button"
-          className={cn(
-            "h-12 rounded-lg text-sm font-medium transition-colors border",
-            value === opt.value
-              ? "bg-primary text-primary-foreground border-primary"
-              : "bg-muted text-muted-foreground border-transparent hover:bg-accent"
-          )}
-          onClick={() => onChange(opt.value)}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function BreakStepper({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <button
-        type="button"
-        className="h-11 w-14 rounded-lg bg-muted flex items-center justify-center hover:bg-accent transition-colors"
-        onClick={() => onChange(Math.max(0, value - 15))}
-      >
-        <Minus className="size-4" />
-      </button>
-      <span className="text-2xl font-black tabular-nums min-w-[4rem] text-center">
-        {value}m
-      </span>
-      <button
-        type="button"
-        className="h-11 w-14 rounded-lg bg-muted flex items-center justify-center hover:bg-accent transition-colors"
-        onClick={() => onChange(value + 15)}
-      >
-        <Plus className="size-4" />
-      </button>
-    </div>
-  );
-}
-
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1.5">
       <label className="text-sm font-medium text-foreground">{label}</label>
       {children}
     </div>
@@ -250,7 +191,7 @@ function SummaryPanel({
           <span className="font-medium">{formatAUD(calc.superAmt)}</span>
         </div>
       )}
-      <div className="flex justify-between text-base font-bold pt-1 border-t mt-1">
+      <div className="flex justify-between text-sm font-bold pt-1 border-t mt-1">
         <span>Total</span>
         <span>{formatAUD(calc.total)}</span>
       </div>
@@ -259,6 +200,8 @@ function SummaryPanel({
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
+
+const PRODUCT_WORKFLOWS = ["Batch A", "Batch B", "Batch C", "Batch D", "Flatlay", "Model Shot"];
 
 export function EntrySheet({
   open,
@@ -309,9 +252,6 @@ export function EntrySheet({
 
   const billingType = selectedClient?.billing_type ?? "day_rate";
 
-  const PRODUCT_WORKFLOWS = ["Batch A", "Batch B", "Batch C", "Batch D", "Flatlay", "Model Shot"];
-
-  // All workflow values this client has rates for
   const clientWorkflowSet = useMemo(() => {
     if (!selectedClient) return new Set<string>();
     return new Set(
@@ -319,7 +259,6 @@ export function EntrySheet({
     );
   }, [selectedClient, workflowRates]);
 
-  // Sub-options shown under "Product"
   const productSubOptions = useMemo(
     () => PRODUCT_WORKFLOWS.filter((w) => clientWorkflowSet.has(w)),
     [clientWorkflowSet]
@@ -330,7 +269,8 @@ export function EntrySheet({
     ? "Product"
     : (form.workflow_type as "Apparel" | "Own Brand");
 
-  function handleTopWorkflow(v: "Apparel" | "Product" | "Own Brand") {
+  function handleTopWorkflow(v: string) {
+    if (!v) return;
     if (v === "Product") {
       set("workflow_type", productSubOptions[0] ?? "Batch A");
     } else {
@@ -338,7 +278,6 @@ export function EntrySheet({
     }
   }
 
-  // Live calculation
   const calcResult = useMemo(() => {
     if (!selectedClient) return null;
     if (billingType === "day_rate") {
@@ -362,7 +301,7 @@ export function EntrySheet({
       brand: billingType === "day_rate" && needsBrand ? form.brand || null : null,
       shoot_client: billingType === "hourly" && selectedClient?.entry_label ? form.shoot_client || null : null,
       description: billingType !== "day_rate" && !selectedClient?.entry_label ? form.description || null : null,
-      role: (billingType === "hourly" && selectedClient?.show_role) ? form.role || null : null,
+      role: billingType === "hourly" && selectedClient?.show_role ? form.role || null : null,
       start_time: billingType === "hourly" ? form.start_time || null : null,
       finish_time: billingType === "hourly" ? form.finish_time || null : null,
       break_minutes: billingType === "hourly" ? form.break_minutes : null,
@@ -431,15 +370,16 @@ export function EntrySheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="flex flex-col gap-0 p-0 w-full sm:max-w-md">
-        <SheetHeader className="px-4 py-4 border-b flex-row items-center gap-3">
+        <SheetHeader className="px-4 py-4 border-b flex-row items-center gap-2">
           {!entry && selectedClient && (
-            <button
-              type="button"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 shrink-0"
               onClick={() => setSelectedClient(null)}
             >
-              <ChevronLeft className="size-5" />
-            </button>
+              <ChevronLeft className="size-4" />
+            </Button>
           )}
           <SheetTitle className="text-base">{title}</SheetTitle>
         </SheetHeader>
@@ -448,61 +388,60 @@ export function EntrySheet({
           {!selectedClient ? (
             <ClientPicker clients={clients} onSelect={handleSelectClient} />
           ) : (
-            <div className="flex flex-col gap-5 px-4 py-5">
+            <div className="flex flex-col gap-4 px-4 py-4">
               {/* Date */}
               <Field label="Date">
                 <Input
                   type="date"
                   value={form.date}
                   onChange={(e) => set("date", e.target.value)}
-                  className="h-12 text-base"
                 />
               </Field>
 
               {/* Day type */}
               {showDayType && (
                 <Field label="Day type">
-                  <ToggleButtons
-                    options={[
-                      { label: "Full day", value: "full" },
-                      { label: "Half day", value: "half" },
-                    ]}
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
                     value={form.day_type}
-                    onChange={(v) => set("day_type", v)}
-                  />
+                    onValueChange={(v) => v && set("day_type", v as "full" | "half")}
+                    className="w-full"
+                  >
+                    <ToggleGroupItem value="full" className="flex-1">Full day</ToggleGroupItem>
+                    <ToggleGroupItem value="half" className="flex-1">Half day</ToggleGroupItem>
+                  </ToggleGroup>
                 </Field>
               )}
 
               {/* Workflow */}
               {showWorkflow && (
                 <Field label="Workflow">
-                  <ToggleButtons
-                    options={[
-                      { label: "Apparel", value: "Apparel" },
-                      { label: "Product", value: "Product" },
-                      { label: "Own Brand", value: "Own Brand" },
-                    ]}
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
                     value={topWorkflow}
-                    onChange={handleTopWorkflow}
-                  />
+                    onValueChange={handleTopWorkflow}
+                    className="w-full"
+                  >
+                    <ToggleGroupItem value="Apparel" className="flex-1">Apparel</ToggleGroupItem>
+                    <ToggleGroupItem value="Product" className="flex-1">Product</ToggleGroupItem>
+                    <ToggleGroupItem value="Own Brand" className="flex-1">Own Brand</ToggleGroupItem>
+                  </ToggleGroup>
                   {topWorkflow === "Product" && productSubOptions.length > 0 && (
-                    <div className="grid gap-2 mt-2" style={{ gridTemplateColumns: `repeat(${productSubOptions.length}, 1fr)` }}>
+                    <ToggleGroup
+                      type="single"
+                      variant="outline"
+                      value={form.workflow_type}
+                      onValueChange={(v) => v && set("workflow_type", v)}
+                      className="w-full mt-1"
+                    >
                       {productSubOptions.map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          className={cn(
-                            "h-10 rounded-lg text-xs font-medium transition-colors border",
-                            form.workflow_type === opt
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "bg-muted text-muted-foreground border-transparent hover:bg-accent"
-                          )}
-                          onClick={() => set("workflow_type", opt)}
-                        >
+                        <ToggleGroupItem key={opt} value={opt} className="flex-1 text-xs">
                           {opt}
-                        </button>
+                        </ToggleGroupItem>
                       ))}
-                    </div>
+                    </ToggleGroup>
                   )}
                 </Field>
               )}
@@ -514,7 +453,6 @@ export function EntrySheet({
                     value={form.brand}
                     onChange={(e) => set("brand", e.target.value)}
                     placeholder="Brand name"
-                    className="h-12 text-base"
                   />
                 </Field>
               )}
@@ -530,7 +468,6 @@ export function EntrySheet({
                       set("skus", e.target.value === "" ? null : parseInt(e.target.value, 10))
                     }
                     placeholder="0"
-                    className="h-12 text-base"
                   />
                 </Field>
               )}
@@ -542,7 +479,6 @@ export function EntrySheet({
                     value={form.shoot_client}
                     onChange={(e) => set("shoot_client", e.target.value)}
                     placeholder={selectedClient.entry_label!}
-                    className="h-12 text-base"
                   />
                 </Field>
               )}
@@ -562,46 +498,68 @@ export function EntrySheet({
               {/* Role */}
               {showRole && (
                 <Field label="Role">
-                  <ToggleButtons
-                    options={[
-                      { label: "Photographer", value: "Photographer" },
-                      { label: "Operator", value: "Operator" },
-                    ]}
-                    value={form.role as "Photographer" | "Operator"}
-                    onChange={(v) => set("role", v)}
-                  />
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    value={form.role}
+                    onValueChange={(v) => v && set("role", v)}
+                    className="w-full"
+                  >
+                    <ToggleGroupItem value="Photographer" className="flex-1">Photographer</ToggleGroupItem>
+                    <ToggleGroupItem value="Operator" className="flex-1">Operator</ToggleGroupItem>
+                  </ToggleGroup>
                 </Field>
               )}
 
               {/* Time fields */}
               {showTimes && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <Field label="Start">
-                    <input
+                    <Input
                       type="time"
                       value={form.start_time}
                       onChange={(e) => set("start_time", e.target.value)}
-                      className="h-12 w-full rounded-lg bg-muted px-3 text-base font-medium outline-none focus:ring-2 focus:ring-ring"
                     />
                   </Field>
                   <Field label="Finish">
-                    <input
+                    <Input
                       type="time"
                       value={form.finish_time}
                       onChange={(e) => set("finish_time", e.target.value)}
-                      className="h-12 w-full rounded-lg bg-muted px-3 text-base font-medium outline-none focus:ring-2 focus:ring-ring"
                     />
                   </Field>
                 </div>
               )}
 
-              {/* Break stepper */}
+              {/* Break */}
               {showBreak && (
                 <Field label="Break">
-                  <BreakStepper
-                    value={form.break_minutes}
-                    onChange={(v) => set("break_minutes", v)}
-                  />
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => set("break_minutes", Math.max(0, form.break_minutes - 15))}
+                    >
+                      <Minus className="size-4" />
+                    </Button>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={15}
+                      value={form.break_minutes}
+                      onChange={(e) => set("break_minutes", parseInt(e.target.value, 10) || 0)}
+                      className="text-center"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => set("break_minutes", form.break_minutes + 15)}
+                    >
+                      <Plus className="size-4" />
+                    </Button>
+                  </div>
                 </Field>
               )}
 
@@ -614,7 +572,7 @@ export function EntrySheet({
                       type="number"
                       min={0}
                       step={0.01}
-                      className="pl-7 h-12 text-base"
+                      className="pl-7"
                       value={form.manual_amount === 0 ? "" : form.manual_amount}
                       onChange={(e) =>
                         set("manual_amount", e.target.value === "" ? 0 : parseFloat(e.target.value))
@@ -642,7 +600,7 @@ export function EntrySheet({
 
         {/* Footer */}
         {selectedClient && (
-          <div className="border-t px-4 py-4 flex gap-2">
+          <div className="border-t px-4 py-3 flex gap-2">
             {entry && (
               <Button
                 variant="destructive"
