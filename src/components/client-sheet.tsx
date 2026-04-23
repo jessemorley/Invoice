@@ -4,10 +4,11 @@ import { useTransition, useEffect, useState } from "react";
 import Link from "next/link";
 import type { Client } from "@/lib/types";
 import { formatAUD } from "@/lib/format";
-import { updateClientColor, fetchClientInvoices, type RecentInvoice } from "@/app/(app)/clients/actions";
+import { updateClientColor, fetchClientInvoices, updateShowSuperOnInvoice, type RecentInvoice } from "@/app/(app)/clients/actions";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import {
   Sheet,
   SheetContent,
@@ -122,6 +123,22 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function SuperOnInvoiceToggle({ clientId, value }: { clientId: string; value: boolean }) {
+  const [isPending, startTransition] = useTransition();
+  return (
+    <div className="flex justify-between items-center gap-4 text-sm">
+      <span className="text-muted-foreground shrink-0">Show super on invoice</span>
+      <Switch
+        checked={value}
+        disabled={isPending}
+        onCheckedChange={(checked) => {
+          startTransition(() => updateShowSuperOnInvoice(clientId, checked));
+        }}
+      />
+    </div>
+  );
+}
+
 export function ClientSheet({
   open,
   onOpenChange,
@@ -193,6 +210,9 @@ export function ClientSheet({
             <Row label="Invoice frequency" value={client.invoice_frequency === "weekly" ? "Weekly" : "Per job"} />
             {client.pays_super && (
               <Row label="Super" value={`${(client.super_rate * 100).toFixed(1)}%`} />
+            )}
+            {client.pays_super && (
+              <SuperOnInvoiceToggle clientId={client.id} value={client.show_super_on_invoice} />
             )}
           </Section>
 

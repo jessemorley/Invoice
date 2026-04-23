@@ -78,6 +78,7 @@ export type Client = {
   rate_hourly_operator: number | null;
   pays_super: boolean;
   super_rate: number;
+  show_super_on_invoice: boolean;
   invoice_frequency: "weekly" | "per_job";
   address: string;
   suburb: string;

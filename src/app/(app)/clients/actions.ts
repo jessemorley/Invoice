@@ -39,3 +39,15 @@ export async function updateClientColor(clientId: string, color: string) {
   revalidateTag(CACHE_TAGS.clients, "max");
   revalidateTag(CACHE_TAGS.entries, "max");
 }
+
+export async function updateShowSuperOnInvoice(clientId: string, show: boolean) {
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("clients")
+    .update({ show_super_on_invoice: show })
+    .eq("id", clientId)
+    .eq("user_id", PROTOTYPE_USER_ID);
+
+  if (error) throw new Error(`updateShowSuperOnInvoice: ${error.message}`);
+  revalidateTag(CACHE_TAGS.clients, "max");
+}
