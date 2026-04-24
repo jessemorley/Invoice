@@ -50,7 +50,7 @@ function defaultForm(entry: Entry | null, client: Client | null): FormState {
       workflow_type: entry.workflow_type ?? "Apparel",
       brand: entry.brand ?? "",
       skus: entry.skus ?? null,
-      shoot_client: entry.shoot_client ?? "",
+      shoot_client: entry.shoot_client || entry.description || "",
       description: entry.description ?? "",
       role: entry.role ?? "Photographer",
       start_time: entry.start_time?.slice(0, 5) ?? client.default_start_time?.slice(0, 5) ?? "09:00",

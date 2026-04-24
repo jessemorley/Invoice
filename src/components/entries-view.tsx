@@ -194,7 +194,7 @@ function EntryRow({
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground truncate">
-              {entry.description ?? entry.workflow_type}
+              {entry.shoot_client || entry.description || entry.workflow_type}
             </span>
             {entry.role && (
               <span className="text-sm text-muted-foreground shrink-0">
@@ -206,7 +206,7 @@ function EntryRow({
       ) : (
         <div className="flex flex-1 min-w-0 items-center gap-2">
           <span className="text-sm text-foreground truncate">
-            {entry.description ?? entry.workflow_type}
+            {entry.shoot_client || entry.description || entry.workflow_type}
           </span>
           {entry.role && (
             <span className="text-sm text-muted-foreground shrink-0">
