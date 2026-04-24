@@ -10,7 +10,6 @@ import {
   Users,
   Settings,
   Wallet,
-  Calendar,
   MoreHorizontal,
   ChevronsUpDown,
   LogOut,
@@ -61,7 +60,6 @@ const mainTabs = [
 const overflowItems = [
   { href: "/expenses", label: "Expenses", icon: Wallet },
   { href: "/settings", label: "Settings", icon: Settings },
-  { href: "/calendar", label: "Calendar", icon: Calendar },
 ];
 
 const allItems = [...mainTabs, ...overflowItems];
