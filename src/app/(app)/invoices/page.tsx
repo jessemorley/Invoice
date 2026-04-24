@@ -3,11 +3,21 @@ import { fetchInvoices, fetchUninvoicedCount, fetchClients, type InvoiceFilters 
 import { PROTOTYPE_USER_ID } from "@/lib/supabase";
 import { InvoicesClient } from "./invoices-client";
 
-type PageProps = {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-};
+type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
-async function InvoicesData({ filters }: { filters: InvoiceFilters }) {
+async function InvoicesData({ searchParams }: { searchParams: SearchParams }) {
+  const sp = await searchParams;
+
+  const filters: InvoiceFilters = {
+    search: typeof sp.search === "string" ? sp.search : undefined,
+    status: typeof sp.status === "string" ? (sp.status as InvoiceFilters["status"]) : undefined,
+    clientId: typeof sp.client === "string" ? sp.client : undefined,
+    from: typeof sp.from === "string" ? sp.from : undefined,
+    to: typeof sp.to === "string" ? sp.to : undefined,
+    sortKey: typeof sp.sort === "string" ? (sp.sort as InvoiceFilters["sortKey"]) : "issued_date",
+    sortDir: sp.dir === "asc" ? "asc" : "desc",
+  };
+
   const [invoices, uninvoicedCount, clients] = await Promise.all([
     fetchInvoices(PROTOTYPE_USER_ID, filters),
     fetchUninvoicedCount(PROTOTYPE_USER_ID),
@@ -24,22 +34,10 @@ async function InvoicesData({ filters }: { filters: InvoiceFilters }) {
   );
 }
 
-export default async function InvoicesPage({ searchParams }: PageProps) {
-  const sp = await searchParams;
-
-  const filters: InvoiceFilters = {
-    search: typeof sp.search === "string" ? sp.search : undefined,
-    status: typeof sp.status === "string" ? (sp.status as InvoiceFilters["status"]) : undefined,
-    clientId: typeof sp.client === "string" ? sp.client : undefined,
-    from: typeof sp.from === "string" ? sp.from : undefined,
-    to: typeof sp.to === "string" ? sp.to : undefined,
-    sortKey: typeof sp.sort === "string" ? (sp.sort as InvoiceFilters["sortKey"]) : "issued_date",
-    sortDir: sp.dir === "asc" ? "asc" : "desc",
-  };
-
+export default async function InvoicesPage({ searchParams }: { searchParams: SearchParams }) {
   return (
-    <Suspense fallback={<InvoicesClient filters={filters} loading />}>
-      <InvoicesData filters={filters} />
+    <Suspense fallback={<InvoicesClient filters={{}} loading />}>
+      <InvoicesData searchParams={searchParams} />
     </Suspense>
   );
 }
