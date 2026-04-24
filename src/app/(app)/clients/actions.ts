@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidateTag } from "next/cache";
+import { updateTag, refresh } from "next/cache";
 import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
 import { CACHE_TAGS } from "@/lib/queries";
 import type { InvoiceStatus } from "@/lib/types";
@@ -36,8 +36,9 @@ export async function updateClientColor(clientId: string, color: string) {
     .eq("user_id", PROTOTYPE_USER_ID);
 
   if (error) throw new Error(`updateClientColor: ${error.message}`);
-  revalidateTag(CACHE_TAGS.clients, "max");
-  revalidateTag(CACHE_TAGS.entries, "max");
+  updateTag(CACHE_TAGS.clients);
+  updateTag(CACHE_TAGS.entries);
+  refresh();
 }
 
 export async function updateShowSuperOnInvoice(clientId: string, show: boolean) {
@@ -49,5 +50,6 @@ export async function updateShowSuperOnInvoice(clientId: string, show: boolean) 
     .eq("user_id", PROTOTYPE_USER_ID);
 
   if (error) throw new Error(`updateShowSuperOnInvoice: ${error.message}`);
-  revalidateTag(CACHE_TAGS.clients, "max");
+  updateTag(CACHE_TAGS.clients);
+  refresh();
 }

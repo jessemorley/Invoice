@@ -1,11 +1,10 @@
-import { unstable_cache } from "next/cache";
+import { cacheTag } from "next/cache";
 import { createServerClient } from "./supabase";
 import { isoWeek } from "./format";
 import type { Entry, Invoice, InvoiceDetail, Expense, DashboardData, ClientRef, MonthlyEarning, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
-// Cache tags — import these in server actions to call revalidateTag
 export const CACHE_TAGS = {
   entries: "entries",
   invoices: "invoices",
@@ -38,7 +37,9 @@ function computeDateRange(dates: string[]): string {
   return `${firstDay} ${firstMonth} – ${lastDay} ${lastMonth}`;
 }
 
-async function _fetchEntries(userId: string, before?: string): Promise<Entry[]> {
+export async function fetchEntries(userId: string, before?: string): Promise<Entry[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.entries);
   const supabase = createServerClient();
   const windowEnd = before ?? "9999-12-31";
   const windowStart = (() => {
@@ -90,13 +91,6 @@ async function _fetchEntries(userId: string, before?: string): Promise<Entry[]> 
   });
 }
 
-export const fetchEntries = unstable_cache(
-  _fetchEntries,
-  [CACHE_TAGS.entries],
-  { tags: [CACHE_TAGS.entries] }
-);
-
-
 export type InvoiceFilters = {
   search?: string;
   status?: InvoiceStatus | "all";
@@ -108,7 +102,9 @@ export type InvoiceFilters = {
   limit?: number;
 };
 
-async function _fetchInvoices(userId: string, filters: InvoiceFilters = {}): Promise<Invoice[]> {
+export async function fetchInvoices(userId: string, filters: InvoiceFilters = {}): Promise<Invoice[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.invoices);
   const supabase = createServerClient();
 
   const {
@@ -161,26 +157,18 @@ async function _fetchInvoices(userId: string, filters: InvoiceFilters = {}): Pro
   });
 }
 
-export const fetchInvoices = unstable_cache(
-  _fetchInvoices,
-  [CACHE_TAGS.invoices],
-  { tags: [CACHE_TAGS.invoices] }
-);
-
-async function _fetchUninvoicedCount(userId: string): Promise<number> {
+export async function fetchUninvoicedCount(userId: string): Promise<number> {
+  "use cache";
+  cacheTag(CACHE_TAGS.uninvoicedCount);
   const supabase = createServerClient();
   const { data, error } = await supabase.rpc("uninvoiced_group_count", { p_user_id: userId });
   if (error) throw new Error(`fetchUninvoicedCount: ${error.message}`);
   return data ?? 0;
 }
 
-export const fetchUninvoicedCount = unstable_cache(
-  _fetchUninvoicedCount,
-  [CACHE_TAGS.uninvoicedCount],
-  { tags: [CACHE_TAGS.uninvoicedCount] }
-);
-
-async function _fetchExpenses(userId: string): Promise<Expense[]> {
+export async function fetchExpenses(userId: string): Promise<Expense[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.expenses);
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("expenses")
@@ -204,13 +192,9 @@ async function _fetchExpenses(userId: string): Promise<Expense[]> {
   }));
 }
 
-export const fetchExpenses = unstable_cache(
-  _fetchExpenses,
-  [CACHE_TAGS.expenses],
-  { tags: [CACHE_TAGS.expenses] }
-);
-
-async function _fetchClients(userId: string): Promise<{ id: string; name: string; billing_type: string; color: string | null }[]> {
+export async function fetchClients(userId: string): Promise<{ id: string; name: string; billing_type: string; color: string | null }[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.clients);
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("clients")
@@ -223,13 +207,9 @@ async function _fetchClients(userId: string): Promise<{ id: string; name: string
   return (data ?? []).map((c) => ({ ...c, color: c.color ?? null }));
 }
 
-export const fetchClients = unstable_cache(
-  _fetchClients,
-  [CACHE_TAGS.clients],
-  { tags: [CACHE_TAGS.clients] }
-);
-
-async function _fetchFullClients(userId: string): Promise<Client[]> {
+export async function fetchFullClients(userId: string): Promise<Client[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.clients);
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("clients")
@@ -268,13 +248,9 @@ async function _fetchFullClients(userId: string): Promise<Client[]> {
   }));
 }
 
-export const fetchFullClients = unstable_cache(
-  _fetchFullClients,
-  [CACHE_TAGS.clients],
-  { tags: [CACHE_TAGS.clients] }
-);
-
-async function _fetchWorkflowRates(): Promise<WorkflowRate[]> {
+export async function fetchWorkflowRates(): Promise<WorkflowRate[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.clients);
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("client_workflow_rates")
@@ -291,12 +267,6 @@ async function _fetchWorkflowRates(): Promise<WorkflowRate[]> {
     max_bonus: Number(r.max_bonus),
   }));
 }
-
-export const fetchWorkflowRates = unstable_cache(
-  _fetchWorkflowRates,
-  [CACHE_TAGS.clients],
-  { tags: [CACHE_TAGS.clients] }
-);
 
 export async function fetchDashboardData(userId: string, entries: Entry[], invoices: Invoice[]): Promise<DashboardData> {
   const now = new Date();
@@ -384,7 +354,9 @@ export type InvoiceSequence = {
   mark_as_issued_on_send: boolean;
 };
 
-async function _fetchBusinessDetails(userId: string): Promise<BusinessDetails | null> {
+export async function fetchBusinessDetails(userId: string): Promise<BusinessDetails | null> {
+  "use cache";
+  cacheTag(CACHE_TAGS.settings);
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("business_details")
@@ -394,12 +366,6 @@ async function _fetchBusinessDetails(userId: string): Promise<BusinessDetails | 
   if (error) throw new Error(`fetchBusinessDetails: ${error.message}`);
   return data as BusinessDetails | null;
 }
-
-export const fetchBusinessDetails = unstable_cache(
-  _fetchBusinessDetails,
-  [CACHE_TAGS.settings],
-  { tags: [CACHE_TAGS.settings] }
-);
 
 export async function fetchInvoiceDetail(invoiceId: string, userId: string): Promise<InvoiceDetail | null> {
   const supabase = createServerClient();
@@ -481,7 +447,9 @@ export async function fetchInvoiceDetail(invoiceId: string, userId: string): Pro
   };
 }
 
-async function _fetchInvoiceSequence(userId: string): Promise<InvoiceSequence | null> {
+export async function fetchInvoiceSequence(userId: string): Promise<InvoiceSequence | null> {
+  "use cache";
+  cacheTag(CACHE_TAGS.settings);
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("invoice_sequence")
@@ -491,9 +459,3 @@ async function _fetchInvoiceSequence(userId: string): Promise<InvoiceSequence | 
   if (error) throw new Error(`fetchInvoiceSequence: ${error.message}`);
   return data as InvoiceSequence | null;
 }
-
-export const fetchInvoiceSequence = unstable_cache(
-  _fetchInvoiceSequence,
-  [CACHE_TAGS.settings],
-  { tags: [CACHE_TAGS.settings] }
-);

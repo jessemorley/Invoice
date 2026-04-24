@@ -231,6 +231,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const pathname = usePathname();
   const [, startTransition] = useTransition();
   const [loadPending, startLoadTransition] = useTransition();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
   const [localStatuses, setLocalStatuses] = useState<Record<string, InvoiceStatus>>(
@@ -328,8 +329,8 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             {uninvoicedCount} groups ready to invoice
           </Badge>
         )}
-        <Button size="icon" variant="ghost" className="size-8" onClick={async () => { await revalidateInvoices(); router.refresh(); }} disabled={loading}>
-          <RefreshCw className="size-4" />
+        <Button size="icon" variant="ghost" className="size-8" onClick={async () => { setIsRefreshing(true); try { await revalidateInvoices(); } finally { setIsRefreshing(false); } }} disabled={loading || isRefreshing}>
+          <RefreshCw className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
         </Button>
         <Button size="sm" className="hidden md:flex" disabled={loading}>
           <Plus className="size-4" />

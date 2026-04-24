@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { Entry, Client, WorkflowRate, BillingType } from "@/lib/types";
 import { createEntry, updateEntry, deleteEntry } from "@/app/(app)/entries/actions";
@@ -223,7 +222,6 @@ export function EntrySheet({
   clients: Client[];
   workflowRates: WorkflowRate[];
 }) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -331,7 +329,6 @@ export function EntrySheet({
         } else {
           await createEntry(payload);
         }
-        router.refresh();
         onOpenChange(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");
@@ -344,7 +341,6 @@ export function EntrySheet({
     startDeleteTransition(async () => {
       try {
         await deleteEntry(entry.id);
-        router.refresh();
         onOpenChange(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");

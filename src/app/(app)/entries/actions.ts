@@ -1,9 +1,9 @@
 "use server";
 
-import { revalidateTag } from "next/cache";
+import { updateTag, refresh } from "next/cache";
 import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
 import type { BillingType, DayType } from "@/lib/types";
-import { fetchEntries, fetchFullClients, fetchWorkflowRates as _fetchWorkflowRates, CACHE_TAGS } from "@/lib/queries";
+import { fetchEntries, fetchFullClients, fetchWorkflowRates, CACHE_TAGS } from "@/lib/queries";
 import type { Entry } from "@/lib/types";
 
 export async function loadEarlierEntries(before: string): Promise<Entry[]> {
@@ -62,7 +62,8 @@ export async function updateEntry(id: string, data: EntryFormData) {
     .eq("user_id", PROTOTYPE_USER_ID);
 
   if (error) throw new Error(`updateEntry: ${error.message}`);
-  revalidateTag(CACHE_TAGS.entries, "max");
+  updateTag(CACHE_TAGS.entries);
+  refresh();
 }
 
 export async function createEntry(data: EntryFormData) {
@@ -90,7 +91,8 @@ export async function createEntry(data: EntryFormData) {
   });
 
   if (error) throw new Error(`createEntry: ${error.message}`);
-  revalidateTag(CACHE_TAGS.entries, "max");
+  updateTag(CACHE_TAGS.entries);
+  refresh();
 }
 
 export async function deleteEntry(id: string) {
@@ -102,12 +104,14 @@ export async function deleteEntry(id: string) {
     .eq("user_id", PROTOTYPE_USER_ID);
 
   if (error) throw new Error(`deleteEntry: ${error.message}`);
-  revalidateTag(CACHE_TAGS.entries, "max");
+  updateTag(CACHE_TAGS.entries);
+  refresh();
 }
 
 export async function revalidateEntries() {
-  revalidateTag(CACHE_TAGS.entries, "max");
-  revalidateTag(CACHE_TAGS.clients, "max");
+  updateTag(CACHE_TAGS.entries);
+  updateTag(CACHE_TAGS.clients);
+  refresh();
 }
 
 export async function fetchClients() {
@@ -115,5 +119,5 @@ export async function fetchClients() {
 }
 
 export async function loadWorkflowRates() {
-  return _fetchWorkflowRates();
+  return fetchWorkflowRates();
 }

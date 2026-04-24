@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
 import { formatAUD } from "@/lib/format";
 import { updateInvoice } from "@/app/(app)/invoices/actions";
@@ -58,7 +57,6 @@ export function InvoiceSheet({
   onOpenChange: (open: boolean) => void;
   invoice: Invoice | null;
 }) {
-  const router = useRouter();
   const [form, setForm] = useState<InvoiceFormData | null>(
     invoice ? defaultForm(invoice) : null
   );
@@ -82,7 +80,6 @@ export function InvoiceSheet({
     startTransition(async () => {
       try {
         await updateInvoice(invoice.id, form);
-        router.refresh();
         onOpenChange(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");

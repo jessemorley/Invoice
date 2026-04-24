@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidateTag } from "next/cache";
+import { updateTag, refresh } from "next/cache";
 import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
 import {
   fetchBusinessDetails,
@@ -66,7 +66,8 @@ export async function saveBusinessDetails(data: BusinessDetailsFormData) {
       { onConflict: "user_id" }
     );
   if (error) throw new Error(`saveBusinessDetails: ${error.message}`);
-  revalidateTag(CACHE_TAGS.settings, "max");
+  updateTag(CACHE_TAGS.settings);
+  refresh();
 }
 
 export async function saveInvoicingSettings(data: InvoicingFormData) {
@@ -84,5 +85,6 @@ export async function saveInvoicingSettings(data: InvoicingFormData) {
       { onConflict: "user_id" }
     );
   if (error) throw new Error(`saveInvoicingSettings: ${error.message}`);
-  revalidateTag(CACHE_TAGS.settings, "max");
+  updateTag(CACHE_TAGS.settings);
+  refresh();
 }

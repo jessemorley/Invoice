@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { loadEarlierEntries, revalidateEntries } from "@/app/(app)/entries/actions";
+import { revalidateEntries, loadEarlierEntries } from "@/app/(app)/entries/actions";
 import type { Entry, Client, WorkflowRate } from "@/lib/types";
 import { formatAUD, formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -401,8 +400,8 @@ export function EntriesView({
   workflowRates: WorkflowRate[];
   loading?: boolean;
 }) {
-  const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>("invoice");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const [entries, setEntries] = useState<Entry[]>(initialEntries ?? []);
@@ -449,8 +448,8 @@ export function EntriesView({
           <ToggleGroupItem value="week">Week</ToggleGroupItem>
           <ToggleGroupItem value="none">None</ToggleGroupItem>
         </ToggleGroup>
-        <Button size="icon" variant="ghost" className="size-8" onClick={async () => { await revalidateEntries(); router.refresh(); }} disabled={loading}>
-          <RefreshCw className="size-4" />
+        <Button size="icon" variant="ghost" className="size-8" onClick={async () => { setIsRefreshing(true); try { await revalidateEntries(); } finally { setIsRefreshing(false); } }} disabled={loading || isRefreshing}>
+          <RefreshCw className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
         </Button>
         <Button size="sm" className="hidden md:flex" onClick={openNew} disabled={loading}>
           <Plus className="size-4" />
