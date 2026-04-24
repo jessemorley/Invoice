@@ -21,6 +21,7 @@ export type Database = {
           address: string
           bsb: string
           business_name: string
+          email: string
           id: string
           include_super_in_totals: boolean
           name: string
@@ -37,6 +38,7 @@ export type Database = {
           address?: string
           bsb?: string
           business_name?: string
+          email?: string
           id?: string
           include_super_in_totals?: boolean
           name?: string
@@ -53,6 +55,7 @@ export type Database = {
           address?: string
           bsb?: string
           business_name?: string
+          email?: string
           id?: string
           include_super_in_totals?: boolean
           name?: string
@@ -379,21 +382,27 @@ export type Database = {
       }
       invoice_sequence: {
         Row: {
+          due_date_offset: number
           id: string
           invoice_prefix: string
           last_number: number
+          mark_as_issued_on_send: boolean
           user_id: string
         }
         Insert: {
+          due_date_offset?: number
           id?: string
           invoice_prefix?: string
           last_number: number
+          mark_as_issued_on_send?: boolean
           user_id: string
         }
         Update: {
+          due_date_offset?: number
           id?: string
           invoice_prefix?: string
           last_number?: number
+          mark_as_issued_on_send?: boolean
           user_id?: string
         }
         Relationships: []
@@ -402,10 +411,10 @@ export type Database = {
         Row: {
           client_id: string
           created_at: string
-          due_date: string
+          due_date: string | null
           id: string
           invoice_number: string
-          issued_date: string
+          issued_date: string | null
           notes: string | null
           paid_date: string | null
           status: Database["public"]["Enums"]["invoice_status"]
@@ -417,10 +426,10 @@ export type Database = {
         Insert: {
           client_id: string
           created_at?: string
-          due_date: string
+          due_date?: string | null
           id?: string
           invoice_number: string
-          issued_date: string
+          issued_date?: string | null
           notes?: string | null
           paid_date?: string | null
           status?: Database["public"]["Enums"]["invoice_status"]
@@ -432,10 +441,10 @@ export type Database = {
         Update: {
           client_id?: string
           created_at?: string
-          due_date?: string
+          due_date?: string | null
           id?: string
           invoice_number?: string
-          issued_date?: string
+          issued_date?: string | null
           notes?: string | null
           paid_date?: string | null
           status?: Database["public"]["Enums"]["invoice_status"]
@@ -456,7 +465,9 @@ export type Database = {
       }
       scheduled_emails: {
         Row: {
+          bcc_address: string | null
           body_text: string
+          cc_address: string | null
           created_at: string
           error: string | null
           filename: string
@@ -472,7 +483,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bcc_address?: string | null
           body_text: string
+          cc_address?: string | null
           created_at?: string
           error?: string | null
           filename: string
@@ -488,7 +501,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bcc_address?: string | null
           body_text?: string
+          cc_address?: string | null
           created_at?: string
           error?: string | null
           filename?: string
@@ -519,6 +534,10 @@ export type Database = {
     }
     Functions: {
       next_invoice_number: { Args: never; Returns: number }
+      next_invoice_number_for_user: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
       uninvoiced_group_count: { Args: { p_user_id: string }; Returns: number }
     }
     Enums: {
@@ -681,8 +700,3 @@ export const Constants = {
     },
   },
 } as const
-
-export type BillingType = Database["public"]["Enums"]["billing_type"]
-export type DayType = Database["public"]["Enums"]["day_type"]
-export type ExpenseCategory = Database["public"]["Enums"]["expense_category"]
-export type InvoiceStatus = Database["public"]["Enums"]["invoice_status"]

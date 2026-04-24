@@ -157,6 +157,54 @@ export async function fetchInvoices(userId: string, filters: InvoiceFilters = {}
   });
 }
 
+export type UninvoicedGroup = {
+  key: string;
+  clientId: string;
+  clientName: string;
+  clientColor: string;
+  isoWeek: string;
+  dateRange: string;
+  entryCount: number;
+  subtotal: number;
+};
+
+export async function fetchUninvoicedGroups(userId: string): Promise<UninvoicedGroup[]> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("entries")
+    .select("id, date, base_amount, bonus_amount, clients(id, name, color)")
+    .eq("user_id", userId)
+    .is("invoice_id", null)
+    .order("date", { ascending: false });
+
+  if (error) throw new Error(`fetchUninvoicedGroups: ${error.message}`);
+
+  const map = new Map<string, { clientId: string; clientName: string; clientColor: string; isoWeek: string; dates: string[]; subtotal: number }>();
+  for (const e of data ?? []) {
+    const client = Array.isArray(e.clients) ? e.clients[0] : e.clients;
+    if (!client) continue;
+    const week = isoWeek(e.date);
+    const key = `${client.id}-${week}`;
+    if (!map.has(key)) {
+      map.set(key, { clientId: client.id, clientName: client.name, clientColor: client.color ?? CLIENT_COLOR_FALLBACK, isoWeek: week, dates: [], subtotal: 0 });
+    }
+    const g = map.get(key)!;
+    g.dates.push(e.date);
+    g.subtotal += (e.base_amount ?? 0) + (e.bonus_amount ?? 0);
+  }
+
+  return Array.from(map.entries()).map(([key, g]) => ({
+    key,
+    clientId: g.clientId,
+    clientName: g.clientName,
+    clientColor: g.clientColor,
+    isoWeek: g.isoWeek,
+    dateRange: computeDateRange(g.dates),
+    entryCount: g.dates.length,
+    subtotal: g.subtotal,
+  }));
+}
+
 export async function fetchUninvoicedCount(userId: string): Promise<number> {
   "use cache";
   cacheTag(CACHE_TAGS.uninvoicedCount);

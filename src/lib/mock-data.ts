@@ -1,4 +1,4 @@
-import type { ExpenseCategory } from "./database.types";
+import type { ExpenseCategory } from "./types";
 
 export type { ExpenseCategory };
 

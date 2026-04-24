@@ -1,6 +1,9 @@
-import type { BillingType, DayType, ExpenseCategory, InvoiceStatus } from "./database.types";
+import type { Database } from "./database.types";
 
-export type { ExpenseCategory, InvoiceStatus, BillingType, DayType };
+export type BillingType = Database["public"]["Enums"]["billing_type"];
+export type DayType = Database["public"]["Enums"]["day_type"];
+export type ExpenseCategory = Database["public"]["Enums"]["expense_category"];
+export type InvoiceStatus = Database["public"]["Enums"]["invoice_status"];
 
 export type ClientRef = {
   id: string;
@@ -44,7 +47,7 @@ export type Invoice = {
   id: string;
   number: string;
   client: ClientRef;
-  issued_date: string;
+  issued_date: string | null;
   date_range: string;
   subtotal: number;
   super_amount: number;
@@ -139,7 +142,7 @@ export type InvoiceEntry = {
 export type InvoiceDetail = {
   id: string;
   number: string;
-  issued_date: string;
+  issued_date: string | null;
   due_date: string | null;
   status: InvoiceStatus;
   subtotal: number;

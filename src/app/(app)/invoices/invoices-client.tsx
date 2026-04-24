@@ -45,6 +45,7 @@ import {
 import { SortableTableHead } from "@/components/sortable-table-head";
 import { PageHeader } from "@/components/page-header";
 import { InvoiceSheet } from "@/components/invoice-sheet";
+import { GenerateSheet } from "@/components/generate-sheet";
 import { ChevronDown, FileText, Plus, RefreshCw, Search } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
@@ -239,6 +240,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   );
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [generateOpen, setGenerateOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(filters.search ?? "");
 
   // Reset invoice list when server-side filters change (URL navigation)
@@ -249,7 +251,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
 
   function handleLoadMore() {
     const oldest = invoices.reduce(
-      (min, inv) => inv.issued_date < min ? inv.issued_date : min,
+      (min, inv) => (inv.issued_date ?? "") < min ? (inv.issued_date ?? "") : min,
       invoices[0]?.issued_date ?? new Date().toISOString().slice(0, 10)
     );
     startLoadTransition(async () => {
@@ -325,9 +327,11 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     <div className="flex flex-col h-full">
       <PageHeader title="Invoices">
         {uninvoicedCount > 0 && (
-          <Badge variant="secondary">
-            {uninvoicedCount} groups ready to invoice
-          </Badge>
+          <button onClick={() => setGenerateOpen(true)}>
+            <Badge variant="secondary" className="cursor-pointer">
+              {uninvoicedCount} {uninvoicedCount === 1 ? "group" : "groups"} ready to invoice
+            </Badge>
+          </button>
         )}
         <Button size="icon" variant="ghost" className="size-8" onClick={async () => { setIsRefreshing(true); try { await revalidateInvoices(); } finally { setIsRefreshing(false); } }} disabled={loading || isRefreshing}>
           <RefreshCw className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
@@ -448,7 +452,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                         {inv.entry_count}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground py-4 px-6">
-                        {formatDateShort(inv.issued_date)}
+                        {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
                       </TableCell>
                       <TableCell className="text-sm text-right tabular-nums py-4 px-6">
                         {formatAUD(inv.total)}
@@ -527,6 +531,10 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         invoice={selectedInvoice}
+      />
+      <GenerateSheet
+        open={generateOpen}
+        onOpenChange={setGenerateOpen}
       />
     </div>
   );

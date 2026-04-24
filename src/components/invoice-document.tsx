@@ -277,7 +277,7 @@ export function InvoiceDocument({ invoice, business }: Props) {
         {/* Meta row */}
         <View style={s.metaContainer}>
           <View style={s.datesBlock}>
-            <Text style={s.datesLine}>Issued {fmtDateShort(invoice.issued_date)}</Text>
+            {invoice.issued_date ? <Text style={s.datesLine}>Issued {fmtDateShort(invoice.issued_date)}</Text> : null}
             {invoice.due_date
               ? <Text style={s.datesLine}>Due {fmtDateShort(invoice.due_date)}</Text>
               : null}

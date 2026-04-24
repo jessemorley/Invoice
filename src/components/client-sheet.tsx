@@ -92,7 +92,7 @@ function RecentInvoiceRow({ invoice }: { invoice: RecentInvoice }) {
       <div className="flex-1 min-w-0">
         <p className="font-medium">{invoice.number}</p>
         <p className="text-xs text-muted-foreground">
-          {new Date(invoice.issued_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
+          {invoice.issued_date ? new Date(invoice.issued_date).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" }) : "—"}
         </p>
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">

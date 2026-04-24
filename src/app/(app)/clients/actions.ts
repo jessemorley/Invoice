@@ -8,7 +8,7 @@ import type { InvoiceStatus } from "@/lib/types";
 export type RecentInvoice = {
   id: string;
   number: string;
-  issued_date: string;
+  issued_date: string | null;
   total: number;
   status: InvoiceStatus;
 };

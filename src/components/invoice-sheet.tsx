@@ -42,7 +42,7 @@ const STATUS_VARIANT: Record<InvoiceStatus, "outline" | "secondary" | "default">
 function defaultForm(invoice: Invoice): InvoiceFormData {
   return {
     status: invoice.status,
-    issued_date: invoice.issued_date,
+    issued_date: invoice.issued_date ?? "",
     due_date: "",
     notes: "",
   };
