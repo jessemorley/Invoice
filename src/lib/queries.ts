@@ -368,6 +368,7 @@ export async function fetchBusinessDetails(userId: string): Promise<BusinessDeta
 }
 
 export async function fetchInvoiceDetail(invoiceId: string, userId: string): Promise<InvoiceDetail | null> {
+  "use cache";
   const supabase = createServerClient();
 
   const { data, error } = await supabase
