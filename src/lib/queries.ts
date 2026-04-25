@@ -121,7 +121,7 @@ export async function fetchInvoices(userId: string, filters: InvoiceFilters = {}
 
   let query = supabase
     .from("invoices")
-    .select("*, clients(id, name, billing_type, color), entries(date)")
+    .select("*, clients(id, name, billing_type, color)")
     .eq("user_id", userId);
 
   if (status && status !== "all") query = query.eq("status", status);
@@ -141,18 +141,15 @@ export async function fetchInvoices(userId: string, filters: InvoiceFilters = {}
 
   return (data ?? []).map((inv) => {
     const client = Array.isArray(inv.clients) ? inv.clients[0] : inv.clients;
-    const dates = (inv.entries ?? []).map((e: { date: string }) => e.date);
     return {
       id: inv.id,
       number: inv.invoice_number,
       client: toClientRef(client ?? { id: inv.client_id, name: "Unknown", billing_type: "day_rate" }),
       issued_date: inv.issued_date,
-      date_range: computeDateRange(dates),
       subtotal: inv.subtotal,
       super_amount: inv.super_amount,
       total: inv.total,
       status: inv.status,
-      entry_count: dates.length,
     };
   });
 }

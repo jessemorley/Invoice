@@ -48,12 +48,10 @@ export type Invoice = {
   number: string;
   client: ClientRef;
   issued_date: string | null;
-  date_range: string;
   subtotal: number;
   super_amount: number;
   total: number;
   status: InvoiceStatus;
-  entry_count: number;
 };
 
 export type Expense = {

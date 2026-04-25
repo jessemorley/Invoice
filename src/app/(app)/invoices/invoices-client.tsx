@@ -147,10 +147,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
         </div>
         <div className="flex items-center gap-2 mt-0.5">
           <span className="text-xs text-muted-foreground">
-            {invoice.date_range}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {invoice.entry_count} entries
+            {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
           </span>
         </div>
       </div>
@@ -412,11 +409,9 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableTableHead className="w-36 py-4 px-6" {...sh("issued_date")}>Dates</SortableTableHead>
+                  <SortableTableHead className="w-28 py-4 px-6" {...sh("issued_date")}>Issued</SortableTableHead>
                   <SortableTableHead className="w-24 py-4 px-6" {...sh("number")}>Number</SortableTableHead>
                   <SortableTableHead className="py-4 px-6" {...sh("client")}>Client</SortableTableHead>
-                  <TableHead className="w-16 text-right py-4 px-6">Lines</TableHead>
-                  <SortableTableHead className="w-28 py-4 px-6" {...sh("issued_date")}>Issued</SortableTableHead>
                   <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("total")}>Total</SortableTableHead>
                   <SortableTableHead className="w-24 py-4 px-6" align="right" {...sh("status")}>Status</SortableTableHead>
                 </TableRow>
@@ -426,7 +421,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                   <SkeletonTableRows />
                 ) : invoices.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
                       No invoices match these filters.
                     </TableCell>
                   </TableRow>
@@ -434,7 +429,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                   invoices.map((inv) => (
                     <TableRow key={inv.id} className="cursor-pointer" onClick={() => openInvoice(inv)}>
                       <TableCell className="text-sm text-muted-foreground py-4 px-6">
-                        {inv.date_range}
+                        {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
                       </TableCell>
                       <TableCell className="font-medium text-sm py-4 px-6">
                         {inv.number}
@@ -447,12 +442,6 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                           />
                           <span className="text-sm">{inv.client.name}</span>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-right text-muted-foreground tabular-nums py-4 px-6">
-                        {inv.entry_count}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground py-4 px-6">
-                        {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
                       </TableCell>
                       <TableCell className="text-sm text-right tabular-nums py-4 px-6">
                         {formatAUD(inv.total)}

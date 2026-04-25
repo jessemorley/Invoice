@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
-import { formatAUD } from "@/lib/format";
+import { formatAUD, formatDateShort } from "@/lib/format";
 import { updateInvoice } from "@/app/(app)/invoices/actions";
 import type { InvoiceFormData } from "@/app/(app)/invoices/actions";
 import { Button } from "@/components/ui/button";
@@ -108,12 +108,8 @@ export function InvoiceSheet({
           {/* Summary */}
           <div className="rounded-lg bg-muted/40 px-4 py-3 flex flex-col gap-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Date range</span>
-              <span>{invoice.date_range}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Entries</span>
-              <span>{invoice.entry_count}</span>
+              <span className="text-muted-foreground">Issued</span>
+              <span>{invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}</span>
             </div>
             <Separator />
             <div className="flex justify-between font-medium">
