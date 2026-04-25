@@ -1,6 +1,5 @@
 import { Suspense } from "react";
-
-export const dynamic = "force-dynamic";
+import { connection } from "next/server";
 import {
   fetchEntries,
   fetchInvoices,
@@ -16,6 +15,7 @@ import { PROTOTYPE_USER_ID } from "@/lib/supabase";
 import { SpaShell } from "@/components/spa-shell";
 
 async function SpaData() {
+  await connection();
   const [
     entries,
     invoices,
