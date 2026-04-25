@@ -113,7 +113,7 @@ export async function fetchInvoices(userId: string, filters: InvoiceFilters = {}
     clientId,
     sortKey = "issued_date",
     sortDir = "desc",
-    limit = 25,
+    limit,
   } = filters;
 
   const from = filters.from === "all" ? undefined : filters.from;
@@ -134,7 +134,8 @@ export async function fetchInvoices(userId: string, filters: InvoiceFilters = {}
     : sortKey === "client" ? "client_id"
     : sortKey;
 
-  query = query.order(dbSortKey, { ascending: sortDir === "asc" }).limit(limit);
+  query = query.order(dbSortKey, { ascending: sortDir === "asc" });
+  if (limit !== undefined) query = query.limit(limit);
 
   const { data, error } = await query;
   if (error) throw new Error(`fetchInvoices: ${error.message}`);
