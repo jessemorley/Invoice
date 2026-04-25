@@ -23,6 +23,12 @@ function DockItem({ href, icon: Icon, label, pathname }: (typeof tabs)[0] & { pa
     <Link
       href={href}
       aria-label={label}
+      onClick={(e) => {
+        if (isActive) {
+          e.preventDefault();
+          window.dispatchEvent(new CustomEvent("dock:focus-search"));
+        }
+      }}
       className={cn(
         "relative flex items-center justify-center w-11 h-11 rounded-full transition-colors",
         isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"

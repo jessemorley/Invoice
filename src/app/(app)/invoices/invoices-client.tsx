@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import { loadMoreInvoices, revalidateInvoices, filterInvoices } from "./actions";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
 import type { InvoiceFilters } from "@/lib/queries";
@@ -234,6 +234,14 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
+
+  const mobileSearchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handler = () => mobileSearchRef.current?.focus();
+    window.addEventListener("dock:focus-search", handler);
+    return () => window.removeEventListener("dock:focus-search", handler);
+  }, []);
 
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -478,6 +486,57 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
               )}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Mobile filters */}
+      <div className="md:hidden border-b px-4 py-3 space-y-2">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input
+            ref={mobileSearchRef}
+            placeholder="Search invoices..."
+            className="pl-8"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            onBlur={() => refetch({ search: searchValue })}
+            onKeyDown={(e) => e.key === "Enter" && refetch({ search: searchValue })}
+            disabled={loading}
+          />
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-none">
+          <Select value={currentTimeframe} onValueChange={(v) => refetch({ timeframe: v })} disabled={loading}>
+            <SelectTrigger className="w-32 shrink-0 text-xs h-8">
+              <SelectValue placeholder="Timeframe" />
+            </SelectTrigger>
+            <SelectContent>
+              {TIMEFRAME_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={(v) => refetch({ status: v })} disabled={loading}>
+            <SelectTrigger className="w-28 shrink-0 text-xs h-8">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All status</SelectItem>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="issued">Issued</SelectItem>
+              <SelectItem value="paid">Paid</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={clientFilter} onValueChange={(v) => refetch({ clientId: v })} disabled={loading}>
+            <SelectTrigger className="w-32 shrink-0 text-xs h-8">
+              <SelectValue placeholder="Client" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All clients</SelectItem>
+              {clients.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
