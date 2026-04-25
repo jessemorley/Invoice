@@ -44,7 +44,7 @@ export function FloatingDock() {
   const pathname = usePathname();
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 md:hidden">
+    <div className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden" style={{ bottom: "max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem))" }}>
       <nav className="flex items-center gap-0.5 bg-background/95 backdrop-blur-md border border-border/50 rounded-full px-2.5 py-2 shadow-xl shadow-black/10">
         {tabs.map((tab) => (
           <DockItem key={tab.href} {...tab} pathname={pathname} />

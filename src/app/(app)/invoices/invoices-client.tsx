@@ -357,7 +357,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   );
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col absolute inset-0">
       <PageHeader title="Invoices" mobileTitle={mobileTitle}>
         {uninvoicedCount > 0 && (
           <button onClick={() => setGenerateOpen(true)}>
@@ -532,7 +532,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             </EmptyHeader>
           </Empty>
         ) : (
-          <div className="px-4 py-4 flex flex-col gap-3">
+          <div className="px-4 py-4 pb-28 flex flex-col gap-3">
             {visibleInvoices.map((inv) => (
               <Card key={inv.id} className="py-0" onClick={() => openInvoice(inv)}>
                 <CardContent className="p-0">
