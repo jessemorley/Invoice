@@ -45,7 +45,7 @@ import { SortableTableHead } from "@/components/sortable-table-head";
 import { PageHeader } from "@/components/page-header";
 import { InvoiceSheet } from "@/components/invoice-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
-import { ChevronDown, FileText, Plus, RefreshCw, Search } from "lucide-react";
+import { ChevronDown, FileText, Plus, RefreshCw, Search, X } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
 
@@ -234,14 +234,22 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
-  const mobileSearchRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const handler = () => mobileSearchRef.current?.focus();
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
+
+  useEffect(() => {
+    const handler = () => {
+      if (!searchOpen) setSearchOpen(true);
+      else searchInputRef.current?.focus();
+    };
     window.addEventListener("dock:focus-search", handler);
     return () => window.removeEventListener("dock:focus-search", handler);
-  }, []);
+  }, [searchOpen]);
 
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -335,9 +343,27 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
 
   const currentTimeframe = timeframe;
 
+  function closeSearch() {
+    setSearchOpen(false);
+    if (searchValue) refetch({ search: "" });
+  }
+
+  const mobileTitle = searchOpen ? (
+    <input
+      ref={searchInputRef}
+      className="text-lg font-semibold bg-transparent border-none outline-none w-full text-foreground placeholder:font-normal placeholder:text-muted-foreground/60"
+      placeholder="Search invoices..."
+      value={searchValue}
+      onChange={(e) => refetch({ search: e.target.value })}
+      onKeyDown={(e) => e.key === "Escape" && closeSearch()}
+    />
+  ) : (
+    <span className="text-lg font-semibold">Invoices</span>
+  );
+
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Invoices">
+      <PageHeader title="Invoices" mobileTitle={mobileTitle}>
         {uninvoicedCount > 0 && (
           <button onClick={() => setGenerateOpen(true)}>
             <Badge variant="secondary" className="cursor-pointer">
@@ -345,6 +371,9 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             </Badge>
           </button>
         )}
+        <Button size="icon" variant="ghost" className="size-8 md:hidden" onClick={() => searchOpen ? closeSearch() : setSearchOpen(true)} disabled={loading}>
+          {searchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+        </Button>
         <Button size="icon" variant="ghost" className="size-8" onClick={async () => { setIsRefreshing(true); try { await revalidateInvoices(); } finally { setIsRefreshing(false); } }} disabled={loading || isRefreshing}>
           <RefreshCw className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
         </Button>
@@ -489,55 +518,40 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         </div>
       </div>
 
-      {/* Mobile filters */}
-      <div className="md:hidden border-b px-4 py-3 space-y-2">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input
-            ref={mobileSearchRef}
-            placeholder="Search invoices..."
-            className="pl-8"
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            onBlur={() => refetch({ search: searchValue })}
-            onKeyDown={(e) => e.key === "Enter" && refetch({ search: searchValue })}
-            disabled={loading}
-          />
-        </div>
-        <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-none">
-          <Select value={currentTimeframe} onValueChange={(v) => refetch({ timeframe: v })} disabled={loading}>
-            <SelectTrigger className="w-32 shrink-0 text-xs h-8">
-              <SelectValue placeholder="Timeframe" />
-            </SelectTrigger>
-            <SelectContent>
-              {TIMEFRAME_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={(v) => refetch({ status: v })} disabled={loading}>
-            <SelectTrigger className="w-28 shrink-0 text-xs h-8">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All status</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="issued">Issued</SelectItem>
-              <SelectItem value="paid">Paid</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={clientFilter} onValueChange={(v) => refetch({ clientId: v })} disabled={loading}>
-            <SelectTrigger className="w-32 shrink-0 text-xs h-8">
-              <SelectValue placeholder="Client" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All clients</SelectItem>
-              {clients.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Mobile filter bar */}
+      <div className="md:hidden border-b px-4 py-2 flex gap-2">
+        <Select value={currentTimeframe} onValueChange={(v) => refetch({ timeframe: v })} disabled={loading}>
+          <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
+            <SelectValue placeholder="Timeframe" />
+          </SelectTrigger>
+          <SelectContent>
+            {TIMEFRAME_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={(v) => refetch({ status: v })} disabled={loading}>
+          <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All status</SelectItem>
+            <SelectItem value="draft">Draft</SelectItem>
+            <SelectItem value="issued">Issued</SelectItem>
+            <SelectItem value="paid">Paid</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={clientFilter} onValueChange={(v) => refetch({ clientId: v })} disabled={loading}>
+          <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
+            <SelectValue placeholder="Client" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All clients</SelectItem>
+            {clients.map((c) => (
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Mobile card list */}
