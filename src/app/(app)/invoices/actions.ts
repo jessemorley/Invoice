@@ -5,6 +5,10 @@ import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
 import { fetchInvoices, fetchUninvoicedGroups, CACHE_TAGS, type InvoiceFilters } from "@/lib/queries";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
 
+export async function filterInvoices(filters: InvoiceFilters): Promise<Invoice[]> {
+  return fetchInvoices(PROTOTYPE_USER_ID, filters);
+}
+
 export async function loadMoreInvoices(before: string, filters: InvoiceFilters): Promise<Invoice[]> {
   const d = new Date(before + "T00:00:00");
   d.setMonth(d.getMonth() - 3);

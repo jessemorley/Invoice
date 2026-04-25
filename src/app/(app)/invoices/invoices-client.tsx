@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useState, useTransition, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { loadMoreInvoices, revalidateInvoices } from "./actions";
+import { useState, useTransition, useEffect } from "react";
+import { loadMoreInvoices, revalidateInvoices, filterInvoices } from "./actions";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
 import type { InvoiceFilters } from "@/lib/queries";
 import { formatAUD, formatDateShort } from "@/lib/format";
@@ -217,18 +216,15 @@ type Props = {
   invoices?: Invoice[];
   uninvoicedCount?: number;
   clients?: { id: string; name: string }[];
-  filters: InvoiceFilters;
   loading?: boolean;
 };
 
 const EMPTY_INVOICES: Invoice[] = [];
 const EMPTY_CLIENTS: { id: string; name: string }[] = [];
 
-export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uninvoicedCount = 0, clients = EMPTY_CLIENTS, filters, loading = false }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const [, startTransition] = useTransition();
+export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uninvoicedCount = 0, clients = EMPTY_CLIENTS, loading = false }: Props) {
   const [loadPending, startLoadTransition] = useTransition();
+  const [filterPending, startFilterTransition] = useTransition();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
@@ -238,21 +234,69 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState(filters.search ?? "");
 
-  // Reset invoice list when server-side filters change (URL navigation)
+  const [searchValue, setSearchValue] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [clientFilter, setClientFilter] = useState("all");
+  const [timeframe, setTimeframe] = useState("all");
+  const [sortKey, setSortKey] = useState<SortKey>("issued_date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
   useEffect(() => {
     setInvoices(initialInvoices);
     setLocalStatuses(Object.fromEntries(initialInvoices.map((inv) => [inv.id, inv.status])));
   }, [initialInvoices]);
+
+  function refetch(updates: {
+    search?: string; status?: string; clientId?: string;
+    timeframe?: string; sortKey?: SortKey; sortDir?: "asc" | "desc";
+  } = {}) {
+    const next = {
+      search:    updates.search    !== undefined ? updates.search    : searchValue,
+      status:    updates.status    !== undefined ? updates.status    : statusFilter,
+      clientId:  updates.clientId  !== undefined ? updates.clientId  : clientFilter,
+      timeframe: updates.timeframe !== undefined ? updates.timeframe : timeframe,
+      sortKey:   updates.sortKey   !== undefined ? updates.sortKey   : sortKey,
+      sortDir:   updates.sortDir   !== undefined ? updates.sortDir   : sortDir,
+    };
+    if (updates.search    !== undefined) setSearchValue(updates.search);
+    if (updates.status    !== undefined) setStatusFilter(updates.status);
+    if (updates.clientId  !== undefined) setClientFilter(updates.clientId);
+    if (updates.timeframe !== undefined) setTimeframe(updates.timeframe);
+    if (updates.sortKey   !== undefined) setSortKey(updates.sortKey);
+    if (updates.sortDir   !== undefined) setSortDir(updates.sortDir);
+
+    const range = timeframeToDateRange(next.timeframe);
+    const filters: InvoiceFilters = {
+      search:   next.search || undefined,
+      status:   next.status   !== "all" ? (next.status   as InvoiceStatus) : undefined,
+      clientId: next.clientId !== "all" ? next.clientId : undefined,
+      from: range.from,
+      to:   range.to,
+      sortKey: next.sortKey,
+      sortDir: next.sortDir,
+    };
+    startFilterTransition(async () => {
+      const result = await filterInvoices(filters);
+      setInvoices(result);
+      setLocalStatuses(Object.fromEntries(result.map((inv) => [inv.id, inv.status])));
+    });
+  }
 
   function handleLoadMore() {
     const oldest = invoices.reduce(
       (min, inv) => (inv.issued_date ?? "") < min ? (inv.issued_date ?? "") : min,
       invoices[0]?.issued_date ?? new Date().toISOString().slice(0, 10)
     );
+    const range = timeframeToDateRange(timeframe);
+    const currentFilters: InvoiceFilters = {
+      search:   searchValue || undefined,
+      status:   statusFilter !== "all" ? (statusFilter as InvoiceStatus) : undefined,
+      clientId: clientFilter !== "all" ? clientFilter : undefined,
+      from: range.from, to: range.to, sortKey, sortDir,
+    };
     startLoadTransition(async () => {
-      const more = await loadMoreInvoices(oldest, filters);
+      const more = await loadMoreInvoices(oldest, currentFilters);
       const existingIds = new Set(invoices.map((inv) => inv.id));
       const fresh = more.filter((inv) => !existingIds.has(inv.id));
       setInvoices((prev) => [...prev, ...fresh]);
@@ -268,31 +312,9 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     setSheetOpen(true);
   }
 
-  const pushParams = useCallback((updates: Record<string, string | undefined>) => {
-    const params = new URLSearchParams();
-    const current: Record<string, string | undefined> = {
-      search: filters.search,
-      status: filters.status,
-      client: filters.clientId,
-      sort: filters.sortKey,
-      dir: filters.sortDir,
-    };
-    const merged = { ...current, ...updates };
-    for (const [k, v] of Object.entries(merged)) {
-      if (v && v !== "all" && v !== "issued_date" && !(k === "dir" && v === "desc")) {
-        params.set(k, v);
-      }
-    }
-    startTransition(() => router.push(`${pathname}?${params.toString()}`));
-  }, [filters, pathname, router]);
-
   function handleSort(key: SortKey) {
-    const newDir = filters.sortKey === key && filters.sortDir === "asc" ? "desc" : "asc";
-    pushParams({ sort: key, dir: newDir });
-  }
-
-  function handleSearchCommit(value: string) {
-    pushParams({ search: value || undefined });
+    const newDir = sortKey === key && sortDir === "asc" ? "desc" : "asc";
+    refetch({ sortKey: key, sortDir: newDir });
   }
 
   function handleStatusChange(id: string, status: InvoiceStatus) {
@@ -300,25 +322,10 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   }
 
   function sh(key: SortKey) {
-    return {
-      active: filters.sortKey === key,
-      dir: (filters.sortDir ?? "desc") as "asc" | "desc",
-      onSort: () => handleSort(key),
-    };
+    return { active: sortKey === key, dir: sortDir, onSort: () => handleSort(key) };
   }
 
-  const currentTimeframe = (() => {
-    if (!filters.from || filters.from === "all") return "all";
-    const { from, to } = timeframeToDateRange("this-week");
-    if (filters.from === from && filters.to === to) return "this-week";
-    const { from: fm, to: tm } = timeframeToDateRange("this-month");
-    if (filters.from === fm && filters.to === tm) return "this-month";
-    const { from: fl, to: tl } = timeframeToDateRange("last-month");
-    if (filters.from === fl && filters.to === tl) return "last-month";
-    const { from: fy } = timeframeToDateRange("this-year");
-    if (filters.from === fy) return "this-year";
-    return "all";
-  })();
+  const currentTimeframe = timeframe;
 
   return (
     <div className="flex flex-col h-full">
@@ -351,17 +358,14 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                 className="pl-8"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
-                onBlur={() => handleSearchCommit(searchValue)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearchCommit(searchValue)}
+                onBlur={() => refetch({ search: searchValue })}
+                onKeyDown={(e) => e.key === "Enter" && refetch({ search: searchValue })}
                 disabled={loading}
               />
             </div>
             <Select
               value={currentTimeframe}
-              onValueChange={(v) => {
-                const range = timeframeToDateRange(v);
-                pushParams({ from: range.from, to: range.to });
-              }}
+              onValueChange={(v) => refetch({ timeframe: v })}
               disabled={loading}
             >
               <SelectTrigger className="w-36">
@@ -374,8 +378,8 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
               </SelectContent>
             </Select>
             <Select
-              value={filters.clientId ?? "all"}
-              onValueChange={(v) => pushParams({ client: v === "all" ? undefined : v })}
+              value={clientFilter}
+              onValueChange={(v) => refetch({ clientId: v })}
               disabled={loading}
             >
               <SelectTrigger className="w-36">
@@ -389,8 +393,8 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
               </SelectContent>
             </Select>
             <Select
-              value={filters.status ?? "all"}
-              onValueChange={(v) => pushParams({ status: v === "all" ? undefined : v })}
+              value={statusFilter}
+              onValueChange={(v) => refetch({ status: v })}
               disabled={loading}
             >
               <SelectTrigger className="w-32">
