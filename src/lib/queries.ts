@@ -41,10 +41,10 @@ export async function fetchEntries(userId: string, before?: string): Promise<Ent
   "use cache";
   cacheTag(CACHE_TAGS.entries);
   const supabase = createServerClient();
-  const windowEnd = before ?? "9999-12-31";
+  const windowEnd = before ?? new Date().toISOString().slice(0, 10);
   const windowStart = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 28);
+    const d = new Date(windowEnd + "T00:00:00");
+    d.setMonth(d.getMonth() - 2);
     return d.toISOString().slice(0, 10);
   })();
 
