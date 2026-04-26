@@ -1,8 +1,7 @@
 "use client";
 
 import { useTransition, useEffect, useState } from "react";
-import Link from "next/link";
-import { useIosStandaloneNav } from "@/hooks/use-ios-standalone-nav";
+import { useRouter } from "next/navigation";
 import type { Client } from "@/lib/types";
 import { formatAUD } from "@/lib/format";
 import { updateClientColor, fetchClientInvoices, updateShowSuperOnInvoice, type RecentInvoice } from "@/app/(app)/clients/actions";
@@ -150,7 +149,7 @@ export function ClientSheet({
   client: Client | null;
 }) {
   const [recentInvoices, setRecentInvoices] = useState<RecentInvoice[] | null>(null);
-  const iosNavigate = useIosStandaloneNav();
+  const router = useRouter();
 
   useEffect(() => {
     if (!open || !client) return;
@@ -261,16 +260,15 @@ export function ClientSheet({
                   <RecentInvoiceRow key={inv.id} invoice={inv} />
                 ))}
                 {client.invoice_count > 5 && (
-                  <Link
-                    href={`/invoices?client=${client.id}`}
-                    onClick={(e) => {
+                  <button
+                    onClick={() => {
                       onOpenChange(false);
-                      iosNavigate(e, `/invoices?client=${client.id}`);
+                      router.push(`/invoices?client=${client.id}`);
                     }}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-1"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-1 text-left"
                   >
                     View all {client.invoice_count} invoices →
-                  </Link>
+                  </button>
                 )}
               </div>
             )}
