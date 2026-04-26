@@ -5,6 +5,7 @@ import { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, FileText, Receipt, Users, Wallet, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIosStandaloneNav } from "@/hooks/use-ios-standalone-nav";
 
 const tabs = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -18,6 +19,7 @@ const tabs = [
 function DockItem({ href, icon: Icon, label, pathname }: (typeof tabs)[0] & { pathname: string }) {
   const { pending } = useLinkStatus();
   const isActive = pending || pathname.startsWith(href);
+  const iosNavigate = useIosStandaloneNav();
 
   return (
     <Link
@@ -27,6 +29,8 @@ function DockItem({ href, icon: Icon, label, pathname }: (typeof tabs)[0] & { pa
         if (isActive) {
           e.preventDefault();
           window.dispatchEvent(new CustomEvent("dock:focus-search"));
+        } else {
+          iosNavigate(e, href);
         }
       }}
       className={cn(
