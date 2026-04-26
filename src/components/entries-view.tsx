@@ -457,7 +457,7 @@ export function EntriesView({
         </Button>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
         {loading ? (
           <ContentSkeleton />
         ) : (

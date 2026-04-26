@@ -357,7 +357,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   );
 
   return (
-    <div className="flex flex-col absolute inset-0">
+    <div className="flex flex-col h-full">
       <PageHeader title="Invoices" mobileTitle={mobileTitle}>
         {uninvoicedCount > 0 && (
           <button onClick={() => setGenerateOpen(true)}>

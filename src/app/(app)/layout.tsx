@@ -6,7 +6,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider className="h-full">
       <AppSidebar />
-      <SidebarInset className="overflow-y-auto pb-28 md:pb-0 bg-background">
+      <SidebarInset className="bg-background">
         {children}
       </SidebarInset>
       <FloatingDock />

@@ -233,7 +233,7 @@ export function ExpensesClient({ expenses }: { expenses: Expense[] }) {
       </div>
 
       {/* Mobile card list */}
-      <div className="md:hidden flex-1 overflow-y-auto">
+      <div className="md:hidden flex-1 overflow-y-auto pb-28">
         {expenses.length === 0 ? (
           <Empty className="h-64">
             <EmptyHeader>
