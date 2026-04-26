@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useLinkStatus } from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -29,21 +29,13 @@ const ItemInner = ({ isActive, icon: Icon }: { isActive: boolean; icon: (typeof 
   </>
 );
 
-function StandaloneDockItem({ href, icon: Icon, label, pathname }: (typeof tabs)[0] & { pathname: string }) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const isActive = isPending || pathname.startsWith(href);
-
+function StandaloneDockItem({
+  href, icon: Icon, label, isActive, onTap,
+}: (typeof tabs)[0] & { isActive: boolean; onTap: (href: string) => void }) {
   return (
     <button
       aria-label={label}
-      onClick={() => {
-        if (pathname.startsWith(href)) {
-          window.dispatchEvent(new CustomEvent("dock:focus-search"));
-        } else {
-          startTransition(() => router.push(href));
-        }
-      }}
+      onClick={() => onTap(href)}
       className={itemClass(isActive)}
     >
       <ItemInner isActive={isActive} icon={Icon} />
@@ -72,14 +64,11 @@ function BrowserDockItem({ href, icon: Icon, label, pathname }: (typeof tabs)[0]
   );
 }
 
-function DockItem(props: (typeof tabs)[0] & { pathname: string; isStandalone: boolean }) {
-  const { isStandalone, ...rest } = props;
-  return isStandalone ? <StandaloneDockItem {...rest} /> : <BrowserDockItem {...rest} />;
-}
-
 export function FloatingDock() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isStandalone, setIsStandalone] = useState(false);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
 
   useEffect(() => {
     setIsStandalone(
@@ -88,12 +77,37 @@ export function FloatingDock() {
     );
   }, []);
 
+  // Clear pendingHref once pathname catches up
+  useEffect(() => {
+    if (pendingHref && pathname.startsWith(pendingHref)) {
+      setPendingHref(null);
+    }
+  }, [pathname, pendingHref]);
+
+  const handleTap = useCallback((href: string) => {
+    if (pathname.startsWith(href)) {
+      window.dispatchEvent(new CustomEvent("dock:focus-search"));
+    } else {
+      setPendingHref(href);
+      router.push(href);
+    }
+  }, [pathname, router]);
+
   return (
     <div className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden" style={{ bottom: "max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem))" }}>
       <nav className="flex items-center gap-0.5 bg-background/95 backdrop-blur-md border border-border/50 rounded-full px-2.5 py-2 shadow-xl shadow-black/10">
-        {tabs.map((tab) => (
-          <DockItem key={tab.href} {...tab} pathname={pathname} isStandalone={isStandalone} />
-        ))}
+        {tabs.map((tab) =>
+          isStandalone ? (
+            <StandaloneDockItem
+              key={tab.href}
+              {...tab}
+              isActive={pendingHref ? pendingHref === tab.href : pathname.startsWith(tab.href)}
+              onTap={handleTap}
+            />
+          ) : (
+            <BrowserDockItem key={tab.href} {...tab} pathname={pathname} />
+          )
+        )}
       </nav>
     </div>
   );
