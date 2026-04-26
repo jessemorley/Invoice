@@ -1,9 +1,6 @@
 import { useCallback } from "react";
-import { useRouter } from "next/navigation";
 
 export function useIosStandaloneNav() {
-  const router = useRouter();
-
   return useCallback(
     (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
       const isStandalone =
@@ -12,9 +9,9 @@ export function useIosStandaloneNav() {
 
       if (isStandalone) {
         e.preventDefault();
-        router.push(href);
+        window.location.href = href;
       }
     },
-    [router]
+    []
   );
 }
