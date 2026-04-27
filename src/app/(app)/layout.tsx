@@ -1,16 +1,20 @@
+import { Suspense } from "react";
 import { AppSidebar } from "@/components/app-nav";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { FloatingDock } from "@/components/floating-dock";
-import { PageSlot } from "@/components/page-slot";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider className="h-full">
-      <AppSidebar />
+      <Suspense>
+        <AppSidebar />
+      </Suspense>
       <SidebarInset className="bg-background">
-        <PageSlot>{children}</PageSlot>
+        {children}
       </SidebarInset>
-      <FloatingDock />
+      <Suspense>
+        <FloatingDock />
+      </Suspense>
     </SidebarProvider>
   );
 }
