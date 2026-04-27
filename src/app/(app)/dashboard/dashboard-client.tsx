@@ -3,7 +3,6 @@
 import type { DashboardData, Expense, ExpenseCategory } from "@/lib/types";
 import { EXPENSE_CATEGORY_LABELS } from "@/lib/mock-data";
 import { formatAUD } from "@/lib/format";
-import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -44,21 +43,7 @@ const radarChartConfig = {
   amount: { label: "Amount", color: "var(--color-primary)" },
 } satisfies import("@/components/ui/chart").ChartConfig;
 
-export function DashboardClient({ data, expenses }: { data?: DashboardData; expenses?: Expense[] }) {
-  if (!data || !expenses) {
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader title="Dashboard" />
-        <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
-          <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl grid grid-cols-1 xl:grid-cols-2 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-48 w-full rounded-xl" />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+export function DashboardClient({ data, expenses }: { data: DashboardData; expenses: Expense[] }) {
   const { mtdEarnings, mtdPriorMonth, outstanding, monthlyEarnings } = data;
   const delta = mtdEarnings - mtdPriorMonth;
   const deltaPercent = mtdPriorMonth > 0 ? ((delta / mtdPriorMonth) * 100).toFixed(0) : "0";

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
 import type { Client } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -70,26 +69,13 @@ function ClientCard({ client, onClick }: { client: Client; onClick: () => void }
   );
 }
 
-export function ClientsView({ clients: allClients, loading = false }: { clients: Client[]; loading?: boolean }) {
+export function ClientsView({ clients: allClients }: { clients: Client[] }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("active");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-
-  if (loading) {
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader title="Clients" />
-        <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
-          <div className="px-4 md:px-6 py-6 space-y-3 max-w-6xl mx-auto">
-            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   function openClient(client: Client) {
     setSelectedClient(client);
