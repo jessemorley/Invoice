@@ -35,10 +35,12 @@ import {
 import { SortableTableHead } from "@/components/sortable-table-head";
 import { PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ExpenseSheet } from "@/components/expense-sheet";
 import { Paperclip, Plus, Receipt, Search } from "lucide-react";
 
 type SortKey = "date" | "category" | "amount";
 type SortDir = "asc" | "desc";
+type Timeframe = "all-time" | "this-week" | "this-month" | "last-month" | "this-year";
 
 const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
   gear:            "#6366f1",
@@ -72,10 +74,37 @@ function ReceiptChip({ path }: { path: string }) {
   );
 }
 
-function ExpenseCard({ expense }: { expense: Expense }) {
+function inTimeframe(date: string, timeframe: Timeframe): boolean {
+  if (timeframe === "all-time") return true;
+  const d = new Date(date + "T00:00:00");
+  const now = new Date();
+  if (timeframe === "this-week") {
+    const day = now.getDay();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - ((day + 6) % 7));
+    weekStart.setHours(0, 0, 0, 0);
+    return d >= weekStart;
+  }
+  if (timeframe === "this-month") {
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }
+  if (timeframe === "last-month") {
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear();
+  }
+  if (timeframe === "this-year") {
+    return d.getFullYear() === now.getFullYear();
+  }
+  return true;
+}
+
+function ExpenseCard({ expense, onClick }: { expense: Expense; onClick: () => void }) {
   const gst = gstAmount(expense);
   return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
+    <div
+      className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer"
+      onClick={onClick}
+    >
       <div className="flex-1 min-w-0">
         <span className="text-sm font-medium text-foreground truncate block">
           {expense.description}
@@ -177,6 +206,21 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
   if (loading) return <ExpensesSkeleton />;
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [search, setSearch] = useState("");
+  const [timeframe, setTimeframe] = useState<Timeframe>("all-time");
+  const [category, setCategory] = useState<ExpenseCategory | "all-categories">("all-categories");
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [selected, setSelected] = useState<Expense | null>(null);
+
+  function openNew() {
+    setSelected(null);
+    setSheetOpen(true);
+  }
+
+  function openEdit(exp: Expense) {
+    setSelected(exp);
+    setSheetOpen(true);
+  }
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
@@ -187,12 +231,18 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
     }
   }
 
-  const sorted = [...expenses].sort((a, b) => {
+  const filtered = expenses.filter((exp) => {
+    if (search && !exp.description.toLowerCase().includes(search.toLowerCase())) return false;
+    if (!inTimeframe(exp.date, timeframe)) return false;
+    if (category !== "all-categories" && exp.category !== category) return false;
+    return true;
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
     let cmp = 0;
     switch (sortKey) {
       case "date":     cmp = a.date.localeCompare(b.date); break;
       case "category": cmp = a.category.localeCompare(b.category); break;
-
       case "amount":   cmp = a.amount - b.amount; break;
     }
     return sortDir === "asc" ? cmp : -cmp;
@@ -205,7 +255,7 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Expenses">
-        <Button size="sm" className="hidden md:flex">
+        <Button size="sm" className="hidden md:flex" onClick={openNew}>
           <Plus className="size-4" />
           New expense
         </Button>
@@ -218,9 +268,14 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1 min-w-48">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input placeholder="Search expenses..." className="pl-8" />
+              <Input
+                placeholder="Search expenses..."
+                className="pl-8"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
-            <Select defaultValue="all-time">
+            <Select value={timeframe} onValueChange={(v) => setTimeframe(v as Timeframe)}>
               <SelectTrigger className="w-36">
                 <SelectValue placeholder="Timeframe" />
               </SelectTrigger>
@@ -232,7 +287,7 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
                 <SelectItem value="this-year">This year</SelectItem>
               </SelectContent>
             </Select>
-            <Select defaultValue="all-categories">
+            <Select value={category} onValueChange={(v) => setCategory(v as ExpenseCategory | "all-categories")}>
               <SelectTrigger className="w-36">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
@@ -259,8 +314,14 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sorted.map((exp) => (
-                  <TableRow key={exp.id} className="cursor-pointer">
+                {sorted.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-12 text-sm">
+                      No expenses found
+                    </TableCell>
+                  </TableRow>
+                ) : sorted.map((exp) => (
+                  <TableRow key={exp.id} className="cursor-pointer" onClick={() => openEdit(exp)}>
                     <TableCell className="text-sm text-muted-foreground py-4 px-6">
                       {formatDateShort(exp.date)}
                     </TableCell>
@@ -307,12 +368,20 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
               <EmptyDescription>Expenses you add will appear here.</EmptyDescription>
             </EmptyHeader>
           </Empty>
+        ) : sorted.length === 0 ? (
+          <Empty className="h-64">
+            <EmptyHeader>
+              <EmptyMedia variant="icon"><Receipt /></EmptyMedia>
+              <EmptyTitle>No expenses found</EmptyTitle>
+              <EmptyDescription>Try adjusting your filters.</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : (
           <div className="px-4 py-4 flex flex-col gap-3">
-            {expenses.map((exp) => (
+            {sorted.map((exp) => (
               <Card key={exp.id} className="py-0">
                 <CardContent className="p-0">
-                  <ExpenseCard expense={exp} />
+                  <ExpenseCard expense={exp} onClick={() => openEdit(exp)} />
                 </CardContent>
               </Card>
             ))}
@@ -321,10 +390,16 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
       </div>
 
       <div className="md:hidden fixed bottom-18 right-4 z-40">
-        <Button size="icon" className="size-14 rounded-full shadow-lg">
+        <Button size="icon" className="size-14 rounded-full shadow-lg" onClick={openNew}>
           <Plus />
         </Button>
       </div>
+
+      <ExpenseSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        expense={selected}
+      />
     </div>
   );
 }
