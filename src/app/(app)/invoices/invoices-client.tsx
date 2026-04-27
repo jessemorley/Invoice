@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { revalidateInvoices } from "./actions";
 import { invalidate } from "@/lib/invalidate";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
@@ -223,7 +224,12 @@ const EMPTY_CLIENTS: { id: string; name: string }[] = [];
 const PAGE_SIZE = 25;
 
 export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uninvoicedCount = 0, clients = EMPTY_CLIENTS, loading = false }: Props) {
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
+  const { pullDistance, state: pullState } = usePullToRefresh({
+    ref: mobileScrollRef,
+    onRefresh: revalidateInvoices,
+    enabled: !loading,
+  });
 
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
   const [localStatuses, setLocalStatuses] = useState<Record<string, InvoiceStatus>>(
@@ -369,9 +375,6 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         )}
         <Button size="icon" variant="ghost" className="size-8 md:hidden" onClick={() => searchOpen ? closeSearch() : setSearchOpen(true)} disabled={loading}>
           {searchOpen ? <X className="size-4" /> : <Search className="size-4" />}
-        </Button>
-        <Button size="icon" variant="ghost" className="size-8" onClick={async () => { setIsRefreshing(true); try { await revalidateInvoices(); invalidate("invoices", "entries"); } finally { setIsRefreshing(false); } }} disabled={loading || isRefreshing}>
-          <RefreshCw className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
         </Button>
         <Button size="sm" className="hidden md:flex" disabled={loading}>
           <Plus className="size-4" />
@@ -521,7 +524,21 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       </div>
 
       {/* Mobile card list */}
-      <div className="md:hidden flex-1 overflow-y-auto" onScroll={handleScroll}>
+      <div
+        ref={mobileScrollRef}
+        className="md:hidden flex-1 overflow-y-auto"
+        onScroll={handleScroll}
+      >
+        {/* Pull-to-refresh indicator — sits at top of scroll content, hidden until pulled */}
+        <div
+          className="flex items-center justify-center overflow-hidden pointer-events-none"
+          style={{ height: pullState !== "idle" ? pullDistance : 0 }}
+        >
+          <RefreshCw
+            className={`size-5 text-muted-foreground ${pullState === "refreshing" ? "animate-spin" : ""}`}
+            style={{ transform: pullState !== "refreshing" ? `rotate(${(pullDistance / 70) * 180}deg)` : undefined }}
+          />
+        </div>
         {loading ? (
           <SkeletonMobileCards />
         ) : filteredInvoices.length === 0 ? (

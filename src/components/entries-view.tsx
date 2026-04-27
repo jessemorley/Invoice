@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useRef } from "react";
 import { revalidateEntries, loadEarlierEntries } from "@/app/(app)/entries/actions";
-import { invalidate } from "@/lib/invalidate";
 import type { Entry, Client, WorkflowRate } from "@/lib/types";
 import { formatAUD, formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +13,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { EntrySheet } from "@/components/entry-sheet";
 import { Plus, RefreshCw } from "lucide-react";
+import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 
 type ViewMode = "invoice" | "week" | "none";
 
@@ -416,8 +416,13 @@ export function EntriesView({
   loading?: boolean;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("invoice");
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { pullDistance, state: pullState } = usePullToRefresh({
+    ref: scrollRef,
+    onRefresh: revalidateEntries,
+    enabled: !loading,
+  });
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const [entries, setEntries] = useState<Entry[]>(initialEntries ?? []);
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
@@ -469,9 +474,6 @@ export function EntriesView({
           <ToggleGroupItem value="week">Week</ToggleGroupItem>
           <ToggleGroupItem value="none">None</ToggleGroupItem>
         </ToggleGroup>
-        <Button size="icon" variant="ghost" className="size-8" onClick={async () => { setIsRefreshing(true); try { await revalidateEntries(); invalidate("entries", "clients"); } finally { setIsRefreshing(false); } }} disabled={loading || isRefreshing}>
-          <RefreshCw className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
-        </Button>
         <Button size="sm" className="hidden md:flex" onClick={openNew} disabled={loading}>
           <Plus className="size-4" />
           New entry
@@ -479,6 +481,7 @@ export function EntriesView({
       </header>
 
       <div
+        ref={scrollRef}
         className="flex-1 overflow-y-auto pb-28 md:pb-0"
         onScroll={(e) => {
           const el = e.currentTarget;
@@ -487,6 +490,16 @@ export function EntriesView({
           }
         }}
       >
+        {/* Pull-to-refresh indicator — sits at top of scroll content, hidden until pulled */}
+        <div
+          className="md:hidden flex items-center justify-center overflow-hidden pointer-events-none"
+          style={{ height: pullState !== "idle" ? pullDistance : 0 }}
+        >
+          <RefreshCw
+            className={`size-5 text-muted-foreground ${pullState === "refreshing" ? "animate-spin" : ""}`}
+            style={{ transform: pullState !== "refreshing" ? `rotate(${(pullDistance / 70) * 180}deg)` : undefined }}
+          />
+        </div>
         {loading ? (
           <ContentSkeleton />
         ) : (
