@@ -70,26 +70,83 @@ function ClientCard({ client, onClick }: { client: Client; onClick: () => void }
   );
 }
 
+function ClientsSkeleton() {
+  return (
+    <div className="flex flex-col h-full">
+      <PageHeader title="Clients" />
+      {/* Desktop */}
+      <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
+        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
+          <div className="flex gap-3">
+            <Skeleton className="h-9 flex-1" />
+            <Skeleton className="h-9 w-32" />
+          </div>
+          <div className="rounded-lg border bg-card overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-64 py-4 px-6">Name</TableHead>
+                  <TableHead className="py-4 px-6">Contact</TableHead>
+                  <TableHead className="w-28 py-4 px-6">Billing</TableHead>
+                  <TableHead className="w-24 py-4 px-6 text-right">Invoices</TableHead>
+                  <TableHead className="w-24 py-4 px-6 text-right">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...Array(6)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="py-4 px-6">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="size-2 rounded-full shrink-0" />
+                        <Skeleton className="h-3 w-28" />
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-4 px-6"><Skeleton className="h-3 w-36" /></TableCell>
+                    <TableCell className="py-4 px-6"><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                    <TableCell className="py-4 px-6 text-right"><Skeleton className="h-3 w-6 ml-auto" /></TableCell>
+                    <TableCell className="py-4 px-6 text-right"><Skeleton className="h-5 w-14 rounded-full ml-auto" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </div>
+      {/* Mobile */}
+      <div className="md:hidden flex-1 overflow-y-auto pb-28">
+        <div className="px-4 pt-4 pb-2 flex gap-2">
+          <Skeleton className="h-9 flex-1" />
+          <Skeleton className="h-9 w-28" />
+        </div>
+        <div className="px-4 py-3 flex flex-col gap-3">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="py-0">
+              <CardContent className="p-0">
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <Skeleton className="size-2.5 rounded-full shrink-0" />
+                  <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                    <Skeleton className="h-3 w-28" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                  <Skeleton className="h-3 w-10 shrink-0" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ClientsView({ clients: allClients, loading = false }: { clients: Client[]; loading?: boolean }) {
+  if (loading) return <ClientsSkeleton />;
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("active");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-
-  if (loading) {
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader title="Clients" />
-        <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
-          <div className="px-4 md:px-6 py-6 space-y-3 max-w-6xl mx-auto">
-            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   function openClient(client: Client) {
     setSelectedClient(client);

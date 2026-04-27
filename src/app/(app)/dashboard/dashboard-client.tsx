@@ -44,21 +44,56 @@ const radarChartConfig = {
   amount: { label: "Amount", color: "var(--color-primary)" },
 } satisfies import("@/components/ui/chart").ChartConfig;
 
-export function DashboardClient({ data, expenses }: { data?: DashboardData; expenses?: Expense[] }) {
-  if (!data || !expenses) {
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader title="Dashboard" />
-        <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
-          <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl grid grid-cols-1 xl:grid-cols-2 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-48 w-full rounded-xl" />
-            ))}
-          </div>
+function DashboardSkeleton() {
+  return (
+    <div className="flex flex-col h-full">
+      <PageHeader title="Dashboard" />
+      <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
+        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-3 w-40" />
+              <Skeleton className="h-8 w-32 mt-1" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-3 w-48" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-3 w-36 mt-1" />
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-9 w-full rounded-md" />)}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-3 w-28" />
+              <Skeleton className="h-3 w-48 mt-1" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-48 w-full rounded-md" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="items-center pb-4">
+              <Skeleton className="h-3 w-36" />
+              <Skeleton className="h-3 w-24 mt-1" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-[280px] w-full rounded-md" />
+            </CardContent>
+          </Card>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
+export function DashboardClient({ data, expenses }: { data?: DashboardData; expenses?: Expense[] }) {
+  if (!data || !expenses) return <DashboardSkeleton />;
   const { mtdEarnings, mtdPriorMonth, outstanding, monthlyEarnings } = data;
   const delta = mtdEarnings - mtdPriorMonth;
   const deltaPercent = mtdPriorMonth > 0 ? ((delta / mtdPriorMonth) * 100).toFixed(0) : "0";
