@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/table";
 import { SortableTableHead } from "@/components/sortable-table-head";
 import { PageHeader } from "@/components/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Paperclip, Plus, Receipt, Search } from "lucide-react";
 
 type SortKey = "date" | "category" | "amount";
@@ -109,9 +110,22 @@ function ExpenseCard({ expense }: { expense: Expense }) {
   );
 }
 
-export function ExpensesClient({ expenses }: { expenses: Expense[] }) {
+export function ExpensesClient({ expenses, loading = false }: { expenses: Expense[]; loading?: boolean }) {
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  if (loading) {
+    return (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Expenses" />
+        <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
+          <div className="px-4 md:px-6 py-6 space-y-3 max-w-6xl mx-auto">
+            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
