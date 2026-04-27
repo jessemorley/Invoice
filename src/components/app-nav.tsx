@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import Link, { useLinkStatus } from "next/link";
+import Link from "next/link";
+import { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -10,19 +11,9 @@ import {
   Users,
   Settings,
   Wallet,
-  MoreHorizontal,
   ChevronsUpDown,
   LogOut,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useState } from "react";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import {
   Sidebar,
   SidebarContent,
@@ -43,114 +34,42 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ModeToggle } from "@/components/mode-toggle";
+import { cn } from "@/lib/utils";
 
-const mainTabs = [
+const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/entries", label: "Entries", icon: FileText },
   { href: "/invoices", label: "Invoices", icon: Receipt },
   { href: "/clients", label: "Clients", icon: Users },
-];
-
-const overflowItems = [
   { href: "/expenses", label: "Expenses", icon: Wallet },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-const allItems = [...mainTabs, ...overflowItems];
-
-type NavItem = (typeof allItems)[number];
-
-function SidebarNavItem({ item, pathname }: { item: NavItem; pathname: string }) {
+function NavItem({ href, label, icon: Icon, pathname }: (typeof navItems)[0] & { pathname: string }) {
   const { pending } = useLinkStatus();
-  const isActive = pending || pathname.startsWith(item.href);
+  const isActive = pending || pathname.startsWith(href);
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isActive}>
-        <Link href={item.href}>
-          <item.icon />
-          <span>{item.label}</span>
+        <Link href={href}>
+          <Icon />
+          <span>{label}</span>
         </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
 }
 
-function BottomTabItem({ item, pathname }: { item: NavItem; pathname: string }) {
-  const { pending } = useLinkStatus();
-  const active = pending || pathname.startsWith(item.href);
-  return (
-    <Link
-      href={item.href}
-      className={cn(
-        "flex flex-col items-center gap-0.5 px-3 py-1 text-[11px] font-medium transition-colors",
-        active ? "text-foreground" : "text-muted-foreground"
-      )}
-    >
-      <item.icon className={cn("size-5", active && "text-foreground")} />
-      {item.label}
-    </Link>
-  );
-}
-
-export function AppSidebar() {
-  const pathname = usePathname();
-  const { open } = useSidebar();
-
-  return (
-    <Sidebar collapsible="icon" className="hidden md:flex border-r">
-      <SidebarHeader className="px-4 py-4">
-        <div className="flex items-center gap-2.5 h-8">
-          <Image
-            src="/app_icon.png"
-            alt="Invoicing"
-            width={28}
-            height={28}
-            className="size-7 rounded-md shrink-0"
-          />
-          {open && (
-            <span className="text-sm font-semibold tracking-tight">Invoicing</span>
-          )}
-        </div>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup className="px-3 py-1">
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-2">
-              {allItems.map((item) => (
-                <SidebarNavItem key={item.href} item={item} pathname={pathname} />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-      <SidebarFooter>
-        <div className="flex items-center justify-between px-1 py-1">
-          <ModeToggle />
-        </div>
-        <NavUser />
-      </SidebarFooter>
-    </Sidebar>
-  );
-}
-
 function NavUser() {
   const { isMobile } = useSidebar();
-
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            >
+            <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src="" alt="User" />
                 <AvatarFallback className="rounded-lg">JD</AvatarFallback>
@@ -182,15 +101,11 @@ function NavUser() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/settings">
-                <Settings />
-                Settings
-              </Link>
+              <Link href="/settings"><Settings />Settings</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
-              <LogOut />
-              Log out
+              <LogOut />Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -199,47 +114,34 @@ function NavUser() {
   );
 }
 
-export function BottomTabs() {
+export function AppSidebar() {
   const pathname = usePathname();
-  const [overflowOpen, setOverflowOpen] = useState(false);
-
+  const { open } = useSidebar();
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-border bg-background">
-      <div className="flex items-center justify-around h-14">
-        {mainTabs.map((item) => (
-          <BottomTabItem key={item.href} item={item} pathname={pathname} />
-        ))}
-        <Sheet open={overflowOpen} onOpenChange={setOverflowOpen}>
-          <SheetTrigger
-            className="flex flex-col items-center gap-0.5 px-3 py-1 text-[11px] font-medium text-muted-foreground"
-          >
-            <MoreHorizontal className="size-5" />
-            More
-          </SheetTrigger>
-          <SheetContent side="bottom" className="pb-safe">
-            <SheetHeader>
-              <SheetTitle>More</SheetTitle>
-            </SheetHeader>
-            <div className="grid gap-1 py-2">
-              {overflowItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setOverflowOpen(false)}
-                  className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium text-foreground hover:bg-accent"
-                >
-                  <item.icon className="size-5 text-muted-foreground" />
-                  {item.label}
-                </Link>
+    <Sidebar collapsible="icon" className="hidden md:flex border-r">
+      <SidebarHeader className="px-4 py-4">
+        <div className="flex items-center gap-2.5 h-8">
+          <Image src="/app_icon.png" alt="Invoicing" width={28} height={28} className="size-7 rounded-md shrink-0" />
+          {open && <span className="text-sm font-semibold tracking-tight">Invoicing</span>}
+        </div>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup className="px-3 py-1">
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-2">
+              {navItems.map((item) => (
+                <NavItem key={item.href} {...item} pathname={pathname} />
               ))}
-              <div className="flex items-center gap-3 rounded-md px-3 py-3">
-                <ModeToggle />
-                <span className="text-sm font-medium text-foreground">Appearance</span>
-              </div>
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
-    </nav>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter>
+        <div className="flex items-center justify-between px-1 py-1">
+          <ModeToggle />
+        </div>
+        <NavUser />
+      </SidebarFooter>
+    </Sidebar>
   );
 }

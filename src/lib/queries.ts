@@ -41,10 +41,10 @@ export async function fetchEntries(userId: string, before?: string): Promise<Ent
   "use cache";
   cacheTag(CACHE_TAGS.entries);
   const supabase = createServerClient();
-  const windowEnd = before ?? "9999-12-31";
+  const windowEnd = before ?? new Date().toISOString().slice(0, 10);
   const windowStart = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 28);
+    const d = new Date(windowEnd + "T00:00:00");
+    d.setMonth(d.getMonth() - 2);
     return d.toISOString().slice(0, 10);
   })();
 
@@ -113,7 +113,7 @@ export async function fetchInvoices(userId: string, filters: InvoiceFilters = {}
     clientId,
     sortKey = "issued_date",
     sortDir = "desc",
-    limit = 25,
+    limit,
   } = filters;
 
   const from = filters.from === "all" ? undefined : filters.from;
@@ -121,7 +121,7 @@ export async function fetchInvoices(userId: string, filters: InvoiceFilters = {}
 
   let query = supabase
     .from("invoices")
-    .select("*, clients(id, name, billing_type, color), entries(date)")
+    .select("*, clients(id, name, billing_type, color)")
     .eq("user_id", userId);
 
   if (status && status !== "all") query = query.eq("status", status);
@@ -134,25 +134,23 @@ export async function fetchInvoices(userId: string, filters: InvoiceFilters = {}
     : sortKey === "client" ? "client_id"
     : sortKey;
 
-  query = query.order(dbSortKey, { ascending: sortDir === "asc" }).limit(limit);
+  query = query.order(dbSortKey, { ascending: sortDir === "asc" });
+  if (limit !== undefined) query = query.limit(limit);
 
   const { data, error } = await query;
   if (error) throw new Error(`fetchInvoices: ${error.message}`);
 
   return (data ?? []).map((inv) => {
     const client = Array.isArray(inv.clients) ? inv.clients[0] : inv.clients;
-    const dates = (inv.entries ?? []).map((e: { date: string }) => e.date);
     return {
       id: inv.id,
       number: inv.invoice_number,
       client: toClientRef(client ?? { id: inv.client_id, name: "Unknown", billing_type: "day_rate" }),
       issued_date: inv.issued_date,
-      date_range: computeDateRange(dates),
       subtotal: inv.subtotal,
       super_amount: inv.super_amount,
       total: inv.total,
       status: inv.status,
-      entry_count: dates.length,
     };
   });
 }

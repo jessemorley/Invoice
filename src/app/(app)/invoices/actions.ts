@@ -2,21 +2,8 @@
 
 import { updateTag, refresh } from "next/cache";
 import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
-import { fetchInvoices, fetchUninvoicedGroups, CACHE_TAGS, type InvoiceFilters } from "@/lib/queries";
-import type { Invoice, InvoiceStatus } from "@/lib/types";
-
-export async function loadMoreInvoices(before: string, filters: InvoiceFilters): Promise<Invoice[]> {
-  const d = new Date(before + "T00:00:00");
-  d.setMonth(d.getMonth() - 3);
-  const windowEnd = before;
-  const windowStart = d.toISOString().slice(0, 10);
-  return fetchInvoices(PROTOTYPE_USER_ID, {
-    ...filters,
-    from: windowStart,
-    to: windowEnd,
-    limit: 25,
-  });
-}
+import { fetchUninvoicedGroups, CACHE_TAGS } from "@/lib/queries";
+import type { InvoiceStatus } from "@/lib/types";
 
 export async function revalidateInvoices() {
   updateTag(CACHE_TAGS.invoices);

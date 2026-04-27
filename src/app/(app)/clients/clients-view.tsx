@@ -200,7 +200,7 @@ if (statusFilter === "active" && !c.is_active) return false;
       </div>
 
       {/* Mobile card list */}
-      <div className="md:hidden flex-1 overflow-y-auto">
+      <div className="md:hidden flex-1 overflow-y-auto pb-28">
         <div className="px-4 pt-4 pb-2 flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />

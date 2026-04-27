@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { EntrySheet } from "@/components/entry-sheet";
 import { Plus, RefreshCw } from "lucide-react";
 
@@ -270,6 +270,8 @@ function WeekGroupHeader({ group }: { group: WeekGroup }) {
   );
 }
 
+const PAGE_SIZE = 10;
+
 function LoadEarlierButton({ onLoad, isPending }: { onLoad: () => void; isPending: boolean }) {
   if (isPending) {
     return (
@@ -295,20 +297,24 @@ function LoadEarlierButton({ onLoad, isPending }: { onLoad: () => void; isPendin
 
 function InvoiceView({
   entries,
-  onEdit,
+  displayCount,
   onLoadEarlier,
   isPending,
+  onEdit,
 }: {
   entries: Entry[];
-  onEdit: (entry: Entry) => void;
+  displayCount: number;
   onLoadEarlier: () => void;
   isPending: boolean;
+  onEdit: (entry: Entry) => void;
 }) {
   const groups = groupByClientWeek(entries);
+  const visible = groups.slice(0, displayCount);
+  const hasMore = displayCount < groups.length;
 
   return (
     <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
-      {groups.map((group) => (
+      {visible.map((group) => (
         <Card key={group.key} className="overflow-hidden py-0 gap-0">
           <ClientWeekGroupHeader group={group} />
           <CardContent className="p-0">
@@ -321,27 +327,31 @@ function InvoiceView({
           </CardContent>
         </Card>
       ))}
-      <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
+      {!hasMore && <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />}
     </div>
   );
 }
 
 function WeekView({
   entries,
-  onEdit,
+  displayCount,
   onLoadEarlier,
   isPending,
+  onEdit,
 }: {
   entries: Entry[];
-  onEdit: (entry: Entry) => void;
+  displayCount: number;
   onLoadEarlier: () => void;
   isPending: boolean;
+  onEdit: (entry: Entry) => void;
 }) {
   const groups = groupByWeek(entries);
+  const visible = groups.slice(0, displayCount);
+  const hasMore = displayCount < groups.length;
 
   return (
     <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
-      {groups.map((group) => (
+      {visible.map((group) => (
         <Card key={group.key} className="overflow-hidden py-0 gap-0">
           <WeekGroupHeader group={group} />
           <CardContent className="p-0">
@@ -354,29 +364,33 @@ function WeekView({
           </CardContent>
         </Card>
       ))}
-      <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
+      {!hasMore && <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />}
     </div>
   );
 }
 
 function ListView({
   entries,
-  onEdit,
+  displayCount,
   onLoadEarlier,
   isPending,
+  onEdit,
 }: {
   entries: Entry[];
-  onEdit: (entry: Entry) => void;
+  displayCount: number;
   onLoadEarlier: () => void;
   isPending: boolean;
+  onEdit: (entry: Entry) => void;
 }) {
   const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+  const visible = sorted.slice(0, displayCount * 5);
+  const hasMore = visible.length < sorted.length;
 
   return (
     <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl">
       <Card className="overflow-hidden py-0 gap-0">
         <CardContent className="p-0">
-          {sorted.map((entry, i) => (
+          {visible.map((entry, i) => (
             <div key={entry.id}>
               {i > 0 && <Separator />}
               <EntryRow entry={entry} showClient onEdit={onEdit} />
@@ -384,7 +398,7 @@ function ListView({
           ))}
         </CardContent>
       </Card>
-      <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
+      {!hasMore && <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />}
     </div>
   );
 }
@@ -405,11 +419,17 @@ export function EntriesView({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const [entries, setEntries] = useState<Entry[]>(initialEntries ?? []);
+  const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setEntries(initialEntries ?? []);
+    setDisplayCount(PAGE_SIZE);
   }, [initialEntries]);
+
+  useEffect(() => {
+    setDisplayCount(PAGE_SIZE);
+  }, [viewMode]);
 
   function openEdit(entry: Entry) {
     setSelectedEntry(entry);
@@ -433,7 +453,7 @@ export function EntriesView({
   return (
     <div className="flex flex-col h-full">
       <header className="flex h-14 items-center gap-2 border-b px-4">
-        <SidebarTrigger />
+        <SidebarTrigger className="hidden md:flex" />
         <h1 className="text-lg font-semibold">Entries</h1>
         <div className="flex-1" />
         <ToggleGroup
@@ -457,14 +477,22 @@ export function EntriesView({
         </Button>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
+      <div
+        className="flex-1 overflow-y-auto pb-28 md:pb-0"
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          if (el.scrollHeight - el.scrollTop - el.clientHeight < 400) {
+            setDisplayCount((prev) => prev + PAGE_SIZE);
+          }
+        }}
+      >
         {loading ? (
           <ContentSkeleton />
         ) : (
           <>
-            {viewMode === "invoice" && <InvoiceView entries={entries} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
-            {viewMode === "week" && <WeekView entries={entries} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
-            {viewMode === "none" && <ListView entries={entries} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
+            {viewMode === "invoice" && <InvoiceView entries={entries} displayCount={displayCount} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
+            {viewMode === "week" && <WeekView entries={entries} displayCount={displayCount} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
+            {viewMode === "none" && <ListView entries={entries} displayCount={displayCount} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
           </>
         )}
       </div>

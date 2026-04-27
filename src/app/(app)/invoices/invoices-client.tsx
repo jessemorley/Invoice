@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useState, useTransition, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { loadMoreInvoices, revalidateInvoices } from "./actions";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { revalidateInvoices } from "./actions";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
 import type { InvoiceFilters } from "@/lib/queries";
 import { formatAUD, formatDateShort } from "@/lib/format";
@@ -46,7 +45,7 @@ import { SortableTableHead } from "@/components/sortable-table-head";
 import { PageHeader } from "@/components/page-header";
 import { InvoiceSheet } from "@/components/invoice-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
-import { ChevronDown, FileText, Plus, RefreshCw, Search } from "lucide-react";
+import { ChevronDown, FileText, Plus, RefreshCw, Search, X } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
 
@@ -62,8 +61,6 @@ function timeframeToDateRange(value: string): { from?: string; to?: string } {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-
-  if (value === "all") return { from: "all" };
 
   switch (value) {
     case "this-week": {
@@ -147,10 +144,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
         </div>
         <div className="flex items-center gap-2 mt-0.5">
           <span className="text-xs text-muted-foreground">
-            {invoice.date_range}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {invoice.entry_count} entries
+            {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
           </span>
         </div>
       </div>
@@ -220,18 +214,14 @@ type Props = {
   invoices?: Invoice[];
   uninvoicedCount?: number;
   clients?: { id: string; name: string }[];
-  filters: InvoiceFilters;
   loading?: boolean;
 };
 
 const EMPTY_INVOICES: Invoice[] = [];
 const EMPTY_CLIENTS: { id: string; name: string }[] = [];
+const PAGE_SIZE = 25;
 
-export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uninvoicedCount = 0, clients = EMPTY_CLIENTS, filters, loading = false }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const [, startTransition] = useTransition();
-  const [loadPending, startLoadTransition] = useTransition();
+export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uninvoicedCount = 0, clients = EMPTY_CLIENTS, loading = false }: Props) {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
@@ -241,29 +231,92 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState(filters.search ?? "");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
 
-  // Reset invoice list when server-side filters change (URL navigation)
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
+
+  useEffect(() => {
+    const handler = () => {
+      if (!searchOpen) setSearchOpen(true);
+      else searchInputRef.current?.focus();
+    };
+    window.addEventListener("dock:focus-search", handler);
+    return () => window.removeEventListener("dock:focus-search", handler);
+  }, [searchOpen]);
+
+  const [searchValue, setSearchValue] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [clientFilter, setClientFilter] = useState("all");
+  const [timeframe, setTimeframe] = useState("all");
+  const [sortKey, setSortKey] = useState<SortKey>("issued_date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
   useEffect(() => {
     setInvoices(initialInvoices);
     setLocalStatuses(Object.fromEntries(initialInvoices.map((inv) => [inv.id, inv.status])));
   }, [initialInvoices]);
 
-  function handleLoadMore() {
-    const oldest = invoices.reduce(
-      (min, inv) => (inv.issued_date ?? "") < min ? (inv.issued_date ?? "") : min,
-      invoices[0]?.issued_date ?? new Date().toISOString().slice(0, 10)
-    );
-    startLoadTransition(async () => {
-      const more = await loadMoreInvoices(oldest, filters);
-      const existingIds = new Set(invoices.map((inv) => inv.id));
-      const fresh = more.filter((inv) => !existingIds.has(inv.id));
-      setInvoices((prev) => [...prev, ...fresh]);
-      setLocalStatuses((prev) => ({
-        ...prev,
-        ...Object.fromEntries(fresh.map((inv) => [inv.id, inv.status])),
-      }));
+  // Reset visible window whenever filters or sort change
+  useEffect(() => {
+    setDisplayCount(PAGE_SIZE);
+  }, [searchValue, statusFilter, clientFilter, timeframe, sortKey, sortDir]);
+
+  const filteredInvoices = useMemo(() => {
+    let result = invoices.map((inv) => ({
+      ...inv,
+      status: localStatuses[inv.id] ?? inv.status,
+    }));
+
+    if (searchValue.trim()) {
+      const q = searchValue.trim().toLowerCase();
+      result = result.filter(
+        (inv) =>
+          inv.number.toLowerCase().includes(q) ||
+          inv.client.name.toLowerCase().includes(q)
+      );
+    }
+
+    if (statusFilter !== "all") {
+      result = result.filter((inv) => inv.status === statusFilter);
+    }
+
+    if (clientFilter !== "all") {
+      result = result.filter((inv) => inv.client.id === clientFilter);
+    }
+
+    if (timeframe !== "all") {
+      const { from, to } = timeframeToDateRange(timeframe);
+      if (from) result = result.filter((inv) => inv.issued_date != null && inv.issued_date >= from);
+      if (to) result = result.filter((inv) => inv.issued_date != null && inv.issued_date <= to);
+    }
+
+    const dir = sortDir === "asc" ? 1 : -1;
+    result = [...result].sort((a, b) => {
+      switch (sortKey) {
+        case "issued_date": return dir * (a.issued_date ?? "").localeCompare(b.issued_date ?? "");
+        case "number":      return dir * a.number.localeCompare(b.number);
+        case "client":      return dir * a.client.name.localeCompare(b.client.name);
+        case "total":       return dir * (a.total - b.total);
+        case "status":      return dir * a.status.localeCompare(b.status);
+      }
     });
+
+    return result;
+  }, [invoices, localStatuses, searchValue, statusFilter, clientFilter, timeframe, sortKey, sortDir]);
+
+  const visibleInvoices = filteredInvoices.slice(0, displayCount);
+  const hasMore = displayCount < filteredInvoices.length;
+
+  function handleScroll(e: React.UIEvent<HTMLDivElement>) {
+    const el = e.currentTarget;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 400 && hasMore) {
+      setDisplayCount((prev) => Math.min(prev + PAGE_SIZE, filteredInvoices.length));
+    }
   }
 
   function openInvoice(inv: Invoice) {
@@ -271,31 +324,10 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     setSheetOpen(true);
   }
 
-  const pushParams = useCallback((updates: Record<string, string | undefined>) => {
-    const params = new URLSearchParams();
-    const current: Record<string, string | undefined> = {
-      search: filters.search,
-      status: filters.status,
-      client: filters.clientId,
-      sort: filters.sortKey,
-      dir: filters.sortDir,
-    };
-    const merged = { ...current, ...updates };
-    for (const [k, v] of Object.entries(merged)) {
-      if (v && v !== "all" && v !== "issued_date" && !(k === "dir" && v === "desc")) {
-        params.set(k, v);
-      }
-    }
-    startTransition(() => router.push(`${pathname}?${params.toString()}`));
-  }, [filters, pathname, router]);
-
   function handleSort(key: SortKey) {
-    const newDir = filters.sortKey === key && filters.sortDir === "asc" ? "desc" : "asc";
-    pushParams({ sort: key, dir: newDir });
-  }
-
-  function handleSearchCommit(value: string) {
-    pushParams({ search: value || undefined });
+    const newDir = sortKey === key && sortDir === "asc" ? "desc" : "asc";
+    setSortKey(key);
+    setSortDir(newDir);
   }
 
   function handleStatusChange(id: string, status: InvoiceStatus) {
@@ -303,29 +335,30 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   }
 
   function sh(key: SortKey) {
-    return {
-      active: filters.sortKey === key,
-      dir: (filters.sortDir ?? "desc") as "asc" | "desc",
-      onSort: () => handleSort(key),
-    };
+    return { active: sortKey === key, dir: sortDir, onSort: () => handleSort(key) };
   }
 
-  const currentTimeframe = (() => {
-    if (!filters.from || filters.from === "all") return "all";
-    const { from, to } = timeframeToDateRange("this-week");
-    if (filters.from === from && filters.to === to) return "this-week";
-    const { from: fm, to: tm } = timeframeToDateRange("this-month");
-    if (filters.from === fm && filters.to === tm) return "this-month";
-    const { from: fl, to: tl } = timeframeToDateRange("last-month");
-    if (filters.from === fl && filters.to === tl) return "last-month";
-    const { from: fy } = timeframeToDateRange("this-year");
-    if (filters.from === fy) return "this-year";
-    return "all";
-  })();
+  function closeSearch() {
+    setSearchOpen(false);
+    setSearchValue("");
+  }
+
+  const mobileTitle = searchOpen ? (
+    <input
+      ref={searchInputRef}
+      className="text-lg font-semibold bg-transparent border-none outline-none w-full text-foreground placeholder:font-normal placeholder:text-muted-foreground/60"
+      placeholder="Search invoices..."
+      value={searchValue}
+      onChange={(e) => setSearchValue(e.target.value)}
+      onKeyDown={(e) => e.key === "Escape" && closeSearch()}
+    />
+  ) : (
+    <span className="text-lg font-semibold">Invoices</span>
+  );
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Invoices">
+      <PageHeader title="Invoices" mobileTitle={mobileTitle}>
         {uninvoicedCount > 0 && (
           <button onClick={() => setGenerateOpen(true)}>
             <Badge variant="secondary" className="cursor-pointer">
@@ -333,6 +366,9 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             </Badge>
           </button>
         )}
+        <Button size="icon" variant="ghost" className="size-8 md:hidden" onClick={() => searchOpen ? closeSearch() : setSearchOpen(true)} disabled={loading}>
+          {searchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+        </Button>
         <Button size="icon" variant="ghost" className="size-8" onClick={async () => { setIsRefreshing(true); try { await revalidateInvoices(); } finally { setIsRefreshing(false); } }} disabled={loading || isRefreshing}>
           <RefreshCw className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
         </Button>
@@ -343,7 +379,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       </PageHeader>
 
       {/* Desktop table */}
-      <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
+      <div className="hidden md:flex flex-col flex-1 overflow-y-auto" onScroll={handleScroll}>
         <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-3">
@@ -354,19 +390,10 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                 className="pl-8"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
-                onBlur={() => handleSearchCommit(searchValue)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearchCommit(searchValue)}
                 disabled={loading}
               />
             </div>
-            <Select
-              value={currentTimeframe}
-              onValueChange={(v) => {
-                const range = timeframeToDateRange(v);
-                pushParams({ from: range.from, to: range.to });
-              }}
-              disabled={loading}
-            >
+            <Select value={timeframe} onValueChange={setTimeframe} disabled={loading}>
               <SelectTrigger className="w-36">
                 <SelectValue placeholder="Timeframe" />
               </SelectTrigger>
@@ -376,11 +403,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                 ))}
               </SelectContent>
             </Select>
-            <Select
-              value={filters.clientId ?? "all"}
-              onValueChange={(v) => pushParams({ client: v === "all" ? undefined : v })}
-              disabled={loading}
-            >
+            <Select value={clientFilter} onValueChange={setClientFilter} disabled={loading}>
               <SelectTrigger className="w-36">
                 <SelectValue placeholder="Client" />
               </SelectTrigger>
@@ -391,11 +414,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                 ))}
               </SelectContent>
             </Select>
-            <Select
-              value={filters.status ?? "all"}
-              onValueChange={(v) => pushParams({ status: v === "all" ? undefined : v })}
-              disabled={loading}
-            >
+            <Select value={statusFilter} onValueChange={setStatusFilter} disabled={loading}>
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -412,11 +431,9 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableTableHead className="w-36 py-4 px-6" {...sh("issued_date")}>Dates</SortableTableHead>
+                  <SortableTableHead className="w-28 py-4 px-6" {...sh("issued_date")}>Issued</SortableTableHead>
                   <SortableTableHead className="w-24 py-4 px-6" {...sh("number")}>Number</SortableTableHead>
                   <SortableTableHead className="py-4 px-6" {...sh("client")}>Client</SortableTableHead>
-                  <TableHead className="w-16 text-right py-4 px-6">Lines</TableHead>
-                  <SortableTableHead className="w-28 py-4 px-6" {...sh("issued_date")}>Issued</SortableTableHead>
                   <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("total")}>Total</SortableTableHead>
                   <SortableTableHead className="w-24 py-4 px-6" align="right" {...sh("status")}>Status</SortableTableHead>
                 </TableRow>
@@ -424,17 +441,17 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
               <TableBody>
                 {loading ? (
                   <SkeletonTableRows />
-                ) : invoices.length === 0 ? (
+                ) : filteredInvoices.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
                       No invoices match these filters.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  invoices.map((inv) => (
+                  visibleInvoices.map((inv) => (
                     <TableRow key={inv.id} className="cursor-pointer" onClick={() => openInvoice(inv)}>
                       <TableCell className="text-sm text-muted-foreground py-4 px-6">
-                        {inv.date_range}
+                        {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
                       </TableCell>
                       <TableCell className="font-medium text-sm py-4 px-6">
                         {inv.number}
@@ -447,12 +464,6 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                           />
                           <span className="text-sm">{inv.client.name}</span>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-right text-muted-foreground tabular-nums py-4 px-6">
-                        {inv.entry_count}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground py-4 px-6">
-                        {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
                       </TableCell>
                       <TableCell className="text-sm text-right tabular-nums py-4 px-6">
                         {formatAUD(inv.total)}
@@ -469,30 +480,50 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
               </TableBody>
             </Table>
           </div>
-          {!loading && (
-            <div className="text-center py-2">
-              {loadPending ? (
-                <span className="text-xs text-muted-foreground">Loading…</span>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-muted-foreground"
-                  onClick={handleLoadMore}
-                >
-                  Load more
-                </Button>
-              )}
-            </div>
-          )}
         </div>
       </div>
 
+      {/* Mobile filter bar */}
+      <div className="md:hidden border-b px-4 py-2 flex gap-2">
+        <Select value={timeframe} onValueChange={setTimeframe} disabled={loading}>
+          <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
+            <SelectValue placeholder="Timeframe" />
+          </SelectTrigger>
+          <SelectContent>
+            {TIMEFRAME_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter} disabled={loading}>
+          <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All status</SelectItem>
+            <SelectItem value="draft">Draft</SelectItem>
+            <SelectItem value="issued">Issued</SelectItem>
+            <SelectItem value="paid">Paid</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={clientFilter} onValueChange={setClientFilter} disabled={loading}>
+          <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
+            <SelectValue placeholder="Client" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All clients</SelectItem>
+            {clients.map((c) => (
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Mobile card list */}
-      <div className="md:hidden flex-1 overflow-y-auto">
+      <div className="md:hidden flex-1 overflow-y-auto" onScroll={handleScroll}>
         {loading ? (
           <SkeletonMobileCards />
-        ) : invoices.length === 0 ? (
+        ) : filteredInvoices.length === 0 ? (
           <Empty className="h-64">
             <EmptyHeader>
               <EmptyMedia variant="icon"><FileText /></EmptyMedia>
@@ -501,28 +532,15 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             </EmptyHeader>
           </Empty>
         ) : (
-          <div className="px-4 py-4 flex flex-col gap-3">
-            {invoices.map((inv) => (
+          <div className="px-4 py-4 pb-28 flex flex-col gap-3">
+            {visibleInvoices.map((inv) => (
               <Card key={inv.id} className="py-0" onClick={() => openInvoice(inv)}>
                 <CardContent className="p-0">
                   <InvoiceCard invoice={inv} />
                 </CardContent>
               </Card>
             ))}
-            {loadPending ? (
-              <SkeletonMobileCards count={3} />
-            ) : (
-              <div className="text-center py-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-muted-foreground"
-                  onClick={handleLoadMore}
-                >
-                  Load more
-                </Button>
-              </div>
-            )}
+            {hasMore && <div className="h-8" />}
           </div>
         )}
       </div>

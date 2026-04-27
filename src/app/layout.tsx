@@ -17,12 +17,18 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Invoicing",
   description: "Freelance invoicing app",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Invoices",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
