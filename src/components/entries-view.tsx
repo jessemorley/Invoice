@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { revalidateEntries, loadEarlierEntries } from "@/app/(app)/entries/actions";
+import { invalidate } from "@/lib/invalidate";
 import type { Entry, Client, WorkflowRate } from "@/lib/types";
 import { formatAUD, formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -468,7 +469,7 @@ export function EntriesView({
           <ToggleGroupItem value="week">Week</ToggleGroupItem>
           <ToggleGroupItem value="none">None</ToggleGroupItem>
         </ToggleGroup>
-        <Button size="icon" variant="ghost" className="size-8" onClick={async () => { setIsRefreshing(true); try { await revalidateEntries(); } finally { setIsRefreshing(false); } }} disabled={loading || isRefreshing}>
+        <Button size="icon" variant="ghost" className="size-8" onClick={async () => { setIsRefreshing(true); try { await revalidateEntries(); invalidate("entries", "clients"); } finally { setIsRefreshing(false); } }} disabled={loading || isRefreshing}>
           <RefreshCw className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
         </Button>
         <Button size="sm" className="hidden md:flex" onClick={openNew} disabled={loading}>

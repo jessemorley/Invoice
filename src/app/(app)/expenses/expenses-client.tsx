@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/table";
 import { SortableTableHead } from "@/components/sortable-table-head";
 import { PageHeader } from "@/components/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Paperclip, Plus, Receipt, Search } from "lucide-react";
 
 type SortKey = "date" | "category" | "amount";
@@ -109,7 +110,71 @@ function ExpenseCard({ expense }: { expense: Expense }) {
   );
 }
 
-export function ExpensesClient({ expenses }: { expenses: Expense[] }) {
+function ExpensesSkeleton() {
+  return (
+    <div className="flex flex-col h-full">
+      <PageHeader title="Expenses" />
+      {/* Desktop */}
+      <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
+        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
+          <div className="flex gap-3">
+            <Skeleton className="h-9 flex-1" />
+            <Skeleton className="h-9 w-36" />
+            <Skeleton className="h-9 w-36" />
+          </div>
+          <div className="rounded-lg border bg-card overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-28 py-4 px-6">Date</TableHead>
+                  <TableHead className="w-24 py-4 px-6">Category</TableHead>
+                  <TableHead className="py-4 px-6">Description</TableHead>
+                  <TableHead className="py-4 px-6">Receipt</TableHead>
+                  <TableHead className="w-28 py-4 px-6 text-right">Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...Array(7)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="py-4 px-6"><Skeleton className="h-3 w-16" /></TableCell>
+                    <TableCell className="py-4 px-6"><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+                    <TableCell className="py-4 px-6"><Skeleton className="h-3 w-48" /></TableCell>
+                    <TableCell className="py-4 px-6"><Skeleton className="h-3 w-10" /></TableCell>
+                    <TableCell className="py-4 px-6 text-right"><Skeleton className="h-3 w-16 ml-auto" /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </div>
+      {/* Mobile */}
+      <div className="md:hidden flex-1 overflow-y-auto pb-28">
+        <div className="px-4 py-4 flex flex-col gap-3">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="py-0">
+              <CardContent className="px-4 py-3 flex items-center gap-3">
+                <div className="flex-1 flex flex-col gap-1.5">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-3 w-32" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                  <div className="flex justify-between">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-3 w-10" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ExpensesClient({ expenses, loading = false }: { expenses: Expense[]; loading?: boolean }) {
+  if (loading) return <ExpensesSkeleton />;
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 

@@ -1,9 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import { useLinkStatus } from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
   FileText,
@@ -39,24 +37,31 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/entries", label: "Entries", icon: FileText },
-  { href: "/invoices", label: "Invoices", icon: Receipt },
-  { href: "/clients", label: "Clients", icon: Users },
-  { href: "/expenses", label: "Expenses", icon: Wallet },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { view: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { view: "entries", label: "Entries", icon: FileText },
+  { view: "invoices", label: "Invoices", icon: Receipt },
+  { view: "clients", label: "Clients", icon: Users },
+  { view: "expenses", label: "Expenses", icon: Wallet },
+  { view: "settings", label: "Settings", icon: Settings },
 ];
 
-function NavItem({ href, label, icon: Icon, pathname }: (typeof navItems)[0] & { pathname: string }) {
-  const { pending } = useLinkStatus();
-  const isActive = pending || pathname.startsWith(href);
+function NavItem({
+  view,
+  label,
+  icon: Icon,
+  currentView,
+  onNavigate,
+}: (typeof navItems)[0] & { currentView: string; onNavigate: (view: string) => void }) {
+  const isActive = currentView === view;
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton asChild isActive={isActive}>
-        <Link href={href}>
-          <Icon />
-          <span>{label}</span>
-        </Link>
+      <SidebarMenuButton
+        isActive={isActive}
+        onClick={() => onNavigate(view)}
+        className={cn("cursor-pointer")}
+      >
+        <Icon />
+        <span>{label}</span>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
@@ -64,6 +69,7 @@ function NavItem({ href, label, icon: Icon, pathname }: (typeof navItems)[0] & {
 
 function NavUser() {
   const { isMobile } = useSidebar();
+  const router = useRouter();
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -100,8 +106,8 @@ function NavUser() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/settings"><Settings />Settings</Link>
+            <DropdownMenuItem onClick={() => router.replace("/?view=settings", { scroll: false })}>
+              <Settings />Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
@@ -115,8 +121,19 @@ function NavUser() {
 }
 
 export function AppSidebar() {
-  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const currentView = searchParams.get("view") ?? "entries";
   const { open } = useSidebar();
+
+  const handleNavigate = (view: string) => {
+    if (currentView === view) {
+      window.dispatchEvent(new CustomEvent("dock:focus-search"));
+    } else {
+      router.replace(`/?view=${view}`, { scroll: false });
+    }
+  };
+
   return (
     <Sidebar collapsible="icon" className="hidden md:flex border-r">
       <SidebarHeader className="px-4 py-4">
@@ -130,7 +147,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="gap-2">
               {navItems.map((item) => (
-                <NavItem key={item.href} {...item} pathname={pathname} />
+                <NavItem key={item.view} {...item} currentView={currentView} onNavigate={handleNavigate} />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>

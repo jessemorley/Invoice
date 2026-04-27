@@ -4,6 +4,7 @@ import { useState, useEffect, useTransition } from "react";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
 import { formatAUD, formatDateShort } from "@/lib/format";
 import { updateInvoice } from "@/app/(app)/invoices/actions";
+import { invalidate } from "@/lib/invalidate";
 import type { InvoiceFormData } from "@/app/(app)/invoices/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,6 +81,7 @@ export function InvoiceSheet({
     startTransition(async () => {
       try {
         await updateInvoice(invoice.id, form);
+        invalidate("invoices", "entries");
         onOpenChange(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Client } from "@/lib/types";
 import { formatAUD } from "@/lib/format";
 import { updateClientColor, fetchClientInvoices, updateShowSuperOnInvoice, type RecentInvoice } from "@/app/(app)/clients/actions";
+import { invalidate } from "@/lib/invalidate";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,7 +42,7 @@ function ColorDot({ clientId, current }: { clientId: string; current: string | n
   const active = current ?? CLIENT_COLOR_FALLBACK;
 
   function pick(color: string) {
-    startTransition(() => updateClientColor(clientId, color));
+    startTransition(async () => { await updateClientColor(clientId, color); invalidate("clients", "entries"); });
   }
 
   return (
@@ -132,7 +133,7 @@ function SuperOnInvoiceToggle({ clientId, value }: { clientId: string; value: bo
         checked={value}
         disabled={isPending}
         onCheckedChange={(checked) => {
-          startTransition(() => updateShowSuperOnInvoice(clientId, checked));
+          startTransition(async () => { await updateShowSuperOnInvoice(clientId, checked); invalidate("clients"); });
         }}
       />
     </div>

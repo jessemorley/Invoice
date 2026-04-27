@@ -2,11 +2,11 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { loadUninvoicedGroups, generateInvoices } from "@/app/(app)/invoices/actions";
+import { invalidate } from "@/lib/invalidate";
 import type { UninvoicedGroup } from "@/lib/queries";
 import { formatAUD } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Sheet,
   SheetContent,
@@ -55,6 +55,7 @@ export function GenerateSheet({
     startTransition(async () => {
       try {
         await generateInvoices(Array.from(selected));
+        invalidate("invoices", "entries");
         onOpenChange(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");
@@ -73,18 +74,12 @@ export function GenerateSheet({
 
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className="flex flex-col gap-0">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3 px-4 py-4 border-b">
-                  <Skeleton className="size-4 rounded" />
-                  <Skeleton className="size-2.5 rounded-full" />
-                  <div className="flex flex-col gap-1.5 flex-1">
-                    <Skeleton className="h-3 w-28" />
-                    <Skeleton className="h-3 w-20" />
-                  </div>
-                  <Skeleton className="h-3 w-16" />
-                </div>
-              ))}
+            <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
+              <svg className="size-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              <p className="text-sm">Fetching invoice data…</p>
             </div>
           ) : groups.length === 0 ? (
             <p className="px-4 py-8 text-sm text-muted-foreground text-center">

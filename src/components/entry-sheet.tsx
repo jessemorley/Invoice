@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useTransition } from "react";
 import { cn } from "@/lib/utils";
 import type { Entry, Client, WorkflowRate, BillingType } from "@/lib/types";
 import { createEntry, updateEntry, deleteEntry } from "@/app/(app)/entries/actions";
+import { invalidate } from "@/lib/invalidate";
 import type { EntryFormData } from "@/app/(app)/entries/actions";
 import { calcDayRate, calcHourly, calcManual, formatDuration } from "@/lib/entry-calc";
 import { formatAUD } from "@/lib/format";
@@ -329,6 +330,7 @@ export function EntrySheet({
         } else {
           await createEntry(payload);
         }
+        invalidate("entries");
         onOpenChange(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");
@@ -341,6 +343,7 @@ export function EntrySheet({
     startDeleteTransition(async () => {
       try {
         await deleteEntry(entry.id);
+        invalidate("entries");
         onOpenChange(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");
