@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { loadUninvoicedGroups, generateInvoices } from "@/app/(app)/invoices/actions";
+import { invalidate } from "@/lib/invalidate";
 import type { UninvoicedGroup } from "@/lib/queries";
 import { formatAUD } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,7 @@ export function GenerateSheet({
     startTransition(async () => {
       try {
         await generateInvoices(Array.from(selected));
+        invalidate("invoices", "entries");
         onOpenChange(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");

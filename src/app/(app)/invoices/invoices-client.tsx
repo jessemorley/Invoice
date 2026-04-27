@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { revalidateInvoices } from "./actions";
+import { invalidate } from "@/lib/invalidate";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
 import type { InvoiceFilters } from "@/lib/queries";
 import { formatAUD, formatDateShort } from "@/lib/format";
@@ -369,7 +370,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         <Button size="icon" variant="ghost" className="size-8 md:hidden" onClick={() => searchOpen ? closeSearch() : setSearchOpen(true)} disabled={loading}>
           {searchOpen ? <X className="size-4" /> : <Search className="size-4" />}
         </Button>
-        <Button size="icon" variant="ghost" className="size-8" onClick={async () => { setIsRefreshing(true); try { await revalidateInvoices(); } finally { setIsRefreshing(false); } }} disabled={loading || isRefreshing}>
+        <Button size="icon" variant="ghost" className="size-8" onClick={async () => { setIsRefreshing(true); try { await revalidateInvoices(); invalidate("invoices", "entries"); } finally { setIsRefreshing(false); } }} disabled={loading || isRefreshing}>
           <RefreshCw className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
         </Button>
         <Button size="sm" className="hidden md:flex" disabled={loading}>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { invalidate } from "@/lib/invalidate";
 import { PageHeader } from "@/components/page-header";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
@@ -107,6 +108,7 @@ function InfoTab({
     startBizTransition(async () => {
       try {
         await saveBusinessDetails(bizForm);
+        invalidate("settings");
       } catch (e) {
         setBizError(e instanceof Error ? e.message : "Failed to save");
       }
@@ -264,6 +266,7 @@ function InvoicingTab({
     startTransition(async () => {
       try {
         await saveInvoicingSettings(form);
+        invalidate("settings");
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to save");
       }
