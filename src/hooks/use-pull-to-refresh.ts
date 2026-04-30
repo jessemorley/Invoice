@@ -24,20 +24,20 @@ export function usePullToRefresh({
   const refreshing = useRef(false);
   const currentDist = useRef(0);
 
-  const doRefresh = useCallback(async () => {
+  const doRefresh = useCallback(() => {
     refreshing.current = true;
     setState("refreshing");
     setPullDistance(THRESHOLD);
-    try {
-      await startTransition(async () => {
+    startTransition(async () => {
+      try {
         await onRefresh();
-      });
-    } finally {
-      refreshing.current = false;
-      setState("idle");
-      setPullDistance(0);
-      currentDist.current = 0;
-    }
+      } finally {
+        refreshing.current = false;
+        setState("idle");
+        setPullDistance(0);
+        currentDist.current = 0;
+      }
+    });
   }, [onRefresh]);
 
   useEffect(() => {

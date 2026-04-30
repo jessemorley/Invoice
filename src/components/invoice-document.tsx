@@ -333,7 +333,7 @@ export function InvoiceDocument({ invoice, business }: Props) {
           )}
           <View style={s.totalsGrandRow}>
             <Text style={s.totalsLabelBold}>Total</Text>
-            <Text style={s.totalsValueBold}>{fmtAmount(invoice.total)}</Text>
+            <Text style={s.totalsValueBold}>{fmtAmount(showSuper ? invoice.total : invoice.subtotal)}</Text>
           </View>
         </View>
       </Page>

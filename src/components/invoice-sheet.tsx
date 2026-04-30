@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
 import { formatAUD, formatDateShort } from "@/lib/format";
-import { updateInvoice } from "@/app/(app)/invoices/actions";
+import { updateInvoice, deleteInvoice } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
 import type { InvoiceFormData } from "@/app/(app)/invoices/actions";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download } from "lucide-react";
+import { Download, Trash2 } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -62,6 +62,7 @@ export function InvoiceSheet({
     invoice ? defaultForm(invoice) : null
   );
   const [isPending, startTransition] = useTransition();
+  const [isDeleting, startDeleteTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -73,6 +74,19 @@ export function InvoiceSheet({
 
   function set<K extends keyof InvoiceFormData>(key: K, value: InvoiceFormData[K]) {
     setForm((prev) => prev ? { ...prev, [key]: value } : prev);
+  }
+
+  function handleDelete() {
+    if (!invoice) return;
+    startDeleteTransition(async () => {
+      try {
+        await deleteInvoice(invoice.id);
+        invalidate("invoices", "entries");
+        onOpenChange(false);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Something went wrong");
+      }
+    });
   }
 
   function handleSubmit() {
@@ -179,12 +193,21 @@ export function InvoiceSheet({
         </div>
 
         <SheetFooter className="px-6 py-4 border-t flex-row gap-2">
+          <Button
+            variant="destructive"
+            size="icon"
+            className="shrink-0"
+            onClick={handleDelete}
+            disabled={isDeleting || isPending}
+          >
+            <Trash2 className="size-4" />
+          </Button>
           <SheetClose asChild>
             <Button variant="outline" className="flex-1">
               Cancel
             </Button>
           </SheetClose>
-          <Button className="flex-1" onClick={handleSubmit} disabled={isPending}>
+          <Button className="flex-1" onClick={handleSubmit} disabled={isPending || isDeleting}>
             {isPending ? "Saving…" : "Save"}
           </Button>
         </SheetFooter>

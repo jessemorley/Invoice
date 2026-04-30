@@ -340,6 +340,10 @@ export function EntrySheet({
 
   function handleDelete() {
     if (!entry) return;
+    if (entry.invoice_id) {
+      setError(`This entry is part of invoice ${entry.invoice?.number ?? "an invoice"} and can't be deleted directly. Delete the invoice instead.`);
+      return;
+    }
     startDeleteTransition(async () => {
       try {
         await deleteEntry(entry.id);

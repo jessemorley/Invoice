@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { revalidateInvoices } from "./actions";
 import { invalidate } from "@/lib/invalidate";
@@ -225,9 +225,13 @@ const PAGE_SIZE = 25;
 
 export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uninvoicedCount = 0, clients = EMPTY_CLIENTS, loading = false }: Props) {
   const mobileScrollRef = useRef<HTMLDivElement>(null);
+  const handlePullRefresh = useCallback(async () => {
+    await revalidateInvoices();
+    invalidate("invoices");
+  }, []);
   const { pullDistance, state: pullState } = usePullToRefresh({
     ref: mobileScrollRef,
-    onRefresh: revalidateInvoices,
+    onRefresh: handlePullRefresh,
     enabled: !loading,
   });
 
@@ -298,14 +302,14 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
 
     if (timeframe !== "all") {
       const { from, to } = timeframeToDateRange(timeframe);
-      if (from) result = result.filter((inv) => inv.issued_date != null && inv.issued_date >= from);
-      if (to) result = result.filter((inv) => inv.issued_date != null && inv.issued_date <= to);
+      if (from) result = result.filter((inv) => inv.issued_date == null || inv.issued_date >= from);
+      if (to) result = result.filter((inv) => inv.issued_date == null || inv.issued_date <= to);
     }
 
     const dir = sortDir === "asc" ? 1 : -1;
     result = [...result].sort((a, b) => {
       switch (sortKey) {
-        case "issued_date": return dir * (a.issued_date ?? "").localeCompare(b.issued_date ?? "");
+        case "issued_date": return dir * ((a.issued_date ?? "9999-99-99").localeCompare(b.issued_date ?? "9999-99-99"));
         case "number":      return dir * a.number.localeCompare(b.number);
         case "client":      return dir * a.client.name.localeCompare(b.client.name);
         case "total":       return dir * (a.total - b.total);

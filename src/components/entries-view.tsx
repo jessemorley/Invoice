@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useTransition, useRef } from "react";
+import { useState, useEffect, useTransition, useRef, useCallback } from "react";
 import { revalidateEntries, loadEarlierEntries } from "@/app/(app)/entries/actions";
+import { invalidate } from "@/lib/invalidate";
 import type { Entry, Client, WorkflowRate } from "@/lib/types";
 import { formatAUD, formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -418,9 +419,13 @@ export function EntriesView({
   const [viewMode, setViewMode] = useState<ViewMode>("invoice");
   const [sheetOpen, setSheetOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const handlePullRefresh = useCallback(async () => {
+    await revalidateEntries();
+    invalidate("entries");
+  }, []);
   const { pullDistance, state: pullState } = usePullToRefresh({
     ref: scrollRef,
-    onRefresh: revalidateEntries,
+    onRefresh: handlePullRefresh,
     enabled: !loading,
   });
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);

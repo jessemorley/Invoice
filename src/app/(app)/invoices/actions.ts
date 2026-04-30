@@ -96,6 +96,31 @@ export async function generateInvoices(groupKeys: string[]): Promise<{ created: 
   return { created: selected.length };
 }
 
+export async function deleteInvoice(id: string) {
+  const supabase = createServerClient();
+
+  const { error: unlinkError } = await supabase
+    .from("entries")
+    .update({ invoice_id: null })
+    .eq("invoice_id", id)
+    .eq("user_id", PROTOTYPE_USER_ID);
+
+  if (unlinkError) throw new Error(`deleteInvoice (unlink): ${unlinkError.message}`);
+
+  const { error } = await supabase
+    .from("invoices")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", PROTOTYPE_USER_ID);
+
+  if (error) throw new Error(`deleteInvoice: ${error.message}`);
+
+  updateTag(CACHE_TAGS.invoices);
+  updateTag(CACHE_TAGS.uninvoicedCount);
+  updateTag(CACHE_TAGS.entries);
+  refresh();
+}
+
 export async function updateInvoice(id: string, data: InvoiceFormData) {
   const supabase = createServerClient();
   const { error } = await supabase

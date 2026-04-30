@@ -88,9 +88,9 @@ export function GenerateSheet({
           ) : (
             <div className="flex flex-col">
               {groups.map((group) => (
-                <button
+                <div
                   key={group.key}
-                  className="flex items-center gap-3 px-4 py-4 border-b hover:bg-accent/50 transition-colors text-left w-full"
+                  className="flex items-center gap-3 px-4 py-4 border-b hover:bg-accent/50 transition-colors cursor-pointer"
                   onClick={() => toggle(group.key)}
                 >
                   <Checkbox
@@ -111,7 +111,7 @@ export function GenerateSheet({
                   <span className="text-sm tabular-nums text-foreground shrink-0">
                     {formatAUD(group.subtotal)}
                   </span>
-                </button>
+                </div>
               ))}
             </div>
           )}
