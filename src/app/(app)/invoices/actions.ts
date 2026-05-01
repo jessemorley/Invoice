@@ -127,8 +127,8 @@ export async function updateInvoice(id: string, data: InvoiceFormData) {
     .from("invoices")
     .update({
       status: data.status,
-      issued_date: data.issued_date,
-      due_date: data.due_date,
+      issued_date: data.issued_date || null,
+      due_date: data.due_date || null,
       notes: data.notes || null,
       paid_date: data.status === "paid" ? new Date().toISOString().split("T")[0] : null,
     })

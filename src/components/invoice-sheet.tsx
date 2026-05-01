@@ -44,8 +44,8 @@ function defaultForm(invoice: Invoice): InvoiceFormData {
   return {
     status: invoice.status,
     issued_date: invoice.issued_date ?? "",
-    due_date: "",
-    notes: "",
+    due_date: invoice.due_date ?? "",
+    notes: invoice.notes ?? "",
   };
 }
 
