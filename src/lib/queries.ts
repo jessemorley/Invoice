@@ -12,6 +12,7 @@ export const CACHE_TAGS = {
   clients: "clients",
   uninvoicedCount: "uninvoiced-count",
   settings: "settings",
+  scheduledEmails: "scheduled-emails",
 } as const;
 
 function toClientRef(client: { id: string; name: string; billing_type: string; color?: string | null }): ClientRef {
@@ -421,7 +422,7 @@ export async function fetchInvoiceDetail(invoiceId: string, userId: string): Pro
     .from("invoices")
     .select(`
       *,
-      clients (id, name, color, address, suburb, email, abn, entry_label, pays_super, super_rate, show_super_on_invoice, rate_hourly),
+      clients (id, name, color, address, suburb, email, abn, contact_name, entry_label, pays_super, super_rate, show_super_on_invoice, rate_hourly),
       entries (id, date, description, billing_type_snapshot, day_type, workflow_type, brand, shoot_client, role, skus, hours_worked, start_time, finish_time, break_minutes, base_amount, bonus_amount, super_amount, total_amount),
       invoice_line_items (id, invoice_id, description, quantity, amount, sort_order)
     `)
@@ -483,6 +484,7 @@ export async function fetchInvoiceDetail(invoiceId: string, userId: string): Pro
       suburb: client.suburb,
       email: client.email,
       abn: client.abn ?? null,
+      contact_name: client.contact_name ?? null,
       entry_label: client.entry_label ?? null,
       pays_super: client.pays_super,
       super_rate: client.super_rate,
@@ -491,6 +493,38 @@ export async function fetchInvoiceDetail(invoiceId: string, userId: string): Pro
     },
     entries,
     line_items: lineItems,
+  };
+}
+
+export type ScheduledEmail = {
+  id: string;
+  status: "pending" | "sent" | "cancelled" | "failed";
+  to_address: string;
+  scheduled_for: string;
+  sent_at: string | null;
+  error: string | null;
+};
+
+export async function fetchScheduledEmailForInvoice(invoiceId: string, userId: string): Promise<ScheduledEmail | null> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("scheduled_emails")
+    .select("id, status, to_address, scheduled_for, sent_at, error")
+    .eq("invoice_id", invoiceId)
+    .eq("user_id", userId)
+    .neq("status", "cancelled")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`fetchScheduledEmailForInvoice: ${error.message}`);
+  if (!data) return null;
+  return {
+    id: data.id,
+    status: data.status as ScheduledEmail["status"],
+    to_address: data.to_address,
+    scheduled_for: data.scheduled_for,
+    sent_at: data.sent_at ?? null,
+    error: data.error ?? null,
   };
 }
 

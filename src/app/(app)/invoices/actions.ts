@@ -2,7 +2,7 @@
 
 import { updateTag, refresh } from "next/cache";
 import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
-import { fetchUninvoicedGroups, CACHE_TAGS } from "@/lib/queries";
+import { fetchUninvoicedGroups, fetchScheduledEmailForInvoice, fetchBusinessDetails, fetchInvoiceDetail, CACHE_TAGS } from "@/lib/queries";
 import type { InvoiceStatus } from "@/lib/types";
 
 export async function revalidateInvoices() {
@@ -121,14 +121,76 @@ export async function deleteInvoice(id: string) {
   refresh();
 }
 
+export type EmailFormData = {
+  to: string;
+  subject: string;
+  body_text: string;
+  scheduled_for: string;
+};
+
+export async function loadScheduledEmail(invoiceId: string) {
+  const [scheduledEmail, invoiceDetail, businessDetails] = await Promise.all([
+    fetchScheduledEmailForInvoice(invoiceId, PROTOTYPE_USER_ID),
+    fetchInvoiceDetail(invoiceId, PROTOTYPE_USER_ID),
+    fetchBusinessDetails(PROTOTYPE_USER_ID),
+  ]);
+  return {
+    scheduledEmail,
+    invoiceDetail,
+    businessName: businessDetails?.business_name ?? businessDetails?.name ?? "",
+  };
+}
+
+export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormData): Promise<void> {
+  const supabase = createServerClient();
+
+  const { data: inv, error: invError } = await supabase
+    .from("invoices")
+    .select("invoice_number")
+    .eq("id", invoiceId)
+    .eq("user_id", PROTOTYPE_USER_ID)
+    .single();
+
+  if (invError) throw new Error(`scheduleInvoiceEmail (fetch): ${invError.message}`);
+
+  const { error } = await supabase.from("scheduled_emails").insert({
+    user_id: PROTOTYPE_USER_ID,
+    invoice_id: invoiceId,
+    to_address: data.to,
+    subject: data.subject,
+    body_text: data.body_text,
+    scheduled_for: data.scheduled_for,
+    filename: `${inv.invoice_number}.pdf`,
+    mark_issued: true,
+    status: "pending",
+  });
+
+  if (error) throw new Error(`scheduleInvoiceEmail: ${error.message}`);
+  updateTag(CACHE_TAGS.scheduledEmails);
+  refresh();
+}
+
+export async function cancelScheduledEmail(scheduledEmailId: string): Promise<void> {
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("scheduled_emails")
+    .update({ status: "cancelled" })
+    .eq("id", scheduledEmailId)
+    .eq("user_id", PROTOTYPE_USER_ID);
+
+  if (error) throw new Error(`cancelScheduledEmail: ${error.message}`);
+  updateTag(CACHE_TAGS.scheduledEmails);
+  refresh();
+}
+
 export async function updateInvoice(id: string, data: InvoiceFormData) {
   const supabase = createServerClient();
   const { error } = await supabase
     .from("invoices")
     .update({
       status: data.status,
-      issued_date: data.issued_date,
-      due_date: data.due_date,
+      issued_date: data.issued_date || null,
+      due_date: data.due_date || null,
       notes: data.notes || null,
       paid_date: data.status === "paid" ? new Date().toISOString().split("T")[0] : null,
     })
