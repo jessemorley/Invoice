@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
-import { revalidateInvoices } from "./actions";
+import { revalidateInvoices, loadScheduledEmail, cancelScheduledEmail } from "./actions";
 import { invalidate } from "@/lib/invalidate";
-import type { Invoice, InvoiceStatus } from "@/lib/types";
+import type { Invoice, InvoiceStatus, InvoiceDetail } from "@/lib/types";
+import type { ScheduledEmail } from "@/lib/queries";
 import type { InvoiceFilters } from "@/lib/queries";
 import { formatAUD, formatDateShort } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,7 @@ import { SortableTableHead } from "@/components/sortable-table-head";
 import { PageHeader } from "@/components/page-header";
 import { InvoiceSheet } from "@/components/invoice-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
+import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { ChevronDown, FileText, Plus, RefreshCw, Search, X } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
@@ -241,6 +243,10 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   );
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [scheduledEmail, setScheduledEmail] = useState<ScheduledEmail | null>(null);
+  const [invoiceDetail, setInvoiceDetail] = useState<InvoiceDetail | null>(null);
+  const [businessName, setBusinessName] = useState("");
+  const [composeOpen, setComposeOpen] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
@@ -332,7 +338,25 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
 
   function openInvoice(inv: Invoice) {
     setSelectedInvoice(inv);
+    setScheduledEmail(null);
+    setInvoiceDetail(null);
     setSheetOpen(true);
+    loadScheduledEmail(inv.id).then((result) => {
+      setScheduledEmail(result.scheduledEmail);
+      setInvoiceDetail(result.invoiceDetail);
+      setBusinessName(result.businessName);
+    });
+  }
+
+  function handleSendClick() {
+    setSheetOpen(false);
+    setComposeOpen(true);
+  }
+
+  async function handleCancelEmail(id: string) {
+    await cancelScheduledEmail(id);
+    invalidate("invoices");
+    setScheduledEmail(null);
   }
 
   function handleSort(key: SortKey) {
@@ -571,6 +595,16 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         invoice={selectedInvoice}
+        scheduledEmail={scheduledEmail}
+        onSendClick={handleSendClick}
+        onCancelEmail={handleCancelEmail}
+      />
+      <EmailComposeSheet
+        open={composeOpen}
+        onOpenChange={setComposeOpen}
+        invoice={invoiceDetail}
+        businessName={businessName}
+        onSent={() => invalidate("invoices")}
       />
       <GenerateSheet
         open={generateOpen}

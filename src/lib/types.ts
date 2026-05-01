@@ -155,6 +155,7 @@ export type InvoiceDetail = {
     suburb: string;
     email: string;
     abn: string | null;
+    contact_name: string | null;
     entry_label: string | null;
     pays_super: boolean;
     super_rate: number;

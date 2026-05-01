@@ -18,7 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, Trash2 } from "lucide-react";
+import type { ScheduledEmail } from "@/lib/queries";
+import { Download, Mail, Trash2 } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -41,11 +42,12 @@ const STATUS_VARIANT: Record<InvoiceStatus, "outline" | "secondary" | "default">
 };
 
 function defaultForm(invoice: Invoice): InvoiceFormData {
+  const inv = invoice as Invoice & { due_date?: string | null; notes?: string | null };
   return {
-    status: invoice.status,
-    issued_date: invoice.issued_date ?? "",
-    due_date: invoice.due_date ?? "",
-    notes: invoice.notes ?? "",
+    status: inv.status,
+    issued_date: inv.issued_date ?? "",
+    due_date: inv.due_date ?? "",
+    notes: inv.notes ?? "",
   };
 }
 
@@ -53,10 +55,16 @@ export function InvoiceSheet({
   open,
   onOpenChange,
   invoice,
+  scheduledEmail,
+  onSendClick,
+  onCancelEmail,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   invoice: Invoice | null;
+  scheduledEmail?: ScheduledEmail | null;
+  onSendClick?: () => void;
+  onCancelEmail?: (id: string) => void;
 }) {
   const [form, setForm] = useState<InvoiceFormData | null>(
     invoice ? defaultForm(invoice) : null
@@ -141,13 +149,48 @@ export function InvoiceSheet({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" asChild className="gap-1.5">
               <a href={`/api/invoices/${invoice.id}/pdf`} download>
                 <Download className="size-3.5" />
                 Download PDF
               </a>
             </Button>
+            {!scheduledEmail || scheduledEmail.status === "cancelled" ? (
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={onSendClick}>
+                <Mail className="size-3.5" />
+                Send
+              </Button>
+            ) : scheduledEmail.status === "pending" ? (
+              <>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={onSendClick}>
+                  <Mail className="size-3.5" />
+                  Scheduled
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground"
+                  onClick={() => onCancelEmail?.(scheduledEmail.id)}
+                >
+                  Cancel send
+                </Button>
+              </>
+            ) : scheduledEmail.status === "sent" ? (
+              <span className="text-sm text-muted-foreground self-center">
+                Sent {scheduledEmail.sent_at ? formatDateShort(scheduledEmail.sent_at) : ""}
+              </span>
+            ) : scheduledEmail.status === "failed" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-destructive border-destructive/40 hover:text-destructive"
+                onClick={onSendClick}
+              >
+                <Mail className="size-3.5" />
+                Failed — Retry
+              </Button>
+            ) : null}
           </div>
 
           {/* Status */}
