@@ -161,7 +161,6 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
     body_text: data.body_text,
     scheduled_for: data.scheduled_for,
     filename: `${inv.invoice_number}.pdf`,
-    invoice_html: "",
     mark_issued: true,
     status: "pending",
   });
