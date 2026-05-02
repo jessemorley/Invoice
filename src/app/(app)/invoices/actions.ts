@@ -184,6 +184,20 @@ export async function cancelScheduledEmail(scheduledEmailId: string): Promise<vo
   refresh();
 }
 
+export async function sendScheduledEmailNow(scheduledEmailId: string): Promise<void> {
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("scheduled_emails")
+    .update({ scheduled_for: new Date().toISOString() })
+    .eq("id", scheduledEmailId)
+    .eq("status", "pending")
+    .eq("user_id", PROTOTYPE_USER_ID);
+
+  if (error) throw new Error(`sendScheduledEmailNow: ${error.message}`);
+  updateTag(CACHE_TAGS.scheduledEmails);
+  refresh();
+}
+
 export async function updateInvoice(id: string, data: InvoiceFormData) {
   const supabase = createServerClient();
   const { error } = await supabase

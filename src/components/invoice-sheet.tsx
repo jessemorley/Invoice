@@ -19,7 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { ScheduledEmail } from "@/lib/queries";
-import { Download, Mail, Trash2 } from "lucide-react";
+import { Download, Mail, Trash2, Clock, Send, CalendarClock } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Sheet,
   SheetContent,
@@ -41,6 +42,21 @@ const STATUS_VARIANT: Record<InvoiceStatus, "outline" | "secondary" | "default">
   paid: "default",
 };
 
+function formatScheduledFor(isoString: string): string {
+  const d = new Date(isoString);
+  const now = new Date();
+  const diff = d.getTime() - now.getTime();
+  const isToday = d.toDateString() === now.toDateString();
+  const isTomorrow = d.toDateString() === new Date(now.getTime() + 86400000).toDateString();
+
+  const time = d.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit", hour12: true });
+  if (diff < 0) return `Sending soon — ${time}`;
+  if (isToday) return `Today at ${time}`;
+  if (isTomorrow) return `Tomorrow at ${time}`;
+  const date = d.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
+  return `${date} at ${time}`;
+}
+
 function defaultForm(invoice: Invoice): InvoiceFormData {
   const inv = invoice as Invoice & { due_date?: string | null; notes?: string | null };
   return {
@@ -58,6 +74,8 @@ export function InvoiceSheet({
   scheduledEmail,
   onSendClick,
   onCancelEmail,
+  onReschedule,
+  onSendNow,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -65,6 +83,8 @@ export function InvoiceSheet({
   scheduledEmail?: ScheduledEmail | null;
   onSendClick?: () => void;
   onCancelEmail?: (id: string) => void;
+  onReschedule?: () => void;
+  onSendNow?: (id: string) => void;
 }) {
   const [form, setForm] = useState<InvoiceFormData | null>(
     invoice ? defaultForm(invoice) : null
@@ -161,21 +181,6 @@ export function InvoiceSheet({
                 <Mail className="size-3.5" />
                 Email
               </Button>
-            ) : scheduledEmail.status === "pending" ? (
-              <>
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={onSendClick}>
-                  <Mail className="size-3.5" />
-                  Scheduled
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground"
-                  onClick={() => onCancelEmail?.(scheduledEmail.id)}
-                >
-                  Cancel send
-                </Button>
-              </>
             ) : scheduledEmail.status === "sent" ? (
               <span className="text-sm text-muted-foreground self-center">
                 Sent {scheduledEmail.sent_at ? formatDateShort(scheduledEmail.sent_at.slice(0, 10)) : ""}
@@ -234,6 +239,31 @@ export function InvoiceSheet({
 
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
+
+        {scheduledEmail?.status === "pending" && (
+          <div className="px-6 pb-4">
+            <Alert className="border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-50">
+              <Clock className="size-4" />
+              <AlertTitle>Email scheduled for {formatScheduledFor(scheduledEmail.scheduled_for)}</AlertTitle>
+              <AlertDescription className="text-amber-800 dark:text-amber-200">
+                <span className="break-all">To: {scheduledEmail.to_address}</span>
+                <div className="flex gap-2 flex-wrap mt-2">
+                  <Button variant="secondary" size="xs" onClick={onReschedule}>
+                    <CalendarClock />
+                    Edit
+                  </Button>
+                  <Button size="xs" onClick={() => onSendNow?.(scheduledEmail.id)}>
+                    <Send />
+                    Send now
+                  </Button>
+                  <Button variant="destructive" size="xs" onClick={() => onCancelEmail?.(scheduledEmail.id)}>
+                    Cancel send
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
 
         <SheetFooter className="px-6 py-4 border-t flex-row gap-2">
           <Button

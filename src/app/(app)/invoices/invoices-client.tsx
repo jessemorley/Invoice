@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
-import { revalidateInvoices, loadScheduledEmail, cancelScheduledEmail } from "./actions";
+import { revalidateInvoices, loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow } from "./actions";
 import { invalidate } from "@/lib/invalidate";
 import type { Invoice, InvoiceStatus, InvoiceDetail } from "@/lib/types";
 import type { ScheduledEmail } from "@/lib/queries";
@@ -359,6 +359,17 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     setScheduledEmail(null);
   }
 
+  function handleReschedule() {
+    setSheetOpen(false);
+    setComposeOpen(true);
+  }
+
+  async function handleSendNow(id: string) {
+    await sendScheduledEmailNow(id);
+    invalidate("invoices");
+    setScheduledEmail((prev) => prev ? { ...prev, scheduled_for: new Date().toISOString() } : prev);
+  }
+
   function handleSort(key: SortKey) {
     const newDir = sortKey === key && sortDir === "asc" ? "desc" : "asc";
     setSortKey(key);
@@ -598,6 +609,8 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         scheduledEmail={scheduledEmail}
         onSendClick={handleSendClick}
         onCancelEmail={handleCancelEmail}
+        onReschedule={handleReschedule}
+        onSendNow={handleSendNow}
       />
       <EmailComposeSheet
         open={composeOpen}
