@@ -15,6 +15,7 @@ export async function revalidateInvoices() {
 export type InvoiceFormData = {
   status: InvoiceStatus;
   issued_date: string;
+  paid_date: string;
   due_date: string;
   notes: string;
 };
@@ -207,7 +208,7 @@ export async function updateInvoice(id: string, data: InvoiceFormData) {
       issued_date: data.issued_date || null,
       due_date: data.due_date || null,
       notes: data.notes || null,
-      paid_date: data.status === "paid" ? new Date().toISOString().split("T")[0] : null,
+      paid_date: data.paid_date || null,
     })
     .eq("id", id)
     .eq("user_id", PROTOTYPE_USER_ID);

@@ -48,6 +48,7 @@ export type Invoice = {
   number: string;
   client: ClientRef;
   issued_date: string | null;
+  paid_date: string | null;
   subtotal: number;
   super_amount: number;
   total: number;

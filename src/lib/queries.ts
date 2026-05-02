@@ -148,6 +148,7 @@ export async function fetchInvoices(userId: string, filters: InvoiceFilters = {}
       number: inv.invoice_number,
       client: toClientRef(client ?? { id: inv.client_id, name: "Unknown", billing_type: "day_rate" }),
       issued_date: inv.issued_date,
+      paid_date: inv.paid_date ?? null,
       subtotal: inv.subtotal,
       super_amount: inv.super_amount,
       total: inv.total,

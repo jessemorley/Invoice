@@ -53,6 +53,7 @@ function defaultForm(invoice: Invoice): InvoiceFormData {
   return {
     status: inv.status,
     issued_date: inv.issued_date ?? "",
+    paid_date: inv.paid_date ?? "",
     due_date: inv.due_date ?? "",
     notes: inv.notes ?? "",
   };
@@ -208,14 +209,24 @@ export function InvoiceSheet({
             </div>
           </div>
 
-          {/* Issued date */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">Issued date</label>
-            <Input
-              type="date"
-              value={form.issued_date}
-              onChange={(e) => set("issued_date", e.target.value)}
-            />
+          {/* Issued / Paid dates */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Issued</label>
+              <Input
+                type="date"
+                value={form.issued_date}
+                onChange={(e) => set("issued_date", e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Paid</label>
+              <Input
+                type="date"
+                value={form.paid_date}
+                onChange={(e) => set("paid_date", e.target.value)}
+              />
+            </div>
           </div>
 
           {/* Notes */}
