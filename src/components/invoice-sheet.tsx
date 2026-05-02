@@ -389,23 +389,21 @@ export function InvoiceSheet({
           </div>
 
           {/* Issued / Paid dates */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-2 min-w-0">
-              <label className="text-sm font-medium">Issued</label>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium w-14 shrink-0">Issued</label>
               <Input
                 type="date"
                 value={form.issued_date}
                 onChange={(e) => set("issued_date", e.target.value)}
-                className="w-full"
               />
             </div>
-            <div className="flex flex-col gap-2 min-w-0">
-              <label className="text-sm font-medium">Paid</label>
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium w-14 shrink-0">Paid</label>
               <Input
                 type="date"
                 value={form.paid_date}
                 onChange={(e) => set("paid_date", e.target.value)}
-                className="w-full"
               />
             </div>
           </div>

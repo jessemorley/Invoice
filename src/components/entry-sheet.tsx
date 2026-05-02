@@ -400,13 +400,14 @@ export function EntrySheet({
           ) : (
             <div className="flex flex-col gap-4 px-4 py-4">
               {/* Date */}
-              <Field label="Date">
+              <div className="flex items-center gap-3">
+                <label className="text-sm font-medium text-foreground w-14 shrink-0">Date</label>
                 <Input
                   type="date"
                   value={form.date}
                   onChange={(e) => set("date", e.target.value)}
                 />
-              </Field>
+              </div>
 
               {/* Day type */}
               {showDayType && (
