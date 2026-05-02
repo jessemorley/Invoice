@@ -333,14 +333,15 @@ export function InvoiceSheet({
           </div>
 
           {/* Summary */}
-          <div className="rounded-lg bg-muted/40 px-4 py-3 flex flex-col gap-3 text-sm">
+          <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <span className="font-medium text-xs uppercase tracking-wide text-muted-foreground">Lines</span>
+              <label className="text-sm font-medium">Lines</label>
               <Button variant="ghost" size="xs" className="gap-1 -mr-1" onClick={() => setView("add-line-item")}>
                 <Plus className="size-3" />
                 Add
               </Button>
             </div>
+          <div className="rounded-lg bg-muted/40 px-4 py-3 flex flex-col gap-3 text-sm">
             {invoiceDetail ? (
               <>
                 {invoiceDetail.entries.map((entry) => (
@@ -405,6 +406,7 @@ export function InvoiceSheet({
                 <span className="tabular-nums">{formatAUD(invoice.super_amount)}</span>
               </div>
             )}
+          </div>
           </div>
 
           <div className="flex gap-2 flex-wrap">
