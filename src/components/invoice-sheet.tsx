@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import type { Invoice, InvoiceDetail, InvoiceStatus } from "@/lib/types";
 import { formatAUD, formatDateShort } from "@/lib/format";
-import { updateInvoice, deleteInvoice, createLineItem } from "@/app/(app)/invoices/actions";
+import { updateInvoice, deleteInvoice, createLineItem, updateLineItem, deleteLineItem } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
 import type { InvoiceFormData } from "@/app/(app)/invoices/actions";
 import { Button } from "@/components/ui/button";
@@ -77,21 +77,16 @@ function defaultForm(invoice: Invoice): InvoiceFormData {
   };
 }
 
-function AddLineItemView({
-  invoiceId,
-  nextSortOrder,
-  onSave,
-  onCancel,
-}: {
-  invoiceId: string;
-  nextSortOrder: number;
-  onSave: () => void;
-  onCancel: () => void;
-}) {
-  const [description, setDescription] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [amount, setAmount] = useState("");
+type LineItemViewProps =
+  | { mode: "add"; invoiceId: string; nextSortOrder: number; item?: never; onSave: () => void; onCancel: () => void }
+  | { mode: "edit"; invoiceId?: never; nextSortOrder?: never; item: { id: string; description: string; quantity: number | null; amount: number }; onSave: () => void; onCancel: () => void };
+
+function LineItemView({ mode, invoiceId, nextSortOrder, item, onSave, onCancel }: LineItemViewProps) {
+  const [description, setDescription] = useState(mode === "edit" ? item.description : "");
+  const [quantity, setQuantity] = useState(mode === "edit" && item.quantity != null ? String(item.quantity) : "");
+  const [amount, setAmount] = useState(mode === "edit" ? String(item.amount) : "");
   const [isPending, startTransition] = useTransition();
+  const [isDeleting, startDeleteTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   const canSave = description.trim() !== "" && amount.trim() !== "" && !isNaN(parseFloat(amount));
@@ -101,12 +96,33 @@ function AddLineItemView({
     setError(null);
     startTransition(async () => {
       try {
-        await createLineItem(invoiceId, {
-          description: description.trim(),
-          quantity: quantity.trim() !== "" ? parseFloat(quantity) : null,
-          amount: parseFloat(amount),
-          sort_order: nextSortOrder,
-        });
+        if (mode === "add") {
+          await createLineItem(invoiceId, {
+            description: description.trim(),
+            quantity: quantity.trim() !== "" ? parseFloat(quantity) : null,
+            amount: parseFloat(amount),
+            sort_order: nextSortOrder,
+          });
+        } else {
+          await updateLineItem(item.id, {
+            description: description.trim(),
+            quantity: quantity.trim() !== "" ? parseFloat(quantity) : null,
+            amount: parseFloat(amount),
+          });
+        }
+        invalidate("invoices");
+        onSave();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Something went wrong");
+      }
+    });
+  }
+
+  function handleDelete() {
+    if (mode !== "edit") return;
+    startDeleteTransition(async () => {
+      try {
+        await deleteLineItem(item.id);
         invalidate("invoices");
         onSave();
       } catch (e) {
@@ -118,7 +134,7 @@ function AddLineItemView({
   return (
     <>
       <SheetHeader className="px-6 py-5 border-b">
-        <SheetTitle>Add Line Item</SheetTitle>
+        <SheetTitle>{mode === "add" ? "Add Line Item" : "Edit Line Item"}</SheetTitle>
       </SheetHeader>
       <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
         <div className="flex flex-col gap-2">
@@ -136,10 +152,15 @@ function AddLineItemView({
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
       <SheetFooter className="px-6 py-4 border-t flex-row gap-2">
-        <Button variant="outline" className="flex-1" onClick={onCancel} disabled={isPending}>
+        {mode === "edit" && (
+          <Button variant="destructive" size="icon" className="shrink-0" onClick={handleDelete} disabled={isDeleting || isPending}>
+            <Trash2 className="size-4" />
+          </Button>
+        )}
+        <Button variant="outline" className="flex-1" onClick={onCancel} disabled={isPending || isDeleting}>
           Cancel
         </Button>
-        <Button className="flex-1" onClick={handleSave} disabled={!canSave || isPending}>
+        <Button className="flex-1" onClick={handleSave} disabled={!canSave || isPending || isDeleting}>
           {isPending ? "Saving…" : "Save"}
         </Button>
       </SheetFooter>
@@ -176,7 +197,8 @@ export function InvoiceSheet({
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<"invoice" | "add-line-item">("invoice");
+  type SheetView = "invoice" | "add-line-item" | { mode: "edit-line-item"; item: NonNullable<InvoiceDetail["line_items"][0]> };
+  const [view, setView] = useState<SheetView>("invoice");
 
   useEffect(() => {
     setForm(invoice ? defaultForm(invoice) : null);
@@ -221,11 +243,19 @@ export function InvoiceSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
         {view === "add-line-item" ? (
-          <AddLineItemView
+          <LineItemView
+            mode="add"
             invoiceId={invoice.id}
             nextSortOrder={(invoiceDetail?.line_items.length ?? 0) > 0
               ? Math.max(...(invoiceDetail?.line_items.map(i => i.sort_order) ?? [0])) + 1
               : 0}
+            onSave={() => setView("invoice")}
+            onCancel={() => setView("invoice")}
+          />
+        ) : typeof view === "object" && view.mode === "edit-line-item" ? (
+          <LineItemView
+            mode="edit"
+            item={view.item}
             onSave={() => setView("invoice")}
             onCancel={() => setView("invoice")}
           />
@@ -274,10 +304,15 @@ export function InvoiceSheet({
                   </button>
                 ))}
                 {invoiceDetail.line_items.map((item) => (
-                  <div key={item.id} className="flex justify-between gap-4">
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setView({ mode: "edit-line-item", item })}
+                    className="flex justify-between gap-4 -mx-2 px-2 py-1 rounded-md hover:bg-muted/60 transition-colors text-left w-[calc(100%+1rem)]"
+                  >
                     <span className="text-muted-foreground">{item.description}</span>
                     <span className="tabular-nums shrink-0">{formatAUD(item.amount)}</span>
-                  </div>
+                  </button>
                 ))}
               </>
             ) : (

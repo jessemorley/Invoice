@@ -225,6 +225,30 @@ export async function createLineItem(invoiceId: string, data: { description: str
   refresh();
 }
 
+export async function updateLineItem(id: string, data: { description: string; quantity: number | null; amount: number }) {
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("invoice_line_items")
+    .update({ description: data.description, quantity: data.quantity, amount: data.amount })
+    .eq("id", id)
+    .eq("user_id", PROTOTYPE_USER_ID);
+  if (error) throw new Error(`updateLineItem: ${error.message}`);
+  updateTag(CACHE_TAGS.invoices);
+  refresh();
+}
+
+export async function deleteLineItem(id: string) {
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("invoice_line_items")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", PROTOTYPE_USER_ID);
+  if (error) throw new Error(`deleteLineItem: ${error.message}`);
+  updateTag(CACHE_TAGS.invoices);
+  refresh();
+}
+
 export async function updateInvoice(id: string, data: InvoiceFormData) {
   const supabase = createServerClient();
   const { error } = await supabase
