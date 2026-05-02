@@ -9,7 +9,6 @@ import type { InvoiceFormData } from "@/app/(app)/invoices/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import type { ScheduledEmail } from "@/lib/queries";
 import { Download, Mail, Trash2, CalendarClock, Clock, Send } from "lucide-react";
@@ -52,12 +51,6 @@ const STATUS_LABEL: Record<InvoiceStatus, string> = {
   draft: "Draft",
   issued: "Issued",
   paid: "Paid",
-};
-
-const STATUS_VARIANT: Record<InvoiceStatus, "outline" | "secondary" | "default"> = {
-  draft: "outline",
-  issued: "secondary",
-  paid: "default",
 };
 
 function formatScheduledFor(isoString: string): string {
@@ -156,17 +149,14 @@ export function InvoiceSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
         <SheetHeader className="px-6 py-5 border-b">
-          <div className="flex items-center gap-3">
+          <SheetTitle>{invoice.number}</SheetTitle>
+          <div className="flex items-center gap-2">
             <div
-              className="size-3 rounded-full shrink-0"
+              className="size-2.5 rounded-full shrink-0"
               style={{ backgroundColor: invoice.client.color }}
             />
-            <SheetTitle>{invoice.number}</SheetTitle>
-            <Badge variant={STATUS_VARIANT[form.status]} className="ml-auto">
-              {STATUS_LABEL[form.status]}
-            </Badge>
+            <p className="text-sm text-muted-foreground">{invoice.client.name}</p>
           </div>
-          <p className="text-sm text-muted-foreground">{invoice.client.name}</p>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
