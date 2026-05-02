@@ -606,6 +606,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         invoice={selectedInvoice}
+        invoiceDetail={invoiceDetail}
         scheduledEmail={scheduledEmail}
         onSendClick={handleSendClick}
         onCancelEmail={handleCancelEmail}

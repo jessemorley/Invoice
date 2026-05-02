@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import type { Invoice, InvoiceStatus } from "@/lib/types";
+import type { Invoice, InvoiceDetail, InvoiceStatus } from "@/lib/types";
 import { formatAUD, formatDateShort } from "@/lib/format";
 import { updateInvoice, deleteInvoice } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
@@ -22,6 +22,31 @@ import {
   SheetFooter,
   SheetClose,
 } from "@/components/ui/sheet";
+
+type InvoiceEntry = InvoiceDetail["entries"][0];
+
+function abbreviateRole(role?: string | null): string {
+  switch (role?.toLowerCase()) {
+    case "photographer": return "P";
+    case "operator": return "O";
+    default: return role ?? "";
+  }
+}
+
+function entryDescription(entry: InvoiceEntry): string {
+  let label: string;
+  if (entry.billing_type === "day_rate") {
+    if (entry.workflow_type === "Own Brand") label = entry.brand ?? "Own Brand";
+    else if (entry.workflow_type) label = entry.workflow_type;
+    else label = "Creative Assist";
+  } else if (entry.billing_type === "hourly") {
+    const base = entry.shoot_client ?? entry.description ?? "";
+    label = entry.role ? `${base} (${abbreviateRole(entry.role)})` : base;
+  } else {
+    label = entry.description ?? "";
+  }
+  return label;
+}
 
 const STATUS_LABEL: Record<InvoiceStatus, string> = {
   draft: "Draft",
@@ -63,6 +88,7 @@ export function InvoiceSheet({
   open,
   onOpenChange,
   invoice,
+  invoiceDetail,
   scheduledEmail,
   onSendClick,
   onCancelEmail,
@@ -72,6 +98,7 @@ export function InvoiceSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   invoice: Invoice | null;
+  invoiceDetail?: InvoiceDetail | null;
   scheduledEmail?: ScheduledEmail | null;
   onSendClick?: () => void;
   onCancelEmail?: (id: string) => void;
@@ -142,11 +169,42 @@ export function InvoiceSheet({
 
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
           {/* Summary */}
-          <div className="rounded-lg bg-muted/40 px-4 py-3 flex flex-col gap-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Issued</span>
-              <span>{invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}</span>
-            </div>
+          <div className="rounded-lg bg-muted/40 px-4 py-3 flex flex-col gap-3 text-sm">
+            {invoiceDetail ? (
+              <>
+                {invoiceDetail.entries.map((entry) => (
+                  <div key={entry.id} className="flex items-center gap-4">
+                    <div className="flex flex-col gap-0.5 flex-1">
+                      <span className="font-medium">{entryDescription(entry)}</span>
+                      <span className="text-muted-foreground">
+                        {new Date(entry.date + "T00:00:00").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}
+                      </span>
+                    </div>
+                    {entry.hours_worked != null && (
+                      <span className="tabular-nums text-muted-foreground shrink-0">{entry.hours_worked}h</span>
+                    )}
+                    <span className="tabular-nums shrink-0">{formatAUD(entry.base_amount)}</span>
+                  </div>
+                ))}
+                {invoiceDetail.line_items.map((item) => (
+                  <div key={item.id} className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">{item.description}</span>
+                    <span className="tabular-nums shrink-0">{formatAUD(item.amount)}</span>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between gap-4">
+                  <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+                  <div className="h-4 w-16 rounded bg-muted animate-pulse" />
+                </div>
+                <div className="flex justify-between gap-4">
+                  <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                  <div className="h-4 w-16 rounded bg-muted animate-pulse" />
+                </div>
+              </>
+            )}
             <Separator />
             <div className="flex justify-between font-medium">
               <span>Total</span>
