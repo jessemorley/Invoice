@@ -208,6 +208,37 @@ export async function sendScheduledEmailNow(scheduledEmailId: string): Promise<v
   refresh();
 }
 
+async function recomputeInvoiceTotal(supabase: ReturnType<typeof createServerClient>, invoiceId: string) {
+  const { data: inv } = await supabase
+    .from("invoices")
+    .select("super_amount")
+    .eq("id", invoiceId)
+    .single();
+
+  const { data: entries } = await supabase
+    .from("entries")
+    .select("base_amount, bonus_amount")
+    .eq("invoice_id", invoiceId);
+
+  const { data: lineItems } = await supabase
+    .from("invoice_line_items")
+    .select("amount")
+    .eq("invoice_id", invoiceId);
+
+  const entriesTotal = (entries ?? []).reduce((s, e) => s + Number(e.base_amount) + Number(e.bonus_amount), 0);
+  const lineItemsTotal = (lineItems ?? []).reduce((s, i) => s + Number(i.amount), 0);
+  const superAmount = Number(inv?.super_amount ?? 0);
+  const subtotal = entriesTotal + lineItemsTotal;
+  const total = subtotal + superAmount;
+
+  const { error: updateError } = await supabase
+    .from("invoices")
+    .update({ subtotal, total })
+    .eq("id", invoiceId)
+    .eq("user_id", PROTOTYPE_USER_ID);
+  if (updateError) throw new Error(`recomputeInvoiceTotal: ${updateError.message}`);
+}
+
 export async function createLineItem(invoiceId: string, data: { description: string; quantity: number | null; amount: number; sort_order: number }) {
   const supabase = createServerClient();
   const { error } = await supabase
@@ -221,30 +252,42 @@ export async function createLineItem(invoiceId: string, data: { description: str
       sort_order: data.sort_order,
     });
   if (error) throw new Error(`createLineItem: ${error.message}`);
+  await recomputeInvoiceTotal(supabase, invoiceId);
   updateTag(CACHE_TAGS.invoices);
   refresh();
 }
 
 export async function updateLineItem(id: string, data: { description: string; quantity: number | null; amount: number }) {
   const supabase = createServerClient();
-  const { error } = await supabase
+  const { data: item, error } = await supabase
     .from("invoice_line_items")
     .update({ description: data.description, quantity: data.quantity, amount: data.amount })
     .eq("id", id)
-    .eq("user_id", PROTOTYPE_USER_ID);
+    .eq("user_id", PROTOTYPE_USER_ID)
+    .select("invoice_id")
+    .single();
   if (error) throw new Error(`updateLineItem: ${error.message}`);
+  await recomputeInvoiceTotal(supabase, item.invoice_id);
   updateTag(CACHE_TAGS.invoices);
   refresh();
 }
 
 export async function deleteLineItem(id: string) {
   const supabase = createServerClient();
+  const { data: item, error: fetchError } = await supabase
+    .from("invoice_line_items")
+    .select("invoice_id")
+    .eq("id", id)
+    .eq("user_id", PROTOTYPE_USER_ID)
+    .single();
+  if (fetchError) throw new Error(`deleteLineItem: ${fetchError.message}`);
   const { error } = await supabase
     .from("invoice_line_items")
     .delete()
     .eq("id", id)
     .eq("user_id", PROTOTYPE_USER_ID);
   if (error) throw new Error(`deleteLineItem: ${error.message}`);
+  await recomputeInvoiceTotal(supabase, item.invoice_id);
   updateTag(CACHE_TAGS.invoices);
   refresh();
 }
