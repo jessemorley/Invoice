@@ -29,7 +29,10 @@ export async function GET(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const buffer = await renderToBuffer(element as any);
   const bytes = new Uint8Array(buffer);
-  const filename = `${invoice.number}.pdf`;
+  const businessName = business?.business_name ?? "";
+  const filename = businessName
+    ? `${businessName} Invoice ${invoice.number}.pdf`
+    : `Invoice ${invoice.number}.pdf`;
 
   return new Response(bytes, {
     headers: {
