@@ -180,7 +180,10 @@ function Sidebar({
     )
   }
 
-  if (isMobile) {
+  const [mounted, setMounted] = React.useState(false)
+  React.useEffect(() => { setMounted(true) }, [])
+
+  if (mounted && isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
         <SheetContent
