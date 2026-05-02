@@ -208,6 +208,23 @@ export async function sendScheduledEmailNow(scheduledEmailId: string): Promise<v
   refresh();
 }
 
+export async function createLineItem(invoiceId: string, data: { description: string; quantity: number | null; amount: number; sort_order: number }) {
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("invoice_line_items")
+    .insert({
+      invoice_id: invoiceId,
+      user_id: PROTOTYPE_USER_ID,
+      description: data.description,
+      quantity: data.quantity,
+      amount: data.amount,
+      sort_order: data.sort_order,
+    });
+  if (error) throw new Error(`createLineItem: ${error.message}`);
+  updateTag(CACHE_TAGS.invoices);
+  refresh();
+}
+
 export async function updateInvoice(id: string, data: InvoiceFormData) {
   const supabase = createServerClient();
   const { error } = await supabase

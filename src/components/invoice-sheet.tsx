@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import type { Invoice, InvoiceDetail, InvoiceStatus } from "@/lib/types";
 import { formatAUD, formatDateShort } from "@/lib/format";
-import { updateInvoice, deleteInvoice } from "@/app/(app)/invoices/actions";
+import { updateInvoice, deleteInvoice, createLineItem } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
 import type { InvoiceFormData } from "@/app/(app)/invoices/actions";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import type { ScheduledEmail } from "@/lib/queries";
-import { Download, Mail, Trash2, CalendarClock, Clock, Send } from "lucide-react";
+import { Download, Mail, Plus, Trash2, CalendarClock, Clock, Send } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Sheet,
@@ -77,6 +77,76 @@ function defaultForm(invoice: Invoice): InvoiceFormData {
   };
 }
 
+function AddLineItemView({
+  invoiceId,
+  nextSortOrder,
+  onSave,
+  onCancel,
+}: {
+  invoiceId: string;
+  nextSortOrder: number;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  const [description, setDescription] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [amount, setAmount] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  const canSave = description.trim() !== "" && amount.trim() !== "" && !isNaN(parseFloat(amount));
+
+  function handleSave() {
+    if (!canSave) return;
+    setError(null);
+    startTransition(async () => {
+      try {
+        await createLineItem(invoiceId, {
+          description: description.trim(),
+          quantity: quantity.trim() !== "" ? parseFloat(quantity) : null,
+          amount: parseFloat(amount),
+          sort_order: nextSortOrder,
+        });
+        invalidate("invoices");
+        onSave();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Something went wrong");
+      }
+    });
+  }
+
+  return (
+    <>
+      <SheetHeader className="px-6 py-5 border-b">
+        <SheetTitle>Add Line Item</SheetTitle>
+      </SheetHeader>
+      <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium">Description</label>
+          <Input value={description} onChange={(e) => setDescription(e.target.value)} autoFocus />
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium">Quantity <span className="text-muted-foreground font-normal">(optional)</span></label>
+          <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium">Amount ($)</label>
+          <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} />
+        </div>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+      </div>
+      <SheetFooter className="px-6 py-4 border-t flex-row gap-2">
+        <Button variant="outline" className="flex-1" onClick={onCancel} disabled={isPending}>
+          Cancel
+        </Button>
+        <Button className="flex-1" onClick={handleSave} disabled={!canSave || isPending}>
+          {isPending ? "Saving…" : "Save"}
+        </Button>
+      </SheetFooter>
+    </>
+  );
+}
+
 export function InvoiceSheet({
   open,
   onOpenChange,
@@ -106,10 +176,12 @@ export function InvoiceSheet({
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<"invoice" | "add-line-item">("invoice");
 
   useEffect(() => {
     setForm(invoice ? defaultForm(invoice) : null);
     setError(null);
+    setView("invoice");
   }, [invoice, open]);
 
   if (!invoice || !form) return null;
@@ -148,6 +220,17 @@ export function InvoiceSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
+        {view === "add-line-item" ? (
+          <AddLineItemView
+            invoiceId={invoice.id}
+            nextSortOrder={(invoiceDetail?.line_items.length ?? 0) > 0
+              ? Math.max(...(invoiceDetail?.line_items.map(i => i.sort_order) ?? [0])) + 1
+              : 0}
+            onSave={() => setView("invoice")}
+            onCancel={() => setView("invoice")}
+          />
+        ) : (
+        <>
         <SheetHeader className="px-6 py-5 border-b">
           <SheetTitle>{invoice.number}</SheetTitle>
           <div className="flex items-center gap-2">
@@ -162,6 +245,13 @@ export function InvoiceSheet({
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
           {/* Summary */}
           <div className="rounded-lg bg-muted/40 px-4 py-3 flex flex-col gap-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-xs uppercase tracking-wide text-muted-foreground">Lines</span>
+              <Button variant="ghost" size="xs" className="gap-1 -mr-1" onClick={() => setView("add-line-item")}>
+                <Plus className="size-3" />
+                Add
+              </Button>
+            </div>
             {invoiceDetail ? (
               <>
                 {invoiceDetail.entries.map((entry) => (
@@ -348,6 +438,8 @@ export function InvoiceSheet({
             {isPending ? "Saving…" : "Save"}
           </Button>
         </SheetFooter>
+        </>
+        )}
       </SheetContent>
     </Sheet>
   );
