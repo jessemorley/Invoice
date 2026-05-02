@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { ScheduledEmail } from "@/lib/queries";
-import { Download, Mail, Trash2, Clock, Send, CalendarClock } from "lucide-react";
+import { Download, Mail, Trash2, CalendarClock, Clock, Send } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Sheet,
@@ -45,12 +45,10 @@ const STATUS_VARIANT: Record<InvoiceStatus, "outline" | "secondary" | "default">
 function formatScheduledFor(isoString: string): string {
   const d = new Date(isoString);
   const now = new Date();
-  const diff = d.getTime() - now.getTime();
   const isToday = d.toDateString() === now.toDateString();
   const isTomorrow = d.toDateString() === new Date(now.getTime() + 86400000).toDateString();
-
   const time = d.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit", hour12: true });
-  if (diff < 0) return `Sending soon — ${time}`;
+  if (d < now) return `Sending soon`;
   if (isToday) return `Today at ${time}`;
   if (isTomorrow) return `Tomorrow at ${time}`;
   const date = d.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
@@ -169,34 +167,26 @@ export function InvoiceSheet({
           </div>
 
           {/* Actions */}
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" asChild className="gap-1.5">
-              <a href={`/api/invoices/${invoice.id}/pdf`} download>
-                <Download className="size-3.5" />
-                Download PDF
-              </a>
+          {(!scheduledEmail || scheduledEmail.status === "cancelled") ? (
+            <Button variant="outline" size="sm" className="gap-1.5 self-start" onClick={onSendClick}>
+              <Mail className="size-3.5" />
+              Email
             </Button>
-            {!scheduledEmail || scheduledEmail.status === "cancelled" ? (
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={onSendClick}>
-                <Mail className="size-3.5" />
-                Email
-              </Button>
-            ) : scheduledEmail.status === "sent" ? (
-              <span className="text-sm text-muted-foreground self-center">
-                Sent {scheduledEmail.sent_at ? formatDateShort(scheduledEmail.sent_at.slice(0, 10)) : ""}
-              </span>
-            ) : scheduledEmail.status === "failed" ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-destructive border-destructive/40 hover:text-destructive"
-                onClick={onSendClick}
-              >
-                <Mail className="size-3.5" />
-                Failed — Retry
-              </Button>
-            ) : null}
-          </div>
+          ) : scheduledEmail.status === "sent" ? (
+            <span className="text-sm text-muted-foreground">
+              Sent {scheduledEmail.sent_at ? formatDateShort(scheduledEmail.sent_at) : ""}
+            </span>
+          ) : scheduledEmail.status === "failed" ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 self-start text-destructive border-destructive/40 hover:text-destructive"
+              onClick={onSendClick}
+            >
+              <Mail className="size-3.5" />
+              Failed — Retry
+            </Button>
+          ) : null}
 
           {/* Status */}
           <div className="flex flex-col gap-2">
@@ -237,6 +227,13 @@ export function InvoiceSheet({
             />
           </div>
 
+          <Button variant="outline" size="sm" asChild className="gap-1.5 self-start">
+            <a href={`/api/invoices/${invoice.id}/pdf`} download>
+              <Download className="size-3.5" />
+              Download PDF
+            </a>
+          </Button>
+
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
@@ -246,18 +243,17 @@ export function InvoiceSheet({
               <Clock className="size-4" />
               <AlertTitle>Email scheduled for {formatScheduledFor(scheduledEmail.scheduled_for)}</AlertTitle>
               <AlertDescription className="text-amber-800 dark:text-amber-200">
-                <span className="break-all">To: {scheduledEmail.to_address}</span>
                 <div className="flex gap-2 flex-wrap mt-2">
-                  <Button variant="secondary" size="xs" onClick={onReschedule}>
+                  <Button variant="outline" size="xs" onClick={onReschedule}>
                     <CalendarClock />
                     Edit
                   </Button>
-                  <Button size="xs" onClick={() => onSendNow?.(scheduledEmail.id)}>
+                  <Button variant="outline" size="xs" onClick={() => onSendNow?.(scheduledEmail.id)}>
                     <Send />
                     Send now
                   </Button>
                   <Button variant="destructive" size="xs" onClick={() => onCancelEmail?.(scheduledEmail.id)}>
-                    Cancel send
+                    Cancel
                   </Button>
                 </div>
               </AlertDescription>
