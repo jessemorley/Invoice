@@ -8,7 +8,6 @@ import { invalidate } from "@/lib/invalidate";
 import type { InvoiceFormData } from "@/app/(app)/invoices/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import type { ScheduledEmail } from "@/lib/queries";
 import { Download, Mail, Plus, Trash2, CalendarClock, Clock, Send } from "lucide-react";
@@ -286,6 +285,53 @@ export function InvoiceSheet({
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+          {/* Status */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">Status</label>
+            <div className="grid grid-cols-3 rounded-md border overflow-hidden">
+              {(["draft", "issued", "paid"] as InvoiceStatus[]).map((s, i) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => set("status", s)}
+                  className={[
+                    "py-1.5 text-sm font-medium transition-colors",
+                    i > 0 ? "border-l" : "",
+                    form.status === s
+                      ? s === "draft"
+                        ? "bg-secondary text-secondary-foreground"
+                        : s === "issued"
+                        ? "bg-secondary text-secondary-foreground"
+                        : "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted/50",
+                  ].join(" ")}
+                >
+                  {STATUS_LABEL[s]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Issued / Paid dates */}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium w-14 shrink-0">Issued</label>
+              <Input
+                type="date"
+                value={form.issued_date}
+                onChange={(e) => set("issued_date", e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium w-14 shrink-0">Paid</label>
+              <Input
+                type="date"
+                value={form.paid_date}
+                onChange={(e) => set("paid_date", e.target.value)}
+              />
+            </div>
+          </div>
+
           {/* Summary */}
           <div className="rounded-lg bg-muted/40 px-4 py-3 flex flex-col gap-3 text-sm">
             <div className="flex items-center justify-between">
@@ -361,65 +407,11 @@ export function InvoiceSheet({
             )}
           </div>
 
-          {/* Status */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">Status</label>
-            <div className="grid grid-cols-3 rounded-md border overflow-hidden">
-              {(["draft", "issued", "paid"] as InvoiceStatus[]).map((s, i) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => set("status", s)}
-                  className={[
-                    "py-1.5 text-sm font-medium transition-colors",
-                    i > 0 ? "border-l" : "",
-                    form.status === s
-                      ? s === "draft"
-                        ? "bg-secondary text-secondary-foreground"
-                        : s === "issued"
-                        ? "bg-secondary text-secondary-foreground"
-                        : "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-muted/50",
-                  ].join(" ")}
-                >
-                  {STATUS_LABEL[s]}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Issued / Paid dates */}
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-3">
-              <label className="text-sm font-medium w-14 shrink-0">Issued</label>
-              <Input
-                type="date"
-                value={form.issued_date}
-                onChange={(e) => set("issued_date", e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <label className="text-sm font-medium w-14 shrink-0">Paid</label>
-              <Input
-                type="date"
-                value={form.paid_date}
-                onChange={(e) => set("paid_date", e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">Notes</label>
-            <Textarea
-              value={form.notes}
-              onChange={(e) => set("notes", e.target.value)}
-              placeholder="Optional notes for this invoice…"
-              rows={3}
-            />
-          </div>
-
           <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" size="sm" className="gap-1.5" disabled>
+              <Plus className="size-3.5" />
+              Add note
+            </Button>
             <Button variant="outline" size="sm" asChild className="gap-1.5">
               <a href={`/api/invoices/${invoice.id}/pdf`} download>
                 <Download className="size-3.5" />
