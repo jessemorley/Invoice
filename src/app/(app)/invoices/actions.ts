@@ -2,7 +2,7 @@
 
 import { updateTag, refresh } from "next/cache";
 import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
-import { fetchUninvoicedGroups, fetchScheduledEmailForInvoice, fetchBusinessDetails, fetchInvoiceDetail, CACHE_TAGS } from "@/lib/queries";
+import { fetchUninvoicedGroups, fetchScheduledEmailForInvoice, fetchBusinessDetails, fetchInvoiceDetail, fetchFullClients, fetchWorkflowRates, fetchEntryById, CACHE_TAGS } from "@/lib/queries";
 import type { InvoiceStatus } from "@/lib/types";
 
 export async function revalidateInvoices() {
@@ -128,6 +128,15 @@ export type EmailFormData = {
   body_text: string;
   scheduled_for: string;
 };
+
+export async function loadEntrySheetData(entryId: string) {
+  const [entry, clients, workflowRates] = await Promise.all([
+    fetchEntryById(PROTOTYPE_USER_ID, entryId),
+    fetchFullClients(PROTOTYPE_USER_ID),
+    fetchWorkflowRates(),
+  ]);
+  return { entry, clients, workflowRates };
+}
 
 export async function loadScheduledEmail(invoiceId: string) {
   const [scheduledEmail, invoiceDetail, businessDetails] = await Promise.all([

@@ -94,6 +94,7 @@ export function InvoiceSheet({
   onCancelEmail,
   onReschedule,
   onSendNow,
+  onEntryClick,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -104,6 +105,7 @@ export function InvoiceSheet({
   onCancelEmail?: (id: string) => void;
   onReschedule?: () => void;
   onSendNow?: (id: string) => void;
+  onEntryClick?: (entryId: string) => void;
 }) {
   const [form, setForm] = useState<InvoiceFormData | null>(
     invoice ? defaultForm(invoice) : null
@@ -173,7 +175,12 @@ export function InvoiceSheet({
             {invoiceDetail ? (
               <>
                 {invoiceDetail.entries.map((entry) => (
-                  <div key={entry.id} className="flex items-center gap-4">
+                  <button
+                    key={entry.id}
+                    type="button"
+                    onClick={() => onEntryClick?.(entry.id)}
+                    className="flex items-center gap-4 -mx-2 px-2 py-1 rounded-md hover:bg-muted/60 transition-colors text-left w-[calc(100%+1rem)]"
+                  >
                     <div className="flex flex-col gap-0.5 flex-1">
                       <span className="font-medium">{entryDescription(entry)}</span>
                       <span className="text-muted-foreground">
@@ -184,7 +191,7 @@ export function InvoiceSheet({
                       <span className="tabular-nums text-muted-foreground shrink-0">{entry.hours_worked}h</span>
                     )}
                     <span className="tabular-nums shrink-0">{formatAUD(entry.base_amount)}</span>
-                  </div>
+                  </button>
                 ))}
                 {invoiceDetail.line_items.map((item) => (
                   <div key={item.id} className="flex justify-between gap-4">

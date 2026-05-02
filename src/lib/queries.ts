@@ -38,6 +38,48 @@ function computeDateRange(dates: string[]): string {
   return `${firstDay} ${firstMonth} – ${lastDay} ${lastMonth}`;
 }
 
+export async function fetchEntryById(userId: string, entryId: string): Promise<Entry | null> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("entries")
+    .select("*, clients(id, name, billing_type, color), invoices(id, invoice_number, status)")
+    .eq("user_id", userId)
+    .eq("id", entryId)
+    .single();
+
+  if (error) return null;
+
+  const client = Array.isArray(data.clients) ? data.clients[0] : data.clients;
+  const inv = Array.isArray(data.invoices) ? data.invoices[0] : data.invoices;
+  const invoiceRef: InvoiceRef | null = inv
+    ? { id: inv.id, number: inv.invoice_number, status: inv.status as InvoiceStatus }
+    : null;
+  return {
+    id: data.id,
+    client: toClientRef(client ?? { id: data.client_id, name: "Unknown", billing_type: "day_rate" }),
+    date: data.date,
+    description: data.description,
+    role: data.role,
+    workflow_type: data.workflow_type,
+    billing_type: data.billing_type_snapshot,
+    day_type: data.day_type,
+    hours: data.hours_worked,
+    shoot_client: data.shoot_client,
+    skus: data.skus,
+    brand: data.brand,
+    start_time: data.start_time,
+    finish_time: data.finish_time,
+    break_minutes: data.break_minutes,
+    base_amount: data.base_amount,
+    bonus_amount: data.bonus_amount,
+    super_amount: data.super_amount,
+    total: data.total_amount,
+    invoice_id: data.invoice_id,
+    invoice: invoiceRef,
+    iso_week: isoWeek(data.date),
+  };
+}
+
 export async function fetchEntries(userId: string, before?: string): Promise<Entry[]> {
   "use cache";
   cacheTag(CACHE_TAGS.entries);

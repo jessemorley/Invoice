@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
-import { revalidateInvoices, loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow } from "./actions";
+import { revalidateInvoices, loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow, loadEntrySheetData } from "./actions";
 import { invalidate } from "@/lib/invalidate";
-import type { Invoice, InvoiceStatus, InvoiceDetail } from "@/lib/types";
+import type { Invoice, InvoiceStatus, InvoiceDetail, Entry, Client, WorkflowRate } from "@/lib/types";
 import type { ScheduledEmail } from "@/lib/queries";
 import type { InvoiceFilters } from "@/lib/queries";
 import { formatAUD, formatDateShort } from "@/lib/format";
@@ -49,6 +49,7 @@ import { PageHeader } from "@/components/page-header";
 import { InvoiceSheet } from "@/components/invoice-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
+import { EntrySheet } from "@/components/entry-sheet";
 import { ChevronDown, FileText, Plus, RefreshCw, Search, X } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
@@ -248,6 +249,10 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [businessName, setBusinessName] = useState("");
   const [composeOpen, setComposeOpen] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
+  const [entrySheetOpen, setEntrySheetOpen] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
+  const entrySheetMeta = useState<{ clients: Client[]; workflowRates: WorkflowRate[] } | null>(null);
+  const [entrySheetData, setEntrySheetData] = entrySheetMeta;
   const [searchOpen, setSearchOpen] = useState(false);
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
 
@@ -345,6 +350,15 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       setScheduledEmail(result.scheduledEmail);
       setInvoiceDetail(result.invoiceDetail);
       setBusinessName(result.businessName);
+    });
+  }
+
+  function handleEntryClick(entryId: string) {
+    setSheetOpen(false);
+    setEntrySheetOpen(true);
+    loadEntrySheetData(entryId).then(({ entry, clients, workflowRates }) => {
+      if (entry) setSelectedEntry(entry);
+      if (!entrySheetData) setEntrySheetData({ clients, workflowRates });
     });
   }
 
@@ -612,6 +626,17 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         onCancelEmail={handleCancelEmail}
         onReschedule={handleReschedule}
         onSendNow={handleSendNow}
+        onEntryClick={handleEntryClick}
+      />
+      <EntrySheet
+        open={entrySheetOpen}
+        onOpenChange={(open) => {
+          setEntrySheetOpen(open);
+          if (!open) setSheetOpen(true);
+        }}
+        entry={selectedEntry}
+        clients={entrySheetData?.clients ?? []}
+        workflowRates={entrySheetData?.workflowRates ?? []}
       />
       <EmailComposeSheet
         open={composeOpen}
