@@ -7,7 +7,7 @@ const supabase = createClient(
 );
 const resend = new Resend(Deno.env.get("RESEND_API_KEY")!);
 const NEXTJS_BASE_URL = Deno.env.get("NEXTJS_BASE_URL")!;
-const FROM_ADDRESS = Deno.env.get("FROM_ADDRESS")!;
+const FROM_ADDRESS = `Jesse Morley <${Deno.env.get("FROM_ADDRESS")!}>`;
 
 Deno.serve(async (req) => {
   const { scheduled_email_id } = await req.json();

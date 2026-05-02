@@ -178,7 +178,7 @@ export function InvoiceSheet({
               </>
             ) : scheduledEmail.status === "sent" ? (
               <span className="text-sm text-muted-foreground self-center">
-                Sent {scheduledEmail.sent_at ? formatDateShort(scheduledEmail.sent_at) : ""}
+                Sent {scheduledEmail.sent_at ? formatDateShort(scheduledEmail.sent_at.slice(0, 10)) : ""}
               </span>
             ) : scheduledEmail.status === "failed" ? (
               <Button

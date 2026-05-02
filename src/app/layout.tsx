@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -45,6 +46,7 @@ export default function RootLayout({
       <body className="h-full bg-background text-foreground">
         <ThemeProvider>
           <TooltipProvider>{children}</TooltipProvider>
+          <Toaster position="top-center" />
         </ThemeProvider>
       </body>
     </html>

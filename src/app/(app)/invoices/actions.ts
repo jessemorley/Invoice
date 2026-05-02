@@ -141,7 +141,7 @@ export async function loadScheduledEmail(invoiceId: string) {
   };
 }
 
-export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormData): Promise<void> {
+export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormData): Promise<{ id: string }> {
   const supabase = createServerClient();
 
   const { data: inv, error: invError } = await supabase
@@ -153,7 +153,7 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
 
   if (invError) throw new Error(`scheduleInvoiceEmail (fetch): ${invError.message}`);
 
-  const { error } = await supabase.from("scheduled_emails").insert({
+  const { data: row, error } = await supabase.from("scheduled_emails").insert({
     user_id: PROTOTYPE_USER_ID,
     invoice_id: invoiceId,
     to_address: data.to,
@@ -163,11 +163,12 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
     filename: `${inv.invoice_number}.pdf`,
     mark_issued: true,
     status: "pending",
-  });
+  }).select("id").single();
 
   if (error) throw new Error(`scheduleInvoiceEmail: ${error.message}`);
   updateTag(CACHE_TAGS.scheduledEmails);
   refresh();
+  return { id: row.id };
 }
 
 export async function cancelScheduledEmail(scheduledEmailId: string): Promise<void> {

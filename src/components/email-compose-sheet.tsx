@@ -3,9 +3,10 @@
 import { useState, useTransition, useRef, useCallback } from "react";
 import type { InvoiceDetail } from "@/lib/types";
 import { formatAUD, formatDateShort } from "@/lib/format";
-import { scheduleInvoiceEmail } from "@/app/(app)/invoices/actions";
+import { scheduleInvoiceEmail, cancelScheduledEmail } from "@/app/(app)/invoices/actions";
 import type { EmailFormData } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -131,6 +132,20 @@ function EmailChipInput({ chips, input, onChipsChange, onInputChange, onConfirmI
   );
 }
 
+function toastDescription(date: Date | null): string {
+  if (!date) return "Sending now";
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  const isToday = date.toDateString() === now.toDateString();
+  const isTomorrow = date.toDateString() === tomorrow.toDateString();
+  const time = date.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit", hour12: true }).toLowerCase();
+  if (isToday) return `Today at ${time}`;
+  if (isTomorrow) return `Tomorrow at ${time}`;
+  const dayName = date.toLocaleDateString("en-AU", { weekday: "long" });
+  return `${dayName} at ${time}`;
+}
+
 interface ComposeContentProps {
   invoice: InvoiceDetail;
   businessName: string;
@@ -178,10 +193,21 @@ function ComposeContent({ invoice, businessName, onClose, onSent }: ComposeConte
           body_text: body,
           scheduled_for: scheduledFor?.toISOString() ?? new Date().toISOString(),
         };
-        await scheduleInvoiceEmail(invoice.id, data);
+        const result = await scheduleInvoiceEmail(invoice.id, data);
         invalidate("invoices");
         onSent();
         onClose();
+        toast(`Email scheduled for ${toastDescription(scheduledFor)}`, {
+          action: {
+            label: "Undo",
+            onClick: async () => {
+              if (result?.id) {
+                await cancelScheduledEmail(result.id);
+                invalidate("invoices");
+              }
+            },
+          },
+        });
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");
       }
