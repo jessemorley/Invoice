@@ -10,7 +10,6 @@ export const CACHE_TAGS = {
   invoices: "invoices",
   expenses: "expenses",
   clients: "clients",
-  uninvoicedCount: "uninvoiced-count",
   settings: "settings",
   scheduledEmails: "scheduled-emails",
 } as const;
@@ -211,6 +210,8 @@ export type UninvoicedGroup = {
 };
 
 export async function fetchUninvoicedGroups(userId: string): Promise<UninvoicedGroup[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.entries);
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("entries")
@@ -247,14 +248,6 @@ export async function fetchUninvoicedGroups(userId: string): Promise<UninvoicedG
   }));
 }
 
-export async function fetchUninvoicedCount(userId: string): Promise<number> {
-  "use cache";
-  cacheTag(CACHE_TAGS.uninvoicedCount);
-  const supabase = createServerClient();
-  const { data, error } = await supabase.rpc("uninvoiced_group_count", { p_user_id: userId });
-  if (error) throw new Error(`fetchUninvoicedCount: ${error.message}`);
-  return data ?? 0;
-}
 
 export async function fetchExpenses(userId: string): Promise<Expense[]> {
   "use cache";

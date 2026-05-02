@@ -421,11 +421,12 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     <div className="flex flex-col h-full">
       <PageHeader title="Invoices" mobileTitle={mobileTitle}>
         {uninvoicedCount > 0 && (
-          <button onClick={() => setGenerateOpen(true)}>
-            <Badge variant="secondary" className="cursor-pointer">
-              {uninvoicedCount} {uninvoicedCount === 1 ? "group" : "groups"} ready to invoice
-            </Badge>
-          </button>
+          <Button size="sm" variant="secondary" onClick={() => setGenerateOpen(true)} className="relative">
+            <span className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
+              {uninvoicedCount}
+            </span>
+            Generate
+          </Button>
         )}
         <Button size="icon" variant="ghost" className="size-8 md:hidden" onClick={() => searchOpen ? closeSearch() : setSearchOpen(true)} disabled={loading}>
           {searchOpen ? <X className="size-4" /> : <Search className="size-4" />}

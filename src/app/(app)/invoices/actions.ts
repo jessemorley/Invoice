@@ -7,7 +7,7 @@ import type { InvoiceStatus } from "@/lib/types";
 
 export async function revalidateInvoices() {
   updateTag(CACHE_TAGS.invoices);
-  updateTag(CACHE_TAGS.uninvoicedCount);
+  updateTag(CACHE_TAGS.entries);
   updateTag(CACHE_TAGS.clients);
   refresh();
 }
@@ -90,7 +90,6 @@ export async function generateInvoices(groupKeys: string[]): Promise<{ created: 
   }
 
   updateTag(CACHE_TAGS.invoices);
-  updateTag(CACHE_TAGS.uninvoicedCount);
   updateTag(CACHE_TAGS.entries);
   refresh();
 
@@ -117,7 +116,6 @@ export async function deleteInvoice(id: string) {
   if (error) throw new Error(`deleteInvoice: ${error.message}`);
 
   updateTag(CACHE_TAGS.invoices);
-  updateTag(CACHE_TAGS.uninvoicedCount);
   updateTag(CACHE_TAGS.entries);
   refresh();
 }
@@ -308,6 +306,6 @@ export async function updateInvoice(id: string, data: InvoiceFormData) {
 
   if (error) throw new Error(`updateInvoice: ${error.message}`);
   updateTag(CACHE_TAGS.invoices);
-  updateTag(CACHE_TAGS.uninvoicedCount);
+  updateTag(CACHE_TAGS.entries);
   refresh();
 }

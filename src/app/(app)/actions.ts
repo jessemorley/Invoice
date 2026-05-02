@@ -6,7 +6,7 @@ import {
   fetchInvoices,
   fetchExpenses,
   fetchDashboardData,
-  fetchUninvoicedCount,
+  fetchUninvoicedGroups,
   fetchClients,
   fetchFullClients,
   fetchWorkflowRates,
@@ -33,12 +33,12 @@ export async function loadDashboardViewData() {
 }
 
 export async function loadInvoicesViewData() {
-  const [invoices, uninvoicedCount, clients] = await Promise.all([
+  const [invoices, uninvoicedGroups, clients] = await Promise.all([
     fetchInvoices(PROTOTYPE_USER_ID),
-    fetchUninvoicedCount(PROTOTYPE_USER_ID),
+    fetchUninvoicedGroups(PROTOTYPE_USER_ID),
     fetchClients(PROTOTYPE_USER_ID),
   ]);
-  return { invoices, uninvoicedCount, clients };
+  return { invoices, uninvoicedCount: uninvoicedGroups.length, clients };
 }
 
 export async function loadClientsViewData() {
