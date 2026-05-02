@@ -179,6 +179,7 @@ export function InvoiceSheet({
   onReschedule,
   onSendNow,
   onEntryClick,
+  onLineItemMutate,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -190,6 +191,7 @@ export function InvoiceSheet({
   onReschedule?: () => void;
   onSendNow?: (id: string) => void;
   onEntryClick?: (entryId: string) => void;
+  onLineItemMutate?: () => void;
 }) {
   const [form, setForm] = useState<InvoiceFormData | null>(
     invoice ? defaultForm(invoice) : null
@@ -249,14 +251,14 @@ export function InvoiceSheet({
             nextSortOrder={(invoiceDetail?.line_items.length ?? 0) > 0
               ? Math.max(...(invoiceDetail?.line_items.map(i => i.sort_order) ?? [0])) + 1
               : 0}
-            onSave={() => setView("invoice")}
+            onSave={() => { setView("invoice"); onLineItemMutate?.(); }}
             onCancel={() => setView("invoice")}
           />
         ) : typeof view === "object" && view.mode === "edit-line-item" ? (
           <LineItemView
             mode="edit"
             item={view.item}
-            onSave={() => setView("invoice")}
+            onSave={() => { setView("invoice"); onLineItemMutate?.(); }}
             onCancel={() => setView("invoice")}
           />
         ) : (

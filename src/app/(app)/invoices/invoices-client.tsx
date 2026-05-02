@@ -628,6 +628,14 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         onReschedule={handleReschedule}
         onSendNow={handleSendNow}
         onEntryClick={handleEntryClick}
+        onLineItemMutate={() => {
+          if (selectedInvoice) {
+            loadScheduledEmail(selectedInvoice.id).then((result) => {
+              setScheduledEmail(result.scheduledEmail);
+              setInvoiceDetail(result.invoiceDetail);
+            });
+          }
+        }}
       />
       <EntrySheet
         open={entrySheetOpen}
