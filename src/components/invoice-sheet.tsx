@@ -343,7 +343,15 @@ export function InvoiceSheet({
             <Separator />
             <div className="flex justify-between font-medium">
               <span>Total</span>
-              <span className="tabular-nums">{formatAUD(invoice.total)}</span>
+              <span className="tabular-nums">
+                {invoiceDetail
+                  ? formatAUD(
+                      invoiceDetail.entries.reduce((s, e) => s + e.base_amount + e.bonus_amount, 0) +
+                      invoiceDetail.line_items.reduce((s, i) => s + i.amount, 0) +
+                      invoiceDetail.super_amount
+                    )
+                  : formatAUD(invoice.total)}
+              </span>
             </div>
             {invoice.super_amount > 0 && (
               <div className="flex justify-between text-muted-foreground">
