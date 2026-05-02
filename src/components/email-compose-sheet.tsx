@@ -177,13 +177,15 @@ function ComposeContent({ invoice, businessName, onClose, onSent }: ComposeConte
   const validChips = chips.filter(isValidEmail);
   const hasValidRecipient = validChips.length > 0 || (chipInput.trim() && isValidEmail(chipInput.trim()));
 
-  function handleSubmit() {
+  function handleSubmit(overrideDate?: Date | null) {
     const allChips = [...chips];
     const pendingVal = chipInput.trim().replace(/,$/, "").trim();
     if (pendingVal) allChips.push(pendingVal);
 
     const validRecipients = allChips.filter(isValidEmail);
     if (validRecipients.length === 0) return;
+
+    const sendAt = overrideDate !== undefined ? overrideDate : scheduledFor;
 
     setError(null);
     startTransition(async () => {
@@ -192,7 +194,7 @@ function ComposeContent({ invoice, businessName, onClose, onSent }: ComposeConte
           to: validRecipients.join(", "),
           subject,
           body_text: body,
-          scheduled_for: scheduledFor?.toISOString() ?? new Date().toISOString(),
+          scheduled_for: sendAt?.toISOString() ?? new Date().toISOString(),
         };
         const result = await scheduleInvoiceEmail(invoice.id, data);
         invalidate("invoices");
@@ -256,11 +258,6 @@ function ComposeContent({ invoice, businessName, onClose, onSent }: ComposeConte
 
       {/* Footer */}
       <div className="px-6 py-4 border-t flex flex-col gap-2">
-        {scheduledFor && (
-          <p className="text-xs text-muted-foreground text-center">
-            Scheduled for {formatPresetTime(scheduledFor)}
-          </p>
-        )}
         <div className="flex gap-2">
           <Button variant="outline" className="flex-1" onClick={onClose} disabled={isPending}>
             Cancel
@@ -288,6 +285,7 @@ function ComposeContent({ invoice, businessName, onClose, onSent }: ComposeConte
                       onClick={() => {
                         setScheduledFor(preset.date);
                         setPopoverOpen(false);
+                        handleSubmit(preset.date);
                       }}
                     >
                       {preset.label}
@@ -299,7 +297,7 @@ function ComposeContent({ invoice, businessName, onClose, onSent }: ComposeConte
             <ButtonGroupSeparator />
             <Button
               className="flex-1"
-              onClick={handleSubmit}
+              onClick={() => handleSubmit()}
               disabled={isPending || !hasValidRecipient}
             >
               {isPending ? "Sending…" : "Send"}
