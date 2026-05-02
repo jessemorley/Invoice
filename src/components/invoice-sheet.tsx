@@ -14,6 +14,17 @@ import type { ScheduledEmail } from "@/lib/queries";
 import { Download, Mail, Plus, Trash2, CalendarClock, Clock, Send } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -457,15 +468,30 @@ export function InvoiceSheet({
         )}
 
         <SheetFooter className="px-6 py-4 border-t flex-row gap-2">
-          <Button
-            variant="destructive"
-            size="icon"
-            className="shrink-0"
-            onClick={handleDelete}
-            disabled={isDeleting || isPending}
-          >
-            <Trash2 className="size-4" />
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                size="icon"
+                className="shrink-0"
+                disabled={isDeleting || isPending}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete {invoice.number}?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete the invoice and all its line items. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <SheetClose asChild>
             <Button variant="outline" className="flex-1">
               Cancel
