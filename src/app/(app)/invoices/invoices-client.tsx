@@ -248,6 +248,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [invoiceDetail, setInvoiceDetail] = useState<InvoiceDetail | null>(null);
   const [businessName, setBusinessName] = useState("");
   const [composeOpen, setComposeOpen] = useState(false);
+  const composeSentRef = useRef(false);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [entrySheetOpen, setEntrySheetOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
@@ -642,11 +643,12 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         open={composeOpen}
         onOpenChange={(open) => {
           setComposeOpen(open);
-          if (!open) setSheetOpen(true);
+          if (!open && !composeSentRef.current) setSheetOpen(true);
+          if (!open) composeSentRef.current = false;
         }}
         invoice={invoiceDetail}
         businessName={businessName}
-        onSent={() => invalidate("invoices")}
+        onSent={() => { composeSentRef.current = true; invalidate("invoices"); }}
       />
       <GenerateSheet
         open={generateOpen}
