@@ -614,7 +614,10 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       />
       <EmailComposeSheet
         open={composeOpen}
-        onOpenChange={setComposeOpen}
+        onOpenChange={(open) => {
+          setComposeOpen(open);
+          if (!open) setSheetOpen(true);
+        }}
         invoice={invoiceDetail}
         businessName={businessName}
         onSent={() => invalidate("invoices")}
