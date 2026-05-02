@@ -21,6 +21,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group";
 import { Clock, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -264,43 +265,46 @@ function ComposeContent({ invoice, businessName, onClose, onSent }: ComposeConte
           <Button variant="outline" className="flex-1" onClick={onClose} disabled={isPending}>
             Cancel
           </Button>
-          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className={cn("shrink-0", scheduledFor && "text-primary border-primary")}
-              >
-                <Clock className="size-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="center" side="top" className="w-auto p-1">
-              <div className="flex flex-col">
-                {presets.map((preset) => (
-                  <button
-                    key={preset.label}
-                    className={cn(
-                      "text-left text-sm px-3 py-2 rounded-sm hover:bg-accent transition-colors",
-                      scheduledFor?.getTime() === preset.date?.getTime() && "bg-accent"
-                    )}
-                    onClick={() => {
-                      setScheduledFor(preset.date);
-                      setPopoverOpen(false);
-                    }}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-          <Button
-            className="flex-1"
-            onClick={handleSubmit}
-            disabled={isPending || !hasValidRecipient}
-          >
-            {isPending ? "Sending…" : "Send"}
-          </Button>
+          <ButtonGroup className="flex-1">
+            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  size="icon"
+                  className={cn(scheduledFor && "text-primary-foreground/60")}
+                  disabled={isPending}
+                >
+                  <Clock className="size-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" side="top" className="w-auto p-1">
+                <div className="flex flex-col">
+                  {presets.map((preset) => (
+                    <button
+                      key={preset.label}
+                      className={cn(
+                        "text-left text-sm px-3 py-2 rounded-sm hover:bg-accent transition-colors",
+                        scheduledFor?.getTime() === preset.date?.getTime() && "bg-accent"
+                      )}
+                      onClick={() => {
+                        setScheduledFor(preset.date);
+                        setPopoverOpen(false);
+                      }}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            <ButtonGroupSeparator />
+            <Button
+              className="flex-1"
+              onClick={handleSubmit}
+              disabled={isPending || !hasValidRecipient}
+            >
+              {isPending ? "Sending…" : "Send"}
+            </Button>
+          </ButtonGroup>
         </div>
       </div>
     </>

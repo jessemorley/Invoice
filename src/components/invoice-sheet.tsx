@@ -160,28 +160,6 @@ export function InvoiceSheet({
             )}
           </div>
 
-          {/* Actions */}
-          {(!scheduledEmail || scheduledEmail.status === "cancelled") ? (
-            <Button variant="outline" size="sm" className="gap-1.5 self-start" onClick={onSendClick}>
-              <Mail className="size-3.5" />
-              Email
-            </Button>
-          ) : scheduledEmail.status === "sent" ? (
-            <span className="text-sm text-muted-foreground">
-              Sent {scheduledEmail.sent_at ? formatDateShort(scheduledEmail.sent_at) : ""}
-            </span>
-          ) : scheduledEmail.status === "failed" ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 self-start text-destructive border-destructive/40 hover:text-destructive"
-              onClick={onSendClick}
-            >
-              <Mail className="size-3.5" />
-              Failed — Retry
-            </Button>
-          ) : null}
-
           {/* Status */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">Status</label>
@@ -240,12 +218,34 @@ export function InvoiceSheet({
             />
           </div>
 
-          <Button variant="outline" size="sm" asChild className="gap-1.5 self-start">
-            <a href={`/api/invoices/${invoice.id}/pdf`} download>
-              <Download className="size-3.5" />
-              Download PDF
-            </a>
-          </Button>
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" size="sm" asChild className="gap-1.5">
+              <a href={`/api/invoices/${invoice.id}/pdf`} download>
+                <Download className="size-3.5" />
+                Download PDF
+              </a>
+            </Button>
+            {(!scheduledEmail || scheduledEmail.status === "cancelled") ? (
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={onSendClick}>
+                <Mail className="size-3.5" />
+                Email
+              </Button>
+            ) : scheduledEmail.status === "sent" ? (
+              <span className="text-sm text-muted-foreground self-center">
+                Sent {scheduledEmail.sent_at ? formatDateShort(scheduledEmail.sent_at) : ""}
+              </span>
+            ) : scheduledEmail.status === "failed" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-destructive border-destructive/40 hover:text-destructive"
+                onClick={onSendClick}
+              >
+                <Mail className="size-3.5" />
+                Failed — Retry
+              </Button>
+            ) : null}
+          </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
