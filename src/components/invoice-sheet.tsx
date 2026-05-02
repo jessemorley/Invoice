@@ -11,13 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import type { ScheduledEmail } from "@/lib/queries";
 import { Download, Mail, Trash2, CalendarClock, Clock, Send } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -191,19 +184,28 @@ export function InvoiceSheet({
           {/* Status */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">Status</label>
-            <Select
-              value={form.status}
-              onValueChange={(v) => set("status", v as InvoiceStatus)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="issued">Issued</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-3 rounded-md border overflow-hidden">
+              {(["draft", "issued", "paid"] as InvoiceStatus[]).map((s, i) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => set("status", s)}
+                  className={[
+                    "py-1.5 text-sm font-medium transition-colors",
+                    i > 0 ? "border-l" : "",
+                    form.status === s
+                      ? s === "draft"
+                        ? "bg-secondary text-secondary-foreground"
+                        : s === "issued"
+                        ? "bg-secondary text-secondary-foreground"
+                        : "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted/50",
+                  ].join(" ")}
+                >
+                  {STATUS_LABEL[s]}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Issued date */}
