@@ -7,6 +7,7 @@ import { updateInvoice, deleteInvoice, createLineItem, updateLineItem, deleteLin
 import { invalidate } from "@/lib/invalidate";
 import type { InvoiceFormData } from "@/app/(app)/invoices/actions";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import type { ScheduledEmail } from "@/lib/queries";
@@ -288,28 +289,19 @@ export function InvoiceSheet({
           {/* Status */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">Status</label>
-            <div className="grid grid-cols-3 rounded-md border overflow-hidden">
-              {(["draft", "issued", "paid"] as InvoiceStatus[]).map((s, i) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => set("status", s)}
-                  className={[
-                    "py-1.5 text-sm font-medium transition-colors",
-                    i > 0 ? "border-l" : "",
-                    form.status === s
-                      ? s === "draft"
-                        ? "bg-secondary text-secondary-foreground"
-                        : s === "issued"
-                        ? "bg-secondary text-secondary-foreground"
-                        : "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-muted/50",
-                  ].join(" ")}
-                >
+            <ToggleGroup
+              type="single"
+              value={form.status}
+              onValueChange={(v) => v && set("status", v as InvoiceStatus)}
+              variant="outline"
+              className="w-full"
+            >
+              {(["draft", "issued", "paid"] as InvoiceStatus[]).map((s) => (
+                <ToggleGroupItem key={s} value={s} className="flex-1">
                   {STATUS_LABEL[s]}
-                </button>
+                </ToggleGroupItem>
               ))}
-            </div>
+            </ToggleGroup>
           </div>
 
           {/* Issued / Paid dates */}
