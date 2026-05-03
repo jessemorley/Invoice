@@ -25,9 +25,19 @@ import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { loadScheduledEmail } from "@/app/(app)/invoices/actions";
 
+function fyLabel(year: number, month: number): string {
+  // AU financial year: July (6) – June. If month >= 6, FY is year/year+1, else year-1/year.
+  const startYear = month >= 6 ? year : year - 1;
+  return `FY ${String(startYear).slice(2)}–${String(startYear + 1).slice(2)}`;
+}
+
+const now = new Date();
+const currentFY = fyLabel(now.getFullYear(), now.getMonth());
+const priorFY = fyLabel(now.getFullYear() - 1, now.getMonth());
+
 const chartConfig = {
-  current: { label: "FY 25–26", color: "var(--color-primary)" },
-  prior: { label: "FY 24–25", color: "var(--color-muted-foreground)" },
+  current: { label: currentFY, color: "var(--color-primary)" },
+  prior: { label: priorFY, color: "var(--color-muted-foreground)" },
 };
 
 function DashboardSkeleton() {
@@ -236,11 +246,11 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                 <div className="flex items-center gap-4 text-xs">
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-6 rounded-sm bg-primary" />
-                    <span>FY 25–26</span>
+                    <span>{currentFY}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="h-2 w-6 rounded-sm bg-muted-foreground/40" />
-                    <span>FY 24–25</span>
+                    <span>{priorFY}</span>
                   </div>
                 </div>
               </CardDescription>

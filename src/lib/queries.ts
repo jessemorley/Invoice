@@ -133,6 +133,60 @@ export async function fetchEntries(userId: string, before?: string): Promise<Ent
   });
 }
 
+export async function fetchDashboardEntries(userId: string): Promise<Entry[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.entries);
+  const supabase = createServerClient();
+  const windowEnd = new Date().toISOString().slice(0, 10);
+  const windowStart = (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 18);
+    return d.toISOString().slice(0, 10);
+  })();
+
+  const { data, error } = await supabase
+    .from("entries")
+    .select("*, clients(id, name, billing_type, color), invoices(id, invoice_number, status)")
+    .eq("user_id", userId)
+    .gte("date", windowStart)
+    .lte("date", windowEnd)
+    .order("date", { ascending: false });
+
+  if (error) throw new Error(`fetchDashboardEntries: ${error.message}`);
+
+  return (data ?? []).map((e) => {
+    const client = Array.isArray(e.clients) ? e.clients[0] : e.clients;
+    const inv = Array.isArray(e.invoices) ? e.invoices[0] : e.invoices;
+    const invoiceRef: InvoiceRef | null = inv
+      ? { id: inv.id, number: inv.invoice_number, status: inv.status as InvoiceStatus }
+      : null;
+    return {
+      id: e.id,
+      client: toClientRef(client ?? { id: e.client_id, name: "Unknown", billing_type: "day_rate" }),
+      date: e.date,
+      description: e.description,
+      role: e.role,
+      workflow_type: e.workflow_type,
+      billing_type: e.billing_type_snapshot,
+      day_type: e.day_type,
+      hours: e.hours_worked,
+      shoot_client: e.shoot_client,
+      skus: e.skus,
+      brand: e.brand,
+      start_time: e.start_time,
+      finish_time: e.finish_time,
+      break_minutes: e.break_minutes,
+      base_amount: e.base_amount,
+      bonus_amount: e.bonus_amount,
+      super_amount: e.super_amount,
+      total: e.total_amount,
+      invoice_id: e.invoice_id,
+      invoice: invoiceRef,
+      iso_week: isoWeek(e.date),
+    };
+  });
+}
+
 export type InvoiceFilters = {
   search?: string;
   status?: InvoiceStatus | "all";

@@ -3,6 +3,7 @@
 import { PROTOTYPE_USER_ID } from "@/lib/supabase";
 import {
   fetchEntries,
+  fetchDashboardEntries,
   fetchInvoices,
   fetchExpenses,
   fetchDashboardData,
@@ -25,7 +26,7 @@ export async function loadEntriesViewData() {
 
 export async function loadDashboardViewData() {
   const [entries, invoices, emails] = await Promise.all([
-    fetchEntries(PROTOTYPE_USER_ID),
+    fetchDashboardEntries(PROTOTYPE_USER_ID),
     fetchInvoices(PROTOTYPE_USER_ID, { from: "all" }),
     fetchDashboardEmails(PROTOTYPE_USER_ID),
   ]);
