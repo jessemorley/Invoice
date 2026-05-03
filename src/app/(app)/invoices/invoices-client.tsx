@@ -47,6 +47,7 @@ import {
 import { SortableTableHead } from "@/components/sortable-table-head";
 import { PageHeader } from "@/components/page-header";
 import { InvoiceSheet } from "@/components/invoice-sheet";
+import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { EntrySheet } from "@/components/entry-sheet";
@@ -247,6 +248,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [scheduledEmail, setScheduledEmail] = useState<ScheduledEmail | null>(null);
   const [invoiceDetail, setInvoiceDetail] = useState<InvoiceDetail | null>(null);
   const [businessName, setBusinessName] = useState("");
+  const [sentEmailOpen, setSentEmailOpen] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
   const composeSentRef = useRef(false);
   const [generateOpen, setGenerateOpen] = useState(false);
@@ -628,6 +630,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         onCancelEmail={handleCancelEmail}
         onReschedule={handleReschedule}
         onSendNow={handleSendNow}
+        onViewEmail={() => setSentEmailOpen(true)}
         onEntryClick={handleEntryClick}
         onLineItemMutate={() => {
           if (selectedInvoice) {
@@ -637,6 +640,16 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             });
           }
         }}
+      />
+      <SentEmailSheet
+        open={sentEmailOpen}
+        onOpenChange={setSentEmailOpen}
+        email={scheduledEmail && selectedInvoice && scheduledEmail.status !== "cancelled" ? {
+          ...scheduledEmail,
+          status: scheduledEmail.status as "pending" | "sent" | "failed",
+          invoice_id: selectedInvoice.id,
+          invoice_number: selectedInvoice.number,
+        } : null}
       />
       <EntrySheet
         open={entrySheetOpen}

@@ -1,7 +1,7 @@
 import { cacheTag } from "next/cache";
 import { createServerClient } from "./supabase";
 import { isoWeek } from "./format";
-import type { Entry, Invoice, InvoiceDetail, Expense, DashboardData, ClientRef, MonthlyEarning, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
+import type { Entry, Invoice, InvoiceDetail, Expense, DashboardData, DashboardEmail, ClientRef, MonthlyEarning, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -351,7 +351,49 @@ export async function fetchWorkflowRates(): Promise<WorkflowRate[]> {
   }));
 }
 
-export async function fetchDashboardData(userId: string, entries: Entry[], invoices: Invoice[]): Promise<DashboardData> {
+export async function fetchDashboardEmails(userId: string): Promise<DashboardEmail[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.scheduledEmails);
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("scheduled_emails")
+    .select("id, invoice_id, to_address, subject, body_text, filename, scheduled_for, sent_at, status, invoices(invoice_number)")
+    .eq("user_id", userId)
+    .in("status", ["pending", "failed", "sent"])
+    .order("status", { ascending: true })
+    .order("sent_at", { ascending: false })
+    .limit(4);
+
+  if (error) throw new Error(`fetchDashboardEmails: ${error.message}`);
+
+  const scheduled: DashboardEmail[] = [];
+  const recent: DashboardEmail[] = [];
+
+  for (const row of data ?? []) {
+    const inv = Array.isArray(row.invoices) ? row.invoices[0] : row.invoices;
+    const email: DashboardEmail = {
+      id: row.id,
+      invoice_id: row.invoice_id ?? "",
+      invoice_number: inv?.invoice_number ?? "",
+      to_address: row.to_address,
+      subject: row.subject,
+      body_text: row.body_text,
+      filename: row.filename,
+      scheduled_for: row.scheduled_for,
+      sent_at: row.sent_at ?? null,
+      status: row.status as DashboardEmail["status"],
+    };
+    if (row.status === "pending" || row.status === "failed") {
+      scheduled.push(email);
+    } else {
+      recent.push(email);
+    }
+  }
+
+  return [...scheduled, ...recent].slice(0, 4);
+}
+
+export async function fetchDashboardData(userId: string, entries: Entry[], invoices: Invoice[], emails: DashboardEmail[]): Promise<DashboardData> {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
@@ -407,7 +449,7 @@ export async function fetchDashboardData(userId: string, entries: Entry[], invoi
     monthlyEarnings.push({ month: label, current, prior });
   }
 
-  return { mtdEarnings, mtdPriorMonth, outstanding, monthlyEarnings };
+  return { mtdEarnings, mtdPriorMonth, outstanding, monthlyEarnings, emails };
 }
 
 export type BusinessDetails = {
@@ -537,6 +579,9 @@ export type ScheduledEmail = {
   id: string;
   status: "pending" | "sent" | "cancelled" | "failed";
   to_address: string;
+  subject: string;
+  body_text: string;
+  filename: string;
   scheduled_for: string;
   sent_at: string | null;
   error: string | null;
@@ -546,11 +591,11 @@ export async function fetchScheduledEmailForInvoice(invoiceId: string, userId: s
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("scheduled_emails")
-    .select("id, status, to_address, scheduled_for, sent_at, error")
+    .select("id, status, to_address, subject, body_text, filename, scheduled_for, sent_at, error")
     .eq("invoice_id", invoiceId)
     .eq("user_id", userId)
     .neq("status", "cancelled")
-    .order("created_at", { ascending: false })
+    .order("scheduled_for", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (error) throw new Error(`fetchScheduledEmailForInvoice: ${error.message}`);
@@ -559,6 +604,9 @@ export async function fetchScheduledEmailForInvoice(invoiceId: string, userId: s
     id: data.id,
     status: data.status as ScheduledEmail["status"],
     to_address: data.to_address,
+    subject: data.subject,
+    body_text: data.body_text,
+    filename: data.filename,
     scheduled_for: data.scheduled_for,
     sent_at: data.sent_at ?? null,
     error: data.error ?? null,

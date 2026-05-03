@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import type { Invoice, InvoiceDetail, InvoiceStatus } from "@/lib/types";
-import { formatAUD, formatDateShort } from "@/lib/format";
+import { formatAUD, formatRelativeTime } from "@/lib/format";
 import { updateInvoice, deleteInvoice, createLineItem, updateLineItem, deleteLineItem } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
 import type { InvoiceFormData } from "@/app/(app)/invoices/actions";
@@ -189,6 +189,7 @@ export function InvoiceSheet({
   onCancelEmail,
   onReschedule,
   onSendNow,
+  onViewEmail,
   onEntryClick,
   onLineItemMutate,
 }: {
@@ -201,6 +202,7 @@ export function InvoiceSheet({
   onCancelEmail?: (id: string) => void;
   onReschedule?: () => void;
   onSendNow?: (id: string) => void;
+  onViewEmail?: () => void;
   onEntryClick?: (entryId: string) => void;
   onLineItemMutate?: () => void;
 }) {
@@ -418,9 +420,7 @@ export function InvoiceSheet({
                 Email
               </Button>
             ) : scheduledEmail.status === "sent" ? (
-              <span className="text-sm text-muted-foreground self-center">
-                Sent {scheduledEmail.sent_at ? formatDateShort(scheduledEmail.sent_at) : ""}
-              </span>
+              null
             ) : scheduledEmail.status === "failed" ? (
               <Button
                 variant="outline"
@@ -436,6 +436,22 @@ export function InvoiceSheet({
 
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
+
+        {scheduledEmail?.status === "sent" && (
+          <div className="px-6 pb-4">
+            <Alert>
+              <Mail className="size-4" />
+              <AlertTitle>Email sent {scheduledEmail.sent_at ? formatRelativeTime(scheduledEmail.sent_at) : ""}</AlertTitle>
+              <AlertDescription>
+                <div className="flex gap-2 mt-2">
+                  <Button variant="outline" size="xs" onClick={onViewEmail}>
+                    View
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
 
         {scheduledEmail?.status === "pending" && (
           <div className="px-6 pb-4">
