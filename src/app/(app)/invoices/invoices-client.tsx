@@ -51,7 +51,7 @@ import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { EntrySheet } from "@/components/entry-sheet";
-import { ChevronDown, FileText, Plus, RefreshCw, Search, X } from "lucide-react";
+import { ChevronDown, FileText, Plus, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
 
@@ -257,6 +257,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const entrySheetMeta = useState<{ clients: Client[]; workflowRates: WorkflowRate[] } | null>(null);
   const [entrySheetData, setEntrySheetData] = entrySheetMeta;
   const [searchOpen, setSearchOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -267,8 +268,12 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
 
   useEffect(() => {
     const handler = () => {
-      if (!searchOpen) setSearchOpen(true);
-      else searchInputRef.current?.focus();
+      if (!searchOpen) {
+        setFilterOpen(false);
+        setSearchOpen(true);
+      } else {
+        searchInputRef.current?.focus();
+      }
     };
     window.addEventListener("dock:focus-search", handler);
     return () => window.removeEventListener("dock:focus-search", handler);
@@ -406,6 +411,13 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     setSearchValue("");
   }
 
+  function openSearch() {
+    setFilterOpen(false);
+    setSearchOpen(true);
+  }
+
+  const hasActiveFilters = timeframe !== "all" || statusFilter !== "all" || clientFilter !== "all";
+
   const mobileTitle = searchOpen ? (
     <input
       ref={searchInputRef}
@@ -422,15 +434,23 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Invoices" mobileTitle={mobileTitle}>
-        {uninvoicedCount > 0 && (
-          <Button size="sm" variant="secondary" onClick={() => setGenerateOpen(true)} className="relative">
+        {uninvoicedCount > 0 && !searchOpen && (
+          <Button size="sm" variant="secondary" onClick={() => setGenerateOpen(true)} className="relative md:flex">
             <span className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
               {uninvoicedCount}
             </span>
             Generate
           </Button>
         )}
-        <Button size="icon" variant="ghost" className="size-8 md:hidden" onClick={() => searchOpen ? closeSearch() : setSearchOpen(true)} disabled={loading}>
+        {!searchOpen && (
+          <Button size="icon" variant="ghost" className="relative size-8 md:hidden" onClick={() => setFilterOpen((o) => !o)} disabled={loading}>
+            <SlidersHorizontal className="size-4" />
+            {hasActiveFilters && (
+              <span className="absolute top-1 right-1 size-1.5 rounded-full bg-primary" />
+            )}
+          </Button>
+        )}
+        <Button size="icon" variant="ghost" className="size-8 md:hidden" onClick={() => searchOpen ? closeSearch() : openSearch()} disabled={loading}>
           {searchOpen ? <X className="size-4" /> : <Search className="size-4" />}
         </Button>
         <Button size="sm" className="hidden md:flex" disabled={loading}>
@@ -544,40 +564,44 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         </div>
       </div>
 
-      {/* Mobile filter bar */}
-      <div className="md:hidden border-b px-4 py-2 flex gap-2">
-        <Select value={timeframe} onValueChange={setTimeframe} disabled={loading}>
-          <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
-            <SelectValue placeholder="Timeframe" />
-          </SelectTrigger>
-          <SelectContent>
-            {TIMEFRAME_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter} disabled={loading}>
-          <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All status</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="issued">Issued</SelectItem>
-            <SelectItem value="paid">Paid</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={clientFilter} onValueChange={setClientFilter} disabled={loading}>
-          <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
-            <SelectValue placeholder="Client" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All clients</SelectItem>
-            {clients.map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Mobile filter bar — collapsible */}
+      <div className={`md:hidden grid transition-[grid-template-rows] duration-200 ease-out ${filterOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+        <div className="overflow-hidden">
+          <div className="border-b px-4 py-2 flex gap-2">
+            <Select value={timeframe} onValueChange={setTimeframe} disabled={loading}>
+              <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
+                <SelectValue placeholder="Timeframe" />
+              </SelectTrigger>
+              <SelectContent>
+                {TIMEFRAME_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter} disabled={loading}>
+              <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All status</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="issued">Issued</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={clientFilter} onValueChange={setClientFilter} disabled={loading}>
+              <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
+                <SelectValue placeholder="Client" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All clients</SelectItem>
+                {clients.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
 
       {/* Mobile card list */}
