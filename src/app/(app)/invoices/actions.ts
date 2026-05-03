@@ -153,16 +153,20 @@ export async function loadScheduledEmail(invoiceId: string) {
 }
 
 export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormData): Promise<{ id: string }> {
-  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const [supabase, userId, token] = await Promise.all([createClient(), getAuthUserId(), getAuthToken()]);
 
-  const { data: inv, error: invError } = await supabase
-    .from("invoices")
-    .select("invoice_number")
-    .eq("id", invoiceId)
-    .eq("user_id", userId)
-    .single();
+  const [invResult, business] = await Promise.all([
+    supabase.from("invoices").select("invoice_number").eq("id", invoiceId).eq("user_id", userId).single(),
+    fetchBusinessDetails(userId, token),
+  ]);
 
-  if (invError) throw new Error(`scheduleInvoiceEmail (fetch): ${invError.message}`);
+  if (invResult.error) throw new Error(`scheduleInvoiceEmail (fetch): ${invResult.error.message}`);
+  const inv = invResult.data;
+
+  const businessName = business?.business_name ?? "";
+  const filename = businessName
+    ? `${businessName} Invoice ${inv.invoice_number}.pdf`
+    : `Invoice ${inv.invoice_number}.pdf`;
 
   const { data: row, error } = await supabase.from("scheduled_emails").insert({
     user_id: userId,
@@ -171,7 +175,7 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
     subject: data.subject,
     body_text: data.body_text,
     scheduled_for: data.scheduled_for,
-    filename: `${inv.invoice_number}.pdf`,
+    filename,
     mark_issued: true,
     status: "pending",
   }).select("id").single();
