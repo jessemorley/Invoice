@@ -440,13 +440,11 @@ export function InvoiceSheet({
               {isDownloading ? <Spinner data-icon="inline-start" /> : <Download className="size-3.5" />}
               {isDownloading ? "Generating…" : "Download PDF"}
             </Button>
-            {(!scheduledEmail || scheduledEmail.status === "cancelled") ? (
+            {(!scheduledEmail || scheduledEmail.status === "cancelled" || scheduledEmail.status === "sent") ? (
               <Button variant="outline" size="sm" className="gap-1.5" onClick={onSendClick}>
                 <Mail className="size-3.5" />
                 Email
               </Button>
-            ) : scheduledEmail.status === "sent" ? (
-              null
             ) : scheduledEmail.status === "failed" ? (
               <Button
                 variant="outline"
