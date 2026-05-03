@@ -18,6 +18,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { ChevronLeft, Minus, Plus, Search, Trash2 } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -175,33 +177,38 @@ function SummaryPanel({
   if (!calc) return null;
 
   return (
-    <div className="border-t bg-muted/40 px-4 py-3 flex flex-col gap-1">
-      {billingType === "hourly" && rawMins != null && (
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Duration</span>
-          <span className="font-medium">{formatDuration(rawMins)}</span>
-        </div>
-      )}
-      <div className="flex justify-between text-sm">
-        <span className="text-muted-foreground">Base</span>
-        <span className="font-medium">{formatAUD(calc.base)}</span>
-      </div>
-      {calc.bonus > 0 && (
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Bonus</span>
-          <span className="font-medium">{formatAUD(calc.bonus)}</span>
-        </div>
-      )}
-      {client.pays_super && (
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Super</span>
-          <span className="font-medium">{formatAUD(calc.superAmt)}</span>
-        </div>
-      )}
-      <div className="flex justify-between text-sm font-bold pt-1 border-t mt-1">
-        <span>Total</span>
-        <span>{formatAUD(calc.total)}</span>
-      </div>
+    <div className="px-4 py-1.5">
+      <Card className="py-3 gap-0">
+        <CardContent className="px-4 flex flex-col gap-1.5">
+          {billingType === "hourly" && rawMins != null && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Duration</span>
+              <span className="font-medium">{formatDuration(rawMins)}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Base</span>
+            <span className="font-medium">{formatAUD(calc.base)}</span>
+          </div>
+          {calc.bonus > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Bonus</span>
+              <span className="font-medium">{formatAUD(calc.bonus)}</span>
+            </div>
+          )}
+          {client.pays_super && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Super</span>
+              <span className="font-medium">{formatAUD(calc.superAmt)}</span>
+            </div>
+          )}
+          <Separator />
+          <div className="flex justify-between text-sm font-semibold">
+            <span>Total</span>
+            <span>{formatAUD(calc.total)}</span>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -624,7 +631,7 @@ export function EntrySheet({
 
         {/* Footer */}
         {selectedClient && (
-          <div className="border-t px-4 py-3 flex gap-2">
+          <div className="px-4 py-3 flex gap-2">
             {entry && (
               <Button
                 variant="destructive"
