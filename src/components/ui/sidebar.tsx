@@ -198,7 +198,7 @@ function Sidebar({
           }
           side={side}
         >
-          <SheetHeader className="sr-only">
+          <SheetHeader className="sr-only" showCloseButton={false}>
             <SheetTitle>Sidebar</SheetTitle>
             <SheetDescription>Displays the mobile sidebar.</SheetDescription>
           </SheetHeader>

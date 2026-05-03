@@ -333,7 +333,7 @@ export function EmailComposeSheet({ open, onOpenChange, invoice, businessName, o
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
-        <SheetHeader className="sr-only">
+        <SheetHeader className="sr-only" showCloseButton={false}>
           <SheetTitle>Send Invoice {invoice.number}</SheetTitle>
         </SheetHeader>
         <ComposeContent

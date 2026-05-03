@@ -48,7 +48,7 @@ export function SentEmailSheet({ open, onOpenChange, email }: SentEmailSheetProp
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
-        <SheetHeader className="sr-only">
+        <SheetHeader className="sr-only" showCloseButton={false}>
           <SheetTitle>Sent Email — Invoice {email?.invoice_number}</SheetTitle>
         </SheetHeader>
 
