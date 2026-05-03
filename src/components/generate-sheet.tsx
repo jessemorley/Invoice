@@ -17,9 +17,11 @@ import {
 export function GenerateSheet({
   open,
   onOpenChange,
+  onBlankInvoice,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onBlankInvoice?: () => void;
 }) {
   const [groups, setGroups] = useState<UninvoicedGroup[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -119,16 +121,28 @@ export function GenerateSheet({
 
         <div className="border-t px-4 py-3 flex flex-col gap-2">
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button
-            size="lg"
-            className="w-full"
-            onClick={handleGenerate}
-            disabled={isPending || isLoading || selectedCount === 0}
-          >
-            {isPending
-              ? "Generating…"
-              : `Generate ${selectedCount} ${selectedCount === 1 ? "invoice" : "invoices"}`}
-          </Button>
+          <div className="flex items-center gap-2">
+            {onBlankInvoice && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => { onOpenChange(false); onBlankInvoice(); }}
+                disabled={isPending}
+              >
+                Blank invoice
+              </Button>
+            )}
+            <Button
+              size="lg"
+              className="flex-1"
+              onClick={handleGenerate}
+              disabled={isPending || isLoading || selectedCount === 0}
+            >
+              {isPending
+                ? "Generating…"
+                : `Generate ${selectedCount} ${selectedCount === 1 ? "invoice" : "invoices"}`}
+            </Button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>

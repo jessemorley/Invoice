@@ -49,6 +49,7 @@ import { PageHeader } from "@/components/page-header";
 import { InvoiceSheet } from "@/components/invoice-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
+import { NewInvoiceSheet } from "@/components/new-invoice-sheet";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { EntrySheet } from "@/components/entry-sheet";
 import { ChevronDown, FileText, Plus, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
@@ -252,6 +253,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [composeOpen, setComposeOpen] = useState(false);
   const composeSentRef = useRef(false);
   const [generateOpen, setGenerateOpen] = useState(false);
+  const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
   const [entrySheetOpen, setEntrySheetOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const entrySheetMeta = useState<{ clients: Client[]; workflowRates: WorkflowRate[] } | null>(null);
@@ -434,14 +436,6 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Invoices" mobileTitle={mobileTitle}>
-        {uninvoicedCount > 0 && !searchOpen && (
-          <Button size="sm" variant="secondary" onClick={() => setGenerateOpen(true)} className="relative md:flex">
-            <span className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
-              {uninvoicedCount}
-            </span>
-            Generate
-          </Button>
-        )}
         {!searchOpen && (
           <Button size="icon" variant="ghost" className="relative size-8 md:hidden" onClick={() => setFilterOpen((o) => !o)} disabled={loading}>
             <SlidersHorizontal className="size-4" />
@@ -453,7 +447,17 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         <Button size="icon" variant="ghost" className="size-8 md:hidden" onClick={() => searchOpen ? closeSearch() : openSearch()} disabled={loading}>
           {searchOpen ? <X className="size-4" /> : <Search className="size-4" />}
         </Button>
-        <Button size="sm" className="hidden md:flex" disabled={loading}>
+        <Button
+          size="sm"
+          className="relative hidden md:flex"
+          disabled={loading}
+          onClick={() => uninvoicedCount > 0 ? setGenerateOpen(true) : setNewInvoiceOpen(true)}
+        >
+          {uninvoicedCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
+              {uninvoicedCount}
+            </span>
+          )}
           <Plus className="size-4" />
           New invoice
         </Button>
@@ -696,9 +700,31 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         businessName={businessName}
         onSent={() => { composeSentRef.current = true; invalidate("invoices"); }}
       />
+      {/* Mobile FAB */}
+      <div className="md:hidden fixed bottom-18 right-4 z-40">
+        <Button
+          size="icon"
+          className="relative size-14 rounded-full shadow-lg"
+          disabled={loading}
+          onClick={() => uninvoicedCount > 0 ? setGenerateOpen(true) : setNewInvoiceOpen(true)}
+        >
+          <Plus className="size-6" />
+          {uninvoicedCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none ring-2 ring-background">
+              {uninvoicedCount}
+            </span>
+          )}
+        </Button>
+      </div>
+
       <GenerateSheet
         open={generateOpen}
         onOpenChange={setGenerateOpen}
+        onBlankInvoice={() => setNewInvoiceOpen(true)}
+      />
+      <NewInvoiceSheet
+        open={newInvoiceOpen}
+        onOpenChange={setNewInvoiceOpen}
       />
     </div>
   );
