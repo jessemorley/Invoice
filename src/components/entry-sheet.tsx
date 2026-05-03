@@ -400,14 +400,16 @@ export function EntrySheet({
           ) : (
             <div className="flex flex-col gap-4 px-4 py-4">
               {/* Date */}
-              <div className="flex items-center gap-3">
-                <label className="text-sm font-medium text-foreground w-14 shrink-0">Date</label>
-                <Input
-                  type="date"
-                  className="text-sm"
-                  value={form.date}
-                  onChange={(e) => set("date", e.target.value)}
-                />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-foreground">Date</label>
+                <div className="h-9 rounded-lg border border-input bg-transparent px-3 flex items-center">
+                  <input
+                    type="date"
+                    className="w-full bg-transparent outline-none text-sm text-foreground"
+                    value={form.date}
+                    onChange={(e) => set("date", e.target.value)}
+                  />
+                </div>
               </div>
 
               {/* Day type */}
@@ -531,20 +533,24 @@ export function EntrySheet({
               {showTimes && (
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Start">
-                    <Input
-                      type="time"
-                      className="text-sm"
-                      value={form.start_time}
-                      onChange={(e) => set("start_time", e.target.value)}
-                    />
+                    <div className="h-9 rounded-lg border border-input bg-transparent px-3 flex items-center">
+                      <input
+                        type="time"
+                        className="w-full bg-transparent outline-none text-sm text-foreground"
+                        value={form.start_time}
+                        onChange={(e) => set("start_time", e.target.value)}
+                      />
+                    </div>
                   </Field>
                   <Field label="Finish">
-                    <Input
-                      type="time"
-                      className="text-sm"
-                      value={form.finish_time}
-                      onChange={(e) => set("finish_time", e.target.value)}
-                    />
+                    <div className="h-9 rounded-lg border border-input bg-transparent px-3 flex items-center">
+                      <input
+                        type="time"
+                        className="w-full bg-transparent outline-none text-sm text-foreground"
+                        value={form.finish_time}
+                        onChange={(e) => set("finish_time", e.target.value)}
+                      />
+                    </div>
                   </Field>
                 </div>
               )}

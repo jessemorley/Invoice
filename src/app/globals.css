@@ -146,3 +146,4 @@
     padding-bottom: max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem));
   }
 }
+
