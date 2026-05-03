@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import type { ScheduledEmail } from "@/lib/queries";
 import { Download, Mail, Plus, Trash2, CalendarClock, Clock, Send } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -442,13 +442,10 @@ export function InvoiceSheet({
             <Alert>
               <Mail className="size-4" />
               <AlertTitle>Email sent {scheduledEmail.sent_at ? formatRelativeTime(scheduledEmail.sent_at) : ""}</AlertTitle>
-              <AlertDescription>
-                <div className="flex gap-2 mt-2">
-                  <Button variant="outline" size="xs" onClick={onViewEmail}>
-                    View
-                  </Button>
-                </div>
-              </AlertDescription>
+              <AlertDescription>To {scheduledEmail.to_address}</AlertDescription>
+              <AlertAction>
+                <Button variant="outline" size="xs" onClick={onViewEmail}>View</Button>
+              </AlertAction>
             </Alert>
           </div>
         )}
