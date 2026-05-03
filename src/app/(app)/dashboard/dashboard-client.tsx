@@ -1,7 +1,6 @@
 "use client";
 
-import type { DashboardData, Expense, ExpenseCategory } from "@/lib/types";
-import { EXPENSE_CATEGORY_LABELS } from "@/lib/mock-data";
+import type { DashboardData } from "@/lib/types";
 import { formatAUD } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -9,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
   CardTitle,
   CardDescription,
@@ -21,28 +19,12 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Area, AreaChart, XAxis, YAxis, RadarChart, Radar, PolarGrid, PolarAngleAxis } from "recharts";
+import { Area, AreaChart, XAxis, YAxis } from "recharts";
 
 const chartConfig = {
   current: { label: "FY 25–26", color: "var(--color-primary)" },
   prior: { label: "FY 24–25", color: "var(--color-muted-foreground)" },
 };
-
-const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
-  gear:            "#6366f1",
-  gear_consumable: "#818cf8",
-  gear_hire:       "#f97316",
-  lab:             "#06b6d4",
-  education:       "#8b5cf6",
-  software:        "#10b981",
-  travel:          "#f59e0b",
-  other:           "#94a3b8",
-  office:          "#64748b",
-};
-
-const radarChartConfig = {
-  amount: { label: "Amount", color: "var(--color-primary)" },
-} satisfies import("@/components/ui/chart").ChartConfig;
 
 function DashboardSkeleton() {
   return (
@@ -77,50 +59,18 @@ function DashboardSkeleton() {
               <Skeleton className="h-48 w-full rounded-md" />
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="items-center pb-4">
-              <Skeleton className="h-3 w-36" />
-              <Skeleton className="h-3 w-24 mt-1" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-[280px] w-full rounded-md" />
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>
   );
 }
 
-export function DashboardClient({ data, expenses }: { data?: DashboardData; expenses?: Expense[] }) {
-  if (!data || !expenses) return <DashboardSkeleton />;
+export function DashboardClient({ data }: { data?: DashboardData }) {
+  if (!data) return <DashboardSkeleton />;
   const { mtdEarnings, mtdPriorMonth, outstanding, monthlyEarnings } = data;
   const delta = mtdEarnings - mtdPriorMonth;
   const deltaPercent = mtdPriorMonth > 0 ? ((delta / mtdPriorMonth) * 100).toFixed(0) : "0";
   const isUp = delta >= 0;
-
-  const expenseCategoryTotals = (Object.keys(EXPENSE_CATEGORY_LABELS) as ExpenseCategory[]).map(
-    (cat) => ({
-      category: EXPENSE_CATEGORY_LABELS[cat],
-      amount: expenses.filter((e) => e.category === cat).reduce((sum, e) => sum + e.amount, 0),
-      fill: CATEGORY_COLORS[cat],
-    })
-  ).filter((c) => c.amount > 0);
-
-  const expenseDates = expenses.map((e) => e.date).sort();
-  const expenseDateRange = expenseDates.length > 0 ? (() => {
-    const fmt = (d: string) =>
-      new Date(d).toLocaleDateString("en-AU", { month: "long", year: "numeric" });
-    return `${fmt(expenseDates[0])} – ${fmt(expenseDates[expenseDates.length - 1])}`;
-  })() : "";
-
-  const totalExpenses = expenseCategoryTotals.reduce((s, e) => s + e.amount, 0);
-  const topCategory = expenseCategoryTotals.length > 0
-    ? expenseCategoryTotals.reduce((a, b) => (b.amount > a.amount ? b : a))
-    : null;
-  const topCategoryPct = topCategory && totalExpenses > 0
-    ? Math.round((topCategory.amount / totalExpenses) * 100)
-    : 0;
 
   const now = new Date();
   const priorMonthName = new Date(now.getFullYear(), now.getMonth() - 1, 1)
@@ -258,46 +208,6 @@ export function DashboardClient({ data, expenses }: { data?: DashboardData; expe
             </CardContent>
           </Card>
 
-          {/* Expense categories radar chart */}
-          <Card>
-            <CardHeader className="items-center pb-4">
-              <CardTitle className="text-sm font-medium">Expenses by category</CardTitle>
-              <CardDescription>{expenseDateRange}</CardDescription>
-            </CardHeader>
-            <CardContent className="pb-0">
-              <ChartContainer config={radarChartConfig} className="h-[280px] w-full">
-                <RadarChart data={expenseCategoryTotals}>
-                  <ChartTooltip
-                    cursor={false}
-                    content={
-                      <ChartTooltipContent
-                        formatter={(value) => formatAUD(value as number)}
-                        hideLabel
-                      />
-                    }
-                  />
-                  <PolarAngleAxis dataKey="category" tick={{ fontSize: 11 }} />
-                  <PolarGrid />
-                  <Radar
-                    dataKey="amount"
-                    fill="var(--color-primary)"
-                    fillOpacity={0.6}
-                  />
-                </RadarChart>
-              </ChartContainer>
-            </CardContent>
-            {topCategory && (
-              <CardFooter className="flex-col gap-2 text-sm">
-                <div className="flex items-center gap-2 font-medium leading-none">
-                  {topCategory.category} leads at {topCategoryPct}% of spend
-                  <TrendingUp className="size-4" />
-                </div>
-                <div className="flex items-center gap-2 leading-none text-muted-foreground">
-                  Total: {formatAUD(totalExpenses)}
-                </div>
-              </CardFooter>
-            )}
-          </Card>
         </div>
       </div>
     </div>

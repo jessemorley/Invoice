@@ -22,7 +22,7 @@ import {
 
 export type ViewId = "dashboard" | "entries" | "invoices" | "clients" | "expenses" | "settings";
 
-type DashboardState = { data: DashboardData; expenses: Expense[] } | null;
+type DashboardState = { data: DashboardData } | null;
 type EntriesState = { entries: Entry[]; clients: Client[]; workflowRates: WorkflowRate[] } | null;
 type InvoicesState = { invoices: Invoice[]; uninvoicedCount: number; clients: { id: string; name: string }[] } | null;
 type ClientsState = Client[] | null;
@@ -96,7 +96,7 @@ export function ViewSwitch() {
   return (
     <>
       <div className={view === "dashboard" ? "contents" : "hidden"}>
-        <DashboardClient data={dashboardData?.data} expenses={dashboardData?.expenses} />
+        <DashboardClient data={dashboardData?.data} />
       </div>
       <div className={view === "entries" ? "contents" : "hidden"}>
         <EntriesView

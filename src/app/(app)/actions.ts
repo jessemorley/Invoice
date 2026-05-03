@@ -23,13 +23,12 @@ export async function loadEntriesViewData() {
 }
 
 export async function loadDashboardViewData() {
-  const [entries, invoices, expenses] = await Promise.all([
+  const [entries, invoices] = await Promise.all([
     fetchEntries(PROTOTYPE_USER_ID),
     fetchInvoices(PROTOTYPE_USER_ID, { from: "all" }),
-    fetchExpenses(PROTOTYPE_USER_ID),
   ]);
   const data = await fetchDashboardData(PROTOTYPE_USER_ID, entries, invoices);
-  return { data, expenses };
+  return { data };
 }
 
 export async function loadInvoicesViewData() {
