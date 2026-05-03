@@ -386,7 +386,7 @@ export function EntrySheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex flex-col gap-0 p-0 w-full sm:max-w-md">
+      <SheetContent side="right" className="flex flex-col gap-0 p-0 w-full sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
         <SheetHeader className={cn("px-4 py-4 flex-row items-center gap-2", selectedClient && "border-b")}>
           {!entry && selectedClient && (
             <Button
