@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import type { ScheduledEmail } from "@/lib/queries";
 import { Download, Mail, Plus, Trash2, CalendarClock, Clock, Send } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -212,6 +213,7 @@ export function InvoiceSheet({
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
   type SheetView = "invoice" | "add-line-item" | { mode: "edit-line-item"; item: NonNullable<InvoiceDetail["line_items"][0]> };
   const [view, setView] = useState<SheetView>("invoice");
 
@@ -220,6 +222,30 @@ export function InvoiceSheet({
     setError(null);
     setView("invoice");
   }, [invoice, open]);
+
+  async function handleDownload() {
+    if (!invoice) return;
+    setIsDownloading(true);
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}/pdf`);
+      const blob = await res.blob();
+      const filename = res.headers.get("Content-Disposition")?.match(/filename="(.+?)"/)?.[1] ?? `Invoice ${invoice.number}.pdf`;
+      if (navigator.canShare?.({ files: [new File([blob], filename, { type: "application/pdf" })] })) {
+        await navigator.share({ files: [new File([blob], filename, { type: "application/pdf" })] }).catch((e) => {
+          if (e?.name !== "AbortError") throw e;
+        });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } finally {
+      setIsDownloading(false);
+    }
+  }
 
   if (!invoice || !form) return null;
 
@@ -408,11 +434,9 @@ export function InvoiceSheet({
               <Plus className="size-3.5" />
               Add note
             </Button>
-            <Button variant="outline" size="sm" asChild className="gap-1.5">
-              <a href={`/api/invoices/${invoice.id}/pdf`} download>
-                <Download className="size-3.5" />
-                Download PDF
-              </a>
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownload} disabled={isDownloading}>
+              {isDownloading ? <Spinner data-icon="inline-start" /> : <Download className="size-3.5" />}
+              {isDownloading ? "Generating…" : "Download PDF"}
             </Button>
             {(!scheduledEmail || scheduledEmail.status === "cancelled") ? (
               <Button variant="outline" size="sm" className="gap-1.5" onClick={onSendClick}>
