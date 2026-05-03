@@ -173,9 +173,23 @@ export type MonthlyEarning = {
   prior: number;
 };
 
+export type DashboardEmail = {
+  id: string;
+  invoice_id: string;
+  invoice_number: string;
+  to_address: string;
+  subject: string;
+  body_text: string;
+  filename: string;
+  scheduled_for: string;
+  sent_at: string | null;
+  status: "pending" | "sent" | "failed";
+};
+
 export type DashboardData = {
   mtdEarnings: number;
   mtdPriorMonth: number;
   outstanding: Invoice[];
   monthlyEarnings: MonthlyEarning[];
+  emails: DashboardEmail[];
 };

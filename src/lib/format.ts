@@ -21,6 +21,21 @@ export function formatDateShort(dateStr: string): string {
   return `${day} ${month}`;
 }
 
+export function formatRelativeTime(isoString: string): string {
+  const date = new Date(isoString);
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const time = date.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit", hour12: true }).toLowerCase();
+  if (date.toDateString() === now.toDateString()) return `Today at ${time}`;
+  if (date.toDateString() === tomorrow.toDateString()) return `Tomorrow at ${time}`;
+  if (date.toDateString() === yesterday.toDateString()) return `Yesterday at ${time}`;
+  const dayName = date.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "short" });
+  return `${dayName} at ${time}`;
+}
+
 export function isoWeek(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
   const dayOfWeek = d.getDay() || 7;

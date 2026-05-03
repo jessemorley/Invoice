@@ -6,6 +6,7 @@ import {
   fetchInvoices,
   fetchExpenses,
   fetchDashboardData,
+  fetchDashboardEmails,
   fetchUninvoicedGroups,
   fetchClients,
   fetchFullClients,
@@ -23,11 +24,12 @@ export async function loadEntriesViewData() {
 }
 
 export async function loadDashboardViewData() {
-  const [entries, invoices] = await Promise.all([
+  const [entries, invoices, emails] = await Promise.all([
     fetchEntries(PROTOTYPE_USER_ID),
     fetchInvoices(PROTOTYPE_USER_ID, { from: "all" }),
+    fetchDashboardEmails(PROTOTYPE_USER_ID),
   ]);
-  const data = await fetchDashboardData(PROTOTYPE_USER_ID, entries, invoices);
+  const data = await fetchDashboardData(PROTOTYPE_USER_ID, entries, invoices, emails);
   return { data };
 }
 

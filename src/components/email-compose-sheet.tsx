@@ -152,15 +152,18 @@ interface ComposeContentProps {
   businessName: string;
   onClose: () => void;
   onSent: () => void;
+  initialTo?: string[];
+  initialSubject?: string;
+  initialBody?: string;
 }
 
-function ComposeContent({ invoice, businessName, onClose, onSent }: ComposeContentProps) {
+function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, initialSubject, initialBody }: ComposeContentProps) {
   const [chips, setChips] = useState<string[]>(() =>
-    invoice.client.email ? [invoice.client.email] : []
+    initialTo ?? (invoice.client.email ? [invoice.client.email] : [])
   );
   const [chipInput, setChipInput] = useState("");
-  const [subject, setSubject] = useState(`Invoice ${invoice.number}`);
-  const [body, setBody] = useState(() => defaultBody(invoice, businessName));
+  const [subject, setSubject] = useState(initialSubject ?? `Invoice ${invoice.number}`);
+  const [body, setBody] = useState(() => initialBody ?? defaultBody(invoice, businessName));
   const [scheduledFor, setScheduledFor] = useState<Date | null>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -197,20 +200,23 @@ function ComposeContent({ invoice, businessName, onClose, onSent }: ComposeConte
           scheduled_for: sendAt?.toISOString() ?? new Date().toISOString(),
         };
         const result = await scheduleInvoiceEmail(invoice.id, data);
-        invalidate("invoices");
+        invalidate("invoices", "emails");
         onSent();
         onClose();
-        toast(`Email scheduled for ${toastDescription(scheduledFor)}`, {
-          action: {
-            label: "Undo",
-            onClick: async () => {
-              if (result?.id) {
-                await cancelScheduledEmail(result.id);
-                invalidate("invoices");
-              }
-            },
+        const undoAction = {
+          label: "Undo",
+          onClick: async () => {
+            if (result?.id) {
+              await cancelScheduledEmail(result.id);
+              invalidate("invoices", "emails");
+            }
           },
-        });
+        };
+        if (sendAt === null) {
+          toast.success("Email has been sent", { action: undoAction });
+        } else {
+          toast(`Email scheduled for ${toastDescription(sendAt)}`, { action: undoAction });
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");
       }
@@ -315,9 +321,12 @@ interface EmailComposeSheetProps {
   invoice: InvoiceDetail | null;
   businessName: string;
   onSent: () => void;
+  initialTo?: string[];
+  initialSubject?: string;
+  initialBody?: string;
 }
 
-export function EmailComposeSheet({ open, onOpenChange, invoice, businessName, onSent }: EmailComposeSheetProps) {
+export function EmailComposeSheet({ open, onOpenChange, invoice, businessName, onSent, initialTo, initialSubject, initialBody }: EmailComposeSheetProps) {
   if (!invoice) return null;
 
   return (
@@ -331,6 +340,9 @@ export function EmailComposeSheet({ open, onOpenChange, invoice, businessName, o
           businessName={businessName}
           onClose={() => onOpenChange(false)}
           onSent={onSent}
+          initialTo={initialTo}
+          initialSubject={initialSubject}
+          initialBody={initialBody}
         />
       </SheetContent>
     </Sheet>

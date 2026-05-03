@@ -1,7 +1,8 @@
 "use client";
 
-import type { DashboardData } from "@/lib/types";
-import { formatAUD } from "@/lib/format";
+import { useState } from "react";
+import type { DashboardData, DashboardEmail, InvoiceDetail } from "@/lib/types";
+import { formatAUD, formatRelativeTime } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,9 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Area, AreaChart, XAxis, YAxis } from "recharts";
+import { EmailComposeSheet } from "@/components/email-compose-sheet";
+import { SentEmailSheet } from "@/components/sent-email-sheet";
+import { loadScheduledEmail } from "@/app/(app)/invoices/actions";
 
 const chartConfig = {
   current: { label: "FY 25–26", color: "var(--color-primary)" },
@@ -52,6 +56,15 @@ function DashboardSkeleton() {
           </Card>
           <Card>
             <CardHeader>
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-3 w-32 mt-1" />
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-9 w-full rounded-md" />)}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
               <Skeleton className="h-3 w-28" />
               <Skeleton className="h-3 w-48 mt-1" />
             </CardHeader>
@@ -65,9 +78,22 @@ function DashboardSkeleton() {
   );
 }
 
+function emailStatusLabel(email: DashboardEmail): string {
+  if (email.status === "sent" && email.sent_at) return `Sent ${formatRelativeTime(email.sent_at)}`;
+  if (email.status === "failed") return "Failed";
+  return formatRelativeTime(email.scheduled_for);
+}
+
 export function DashboardClient({ data }: { data?: DashboardData }) {
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [sentSheetOpen, setSentSheetOpen] = useState(false);
+  const [composeInvoice, setComposeInvoice] = useState<InvoiceDetail | null>(null);
+  const [composeBusinessName, setComposeBusinessName] = useState("");
+  const [composePrefill, setComposePrefill] = useState<{ to: string[]; subject: string; body: string } | null>(null);
+  const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
+
   if (!data) return <DashboardSkeleton />;
-  const { mtdEarnings, mtdPriorMonth, outstanding, monthlyEarnings } = data;
+  const { mtdEarnings, mtdPriorMonth, outstanding, monthlyEarnings, emails } = data;
   const delta = mtdEarnings - mtdPriorMonth;
   const deltaPercent = mtdPriorMonth > 0 ? ((delta / mtdPriorMonth) * 100).toFixed(0) : "0";
   const isUp = delta >= 0;
@@ -75,6 +101,28 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const now = new Date();
   const priorMonthName = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     .toLocaleDateString("en-AU", { month: "short" });
+
+  const scheduledEmails = emails.filter((e) => e.status === "pending" || e.status === "failed");
+  const recentEmails = emails.filter((e) => e.status === "sent");
+
+  async function handleEmailRowClick(email: DashboardEmail) {
+    if (email.status === "sent") {
+      setSentEmail(email);
+      setSentSheetOpen(true);
+      return;
+    }
+    const result = await loadScheduledEmail(email.invoice_id);
+    if (result.invoiceDetail) {
+      setComposeInvoice(result.invoiceDetail);
+      setComposeBusinessName(result.businessName);
+      setComposePrefill({
+        to: email.to_address.split(",").map((s) => s.trim()).filter(Boolean),
+        subject: email.subject,
+        body: email.body_text,
+      });
+      setComposeOpen(true);
+    }
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -137,6 +185,42 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                     <div className="flex items-center gap-2">
                       <span className="text-sm tabular-nums">{formatAUD(invoice.total)}</span>
                       <Badge variant="outline">{invoice.status}</Badge>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Emails */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Emails</CardTitle>
+              <CardDescription>
+                {scheduledEmails.length === 0
+                  ? "No scheduled emails"
+                  : scheduledEmails.length === 1
+                  ? "1 scheduled"
+                  : `${scheduledEmails.length} scheduled`}
+              </CardDescription>
+            </CardHeader>
+            {emails.length > 0 && (
+              <CardContent className="flex flex-col gap-2">
+                {emails.map((email) => (
+                  <div
+                    key={email.id}
+                    onClick={() => handleEmailRowClick(email)}
+                    className="flex items-center justify-between py-2 px-3 rounded-md border border-border hover:bg-accent/50 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="text-sm font-medium shrink-0">{email.invoice_number}</span>
+                      <span className="text-sm text-muted-foreground truncate">{email.to_address}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="text-xs text-muted-foreground hidden sm:block">{emailStatusLabel(email)}</span>
+                      <Badge variant={email.status === "failed" ? "destructive" : email.status === "sent" ? "secondary" : "outline"}>
+                        {email.status === "pending" ? "scheduled" : email.status}
+                      </Badge>
                     </div>
                   </div>
                 ))}
@@ -210,6 +294,22 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
 
         </div>
       </div>
+
+      <EmailComposeSheet
+        open={composeOpen}
+        onOpenChange={setComposeOpen}
+        invoice={composeInvoice}
+        businessName={composeBusinessName}
+        onSent={() => { setComposeInvoice(null); setComposePrefill(null); }}
+        initialTo={composePrefill?.to}
+        initialSubject={composePrefill?.subject}
+        initialBody={composePrefill?.body}
+      />
+      <SentEmailSheet
+        open={sentSheetOpen}
+        onOpenChange={setSentSheetOpen}
+        email={sentEmail}
+      />
     </div>
   );
 }

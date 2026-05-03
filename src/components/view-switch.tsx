@@ -36,6 +36,7 @@ const TAG_TO_VIEWS: Record<InvalidationTag, ViewId[]> = {
   clients:  ["clients", "entries", "invoices"],
   expenses: ["expenses", "dashboard"],
   settings: ["settings"],
+  emails:   ["dashboard"],
 };
 
 export function ViewSwitch() {
