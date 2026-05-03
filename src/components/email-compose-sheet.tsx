@@ -247,7 +247,7 @@ function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, ini
 
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">Subject</label>
-          <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
+          <Input className="text-sm" value={subject} onChange={(e) => setSubject(e.target.value)} />
         </div>
 
         <div className="flex flex-col gap-2 flex-1">
@@ -255,7 +255,7 @@ function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, ini
           <Textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            className="flex-1 resize-none min-h-40"
+            className="flex-1 resize-none min-h-40 text-sm"
           />
         </div>
 

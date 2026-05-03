@@ -188,6 +188,7 @@ export function ExpenseSheet({
             <label className="text-sm font-medium">Date</label>
             <Input
               type="date"
+              className="text-sm"
               value={form.date}
               onChange={(e) => set("date", e.target.value)}
             />
@@ -217,6 +218,7 @@ export function ExpenseSheet({
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">Description</label>
             <Input
+              className="text-sm"
               value={form.description}
               onChange={(e) => set("description", e.target.value)}
               placeholder="What was this expense for?"
@@ -230,6 +232,7 @@ export function ExpenseSheet({
               type="number"
               step="0.01"
               min="0"
+              className="text-sm"
               value={form.amount || ""}
               onChange={(e) => set("amount", parseFloat(e.target.value) || 0)}
               placeholder="0.00"
@@ -264,6 +267,7 @@ export function ExpenseSheet({
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">Notes</label>
             <Textarea
+              className="text-sm"
               value={form.notes ?? ""}
               onChange={(e) => set("notes", e.target.value || null)}
               placeholder="Optional notes…"

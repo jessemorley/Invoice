@@ -151,15 +151,15 @@ function LineItemView({ mode, invoiceId, nextSortOrder, item, onSave, onCancel }
       <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">Description</label>
-          <Input value={description} onChange={(e) => setDescription(e.target.value)} autoFocus />
+          <Input className="text-sm" value={description} onChange={(e) => setDescription(e.target.value)} autoFocus />
         </div>
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">Quantity <span className="text-muted-foreground font-normal">(optional)</span></label>
-          <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+          <Input type="number" className="text-sm" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
         </div>
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">Amount ($)</label>
-          <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          <Input type="number" step="0.01" className="text-sm" value={amount} onChange={(e) => setAmount(e.target.value)} />
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
@@ -338,6 +338,7 @@ export function InvoiceSheet({
               <label className="text-sm font-medium w-14 shrink-0">Issued</label>
               <Input
                 type="date"
+                className="text-sm"
                 value={form.issued_date}
                 onChange={(e) => set("issued_date", e.target.value)}
               />
@@ -346,6 +347,7 @@ export function InvoiceSheet({
               <label className="text-sm font-medium w-14 shrink-0">Paid</label>
               <Input
                 type="date"
+                className="text-sm"
                 value={form.paid_date}
                 onChange={(e) => set("paid_date", e.target.value)}
               />

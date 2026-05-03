@@ -404,6 +404,7 @@ export function EntrySheet({
                 <label className="text-sm font-medium text-foreground w-14 shrink-0">Date</label>
                 <Input
                   type="date"
+                  className="text-sm"
                   value={form.date}
                   onChange={(e) => set("date", e.target.value)}
                 />
@@ -461,6 +462,7 @@ export function EntrySheet({
               {needsBrand && (
                 <Field label="Brand">
                   <Input
+                    className="text-sm"
                     value={form.brand}
                     onChange={(e) => set("brand", e.target.value)}
                     placeholder="Brand name"
@@ -474,6 +476,7 @@ export function EntrySheet({
                   <Input
                     type="number"
                     min={0}
+                    className="text-sm"
                     value={form.skus ?? ""}
                     onChange={(e) =>
                       set("skus", e.target.value === "" ? null : parseInt(e.target.value, 10))
@@ -487,6 +490,7 @@ export function EntrySheet({
               {showEntryLabel && (
                 <Field label={selectedClient.entry_label!}>
                   <Input
+                    className="text-sm"
                     value={form.shoot_client}
                     onChange={(e) => set("shoot_client", e.target.value)}
                     placeholder={selectedClient.entry_label!}
@@ -498,6 +502,7 @@ export function EntrySheet({
               {showDescription && (
                 <Field label="Description">
                   <Textarea
+                    className="text-sm"
                     value={form.description}
                     onChange={(e) => set("description", e.target.value)}
                     placeholder="What did you work on?"
@@ -528,6 +533,7 @@ export function EntrySheet({
                   <Field label="Start">
                     <Input
                       type="time"
+                      className="text-sm"
                       value={form.start_time}
                       onChange={(e) => set("start_time", e.target.value)}
                     />
@@ -535,6 +541,7 @@ export function EntrySheet({
                   <Field label="Finish">
                     <Input
                       type="time"
+                      className="text-sm"
                       value={form.finish_time}
                       onChange={(e) => set("finish_time", e.target.value)}
                     />
@@ -560,7 +567,7 @@ export function EntrySheet({
                       step={15}
                       value={form.break_minutes}
                       onChange={(e) => set("break_minutes", parseInt(e.target.value, 10) || 0)}
-                      className="text-center"
+                      className="text-center text-sm"
                     />
                     <Button
                       type="button"
@@ -583,7 +590,7 @@ export function EntrySheet({
                       type="number"
                       min={0}
                       step={0.01}
-                      className="pl-7"
+                      className="pl-7 text-sm"
                       value={form.manual_amount === 0 ? "" : form.manual_amount}
                       onChange={(e) =>
                         set("manual_amount", e.target.value === "" ? 0 : parseFloat(e.target.value))
