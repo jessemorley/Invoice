@@ -35,6 +35,7 @@ Deno.serve(async () => {
         headers: {
           Authorization: `Bearer ${Deno.env.get("INTERNAL_API_SECRET")}`,
           "Content-Type": "application/json",
+          "x-vercel-protection-bypass": Deno.env.get("VERCEL_BYPASS_SECRET") ?? "",
         },
         body: JSON.stringify({ user_id: row.user_id, token: sessionData.session.access_token }),
       });
