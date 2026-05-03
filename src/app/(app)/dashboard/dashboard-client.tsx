@@ -281,7 +281,20 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                     tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
                     width={40}
                   />
-                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        formatter={(value, name) => (
+                          <>
+                            <span className="text-muted-foreground">{chartConfig[name as keyof typeof chartConfig]?.label ?? name}</span>
+                            <span className="font-mono font-medium tabular-nums ml-auto pl-4">
+                              {new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(Number(value))}
+                            </span>
+                          </>
+                        )}
+                      />
+                    }
+                  />
                   <Area
                     dataKey="prior"
                     type="monotone"
