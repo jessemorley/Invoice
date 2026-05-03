@@ -140,3 +140,9 @@
     @apply font-sans;
   }
 }
+
+@media (display-mode: standalone) {
+  [data-slot="sheet-content"] {
+    padding-bottom: max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem));
+  }
+}
