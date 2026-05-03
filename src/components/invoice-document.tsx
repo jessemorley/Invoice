@@ -245,6 +245,7 @@ type Props = {
 export function InvoiceDocument({ invoice, business }: Props) {
   const { client } = invoice;
   const showSuper = client.pays_super && client.show_super_on_invoice;
+  const showSuperDetails = client.pays_super;
   const superRatePct = Math.round(client.super_rate * 100);
   const descriptionHeader = client.entry_label ?? "Description";
   const clientRateHourly = client.rate_hourly ?? 0;
@@ -286,10 +287,10 @@ export function InvoiceDocument({ invoice, business }: Props) {
             {(business.bsb || business.account_number)
               ? <Text style={s.bankLine}>BSB {business.bsb}  Account Number {business.account_number}</Text>
               : null}
-            {showSuper && business.super_fund
+            {showSuperDetails && business.super_fund
               ? <Text style={s.bankLine}>{business.super_fund}, Member {business.super_member_number}, ABN {business.super_fund_abn}</Text>
               : null}
-            {showSuper && business.super_usi
+            {showSuperDetails && business.super_usi
               ? <Text style={s.bankLine}>USI {business.super_usi}</Text>
               : null}
           </View>
