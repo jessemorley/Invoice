@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTheme } from "next-themes";
 import { invalidate } from "@/lib/invalidate";
 import { PageHeader } from "@/components/page-header";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   saveBusinessDetails,
   saveInvoicingSettings,
@@ -338,6 +340,45 @@ function InvoicingTab({
   );
 }
 
+function AccountTab() {
+  const { theme, setTheme } = useTheme();
+
+  return (
+    <div className="flex flex-col gap-4 p-4 md:p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <span className="text-sm">Theme</span>
+            <Select value={theme ?? "system"} onValueChange={setTheme}>
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="light">Light</SelectItem>
+                <SelectItem value="dark">Dark</SelectItem>
+                <SelectItem value="system">Auto</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Account</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Account email and avatar coming soon.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export function SettingsClient({
   loading,
   businessDetails,
@@ -366,18 +407,7 @@ export function SettingsClient({
                 <InvoicingTab invoiceSequence={invoiceSequence ?? null} />
               </TabsContent>
               <TabsContent value="account">
-                <div className="flex flex-col gap-4 p-4 md:p-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Account</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground">
-                        Account email and avatar coming soon.
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
+                <AccountTab />
               </TabsContent>
             </>
           )}

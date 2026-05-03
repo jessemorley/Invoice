@@ -33,7 +33,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ModeToggle } from "@/components/mode-toggle";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -154,9 +153,6 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <div className="flex items-center justify-between px-1 py-1">
-          <ModeToggle />
-        </div>
         <NavUser />
       </SidebarFooter>
     </Sidebar>
