@@ -16,7 +16,7 @@ const tabs = [
 
 const itemClass = (isActive: boolean) =>
   cn(
-    "relative flex items-center justify-center w-11 h-11 rounded-full transition-colors",
+    "relative flex items-center justify-center w-11 h-9 rounded-full transition-colors",
     isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
   );
 
@@ -50,7 +50,7 @@ export function FloatingDock() {
 
   return (
     <div className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden" style={{ bottom: "max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem))" }}>
-      <nav className="flex items-center gap-0.5 bg-background/95 backdrop-blur-md border border-border/50 rounded-full px-2.5 py-2 shadow-xl shadow-black/10">
+      <nav className="flex items-center gap-1 bg-background/95 backdrop-blur-md border border-border/50 rounded-full px-3 py-1.5 shadow-xl shadow-black/10">
         {tabs.map((tab) => {
           const isActive = currentView === tab.view;
           return (
