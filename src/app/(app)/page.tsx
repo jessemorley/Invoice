@@ -1,10 +1,12 @@
 import { Suspense } from "react";
 import { ViewSwitch } from "@/components/view-switch";
+import { getAuthUser } from "@/lib/auth";
 
-export default function AppPage() {
+export default async function AppPage() {
+  const { email, name } = await getAuthUser();
   return (
     <Suspense>
-      <ViewSwitch />
+      <ViewSwitch userEmail={email} userName={name} />
     </Suspense>
   );
 }

@@ -67,9 +67,16 @@ function NavItem({
   );
 }
 
-function NavUser() {
+function NavUser({ name, email }: { name: string; email: string }) {
   const { isMobile } = useSidebar();
   const router = useRouter();
+  const initials = name
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -77,12 +84,11 @@ function NavUser() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src="" alt="User" />
-                <AvatarFallback className="rounded-lg">JD</AvatarFallback>
+                <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">Jane Doe</span>
-                <span className="truncate text-xs text-muted-foreground">jane@example.com</span>
+                <span className="truncate font-medium">{name}</span>
+                <span className="truncate text-xs text-muted-foreground">{email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -96,17 +102,16 @@ function NavUser() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src="" alt="User" />
-                  <AvatarFallback className="rounded-lg">JD</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">Jane Doe</span>
-                  <span className="truncate text-xs text-muted-foreground">jane@example.com</span>
+                  <span className="truncate font-medium">{name}</span>
+                  <span className="truncate text-xs text-muted-foreground">{email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.replace("/?view=settings", { scroll: false })}>
+            <DropdownMenuItem onClick={() => router.replace("/?view=settings&tab=account", { scroll: false })}>
               <Settings />Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -120,7 +125,7 @@ function NavUser() {
   );
 }
 
-export function AppSidebar() {
+export function AppSidebar({ user }: { user: { name: string; email: string } }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const currentView = searchParams.get("view") ?? "entries";
@@ -154,7 +159,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <NavUser />
+        <NavUser name={user.name} email={user.email} />
       </SidebarFooter>
     </Sidebar>
   );

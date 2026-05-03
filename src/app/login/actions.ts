@@ -42,3 +42,36 @@ export async function signOut() {
   await supabase.auth.signOut();
   redirect("/login");
 }
+
+export async function updateDisplayName(
+  _prevState: { error: string; success: boolean } | null,
+  formData: FormData
+): Promise<{ error: string; success: boolean }> {
+  const name = (formData.get("display_name") as string).trim();
+  if (!name) return { error: "Name cannot be empty.", success: false };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ data: { full_name: name } });
+  if (error) return { error: error.message, success: false };
+  return { error: "", success: true };
+}
+
+export async function changePassword(
+  _prevState: { error: string; success: boolean } | null,
+  formData: FormData
+): Promise<{ error: string; success: boolean }> {
+  const newPassword = formData.get("new_password") as string;
+  const confirmPassword = formData.get("confirm_password") as string;
+
+  if (!newPassword || newPassword.length < 6) {
+    return { error: "Password must be at least 6 characters.", success: false };
+  }
+  if (newPassword !== confirmPassword) {
+    return { error: "Passwords do not match.", success: false };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) return { error: error.message, success: false };
+  return { error: "", success: true };
+}

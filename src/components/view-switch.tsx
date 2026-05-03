@@ -39,9 +39,10 @@ const TAG_TO_VIEWS: Record<InvalidationTag, ViewId[]> = {
   emails:   ["dashboard"],
 };
 
-export function ViewSwitch() {
+export function ViewSwitch({ userEmail, userName }: { userEmail: string; userName: string }) {
   const searchParams = useSearchParams();
   const view = (searchParams.get("view") ?? "entries") as ViewId;
+  const settingsTab = searchParams.get("tab") ?? undefined;
 
   const [dashboardData, setDashboardData] = useState<DashboardState>(null);
   const [entriesData, setEntriesData] = useState<EntriesState>(null);
@@ -134,9 +135,12 @@ export function ViewSwitch() {
           <SettingsClient
             businessDetails={settingsData.businessDetails}
             invoiceSequence={settingsData.invoiceSequence}
+            userEmail={userEmail}
+            userName={userName}
+            initialTab={settingsTab}
           />
         ) : (
-          <SettingsClient loading />
+          <SettingsClient loading userEmail={userEmail} userName={userName} initialTab={settingsTab} />
         )}
       </div>
     </>

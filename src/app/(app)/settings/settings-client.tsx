@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useActionState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
 import { invalidate } from "@/lib/invalidate";
 import { PageHeader } from "@/components/page-header";
@@ -17,11 +17,12 @@ import {
   type BusinessDetailsFormData,
   type InvoicingFormData,
 } from "./actions";
+import { changePassword, updateDisplayName } from "@/app/login/actions";
 import type { BusinessDetails, InvoiceSequence } from "@/lib/queries";
 
 type Props =
-  | { loading: true; businessDetails?: never; invoiceSequence?: never }
-  | { loading?: false; businessDetails: BusinessDetails | null; invoiceSequence: InvoiceSequence | null };
+  | { loading: true; userEmail: string; userName: string; initialTab?: string; businessDetails?: never; invoiceSequence?: never }
+  | { loading?: false; userEmail: string; userName: string; initialTab?: string; businessDetails: BusinessDetails | null; invoiceSequence: InvoiceSequence | null };
 
 function Field({
   label,
@@ -340,11 +341,69 @@ function InvoicingTab({
   );
 }
 
-function AccountTab() {
+function AccountTab({ email, name }: { email: string; name: string }) {
   const { theme, setTheme } = useTheme();
+  const [nameState, nameAction, namePending] = useActionState(updateDisplayName, null);
+  const [pwState, pwAction, pwPending] = useActionState(changePassword, null);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   return (
     <div className="flex flex-col gap-4 p-4 md:p-6">
+      <Card className="pb-0 gap-0">
+        <CardHeader>
+          <CardTitle>Account</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4 pt-6 pb-6">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium">Email</label>
+            <p className="text-sm text-muted-foreground">{email}</p>
+          </div>
+          <form action={nameAction} className="flex flex-col gap-1.5">
+            <label htmlFor="display_name" className="text-sm font-medium">Display name</label>
+            <div className="flex gap-2">
+              <Input
+                id="display_name"
+                name="display_name"
+                defaultValue={name}
+                disabled={namePending}
+                className="max-w-xs"
+                required
+              />
+              <Button type="submit" size="sm" disabled={namePending}>
+                {namePending ? "Saving…" : "Save"}
+              </Button>
+            </div>
+            {nameState?.error && <p className="text-sm text-destructive">{nameState.error}</p>}
+            {nameState?.success && <p className="text-sm text-green-600">Name updated.</p>}
+          </form>
+          {!showPasswordForm ? (
+            <Button variant="outline" size="sm" className="self-start" onClick={() => setShowPasswordForm(true)}>
+              Change password
+            </Button>
+          ) : (
+            <form action={pwAction} className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="new_password" className="text-sm font-medium">New password</label>
+                <Input id="new_password" name="new_password" type="password" disabled={pwPending} required minLength={6} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="confirm_password" className="text-sm font-medium">Confirm password</label>
+                <Input id="confirm_password" name="confirm_password" type="password" disabled={pwPending} required />
+              </div>
+              {pwState?.error && <p className="text-sm text-destructive">{pwState.error}</p>}
+              {pwState?.success && <p className="text-sm text-green-600">Password updated.</p>}
+              <div className="flex gap-2">
+                <Button type="submit" size="sm" disabled={pwPending}>
+                  {pwPending ? "Saving…" : "Update password"}
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setShowPasswordForm(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          )}
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <CardTitle>Appearance</CardTitle>
@@ -365,29 +424,41 @@ function AccountTab() {
           </div>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Account</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Account email and avatar coming soon.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 }
 
+const VALID_TABS = ["info", "invoicing", "account"] as const;
+type SettingsTab = (typeof VALID_TABS)[number];
+
 export function SettingsClient({
   loading,
+  userEmail,
+  userName,
+  initialTab,
   businessDetails,
   invoiceSequence,
 }: Props) {
+  const validInitial: SettingsTab = VALID_TABS.includes(initialTab as SettingsTab)
+    ? (initialTab as SettingsTab)
+    : "info";
+  const [tab, setTab] = useState<SettingsTab>(validInitial);
+
+  // Sync tab when navigating to settings from a deep link (e.g. sidebar → account)
+  const prevInitialTab = useRef(initialTab);
+  useEffect(() => {
+    if (initialTab !== prevInitialTab.current) {
+      prevInitialTab.current = initialTab;
+      if (VALID_TABS.includes(initialTab as SettingsTab)) {
+        setTab(initialTab as SettingsTab);
+      }
+    }
+  }, [initialTab]);
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Settings" />
-      <Tabs defaultValue="info" className="flex flex-col flex-1 overflow-hidden gap-0">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as SettingsTab)} className="flex flex-col flex-1 overflow-hidden gap-0">
         <div className="px-4 md:px-6 pt-4">
           <TabsList>
             <TabsTrigger value="info">Info</TabsTrigger>
@@ -407,7 +478,7 @@ export function SettingsClient({
                 <InvoicingTab invoiceSequence={invoiceSequence ?? null} />
               </TabsContent>
               <TabsContent value="account">
-                <AccountTab />
+                <AccountTab email={userEmail} name={userName} />
               </TabsContent>
             </>
           )}
