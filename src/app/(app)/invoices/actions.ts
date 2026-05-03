@@ -212,7 +212,7 @@ export async function sendScheduledEmailNow(scheduledEmailId: string): Promise<v
 async function recomputeInvoiceTotal(supabase: Awaited<ReturnType<typeof createClient>>, invoiceId: string) {
   const { data: inv } = await supabase
     .from("invoices")
-    .select("super_amount")
+    .select("client_id, clients(pays_super, super_rate)")
     .eq("id", invoiceId)
     .single();
 
@@ -228,13 +228,16 @@ async function recomputeInvoiceTotal(supabase: Awaited<ReturnType<typeof createC
 
   const entriesTotal = (entries ?? []).reduce((s, e) => s + Number(e.base_amount) + Number(e.bonus_amount), 0);
   const lineItemsTotal = (lineItems ?? []).reduce((s, i) => s + Number(i.amount), 0);
-  const superAmount = Number(inv?.super_amount ?? 0);
   const subtotal = entriesTotal + lineItemsTotal;
-  const total = subtotal + superAmount;
+
+  const client = Array.isArray(inv?.clients) ? inv!.clients[0] : inv?.clients;
+  const paysSuper: boolean = (client as { pays_super: boolean } | null)?.pays_super ?? false;
+  const superRate: number = Number((client as { super_rate: number } | null)?.super_rate ?? 0.12);
+  const superAmount = paysSuper ? subtotal * superRate : 0;
 
   const { error: updateError } = await supabase
     .from("invoices")
-    .update({ subtotal, total })
+    .update({ subtotal, super_amount: superAmount, total: subtotal + superAmount })
     .eq("id", invoiceId);
   if (updateError) throw new Error(`recomputeInvoiceTotal: ${updateError.message}`);
 }
