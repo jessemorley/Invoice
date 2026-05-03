@@ -1,5 +1,5 @@
 import { cacheTag } from "next/cache";
-import { createServerClient } from "./supabase";
+import { createTokenClient } from "./supabase";
 import { isoWeek } from "./format";
 import type { Entry, Invoice, InvoiceDetail, Expense, DashboardData, DashboardEmail, ClientRef, MonthlyEarning, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
 
@@ -37,8 +37,8 @@ function computeDateRange(dates: string[]): string {
   return `${firstDay} ${firstMonth} – ${lastDay} ${lastMonth}`;
 }
 
-export async function fetchEntryById(userId: string, entryId: string): Promise<Entry | null> {
-  const supabase = createServerClient();
+export async function fetchEntryById(userId: string, entryId: string, token: string): Promise<Entry | null> {
+  const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("entries")
     .select("*, clients(id, name, billing_type, color), invoices(id, invoice_number, status)")
@@ -79,10 +79,10 @@ export async function fetchEntryById(userId: string, entryId: string): Promise<E
   };
 }
 
-export async function fetchEntries(userId: string, before?: string): Promise<Entry[]> {
+export async function fetchEntries(userId: string, token: string, before?: string): Promise<Entry[]> {
   "use cache";
   cacheTag(CACHE_TAGS.entries);
-  const supabase = createServerClient();
+  const supabase = createTokenClient(token);
   const windowEnd = before ?? new Date().toISOString().slice(0, 10);
   const windowStart = (() => {
     const d = new Date(windowEnd + "T00:00:00");
@@ -133,10 +133,10 @@ export async function fetchEntries(userId: string, before?: string): Promise<Ent
   });
 }
 
-export async function fetchDashboardEntries(userId: string): Promise<Entry[]> {
+export async function fetchDashboardEntries(userId: string, token: string): Promise<Entry[]> {
   "use cache";
   cacheTag(CACHE_TAGS.entries);
-  const supabase = createServerClient();
+  const supabase = createTokenClient(token);
   const windowEnd = new Date().toISOString().slice(0, 10);
   const windowStart = (() => {
     const d = new Date();
@@ -198,10 +198,10 @@ export type InvoiceFilters = {
   limit?: number;
 };
 
-export async function fetchInvoices(userId: string, filters: InvoiceFilters = {}): Promise<Invoice[]> {
+export async function fetchInvoices(userId: string, token: string, filters: InvoiceFilters = {}): Promise<Invoice[]> {
   "use cache";
   cacheTag(CACHE_TAGS.invoices);
-  const supabase = createServerClient();
+  const supabase = createTokenClient(token);
 
   const {
     search,
@@ -263,10 +263,10 @@ export type UninvoicedGroup = {
   subtotal: number;
 };
 
-export async function fetchUninvoicedGroups(userId: string): Promise<UninvoicedGroup[]> {
+export async function fetchUninvoicedGroups(userId: string, token: string): Promise<UninvoicedGroup[]> {
   "use cache";
   cacheTag(CACHE_TAGS.entries);
-  const supabase = createServerClient();
+  const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("entries")
     .select("id, date, base_amount, bonus_amount, clients(id, name, color)")
@@ -303,10 +303,10 @@ export async function fetchUninvoicedGroups(userId: string): Promise<UninvoicedG
 }
 
 
-export async function fetchExpenses(userId: string): Promise<Expense[]> {
+export async function fetchExpenses(userId: string, token: string): Promise<Expense[]> {
   "use cache";
   cacheTag(CACHE_TAGS.expenses);
-  const supabase = createServerClient();
+  const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("expenses")
     .select("*")
@@ -329,10 +329,10 @@ export async function fetchExpenses(userId: string): Promise<Expense[]> {
   }));
 }
 
-export async function fetchClients(userId: string): Promise<{ id: string; name: string; billing_type: string; color: string | null }[]> {
+export async function fetchClients(userId: string, token: string): Promise<{ id: string; name: string; billing_type: string; color: string | null }[]> {
   "use cache";
   cacheTag(CACHE_TAGS.clients);
-  const supabase = createServerClient();
+  const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("clients")
     .select("id, name, billing_type, color")
@@ -344,10 +344,10 @@ export async function fetchClients(userId: string): Promise<{ id: string; name: 
   return (data ?? []).map((c) => ({ ...c, color: c.color ?? null }));
 }
 
-export async function fetchFullClients(userId: string): Promise<Client[]> {
+export async function fetchFullClients(userId: string, token: string): Promise<Client[]> {
   "use cache";
   cacheTag(CACHE_TAGS.clients);
-  const supabase = createServerClient();
+  const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("clients")
     .select("id, name, color, billing_type, rate_full_day, rate_half_day, rate_hourly, rate_hourly_photographer, rate_hourly_operator, pays_super, super_rate, show_super_on_invoice, invoice_frequency, address, suburb, email, abn, contact_name, notes, entry_label, show_role, is_active, created_at, default_start_time, default_finish_time, invoices(id)")
@@ -385,10 +385,10 @@ export async function fetchFullClients(userId: string): Promise<Client[]> {
   }));
 }
 
-export async function fetchWorkflowRates(): Promise<WorkflowRate[]> {
+export async function fetchWorkflowRates(token: string): Promise<WorkflowRate[]> {
   "use cache";
   cacheTag(CACHE_TAGS.clients);
-  const supabase = createServerClient();
+  const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("client_workflow_rates")
     .select("id, client_id, workflow, is_flat_bonus, kpi, upper_limit_skus, incentive_rate_per_sku, max_bonus");
@@ -405,10 +405,10 @@ export async function fetchWorkflowRates(): Promise<WorkflowRate[]> {
   }));
 }
 
-export async function fetchDashboardEmails(userId: string): Promise<DashboardEmail[]> {
+export async function fetchDashboardEmails(userId: string, token: string): Promise<DashboardEmail[]> {
   "use cache";
   cacheTag(CACHE_TAGS.scheduledEmails);
-  const supabase = createServerClient();
+  const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("scheduled_emails")
     .select("id, invoice_id, to_address, subject, body_text, filename, scheduled_for, sent_at, status, invoices(invoice_number)")
@@ -533,10 +533,10 @@ export type InvoiceSequence = {
   mark_as_issued_on_send: boolean;
 };
 
-export async function fetchBusinessDetails(userId: string): Promise<BusinessDetails | null> {
+export async function fetchBusinessDetails(userId: string, token: string): Promise<BusinessDetails | null> {
   "use cache";
   cacheTag(CACHE_TAGS.settings);
-  const supabase = createServerClient();
+  const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("business_details")
     .select("*")
@@ -546,10 +546,10 @@ export async function fetchBusinessDetails(userId: string): Promise<BusinessDeta
   return data as BusinessDetails | null;
 }
 
-export async function fetchInvoiceDetail(invoiceId: string, userId: string): Promise<InvoiceDetail | null> {
+export async function fetchInvoiceDetail(invoiceId: string, userId: string, token: string): Promise<InvoiceDetail | null> {
   "use cache";
   cacheTag(CACHE_TAGS.invoices);
-  const supabase = createServerClient();
+  const supabase = createTokenClient(token);
 
   const { data, error } = await supabase
     .from("invoices")
@@ -641,8 +641,8 @@ export type ScheduledEmail = {
   error: string | null;
 };
 
-export async function fetchScheduledEmailForInvoice(invoiceId: string, userId: string): Promise<ScheduledEmail | null> {
-  const supabase = createServerClient();
+export async function fetchScheduledEmailForInvoice(invoiceId: string, userId: string, token: string): Promise<ScheduledEmail | null> {
+  const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("scheduled_emails")
     .select("id, status, to_address, subject, body_text, filename, scheduled_for, sent_at, error")
@@ -667,10 +667,10 @@ export async function fetchScheduledEmailForInvoice(invoiceId: string, userId: s
   };
 }
 
-export async function fetchInvoiceSequence(userId: string): Promise<InvoiceSequence | null> {
+export async function fetchInvoiceSequence(userId: string, token: string): Promise<InvoiceSequence | null> {
   "use cache";
   cacheTag(CACHE_TAGS.settings);
-  const supabase = createServerClient();
+  const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("invoice_sequence")
     .select("*")

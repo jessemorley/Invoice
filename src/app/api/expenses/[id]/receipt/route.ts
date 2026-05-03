@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateTag } from "next/cache";
-import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase-server";
+import { getAuthUserId } from "@/lib/auth";
 import { CACHE_TAGS } from "@/lib/queries";
 
 export async function POST(
@@ -8,6 +9,14 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  let userId: string;
+  try {
+    userId = await getAuthUserId();
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
 
@@ -15,8 +24,8 @@ export async function POST(
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  const supabase = createServerClient();
-  const path = `${PROTOTYPE_USER_ID}/${id}/${file.name}`;
+  const supabase = await createClient();
+  const path = `${userId}/${id}/${file.name}`;
 
   const { error: uploadError } = await supabase.storage
     .from("receipts")
@@ -30,7 +39,7 @@ export async function POST(
     .from("expenses")
     .update({ receipt_path: path })
     .eq("id", id)
-    .eq("user_id", PROTOTYPE_USER_ID);
+    .eq("user_id", userId);
 
   if (dbError) {
     return NextResponse.json({ error: dbError.message }, { status: 500 });

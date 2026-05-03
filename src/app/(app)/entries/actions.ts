@@ -1,16 +1,18 @@
 "use server";
 
 import { updateTag, refresh } from "next/cache";
-import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase-server";
+import { getAuthUserId, getAuthToken } from "@/lib/auth";
 import type { BillingType, DayType } from "@/lib/types";
 import { fetchEntries, fetchFullClients, fetchWorkflowRates, CACHE_TAGS } from "@/lib/queries";
 import type { Entry } from "@/lib/types";
 
 export async function loadEarlierEntries(before: string): Promise<Entry[]> {
+  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
   const d = new Date(before + "T00:00:00");
   d.setDate(d.getDate() - 1);
   const newBefore = d.toISOString().slice(0, 10);
-  return fetchEntries(PROTOTYPE_USER_ID, newBefore);
+  return fetchEntries(userId, token, newBefore);
 }
 
 export type EntryFormData = {
@@ -35,7 +37,7 @@ export type EntryFormData = {
 };
 
 export async function updateEntry(id: string, data: EntryFormData) {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { error } = await supabase
     .from("entries")
     .update({
@@ -59,7 +61,7 @@ export async function updateEntry(id: string, data: EntryFormData) {
       total_amount: data.total_amount,
     })
     .eq("id", id)
-    .eq("user_id", PROTOTYPE_USER_ID);
+    .eq("user_id", userId);
 
   if (error) throw new Error(`updateEntry: ${error.message}`);
   updateTag(CACHE_TAGS.entries);
@@ -67,9 +69,9 @@ export async function updateEntry(id: string, data: EntryFormData) {
 }
 
 export async function createEntry(data: EntryFormData) {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { error } = await supabase.from("entries").insert({
-    user_id: PROTOTYPE_USER_ID,
+    user_id: userId,
     client_id: data.client_id,
     date: data.date,
     billing_type_snapshot: data.billing_type,
@@ -96,12 +98,12 @@ export async function createEntry(data: EntryFormData) {
 }
 
 export async function deleteEntry(id: string) {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { error } = await supabase
     .from("entries")
     .delete()
     .eq("id", id)
-    .eq("user_id", PROTOTYPE_USER_ID);
+    .eq("user_id", userId);
 
   if (error) throw new Error(`deleteEntry: ${error.message}`);
   updateTag(CACHE_TAGS.entries);
@@ -115,9 +117,11 @@ export async function revalidateEntries() {
 }
 
 export async function fetchClients() {
-  return fetchFullClients(PROTOTYPE_USER_ID);
+  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  return fetchFullClients(userId, token);
 }
 
 export async function loadWorkflowRates() {
-  return fetchWorkflowRates();
+  const token = await getAuthToken();
+  return fetchWorkflowRates(token);
 }

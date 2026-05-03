@@ -1,6 +1,6 @@
 "use server";
 
-import { PROTOTYPE_USER_ID } from "@/lib/supabase";
+import { getAuthUserId, getAuthToken } from "@/lib/auth";
 import {
   fetchEntries,
   fetchDashboardEntries,
@@ -16,39 +16,44 @@ import {
 import { fetchSettings } from "./settings/actions";
 
 export async function loadEntriesViewData() {
+  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
   const [entries, clients, workflowRates] = await Promise.all([
-    fetchEntries(PROTOTYPE_USER_ID),
-    fetchFullClients(PROTOTYPE_USER_ID),
-    fetchWorkflowRates(),
+    fetchEntries(userId, token),
+    fetchFullClients(userId, token),
+    fetchWorkflowRates(token),
   ]);
   return { entries, clients, workflowRates };
 }
 
 export async function loadDashboardViewData() {
+  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
   const [entries, invoices, emails] = await Promise.all([
-    fetchDashboardEntries(PROTOTYPE_USER_ID),
-    fetchInvoices(PROTOTYPE_USER_ID, { from: "all" }),
-    fetchDashboardEmails(PROTOTYPE_USER_ID),
+    fetchDashboardEntries(userId, token),
+    fetchInvoices(userId, token, { from: "all" }),
+    fetchDashboardEmails(userId, token),
   ]);
-  const data = await fetchDashboardData(PROTOTYPE_USER_ID, entries, invoices, emails);
+  const data = await fetchDashboardData(userId, entries, invoices, emails);
   return { data };
 }
 
 export async function loadInvoicesViewData() {
+  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
   const [invoices, uninvoicedGroups, clients] = await Promise.all([
-    fetchInvoices(PROTOTYPE_USER_ID),
-    fetchUninvoicedGroups(PROTOTYPE_USER_ID),
-    fetchClients(PROTOTYPE_USER_ID),
+    fetchInvoices(userId, token),
+    fetchUninvoicedGroups(userId, token),
+    fetchClients(userId, token),
   ]);
   return { invoices, uninvoicedCount: uninvoicedGroups.length, clients };
 }
 
 export async function loadClientsViewData() {
-  return fetchFullClients(PROTOTYPE_USER_ID);
+  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  return fetchFullClients(userId, token);
 }
 
 export async function loadExpensesViewData() {
-  return fetchExpenses(PROTOTYPE_USER_ID);
+  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  return fetchExpenses(userId, token);
 }
 
 export { fetchSettings as loadSettingsViewData };

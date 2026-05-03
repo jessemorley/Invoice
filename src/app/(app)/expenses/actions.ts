@@ -1,12 +1,13 @@
 "use server";
 
 import { updateTag, refresh } from "next/cache";
-import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase-server";
+import { getAuthUserId } from "@/lib/auth";
 import { CACHE_TAGS } from "@/lib/queries";
 import type { ExpenseCategory } from "@/lib/types";
 
 export async function getReceiptUrl(path: string): Promise<string> {
-  const supabase = createServerClient();
+  const supabase = await createClient();
   const { data, error } = await supabase.storage
     .from("receipts")
     .createSignedUrl(path, 3600);
@@ -15,7 +16,7 @@ export async function getReceiptUrl(path: string): Promise<string> {
 }
 
 export async function deleteReceipt(expenseId: string, path: string) {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { error: storageError } = await supabase.storage
     .from("receipts")
     .remove([path]);
@@ -25,7 +26,7 @@ export async function deleteReceipt(expenseId: string, path: string) {
     .from("expenses")
     .update({ receipt_path: null })
     .eq("id", expenseId)
-    .eq("user_id", PROTOTYPE_USER_ID);
+    .eq("user_id", userId);
   if (dbError) throw new Error(`deleteReceipt: ${dbError.message}`);
 
   updateTag(CACHE_TAGS.expenses);
@@ -43,11 +44,11 @@ export type ExpenseFormData = {
 };
 
 export async function createExpense(data: ExpenseFormData): Promise<string> {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { data: row, error } = await supabase
     .from("expenses")
     .insert({
-      user_id: PROTOTYPE_USER_ID,
+      user_id: userId,
       date: data.date,
       category: data.category,
       description: data.description,
@@ -66,7 +67,7 @@ export async function createExpense(data: ExpenseFormData): Promise<string> {
 }
 
 export async function updateExpense(id: string, data: ExpenseFormData) {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { error } = await supabase
     .from("expenses")
     .update({
@@ -79,7 +80,7 @@ export async function updateExpense(id: string, data: ExpenseFormData) {
       is_billable: data.is_billable,
     })
     .eq("id", id)
-    .eq("user_id", PROTOTYPE_USER_ID);
+    .eq("user_id", userId);
 
   if (error) throw new Error(`updateExpense: ${error.message}`);
   updateTag(CACHE_TAGS.expenses);
@@ -87,12 +88,12 @@ export async function updateExpense(id: string, data: ExpenseFormData) {
 }
 
 export async function deleteExpense(id: string) {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { error } = await supabase
     .from("expenses")
     .delete()
     .eq("id", id)
-    .eq("user_id", PROTOTYPE_USER_ID);
+    .eq("user_id", userId);
 
   if (error) throw new Error(`deleteExpense: ${error.message}`);
   updateTag(CACHE_TAGS.expenses);

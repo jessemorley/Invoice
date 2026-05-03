@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+import { signOut } from "@/app/login/actions";
 import {
   LayoutDashboard,
   FileText,
@@ -109,7 +110,7 @@ function NavUser() {
               <Settings />Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => signOut()}>
               <LogOut />Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

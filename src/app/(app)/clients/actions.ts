@@ -1,7 +1,8 @@
 "use server";
 
 import { updateTag, refresh } from "next/cache";
-import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase-server";
+import { getAuthUserId } from "@/lib/auth";
 import { CACHE_TAGS } from "@/lib/queries";
 import type { InvoiceStatus } from "@/lib/types";
 
@@ -14,11 +15,11 @@ export type RecentInvoice = {
 };
 
 export async function fetchClientInvoices(clientId: string): Promise<RecentInvoice[]> {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { data, error } = await supabase
     .from("invoices")
     .select("id, invoice_number, issued_date, total, status")
-    .eq("user_id", PROTOTYPE_USER_ID)
+    .eq("user_id", userId)
     .eq("client_id", clientId)
     .order("issued_date", { ascending: false })
     .limit(5);
@@ -28,12 +29,12 @@ export async function fetchClientInvoices(clientId: string): Promise<RecentInvoi
 }
 
 export async function updateClientColor(clientId: string, color: string) {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { error } = await supabase
     .from("clients")
     .update({ color })
     .eq("id", clientId)
-    .eq("user_id", PROTOTYPE_USER_ID);
+    .eq("user_id", userId);
 
   if (error) throw new Error(`updateClientColor: ${error.message}`);
   updateTag(CACHE_TAGS.clients);
@@ -42,12 +43,12 @@ export async function updateClientColor(clientId: string, color: string) {
 }
 
 export async function updateShowSuperOnInvoice(clientId: string, show: boolean) {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { error } = await supabase
     .from("clients")
     .update({ show_super_on_invoice: show })
     .eq("id", clientId)
-    .eq("user_id", PROTOTYPE_USER_ID);
+    .eq("user_id", userId);
 
   if (error) throw new Error(`updateShowSuperOnInvoice: ${error.message}`);
   updateTag(CACHE_TAGS.clients);

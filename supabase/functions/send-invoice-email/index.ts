@@ -24,7 +24,19 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const pdfRes = await fetch(`${NEXTJS_BASE_URL}/api/invoices/${row.invoice_id}/pdf`);
+    // Mint a short-lived user session so the PDF route can query under RLS without
+    // needing the service role key in the Next.js/Vercel environment.
+    const { data: sessionData, error: sessionError } = await supabase.auth.admin.createSession({ userId: row.user_id });
+    if (sessionError || !sessionData?.session) throw new Error(`Failed to mint user token: ${sessionError?.message}`);
+
+    const pdfRes = await fetch(`${NEXTJS_BASE_URL}/api/invoices/${row.invoice_id}/pdf`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${Deno.env.get("INTERNAL_API_SECRET")}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ user_id: row.user_id, token: sessionData.session.access_token }),
+    });
     if (!pdfRes.ok) throw new Error(`PDF fetch failed: ${pdfRes.status}`);
 
     const pdfBytes = new Uint8Array(await pdfRes.arrayBuffer());

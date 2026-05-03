@@ -1,7 +1,8 @@
 "use server";
 
 import { updateTag, refresh } from "next/cache";
-import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase-server";
+import { getAuthUserId, getAuthToken } from "@/lib/auth";
 import { fetchUninvoicedGroups, fetchScheduledEmailForInvoice, fetchBusinessDetails, fetchInvoiceDetail, fetchFullClients, fetchWorkflowRates, fetchEntryById, CACHE_TAGS } from "@/lib/queries";
 import type { InvoiceStatus } from "@/lib/types";
 
@@ -21,18 +22,19 @@ export type InvoiceFormData = {
 };
 
 export async function loadUninvoicedGroups() {
-  return fetchUninvoicedGroups(PROTOTYPE_USER_ID);
+  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  return fetchUninvoicedGroups(userId, token);
 }
 
 export async function generateInvoices(groupKeys: string[]): Promise<{ created: number }> {
-  const supabase = createServerClient();
-  const groups = await fetchUninvoicedGroups(PROTOTYPE_USER_ID);
+  const [supabase, userId, token] = await Promise.all([createClient(), getAuthUserId(), getAuthToken()]);
+  const groups = await fetchUninvoicedGroups(userId, token);
   const selected = groups.filter((g) => groupKeys.includes(g.key));
 
   const { data: seqRaw, error: seqError } = await supabase
     .from("invoice_sequence")
     .select("invoice_prefix, due_date_offset")
-    .eq("user_id", PROTOTYPE_USER_ID)
+    .eq("user_id", userId)
     .single();
 
   if (seqError) throw new Error(`generateInvoices: ${seqError.message}`);
@@ -40,11 +42,10 @@ export async function generateInvoices(groupKeys: string[]): Promise<{ created: 
 
   const dueOffset = seq.due_date_offset ?? 30;
 
-  // Fetch full entry data needed for totals
   const { data: allEntries, error: entryError } = await supabase
     .from("entries")
     .select("id, client_id, date, base_amount, bonus_amount, super_amount, total_amount")
-    .eq("user_id", PROTOTYPE_USER_ID)
+    .eq("user_id", userId)
     .is("invoice_id", null);
 
   if (entryError) throw new Error(`generateInvoices: ${entryError.message}`);
@@ -58,7 +59,7 @@ export async function generateInvoices(groupKeys: string[]): Promise<{ created: 
     if (entries.length === 0) continue;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: numData, error: numError } = await (supabase.rpc as any)("next_invoice_number_for_user", { p_user_id: PROTOTYPE_USER_ID });
+    const { data: numData, error: numError } = await (supabase.rpc as any)("next_invoice_number_for_user", { p_user_id: userId });
     if (numError) throw new Error(`generateInvoices: ${numError.message}`);
 
     const subtotal = entries.reduce((s, e) => s + (e.base_amount ?? 0) + (e.bonus_amount ?? 0), 0);
@@ -68,7 +69,7 @@ export async function generateInvoices(groupKeys: string[]): Promise<{ created: 
     const { data: inv, error: invError } = await supabase
       .from("invoices")
       .insert({
-        user_id: PROTOTYPE_USER_ID,
+        user_id: userId,
         invoice_number: `${seq.invoice_prefix}${numData}`,
         client_id: group.clientId,
         subtotal,
@@ -97,13 +98,13 @@ export async function generateInvoices(groupKeys: string[]): Promise<{ created: 
 }
 
 export async function deleteInvoice(id: string) {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
 
   const { error: unlinkError } = await supabase
     .from("entries")
     .update({ invoice_id: null })
     .eq("invoice_id", id)
-    .eq("user_id", PROTOTYPE_USER_ID);
+    .eq("user_id", userId);
 
   if (unlinkError) throw new Error(`deleteInvoice (unlink): ${unlinkError.message}`);
 
@@ -111,7 +112,7 @@ export async function deleteInvoice(id: string) {
     .from("invoices")
     .delete()
     .eq("id", id)
-    .eq("user_id", PROTOTYPE_USER_ID);
+    .eq("user_id", userId);
 
   if (error) throw new Error(`deleteInvoice: ${error.message}`);
 
@@ -128,19 +129,21 @@ export type EmailFormData = {
 };
 
 export async function loadEntrySheetData(entryId: string) {
+  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
   const [entry, clients, workflowRates] = await Promise.all([
-    fetchEntryById(PROTOTYPE_USER_ID, entryId),
-    fetchFullClients(PROTOTYPE_USER_ID),
-    fetchWorkflowRates(),
+    fetchEntryById(userId, entryId, token),
+    fetchFullClients(userId, token),
+    fetchWorkflowRates(token),
   ]);
   return { entry, clients, workflowRates };
 }
 
 export async function loadScheduledEmail(invoiceId: string) {
+  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
   const [scheduledEmail, invoiceDetail, businessDetails] = await Promise.all([
-    fetchScheduledEmailForInvoice(invoiceId, PROTOTYPE_USER_ID),
-    fetchInvoiceDetail(invoiceId, PROTOTYPE_USER_ID),
-    fetchBusinessDetails(PROTOTYPE_USER_ID),
+    fetchScheduledEmailForInvoice(invoiceId, userId, token),
+    fetchInvoiceDetail(invoiceId, userId, token),
+    fetchBusinessDetails(userId, token),
   ]);
   return {
     scheduledEmail,
@@ -150,19 +153,19 @@ export async function loadScheduledEmail(invoiceId: string) {
 }
 
 export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormData): Promise<{ id: string }> {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
 
   const { data: inv, error: invError } = await supabase
     .from("invoices")
     .select("invoice_number")
     .eq("id", invoiceId)
-    .eq("user_id", PROTOTYPE_USER_ID)
+    .eq("user_id", userId)
     .single();
 
   if (invError) throw new Error(`scheduleInvoiceEmail (fetch): ${invError.message}`);
 
   const { data: row, error } = await supabase.from("scheduled_emails").insert({
-    user_id: PROTOTYPE_USER_ID,
+    user_id: userId,
     invoice_id: invoiceId,
     to_address: data.to,
     subject: data.subject,
@@ -180,12 +183,12 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
 }
 
 export async function cancelScheduledEmail(scheduledEmailId: string): Promise<void> {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { error } = await supabase
     .from("scheduled_emails")
     .update({ status: "cancelled" })
     .eq("id", scheduledEmailId)
-    .eq("user_id", PROTOTYPE_USER_ID);
+    .eq("user_id", userId);
 
   if (error) throw new Error(`cancelScheduledEmail: ${error.message}`);
   updateTag(CACHE_TAGS.scheduledEmails);
@@ -193,20 +196,20 @@ export async function cancelScheduledEmail(scheduledEmailId: string): Promise<vo
 }
 
 export async function sendScheduledEmailNow(scheduledEmailId: string): Promise<void> {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { error } = await supabase
     .from("scheduled_emails")
     .update({ scheduled_for: new Date().toISOString() })
     .eq("id", scheduledEmailId)
     .eq("status", "pending")
-    .eq("user_id", PROTOTYPE_USER_ID);
+    .eq("user_id", userId);
 
   if (error) throw new Error(`sendScheduledEmailNow: ${error.message}`);
   updateTag(CACHE_TAGS.scheduledEmails);
   refresh();
 }
 
-async function recomputeInvoiceTotal(supabase: ReturnType<typeof createServerClient>, invoiceId: string) {
+async function recomputeInvoiceTotal(supabase: Awaited<ReturnType<typeof createClient>>, invoiceId: string) {
   const { data: inv } = await supabase
     .from("invoices")
     .select("super_amount")
@@ -232,18 +235,17 @@ async function recomputeInvoiceTotal(supabase: ReturnType<typeof createServerCli
   const { error: updateError } = await supabase
     .from("invoices")
     .update({ subtotal, total })
-    .eq("id", invoiceId)
-    .eq("user_id", PROTOTYPE_USER_ID);
+    .eq("id", invoiceId);
   if (updateError) throw new Error(`recomputeInvoiceTotal: ${updateError.message}`);
 }
 
 export async function createLineItem(invoiceId: string, data: { description: string; quantity: number | null; amount: number; sort_order: number }) {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { error } = await supabase
     .from("invoice_line_items")
     .insert({
       invoice_id: invoiceId,
-      user_id: PROTOTYPE_USER_ID,
+      user_id: userId,
       description: data.description,
       quantity: data.quantity,
       amount: data.amount,
@@ -256,12 +258,12 @@ export async function createLineItem(invoiceId: string, data: { description: str
 }
 
 export async function updateLineItem(id: string, data: { description: string; quantity: number | null; amount: number }) {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { data: item, error } = await supabase
     .from("invoice_line_items")
     .update({ description: data.description, quantity: data.quantity, amount: data.amount })
     .eq("id", id)
-    .eq("user_id", PROTOTYPE_USER_ID)
+    .eq("user_id", userId)
     .select("invoice_id")
     .single();
   if (error) throw new Error(`updateLineItem: ${error.message}`);
@@ -271,19 +273,19 @@ export async function updateLineItem(id: string, data: { description: string; qu
 }
 
 export async function deleteLineItem(id: string) {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { data: item, error: fetchError } = await supabase
     .from("invoice_line_items")
     .select("invoice_id")
     .eq("id", id)
-    .eq("user_id", PROTOTYPE_USER_ID)
+    .eq("user_id", userId)
     .single();
   if (fetchError) throw new Error(`deleteLineItem: ${fetchError.message}`);
   const { error } = await supabase
     .from("invoice_line_items")
     .delete()
     .eq("id", id)
-    .eq("user_id", PROTOTYPE_USER_ID);
+    .eq("user_id", userId);
   if (error) throw new Error(`deleteLineItem: ${error.message}`);
   await recomputeInvoiceTotal(supabase, item.invoice_id);
   updateTag(CACHE_TAGS.invoices);
@@ -291,7 +293,7 @@ export async function deleteLineItem(id: string) {
 }
 
 export async function updateInvoice(id: string, data: InvoiceFormData) {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { error } = await supabase
     .from("invoices")
     .update({
@@ -302,7 +304,7 @@ export async function updateInvoice(id: string, data: InvoiceFormData) {
       paid_date: data.paid_date || null,
     })
     .eq("id", id)
-    .eq("user_id", PROTOTYPE_USER_ID);
+    .eq("user_id", userId);
 
   if (error) throw new Error(`updateInvoice: ${error.message}`);
   updateTag(CACHE_TAGS.invoices);

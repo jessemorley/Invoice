@@ -1,7 +1,8 @@
 "use server";
 
 import { updateTag, refresh } from "next/cache";
-import { createServerClient, PROTOTYPE_USER_ID } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase-server";
+import { getAuthUserId, getAuthToken } from "@/lib/auth";
 import {
   fetchBusinessDetails,
   fetchInvoiceSequence,
@@ -36,20 +37,21 @@ export async function fetchSettings(): Promise<{
   businessDetails: BusinessDetails | null;
   invoiceSequence: InvoiceSequence | null;
 }> {
+  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
   const [businessDetails, invoiceSequence] = await Promise.all([
-    fetchBusinessDetails(PROTOTYPE_USER_ID),
-    fetchInvoiceSequence(PROTOTYPE_USER_ID),
+    fetchBusinessDetails(userId, token),
+    fetchInvoiceSequence(userId, token),
   ]);
   return { businessDetails, invoiceSequence };
 }
 
 export async function saveBusinessDetails(data: BusinessDetailsFormData) {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { error } = await supabase
     .from("business_details")
     .upsert(
       {
-        user_id: PROTOTYPE_USER_ID,
+        user_id: userId,
         name: data.name,
         business_name: data.business_name,
         abn: data.abn,
@@ -71,12 +73,12 @@ export async function saveBusinessDetails(data: BusinessDetailsFormData) {
 }
 
 export async function saveInvoicingSettings(data: InvoicingFormData) {
-  const supabase = createServerClient();
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { error } = await supabase
     .from("invoice_sequence")
     .upsert(
       {
-        user_id: PROTOTYPE_USER_ID,
+        user_id: userId,
         invoice_prefix: data.invoice_prefix,
         last_number: data.next_invoice_number - 1,
         due_date_offset: data.due_date_offset,
