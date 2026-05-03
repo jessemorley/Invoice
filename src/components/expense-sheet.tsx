@@ -335,7 +335,7 @@ export function ExpenseSheet({
           {expense && (
             <Button
               variant="ghost"
-              size="icon"
+              size="icon-lg"
               className="text-destructive hover:text-destructive"
               onClick={handleDelete}
               disabled={busy}
@@ -344,11 +344,11 @@ export function ExpenseSheet({
             </Button>
           )}
           <SheetClose asChild>
-            <Button variant="outline" className="flex-1" disabled={busy}>
+            <Button size="lg" variant="outline" className="flex-1" disabled={busy}>
               Cancel
             </Button>
           </SheetClose>
-          <Button className="flex-1" onClick={handleSave} disabled={busy}>
+          <Button size="lg" className="flex-1" onClick={handleSave} disabled={busy}>
             {isUploading ? "Uploading…" : isPending ? "Saving…" : "Save"}
           </Button>
         </SheetFooter>

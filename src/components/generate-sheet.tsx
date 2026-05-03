@@ -120,6 +120,7 @@ export function GenerateSheet({
         <div className="border-t px-4 py-3 flex flex-col gap-2">
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button
+            size="lg"
             className="w-full"
             onClick={handleGenerate}
             disabled={isPending || isLoading || selectedCount === 0}

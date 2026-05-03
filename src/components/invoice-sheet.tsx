@@ -165,14 +165,14 @@ function LineItemView({ mode, invoiceId, nextSortOrder, item, onSave, onCancel }
       </div>
       <SheetFooter className="px-6 py-4 border-t flex-row gap-2">
         {mode === "edit" && (
-          <Button variant="destructive" size="icon" className="shrink-0" onClick={handleDelete} disabled={isDeleting || isPending}>
+          <Button variant="destructive" size="icon-lg" className="shrink-0" onClick={handleDelete} disabled={isDeleting || isPending}>
             <Trash2 className="size-4" />
           </Button>
         )}
-        <Button variant="outline" className="flex-1" onClick={onCancel} disabled={isPending || isDeleting}>
+        <Button size="lg" variant="outline" className="flex-1" onClick={onCancel} disabled={isPending || isDeleting}>
           Cancel
         </Button>
-        <Button className="flex-1" onClick={handleSave} disabled={!canSave || isPending || isDeleting}>
+        <Button size="lg" className="flex-1" onClick={handleSave} disabled={!canSave || isPending || isDeleting}>
           {isPending ? "Saving…" : "Save"}
         </Button>
       </SheetFooter>
@@ -524,11 +524,11 @@ export function InvoiceSheet({
             </AlertDialogContent>
           </AlertDialog>
           <SheetClose asChild>
-            <Button variant="outline" className="flex-1">
+            <Button size="lg" variant="outline" className="flex-1">
               Cancel
             </Button>
           </SheetClose>
-          <Button className="flex-1" onClick={handleSubmit} disabled={isPending || isDeleting}>
+          <Button size="lg" className="flex-1" onClick={handleSubmit} disabled={isPending || isDeleting}>
             {isPending ? "Saving…" : "Save"}
           </Button>
         </SheetFooter>

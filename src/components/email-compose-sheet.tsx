@@ -265,14 +265,14 @@ function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, ini
       {/* Footer */}
       <div className="px-6 py-4 border-t flex flex-col gap-2">
         <div className="flex gap-2">
-          <Button variant="outline" className="flex-1" onClick={onClose} disabled={isPending}>
+          <Button size="lg" variant="outline" className="flex-1" onClick={onClose} disabled={isPending}>
             Cancel
           </Button>
           <ButtonGroup className="flex-1">
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
               <PopoverTrigger asChild>
                 <Button
-                  size="icon"
+                  size="icon-lg"
                   className={cn(scheduledFor && "text-primary-foreground/60")}
                   disabled={isPending}
                 >
@@ -302,6 +302,7 @@ function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, ini
             </Popover>
             <ButtonGroupSeparator />
             <Button
+              size="lg"
               className="flex-1"
               onClick={() => handleSubmit()}
               disabled={isPending || !hasValidRecipient}
