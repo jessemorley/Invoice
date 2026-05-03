@@ -40,12 +40,6 @@ Deno.serve(async (req) => {
     if (!pdfRes.ok) throw new Error(`PDF fetch failed: ${pdfRes.status}`);
 
     const pdfBytes = new Uint8Array(await pdfRes.arrayBuffer());
-    let binary = "";
-    const chunk = 8192;
-    for (let i = 0; i < pdfBytes.length; i += chunk) {
-      binary += String.fromCharCode(...pdfBytes.slice(i, i + chunk));
-    }
-    const pdfBase64 = btoa(binary);
 
     await resend.emails.send({
       from: FROM_ADDRESS,
@@ -54,7 +48,7 @@ Deno.serve(async (req) => {
       bcc: row.bcc_address ? row.bcc_address.split(",").map((e: string) => e.trim()) : undefined,
       subject: row.subject,
       text: row.body_text,
-      attachments: [{ filename: row.filename, content: pdfBase64 }],
+      attachments: [{ filename: row.filename, content: pdfBytes }],
     });
 
     await supabase
