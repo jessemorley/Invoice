@@ -230,7 +230,7 @@ export function InvoiceSheet({
       const res = await fetch(`/api/invoices/${invoice.id}/pdf`);
       const blob = await res.blob();
       const filename = res.headers.get("Content-Disposition")?.match(/filename="(.+?)"/)?.[1] ?? `Invoice ${invoice.number}.pdf`;
-      if (navigator.canShare?.({ files: [new File([blob], filename, { type: "application/pdf" })] })) {
+      if (navigator.maxTouchPoints > 0 && navigator.canShare?.({ files: [new File([blob], filename, { type: "application/pdf" })] })) {
         await navigator.share({ files: [new File([blob], filename, { type: "application/pdf" })] }).catch((e) => {
           if (e?.name !== "AbortError") throw e;
         });

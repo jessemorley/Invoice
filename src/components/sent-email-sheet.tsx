@@ -28,7 +28,7 @@ export function SentEmailSheet({ open, onOpenChange, email }: SentEmailSheetProp
       const res = await fetch(`/api/invoices/${email.invoice_id}/pdf`);
       const blob = await res.blob();
       const filename = email.filename ?? res.headers.get("Content-Disposition")?.match(/filename="(.+?)"/)?.[1] ?? "invoice.pdf";
-      if (navigator.canShare?.({ files: [new File([blob], filename, { type: "application/pdf" })] })) {
+      if (navigator.maxTouchPoints > 0 && navigator.canShare?.({ files: [new File([blob], filename, { type: "application/pdf" })] })) {
         await navigator.share({ files: [new File([blob], filename, { type: "application/pdf" })] }).catch((e) => {
           if (e?.name !== "AbortError") throw e;
         });
