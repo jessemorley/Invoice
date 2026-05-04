@@ -5,12 +5,29 @@ import { useSearchParams } from "next/navigation";
 import type { InvalidationTag } from "@/lib/invalidate";
 import type { DashboardData, Entry, Expense, Client, WorkflowRate, Invoice } from "@/lib/types";
 import type { BusinessDetails, InvoiceSequence } from "@/lib/queries";
-import { DashboardClient } from "@/app/(app)/dashboard/dashboard-client";
+import dynamic from "next/dynamic";
 import { EntriesView } from "@/components/entries-view";
-import { InvoicesClient } from "@/app/(app)/invoices/invoices-client";
-import { ClientsView } from "@/app/(app)/clients/clients-view";
-import { ExpensesClient } from "@/app/(app)/expenses/expenses-client";
-import { SettingsClient } from "@/app/(app)/settings/settings-client";
+
+const DashboardClient = dynamic(() =>
+  import("@/app/(app)/dashboard/dashboard-client").then((m) => m.DashboardClient),
+  { ssr: false }
+);
+const InvoicesClient = dynamic(() =>
+  import("@/app/(app)/invoices/invoices-client").then((m) => m.InvoicesClient),
+  { ssr: false }
+);
+const ClientsView = dynamic(() =>
+  import("@/app/(app)/clients/clients-view").then((m) => m.ClientsView),
+  { ssr: false }
+);
+const ExpensesClient = dynamic(() =>
+  import("@/app/(app)/expenses/expenses-client").then((m) => m.ExpensesClient),
+  { ssr: false }
+);
+const SettingsClient = dynamic(() =>
+  import("@/app/(app)/settings/settings-client").then((m) => m.SettingsClient),
+  { ssr: false }
+);
 import {
   loadDashboardViewData,
   loadEntriesViewData,
@@ -39,20 +56,32 @@ const TAG_TO_VIEWS: Record<InvalidationTag, ViewId[]> = {
   emails:   ["dashboard"],
 };
 
-export function ViewSwitch({ userEmail, userName }: { userEmail: string; userName: string }) {
+type InitialEntriesData = { entries: Entry[]; clients: Client[]; workflowRates: WorkflowRate[] };
+
+export function ViewSwitch({
+  userEmail,
+  userName,
+  initialEntriesData,
+}: {
+  userEmail: string;
+  userName: string;
+  initialEntriesData?: InitialEntriesData;
+}) {
   const searchParams = useSearchParams();
   const view = (searchParams.get("view") ?? "entries") as ViewId;
   const settingsTab = searchParams.get("tab") ?? undefined;
 
   const [dashboardData, setDashboardData] = useState<DashboardState>(null);
-  const [entriesData, setEntriesData] = useState<EntriesState>(null);
+  const [entriesData, setEntriesData] = useState<EntriesState>(initialEntriesData ?? null);
   const [invoicesData, setInvoicesData] = useState<InvoicesState>(null);
   const [clientsData, setClientsData] = useState<ClientsState>(null);
   const [expensesData, setExpensesData] = useState<ExpensesState>(null);
   const [settingsData, setSettingsData] = useState<SettingsState>(null);
 
-  // Track which views have been revealed (fetched at least once)
-  const revealed = useRef<Set<ViewId>>(new Set());
+  // Pre-mark entries as revealed if server-loaded data was provided
+  const revealed = useRef<Set<ViewId>>(
+    initialEntriesData ? new Set<ViewId>(["entries"]) : new Set<ViewId>()
+  );
 
   const fetchView = useCallback((v: ViewId) => {
     switch (v) {
