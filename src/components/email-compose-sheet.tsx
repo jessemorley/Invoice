@@ -228,8 +228,16 @@ function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, ini
   return (
     <>
       {/* Header */}
-      <div className="px-6 py-5 border-b">
+      <div className="px-6 py-5 border-b flex items-center justify-between">
         <h2 className="text-base font-semibold">Send Invoice {invoice.number}</h2>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-sm opacity-70 hover:opacity-100 focus:outline-none focus:ring-1 focus:ring-ring"
+        >
+          <X className="size-4" />
+          <span className="sr-only">Close</span>
+        </button>
       </div>
 
       {/* Body */}

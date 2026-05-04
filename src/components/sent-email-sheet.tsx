@@ -9,7 +9,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Paperclip } from "lucide-react";
+import { Paperclip, X } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 
 interface SentEmailSheetProps {
@@ -55,13 +55,23 @@ export function SentEmailSheet({ open, onOpenChange, email }: SentEmailSheetProp
         {email && (
           <>
             {/* Header */}
-            <div className="px-6 py-5 border-b">
-              <h2 className="text-base font-semibold">Sent Email — Invoice {email.invoice_number}</h2>
-              {email.sent_at && (
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  {formatRelativeTime(email.sent_at)}
-                </p>
-              )}
+            <div className="px-6 py-5 border-b flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-base font-semibold">Sent Email — Invoice {email.invoice_number}</h2>
+                {email.sent_at && (
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {formatRelativeTime(email.sent_at)}
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                className="rounded-sm opacity-70 hover:opacity-100 focus:outline-none focus:ring-1 focus:ring-ring mt-0.5 shrink-0"
+              >
+                <X className="size-4" />
+                <span className="sr-only">Close</span>
+              </button>
             </div>
 
             {/* Body */}
