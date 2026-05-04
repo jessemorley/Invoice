@@ -27,8 +27,9 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isLoginPath = pathname.startsWith("/login");
+  const isInternalApi = request.headers.get("authorization") === `Bearer ${process.env.INTERNAL_API_SECRET}`;
 
-  if (!isAuthenticated && !isLoginPath) {
+  if (!isAuthenticated && !isLoginPath && !isInternalApi) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
