@@ -10,6 +10,7 @@ async function mintUserToken(userId: string): Promise<string> {
   if (!supabaseUrl) throw new Error("NEXT_PUBLIC_SUPABASE_URL is not set");
   if (!serviceRoleKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set");
   const url = `${supabaseUrl.replace(/\/$/, "")}/auth/v1/admin/users/${userId}/session`;
+  console.log("mintUserToken url:", url);
   const res = await fetch(url, {
     method: "POST",
     headers: {
