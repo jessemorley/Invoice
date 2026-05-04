@@ -4,25 +4,33 @@ import { NonRetriableError } from "inngest";
 import { inngest } from "@/lib/inngest";
 import type { SendInvoiceEmailEvent } from "@/lib/inngest";
 
-async function mintUserToken(userId: string): Promise<string> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl) throw new Error("NEXT_PUBLIC_SUPABASE_URL is not set");
-  if (!serviceRoleKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set");
-  const url = `${supabaseUrl.trim().replace(/\/$/, "")}/auth/v1/admin/users/${userId}/session`;
-  console.log("mintUserToken url:", url);
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      apikey: serviceRoleKey,
-      Authorization: `Bearer ${serviceRoleKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ never_expires: false }),
+async function mintUserToken(userEmail: string): Promise<string> {
+  const admin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  const anon = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+  );
+
+  const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+    type: "magiclink",
+    email: userEmail,
   });
-  if (!res.ok) throw new Error(`mintUserToken failed: ${res.status} ${await res.text()}`);
-  const { access_token } = await res.json();
-  return access_token as string;
+  if (linkError || !linkData.properties?.hashed_token) {
+    throw new Error(`generateLink failed: ${linkError?.message}`);
+  }
+
+  const { data: sessionData, error: sessionError } = await anon.auth.verifyOtp({
+    token_hash: linkData.properties.hashed_token,
+    type: "email",
+  });
+  if (sessionError || !sessionData.session) {
+    throw new Error(`verifyOtp failed: ${sessionError?.message}`);
+  }
+
+  return sessionData.session.access_token;
 }
 
 export const sendInvoiceEmail = inngest.createFunction(
@@ -60,7 +68,12 @@ export const sendInvoiceEmail = inngest.createFunction(
     const fromAddress = `Jesse Morley <${process.env.FROM_ADDRESS!}>`;
     const nextjsBaseUrl = process.env.NEXTJS_BASE_URL!;
 
-    const userToken = await mintUserToken(user_id).catch((err) => {
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(user_id);
+    if (userError || !userData.user?.email) {
+      throw new NonRetriableError(`Failed to fetch user: ${userError?.message}`);
+    }
+
+    const userToken = await mintUserToken(userData.user.email).catch((err) => {
       throw new NonRetriableError(`Failed to mint user token: ${err.message}`);
     });
 
