@@ -85,6 +85,7 @@ export async function POST(
   // Validate that the token actually belongs to this user before using it
   const supabase = createTokenClient(userToken);
   const { data: claims } = await supabase.auth.getClaims();
+  console.log("PDF route claims:", JSON.stringify(claims), "userId:", userId);
   if (!claims?.claims || claims.claims.sub !== userId) {
     return new Response("Token/user_id mismatch", { status: 403 });
   }
