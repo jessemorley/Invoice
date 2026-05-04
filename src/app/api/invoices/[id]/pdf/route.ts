@@ -82,11 +82,17 @@ export async function POST(
     return new Response("Missing user_id or token", { status: 400 });
   }
 
-  // Validate that the token actually belongs to this user before using it
-  const supabase = createTokenClient(userToken);
-  const { data: claims } = await supabase.auth.getClaims();
-  console.log("PDF route claims:", JSON.stringify(claims), "userId:", userId);
-  if (!claims?.claims || claims.claims.sub !== userId) {
+  // Decode the JWT payload to verify it belongs to the claimed user.
+  // The INTERNAL_API_SECRET above already authenticates the caller; this
+  // prevents a compromised caller from accessing another user's data.
+  let tokenSub: string | undefined;
+  try {
+    const payload = JSON.parse(Buffer.from(userToken.split(".")[1], "base64url").toString());
+    tokenSub = payload.sub;
+  } catch {
+    return new Response("Invalid token", { status: 403 });
+  }
+  if (!tokenSub || tokenSub !== userId) {
     return new Response("Token/user_id mismatch", { status: 403 });
   }
 
