@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "src/app/**/*.ts": {
+      "regions": ["syd1"]
+    }
+  }
+}

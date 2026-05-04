@@ -2,7 +2,7 @@
 
 import { updateTag, refresh } from "next/cache";
 import { createClient } from "@/lib/supabase-server";
-import { getAuthUserId, getAuthToken } from "@/lib/auth";
+import { getAuth, getAuthUserId } from "@/lib/auth";
 import {
   fetchBusinessDetails,
   fetchInvoiceSequence,
@@ -37,7 +37,7 @@ export async function fetchSettings(): Promise<{
   businessDetails: BusinessDetails | null;
   invoiceSequence: InvoiceSequence | null;
 }> {
-  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  const { userId, token } = await getAuth();
   const [businessDetails, invoiceSequence] = await Promise.all([
     fetchBusinessDetails(userId, token),
     fetchInvoiceSequence(userId, token),

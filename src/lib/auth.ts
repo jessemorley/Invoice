@@ -1,5 +1,12 @@
 import { createClient } from "./supabase-server";
 
+export async function getAuth(): Promise<{ userId: string; token: string }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session) throw new Error("Unauthenticated");
+  return { userId: data.session.user.id, token: data.session.access_token };
+}
+
 export async function getAuthUserId(): Promise<string> {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getClaims();

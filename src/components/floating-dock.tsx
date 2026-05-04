@@ -30,8 +30,11 @@ const ItemInner = ({ isActive, icon: Icon }: { isActive: boolean; icon: (typeof 
 export function FloatingDock() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const currentView = searchParams.get("view") ?? "entries";
+  const routerView = searchParams.get("view") ?? "entries";
+  const [activeView, setActiveView] = useState(routerView);
   const [isStandalone, setIsStandalone] = useState(false);
+
+  useEffect(() => { setActiveView(routerView); }, [routerView]);
 
   useEffect(() => {
     setIsStandalone(
@@ -41,18 +44,19 @@ export function FloatingDock() {
   }, []);
 
   const handleTap = useCallback((view: string) => {
-    if (currentView === view) {
+    if (activeView === view) {
       window.dispatchEvent(new CustomEvent("dock:focus-search"));
     } else {
+      setActiveView(view);
       router.replace(`/?view=${view}`, { scroll: false });
     }
-  }, [currentView, router]);
+  }, [activeView, router]);
 
   return (
     <div className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden" style={{ bottom: "max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem))" }}>
       <nav className="flex items-center gap-1 bg-background/95 backdrop-blur-md border border-border/50 rounded-full px-3 py-1.5 shadow-xl shadow-black/10">
         {tabs.map((tab) => {
-          const isActive = currentView === tab.view;
+          const isActive = activeView === tab.view;
           return (
             <button
               key={tab.view}

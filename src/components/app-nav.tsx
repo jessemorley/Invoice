@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 import { signOut } from "@/app/login/actions";
 import {
   LayoutDashboard,
@@ -128,13 +129,17 @@ function NavUser({ name, email }: { name: string; email: string }) {
 export function AppSidebar({ user }: { user: { name: string; email: string } }) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const currentView = searchParams.get("view") ?? "entries";
+  const routerView = searchParams.get("view") ?? "entries";
+  const [activeView, setActiveView] = useState(routerView);
   const { open } = useSidebar();
 
+  useEffect(() => { setActiveView(routerView); }, [routerView]);
+
   const handleNavigate = (view: string) => {
-    if (currentView === view) {
+    if (activeView === view) {
       window.dispatchEvent(new CustomEvent("dock:focus-search"));
     } else {
+      setActiveView(view);
       router.replace(`/?view=${view}`, { scroll: false });
     }
   };
@@ -152,7 +157,7 @@ export function AppSidebar({ user }: { user: { name: string; email: string } }) 
           <SidebarGroupContent>
             <SidebarMenu className="gap-2">
               {navItems.map((item) => (
-                <NavItem key={item.view} {...item} currentView={currentView} onNavigate={handleNavigate} />
+                <NavItem key={item.view} {...item} currentView={activeView} onNavigate={handleNavigate} />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>

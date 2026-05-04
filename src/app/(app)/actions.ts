@@ -1,6 +1,6 @@
 "use server";
 
-import { getAuthUserId, getAuthToken } from "@/lib/auth";
+import { getAuth } from "@/lib/auth";
 import {
   fetchEntries,
   fetchDashboardEntries,
@@ -16,7 +16,7 @@ import {
 import { fetchSettings } from "./settings/actions";
 
 export async function loadEntriesViewData() {
-  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  const { userId, token } = await getAuth();
   const [entries, clients, workflowRates] = await Promise.all([
     fetchEntries(userId, token),
     fetchFullClients(userId, token),
@@ -26,7 +26,7 @@ export async function loadEntriesViewData() {
 }
 
 export async function loadDashboardViewData() {
-  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  const { userId, token } = await getAuth();
   const [entries, invoices, emails] = await Promise.all([
     fetchDashboardEntries(userId, token),
     fetchInvoices(userId, token, { from: "all" }),
@@ -37,7 +37,7 @@ export async function loadDashboardViewData() {
 }
 
 export async function loadInvoicesViewData() {
-  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  const { userId, token } = await getAuth();
   const [invoices, uninvoicedGroups, clients] = await Promise.all([
     fetchInvoices(userId, token),
     fetchUninvoicedGroups(userId, token),
@@ -47,12 +47,12 @@ export async function loadInvoicesViewData() {
 }
 
 export async function loadClientsViewData() {
-  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  const { userId, token } = await getAuth();
   return fetchFullClients(userId, token);
 }
 
 export async function loadExpensesViewData() {
-  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  const { userId, token } = await getAuth();
   return fetchExpenses(userId, token);
 }
 
