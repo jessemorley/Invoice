@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateTag } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase-server";
 import { getAuthUserId } from "@/lib/auth";
 import { CACHE_TAGS } from "@/lib/queries";
@@ -45,7 +45,7 @@ export async function POST(
     return NextResponse.json({ error: dbError.message }, { status: 500 });
   }
 
-  updateTag(CACHE_TAGS.expenses);
+  revalidateTag(CACHE_TAGS.expenses);
 
   return NextResponse.json({ path });
 }
