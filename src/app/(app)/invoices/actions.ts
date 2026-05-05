@@ -2,8 +2,8 @@
 
 import { updateTag, refresh } from "next/cache";
 import { createClient } from "@/lib/supabase-server";
-import { getAuthUserId, getAuthToken } from "@/lib/auth";
-import { fetchUninvoicedGroups, fetchScheduledEmailForInvoice, fetchBusinessDetails, fetchInvoiceDetail, fetchFullClients, fetchWorkflowRates, fetchEntryById, CACHE_TAGS } from "@/lib/queries";
+import { getAuthUserId, getAuthToken, getAuthUser } from "@/lib/auth";
+import { fetchUninvoicedGroups, fetchScheduledEmailForInvoice, fetchBusinessDetails, fetchInvoiceDetail, fetchFullClients, fetchWorkflowRates, fetchEntryById, fetchUserPreferences, CACHE_TAGS } from "@/lib/queries";
 import { inngest } from "@/lib/inngest";
 import type { InvoiceStatus } from "@/lib/types";
 
@@ -154,11 +154,12 @@ export async function loadScheduledEmail(invoiceId: string) {
 }
 
 export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormData): Promise<{ id: string }> {
-  const [supabase, userId, token] = await Promise.all([createClient(), getAuthUserId(), getAuthToken()]);
+  const [supabase, userId, token, authUser] = await Promise.all([createClient(), getAuthUserId(), getAuthToken(), getAuthUser()]);
 
-  const [invResult, business] = await Promise.all([
+  const [invResult, business, userPrefs] = await Promise.all([
     supabase.from("invoices").select("invoice_number").eq("id", invoiceId).eq("user_id", userId).single(),
     fetchBusinessDetails(userId, token),
+    fetchUserPreferences(userId, token),
   ]);
 
   if (invResult.error) throw new Error(`scheduleInvoiceEmail (fetch): ${invResult.error.message}`);
@@ -168,6 +169,7 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
   const filename = businessName
     ? `${businessName} Invoice ${inv.invoice_number}.pdf`
     : `Invoice ${inv.invoice_number}.pdf`;
+  const bccAddress = userPrefs?.bcc_self ? authUser.email : null;
 
   const { data: row, error } = await supabase.from("scheduled_emails").insert({
     user_id: userId,
@@ -177,6 +179,7 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
     body_text: data.body_text,
     scheduled_for: data.scheduled_for,
     filename,
+    bcc_address: bccAddress,
     mark_issued: true,
     status: "pending",
   }).select("id").single();
@@ -191,7 +194,7 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
       invoice_id: invoiceId,
       to_address: data.to,
       cc_address: null,
-      bcc_address: null,
+      bcc_address: bccAddress,
       subject: data.subject,
       body_text: data.body_text,
       filename,

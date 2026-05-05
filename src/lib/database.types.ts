@@ -488,6 +488,21 @@ export type Database = {
           },
         ]
       }
+      user_preferences: {
+        Row: {
+          bcc_self: boolean
+          user_id: string
+        }
+        Insert: {
+          bcc_self?: boolean
+          user_id: string
+        }
+        Update: {
+          bcc_self?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       scheduled_emails: {
         Row: {
           bcc_address: string | null
