@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "./supabase-server";
 
 export async function getAuth(): Promise<{ userId: string; token: string }> {
@@ -21,11 +22,11 @@ export async function getAuthToken(): Promise<string> {
   return data.session.access_token;
 }
 
-export async function getAuthUser(): Promise<{ id: string; email: string; name: string }> {
+export const getAuthUser = cache(async function getAuthUser(): Promise<{ id: string; email: string; name: string }> {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) throw new Error("Unauthenticated");
   const email = data.user.email ?? "";
   const name = (data.user.user_metadata?.full_name as string | undefined) ?? email.split("@")[0] ?? "";
   return { id: data.user.id, email, name };
-}
+});
