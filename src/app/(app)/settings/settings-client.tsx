@@ -351,10 +351,13 @@ function EmailTab({
           <CardTitle>Email Preferences</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-4">
-            <label htmlFor="mark_as_issued_on_send" className="text-sm font-medium">
-              Mark as issued after sending email
-            </label>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="mark_as_issued_on_send" className="text-sm font-medium">
+                Mark as issued after sending email
+              </label>
+              <p className="text-sm text-muted-foreground">Automatically sets the invoice status to Issued when an email is sent.</p>
+            </div>
             <Switch
               id="mark_as_issued_on_send"
               checked={markAsIssued}
@@ -364,10 +367,13 @@ function EmailTab({
               }}
             />
           </div>
-          <div className="flex items-center justify-between gap-4">
-            <label htmlFor="bcc_self" className="text-sm font-medium">
-              Send me a copy of outbound emails
-            </label>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="bcc_self" className="text-sm font-medium">
+                Send me a copy of outbound emails
+              </label>
+              <p className="text-sm text-muted-foreground">BCCs your account email on every invoice email you send.</p>
+            </div>
             <Switch
               id="bcc_self"
               checked={bccSelf}
