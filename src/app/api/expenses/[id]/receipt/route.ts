@@ -45,7 +45,7 @@ export async function POST(
     return NextResponse.json({ error: dbError.message }, { status: 500 });
   }
 
-  revalidateTag(CACHE_TAGS.expenses);
+  revalidateTag(CACHE_TAGS.expenses, "max");
 
   return NextResponse.json({ path });
 }
