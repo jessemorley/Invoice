@@ -411,7 +411,6 @@ export type Database = {
           id: string
           invoice_prefix: string
           last_number: number
-          mark_as_issued_on_send: boolean
           user_id: string
         }
         Insert: {
@@ -419,7 +418,6 @@ export type Database = {
           id?: string
           invoice_prefix?: string
           last_number: number
-          mark_as_issued_on_send?: boolean
           user_id: string
         }
         Update: {
@@ -427,7 +425,6 @@ export type Database = {
           id?: string
           invoice_prefix?: string
           last_number?: number
-          mark_as_issued_on_send?: boolean
           user_id?: string
         }
         Relationships: []
@@ -487,6 +484,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_preferences: {
+        Row: {
+          bcc_self: boolean
+          mark_as_issued_on_send: boolean
+          user_id: string
+        }
+        Insert: {
+          bcc_self?: boolean
+          mark_as_issued_on_send?: boolean
+          user_id: string
+        }
+        Update: {
+          bcc_self?: boolean
+          mark_as_issued_on_send?: boolean
+          user_id?: string
+        }
+        Relationships: []
       }
       scheduled_emails: {
         Row: {

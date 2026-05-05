@@ -14,15 +14,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   saveBusinessDetails,
   saveInvoicingSettings,
+  saveEmailSettings,
   type BusinessDetailsFormData,
   type InvoicingFormData,
 } from "./actions";
 import { changePassword, updateDisplayName } from "@/app/login/actions";
-import type { BusinessDetails, InvoiceSequence } from "@/lib/queries";
+import type { BusinessDetails, InvoiceSequence, UserPreferences } from "@/lib/queries";
 
 type Props =
-  | { loading: true; userEmail: string; userName: string; initialTab?: string; businessDetails?: never; invoiceSequence?: never }
-  | { loading?: false; userEmail: string; userName: string; initialTab?: string; businessDetails: BusinessDetails | null; invoiceSequence: InvoiceSequence | null };
+  | { loading: true; userEmail: string; userName: string; initialTab?: string; businessDetails?: never; invoiceSequence?: never; userPreferences?: never }
+  | { loading?: false; userEmail: string; userName: string; initialTab?: string; businessDetails: BusinessDetails | null; invoiceSequence: InvoiceSequence | null; userPreferences: UserPreferences | null };
 
 function Field({
   label,
@@ -259,7 +260,6 @@ function InvoicingTab({
     invoice_prefix: invoiceSequence?.invoice_prefix ?? "",
     next_invoice_number: (invoiceSequence?.last_number ?? 0) + 1,
     due_date_offset: invoiceSequence?.due_date_offset ?? 30,
-    mark_as_issued_on_send: invoiceSequence?.mark_as_issued_on_send ?? false,
   });
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -316,19 +316,6 @@ function InvoicingTab({
             }
             disabled={pending}
           />
-          <div className="flex items-center justify-between gap-4">
-            <label htmlFor="mark_as_issued_on_send" className="text-sm font-medium">
-              Mark as issued after sending email
-            </label>
-            <Switch
-              id="mark_as_issued_on_send"
-              checked={form.mark_as_issued_on_send}
-              onCheckedChange={(v) =>
-                setForm((prev) => ({ ...prev, mark_as_issued_on_send: v }))
-              }
-              disabled={pending}
-            />
-          </div>
         </CardContent>
         <CardFooter className="border-t py-3 flex-col items-start gap-2">
           {error && <p className="text-sm text-destructive">{error}</p>}
@@ -336,6 +323,67 @@ function InvoicingTab({
             {pending ? "Saving…" : "Save"}
           </Button>
         </CardFooter>
+      </Card>
+    </div>
+  );
+}
+
+function EmailTab({
+  userPreferences,
+}: {
+  userPreferences: UserPreferences | null;
+}) {
+  const [markAsIssued, setMarkAsIssued] = useState(userPreferences?.mark_as_issued_on_send ?? false);
+  const [bccSelf, setBccSelf] = useState(userPreferences?.bcc_self ?? false);
+  const [, startTransition] = useTransition();
+
+  function handleChange(markAsIssuedVal: boolean, bccSelfVal: boolean) {
+    startTransition(async () => {
+      await saveEmailSettings({ mark_as_issued_on_send: markAsIssuedVal, bcc_self: bccSelfVal });
+      invalidate("settings");
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-4 p-4 md:p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Email Preferences</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="mark_as_issued_on_send" className="text-sm font-medium">
+                Mark as issued after sending email
+              </label>
+              <p className="text-sm text-muted-foreground">Automatically sets the invoice status to Issued when an email is sent.</p>
+            </div>
+            <Switch
+              id="mark_as_issued_on_send"
+              checked={markAsIssued}
+              onCheckedChange={(v) => {
+                setMarkAsIssued(v);
+                handleChange(v, bccSelf);
+              }}
+            />
+          </div>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="bcc_self" className="text-sm font-medium">
+                Send me a copy of outbound emails
+              </label>
+              <p className="text-sm text-muted-foreground">BCCs your account email on every invoice email you send.</p>
+            </div>
+            <Switch
+              id="bcc_self"
+              checked={bccSelf}
+              onCheckedChange={(v) => {
+                setBccSelf(v);
+                handleChange(markAsIssued, v);
+              }}
+            />
+          </div>
+        </CardContent>
       </Card>
     </div>
   );
@@ -428,7 +476,7 @@ function AccountTab({ email, name }: { email: string; name: string }) {
   );
 }
 
-const VALID_TABS = ["info", "invoicing", "account"] as const;
+const VALID_TABS = ["info", "invoicing", "email", "account"] as const;
 type SettingsTab = (typeof VALID_TABS)[number];
 
 export function SettingsClient({
@@ -438,6 +486,7 @@ export function SettingsClient({
   initialTab,
   businessDetails,
   invoiceSequence,
+  userPreferences,
 }: Props) {
   const validInitial: SettingsTab = VALID_TABS.includes(initialTab as SettingsTab)
     ? (initialTab as SettingsTab)
@@ -463,6 +512,7 @@ export function SettingsClient({
           <TabsList>
             <TabsTrigger value="info">Info</TabsTrigger>
             <TabsTrigger value="invoicing">Invoicing</TabsTrigger>
+            <TabsTrigger value="email">Email</TabsTrigger>
             <TabsTrigger value="account">Account</TabsTrigger>
           </TabsList>
         </div>
@@ -476,6 +526,9 @@ export function SettingsClient({
               </TabsContent>
               <TabsContent value="invoicing">
                 <InvoicingTab invoiceSequence={invoiceSequence ?? null} />
+              </TabsContent>
+              <TabsContent value="email">
+                <EmailTab userPreferences={userPreferences ?? null} />
               </TabsContent>
               <TabsContent value="account">
                 <AccountTab email={userEmail} name={userName} />

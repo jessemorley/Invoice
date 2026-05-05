@@ -6,9 +6,11 @@ import { getAuth, getAuthUserId } from "@/lib/auth";
 import {
   fetchBusinessDetails,
   fetchInvoiceSequence,
+  fetchUserPreferences,
   CACHE_TAGS,
   type BusinessDetails,
   type InvoiceSequence,
+  type UserPreferences,
 } from "@/lib/queries";
 
 export type BusinessDetailsFormData = {
@@ -30,19 +32,25 @@ export type InvoicingFormData = {
   invoice_prefix: string;
   next_invoice_number: number;
   due_date_offset: number;
+};
+
+export type EmailFormData = {
   mark_as_issued_on_send: boolean;
+  bcc_self: boolean;
 };
 
 export async function fetchSettings(): Promise<{
   businessDetails: BusinessDetails | null;
   invoiceSequence: InvoiceSequence | null;
+  userPreferences: UserPreferences | null;
 }> {
   const { userId, token } = await getAuth();
-  const [businessDetails, invoiceSequence] = await Promise.all([
+  const [businessDetails, invoiceSequence, userPreferences] = await Promise.all([
     fetchBusinessDetails(userId, token),
     fetchInvoiceSequence(userId, token),
+    fetchUserPreferences(userId, token),
   ]);
-  return { businessDetails, invoiceSequence };
+  return { businessDetails, invoiceSequence, userPreferences };
 }
 
 export async function saveBusinessDetails(data: BusinessDetailsFormData) {
@@ -82,11 +90,20 @@ export async function saveInvoicingSettings(data: InvoicingFormData) {
         invoice_prefix: data.invoice_prefix,
         last_number: data.next_invoice_number - 1,
         due_date_offset: data.due_date_offset,
-        mark_as_issued_on_send: data.mark_as_issued_on_send,
       },
       { onConflict: "user_id" }
     );
   if (error) throw new Error(`saveInvoicingSettings: ${error.message}`);
+  updateTag(CACHE_TAGS.settings);
+  refresh();
+}
+
+export async function saveEmailSettings(data: EmailFormData) {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { error } = await supabase
+    .from("user_preferences")
+    .upsert({ user_id: userId, bcc_self: data.bcc_self, mark_as_issued_on_send: data.mark_as_issued_on_send }, { onConflict: "user_id" });
+  if (error) throw new Error(`saveEmailSettings: ${error.message}`);
   updateTag(CACHE_TAGS.settings);
   refresh();
 }

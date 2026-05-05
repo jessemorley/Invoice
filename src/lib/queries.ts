@@ -530,7 +530,6 @@ export type InvoiceSequence = {
   invoice_prefix: string;
   last_number: number;
   due_date_offset: number;
-  mark_as_issued_on_send: boolean;
 };
 
 export async function fetchBusinessDetails(userId: string, token: string): Promise<BusinessDetails | null> {
@@ -678,4 +677,23 @@ export async function fetchInvoiceSequence(userId: string, token: string): Promi
     .maybeSingle();
   if (error) throw new Error(`fetchInvoiceSequence: ${error.message}`);
   return data as InvoiceSequence | null;
+}
+
+export type UserPreferences = {
+  user_id: string;
+  bcc_self: boolean;
+  mark_as_issued_on_send: boolean;
+};
+
+export async function fetchUserPreferences(userId: string, token: string): Promise<UserPreferences | null> {
+  "use cache";
+  cacheTag(CACHE_TAGS.settings);
+  const supabase = createTokenClient(token);
+  const { data, error } = await supabase
+    .from("user_preferences")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error(`fetchUserPreferences: ${error.message}`);
+  return data as UserPreferences | null;
 }

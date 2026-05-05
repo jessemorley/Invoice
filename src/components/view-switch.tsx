@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { InvalidationTag } from "@/lib/invalidate";
 import type { DashboardData, Entry, Expense, Client, WorkflowRate, Invoice } from "@/lib/types";
-import type { BusinessDetails, InvoiceSequence } from "@/lib/queries";
+import type { BusinessDetails, InvoiceSequence, UserPreferences } from "@/lib/queries";
 import dynamic from "next/dynamic";
 import { EntriesView } from "@/components/entries-view";
 
@@ -44,7 +44,7 @@ type EntriesState = { entries: Entry[]; clients: Client[]; workflowRates: Workfl
 type InvoicesState = { invoices: Invoice[]; uninvoicedCount: number; clients: { id: string; name: string }[] } | null;
 type ClientsState = Client[] | null;
 type ExpensesState = Expense[] | null;
-type SettingsState = { businessDetails: BusinessDetails | null; invoiceSequence: InvoiceSequence | null } | null;
+type SettingsState = { businessDetails: BusinessDetails | null; invoiceSequence: InvoiceSequence | null; userPreferences: UserPreferences | null } | null;
 
 // Which views need to re-fetch when a given tag is invalidated
 const TAG_TO_VIEWS: Record<InvalidationTag, ViewId[]> = {
@@ -164,6 +164,7 @@ export function ViewSwitch({
           <SettingsClient
             businessDetails={settingsData.businessDetails}
             invoiceSequence={settingsData.invoiceSequence}
+            userPreferences={settingsData.userPreferences}
             userEmail={userEmail}
             userName={userName}
             initialTab={settingsTab}
