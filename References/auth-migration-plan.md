@@ -159,11 +159,11 @@ const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()])
 
 ## Verification checklist
 
-- [ ] `/login` page renders correctly
-- [ ] Sign-in with jessmorley@gmail.com credentials succeeds and redirects to `/`
+- [x] `/login` page renders correctly
+- [x] Sign-in with jessmorley@gmail.com credentials succeeds and redirects to `/`
 - [ ] Unauthenticated request to `/` redirects to `/login`
-- [ ] All views load correctly: dashboard, entries, invoices, clients, expenses, settings
-- [ ] Create/edit/delete entry works
+- [x] All views load correctly: dashboard, entries, invoices, clients, expenses, settings
+- [x] Create/edit/delete entry works
 - [ ] PDF download works from browser
 - [ ] Schedule email + send email works (edge function → PDF route via `INTERNAL_API_SECRET`)
 - [ ] Sign-out clears session and redirects to `/login`
