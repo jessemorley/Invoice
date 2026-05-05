@@ -33,6 +33,7 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import { Paperclip, Trash2 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 const TODAY = new Date().toLocaleDateString("en-CA");
 
@@ -353,6 +354,7 @@ export function ExpenseSheet({
             </Button>
           </SheetClose>
           <Button size="lg" className="flex-1" onClick={handleSave} disabled={busy}>
+            {busy && <Spinner />}
             {isUploading ? "Uploading…" : isPending ? "Saving…" : "Save"}
           </Button>
         </SheetFooter>
