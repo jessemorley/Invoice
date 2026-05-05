@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/popover";
 import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group";
 import { Clock, X } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
 function isValidEmail(email: string): boolean {
@@ -315,6 +316,7 @@ function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, ini
               onClick={() => handleSubmit()}
               disabled={isPending || !hasValidRecipient}
             >
+              {isPending && <Spinner />}
               {isPending ? "Sending…" : "Send"}
             </Button>
           </ButtonGroup>
