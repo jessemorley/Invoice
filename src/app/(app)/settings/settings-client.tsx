@@ -329,13 +329,11 @@ function InvoicingTab({
 }
 
 function EmailTab({
-  invoiceSequence,
   userPreferences,
 }: {
-  invoiceSequence: InvoiceSequence | null;
   userPreferences: UserPreferences | null;
 }) {
-  const [markAsIssued, setMarkAsIssued] = useState(invoiceSequence?.mark_as_issued_on_send ?? false);
+  const [markAsIssued, setMarkAsIssued] = useState(userPreferences?.mark_as_issued_on_send ?? false);
   const [bccSelf, setBccSelf] = useState(userPreferences?.bcc_self ?? false);
   const [, startTransition] = useTransition();
 
@@ -524,7 +522,7 @@ export function SettingsClient({
                 <InvoicingTab invoiceSequence={invoiceSequence ?? null} />
               </TabsContent>
               <TabsContent value="email">
-                <EmailTab invoiceSequence={invoiceSequence ?? null} userPreferences={userPreferences ?? null} />
+                <EmailTab userPreferences={userPreferences ?? null} />
               </TabsContent>
               <TabsContent value="account">
                 <AccountTab email={userEmail} name={userName} />

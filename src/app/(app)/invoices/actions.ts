@@ -154,7 +154,7 @@ export async function loadScheduledEmail(invoiceId: string) {
 }
 
 export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormData): Promise<{ id: string }> {
-  const [supabase, userId, token, authUser] = await Promise.all([createClient(), getAuthUserId(), getAuthToken(), getAuthUser()]);
+  const [supabase, userId, token] = await Promise.all([createClient(), getAuthUserId(), getAuthToken()]);
 
   const [invResult, business, userPrefs] = await Promise.all([
     supabase.from("invoices").select("invoice_number").eq("id", invoiceId).eq("user_id", userId).single(),
@@ -169,7 +169,8 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
   const filename = businessName
     ? `${businessName} Invoice ${inv.invoice_number}.pdf`
     : `Invoice ${inv.invoice_number}.pdf`;
-  const bccAddress = userPrefs?.bcc_self ? authUser.email : null;
+  const bccAddress = userPrefs?.bcc_self ? (await getAuthUser()).email : null;
+  const markIssued = userPrefs?.mark_as_issued_on_send ?? false;
 
   const { data: row, error } = await supabase.from("scheduled_emails").insert({
     user_id: userId,
@@ -180,7 +181,7 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
     scheduled_for: data.scheduled_for,
     filename,
     bcc_address: bccAddress,
-    mark_issued: true,
+    mark_issued: markIssued,
     status: "pending",
   }).select("id").single();
 
@@ -198,7 +199,7 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
       subject: data.subject,
       body_text: data.body_text,
       filename,
-      mark_issued: true,
+      mark_issued: markIssued,
       scheduled_for: data.scheduled_for,
     },
     ts: new Date(data.scheduled_for).getTime(),

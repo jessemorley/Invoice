@@ -530,7 +530,6 @@ export type InvoiceSequence = {
   invoice_prefix: string;
   last_number: number;
   due_date_offset: number;
-  mark_as_issued_on_send: boolean;
 };
 
 export async function fetchBusinessDetails(userId: string, token: string): Promise<BusinessDetails | null> {
@@ -683,6 +682,7 @@ export async function fetchInvoiceSequence(userId: string, token: string): Promi
 export type UserPreferences = {
   user_id: string;
   bcc_self: boolean;
+  mark_as_issued_on_send: boolean;
 };
 
 export async function fetchUserPreferences(userId: string, token: string): Promise<UserPreferences | null> {

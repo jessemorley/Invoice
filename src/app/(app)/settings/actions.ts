@@ -100,17 +100,10 @@ export async function saveInvoicingSettings(data: InvoicingFormData) {
 
 export async function saveEmailSettings(data: EmailFormData) {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
-  const [seqResult, prefResult] = await Promise.all([
-    supabase
-      .from("invoice_sequence")
-      .update({ mark_as_issued_on_send: data.mark_as_issued_on_send })
-      .eq("user_id", userId),
-    supabase
-      .from("user_preferences")
-      .upsert({ user_id: userId, bcc_self: data.bcc_self }, { onConflict: "user_id" }),
-  ]);
-  if (seqResult.error) throw new Error(`saveEmailSettings (sequence): ${seqResult.error.message}`);
-  if (prefResult.error) throw new Error(`saveEmailSettings (preferences): ${prefResult.error.message}`);
+  const { error } = await supabase
+    .from("user_preferences")
+    .upsert({ user_id: userId, bcc_self: data.bcc_self, mark_as_issued_on_send: data.mark_as_issued_on_send }, { onConflict: "user_id" });
+  if (error) throw new Error(`saveEmailSettings: ${error.message}`);
   updateTag(CACHE_TAGS.settings);
   refresh();
 }
