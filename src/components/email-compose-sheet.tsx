@@ -278,16 +278,6 @@ function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, ini
             Cancel
           </Button>
           <ButtonGroup className="flex-1">
-            <Button
-              size="lg"
-              className="flex-1"
-              onClick={() => handleSubmit()}
-              disabled={isPending || !hasValidRecipient}
-            >
-              {isPending && <Spinner />}
-              {isPending ? "Sending…" : "Send"}
-            </Button>
-            <ButtonGroupSeparator />
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -298,7 +288,7 @@ function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, ini
                   <Clock className="size-4" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" side="top" className="w-auto p-1">
+              <PopoverContent align="start" side="top" className="w-auto p-1">
                 <div className="flex flex-col">
                   {presets.map((preset) => (
                     <button
@@ -319,6 +309,16 @@ function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, ini
                 </div>
               </PopoverContent>
             </Popover>
+            <ButtonGroupSeparator />
+            <Button
+              size="lg"
+              className="flex-1"
+              onClick={() => handleSubmit()}
+              disabled={isPending || !hasValidRecipient}
+            >
+              {isPending && <Spinner />}
+              {isPending ? "Sending…" : "Send"}
+            </Button>
           </ButtonGroup>
         </div>
       </div>
