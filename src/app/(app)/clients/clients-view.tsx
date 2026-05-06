@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Client } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -27,7 +28,7 @@ import {
 import { SortableTableHead } from "@/components/sortable-table-head";
 import { PageHeader } from "@/components/page-header";
 import { ClientSheet } from "@/components/client-sheet";
-import { Search, Users } from "lucide-react";
+import { Plus, Search, Users } from "lucide-react";
 import {
   Empty,
   EmptyHeader,
@@ -140,16 +141,25 @@ function ClientsSkeleton() {
 }
 
 export function ClientsView({ clients: allClients, loading = false }: { clients: Client[]; loading?: boolean }) {
-  if (loading) return <ClientsSkeleton />;
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [sheetView, setSheetView] = useState<"detail" | "create">("detail");
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("active");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
+  if (loading) return <ClientsSkeleton />;
+
   function openClient(client: Client) {
     setSelectedClient(client);
+    setSheetView("detail");
+    setSheetOpen(true);
+  }
+
+  function openNew() {
+    setSelectedClient(null);
+    setSheetView("create");
     setSheetOpen(true);
   }
 
@@ -186,7 +196,12 @@ if (statusFilter === "active" && !c.is_active) return false;
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Clients" />
+      <PageHeader title="Clients">
+        <Button size="sm" className="hidden md:flex" onClick={openNew}>
+          <Plus className="size-4" />
+          New client
+        </Button>
+      </PageHeader>
 
       {/* Desktop table */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
@@ -314,10 +329,18 @@ if (statusFilter === "active" && !c.is_active) return false;
         )}
       </div>
 
+      {/* Mobile FAB */}
+      <div className="md:hidden fixed bottom-18 right-4 z-40">
+        <Button size="icon" className="size-14 rounded-full shadow-lg" onClick={openNew}>
+          <Plus />
+        </Button>
+      </div>
+
       <ClientSheet
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         client={selectedClient}
+        initialView={sheetView}
       />
     </div>
   );

@@ -4,7 +4,86 @@ import { updateTag, refresh } from "next/cache";
 import { createClient } from "@/lib/supabase-server";
 import { getAuthUserId } from "@/lib/auth";
 import { CACHE_TAGS } from "@/lib/queries";
-import type { InvoiceStatus } from "@/lib/types";
+import type { BillingType, InvoiceStatus } from "@/lib/types";
+
+export type ClientFormData = {
+  name: string;
+  billing_type: BillingType;
+  rate_full_day: number | null;
+  rate_half_day: number | null;
+  rate_hourly: number | null;
+  rate_hourly_photographer: number | null;
+  rate_hourly_operator: number | null;
+  default_start_time: string | null;
+  default_finish_time: string | null;
+  entry_label: string | null;
+  show_role: boolean;
+  pays_super: boolean;
+  super_rate: number;
+  show_super_on_invoice: boolean;
+  invoice_frequency: "weekly" | "per_job";
+  contact_name: string | null;
+  email: string;
+  address: string;
+  suburb: string;
+  abn: string | null;
+  is_active: boolean;
+};
+
+export async function createClientAction(data: ClientFormData): Promise<{ id: string }> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { data: row, error } = await supabase
+    .from("clients")
+    .insert({ ...data, user_id: userId })
+    .select("id")
+    .single();
+
+  if (error) throw new Error(`createClientAction: ${error.message}`);
+  updateTag(CACHE_TAGS.clients);
+  updateTag(CACHE_TAGS.entries);
+  refresh();
+  return { id: row.id };
+}
+
+export async function updateClientAction(clientId: string, data: ClientFormData): Promise<void> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { error } = await supabase
+    .from("clients")
+    .update(data)
+    .eq("id", clientId)
+    .eq("user_id", userId);
+
+  if (error) throw new Error(`updateClientAction: ${error.message}`);
+  updateTag(CACHE_TAGS.clients);
+  updateTag(CACHE_TAGS.entries);
+  updateTag(CACHE_TAGS.invoices);
+  refresh();
+}
+
+export type DeleteClientResult =
+  | { ok: true }
+  | { ok: false; reason: "has_data"; invoiceCount: number; entryCount: number };
+
+export async function deleteClientAction(clientId: string): Promise<DeleteClientResult> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+
+  const [{ count: invoiceCount }, { count: entryCount }] = await Promise.all([
+    supabase.from("invoices").select("id", { count: "exact", head: true }).eq("client_id", clientId).eq("user_id", userId),
+    supabase.from("entries").select("id", { count: "exact", head: true }).eq("client_id", clientId).eq("user_id", userId),
+  ]);
+
+  if ((invoiceCount ?? 0) > 0 || (entryCount ?? 0) > 0) {
+    return { ok: false, reason: "has_data", invoiceCount: invoiceCount ?? 0, entryCount: entryCount ?? 0 };
+  }
+
+  await supabase.from("client_workflow_rates").delete().eq("client_id", clientId);
+  const { error } = await supabase.from("clients").delete().eq("id", clientId).eq("user_id", userId);
+  if (error) throw new Error(`deleteClientAction: ${error.message}`);
+
+  updateTag(CACHE_TAGS.clients);
+  refresh();
+  return { ok: true };
+}
 
 export type RecentInvoice = {
   id: string;
