@@ -215,7 +215,7 @@ type FormState = {
 function blankForm(): FormState {
   return {
     name: "",
-    billing_type: "day_rate",
+    billing_type: "manual",
     rate_full_day: "",
     rate_half_day: "",
     rate_hourly: "",
@@ -379,13 +379,14 @@ function ClientForm({
         <Field label="Billing Type">
           <ToggleGroup
             type="single"
+            variant="outline"
             value={form.billing_type}
             onValueChange={(v) => v && set("billing_type", v as BillingType)}
-            className="justify-start"
+            className="w-full"
           >
-            <ToggleGroupItem value="day_rate">Day Rate</ToggleGroupItem>
-            <ToggleGroupItem value="hourly">Hourly</ToggleGroupItem>
-            <ToggleGroupItem value="manual">Manual</ToggleGroupItem>
+            <ToggleGroupItem value="manual" className="flex-1">Manual</ToggleGroupItem>
+            <ToggleGroupItem value="day_rate" className="flex-1">Day Rate</ToggleGroupItem>
+            <ToggleGroupItem value="hourly" className="flex-1">Hourly</ToggleGroupItem>
           </ToggleGroup>
         </Field>
 
@@ -462,12 +463,13 @@ function ClientForm({
         <Field label="Invoice Frequency">
           <ToggleGroup
             type="single"
+            variant="outline"
             value={form.invoice_frequency}
             onValueChange={(v) => v && set("invoice_frequency", v as "weekly" | "per_job")}
-            className="justify-start"
+            className="w-full"
           >
-            <ToggleGroupItem value="weekly">Weekly</ToggleGroupItem>
-            <ToggleGroupItem value="per_job">Per Job</ToggleGroupItem>
+            <ToggleGroupItem value="weekly" className="flex-1">Weekly</ToggleGroupItem>
+            <ToggleGroupItem value="per_job" className="flex-1">Per Job</ToggleGroupItem>
           </ToggleGroup>
         </Field>
 
