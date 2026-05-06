@@ -361,10 +361,18 @@ function ClientForm({
 
   return (
     <div className="flex flex-col gap-0 h-full">
-      <SheetHeader className="px-6 py-5 border-b">
-        <SheetTitle>{isNew ? "New Client" : "Edit Client"}</SheetTitle>
-        <SheetDescription>{isNew ? "Add a new client" : "Update client details"}</SheetDescription>
-      </SheetHeader>
+      <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
+        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+          <SheetTitle>{isNew ? "New Client" : "Edit Client"}</SheetTitle>
+          <SheetDescription>{isNew ? "Add a new client" : "Update client details"}</SheetDescription>
+        </div>
+        <SheetClose asChild>
+          <Button variant="ghost" size="icon" className="shrink-0 self-center size-8">
+            <X className="size-5" />
+            <span className="sr-only">Close</span>
+          </Button>
+        </SheetClose>
+      </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
         {/* Name */}
