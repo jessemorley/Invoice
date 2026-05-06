@@ -1,17 +1,18 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import type { Invoice, InvoiceDetail, InvoiceStatus } from "@/lib/types";
+import type { Client, Invoice, InvoiceDetail, InvoiceStatus } from "@/lib/types";
 import { formatAUD, formatRelativeTime } from "@/lib/format";
-import { updateInvoice, deleteInvoice, createLineItem, updateLineItem, deleteLineItem } from "@/app/(app)/invoices/actions";
+import { createInvoice, loadInvoiceDetail, updateInvoice, deleteInvoice, createLineItem, updateLineItem, deleteLineItem } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
 import type { InvoiceFormData } from "@/app/(app)/invoices/actions";
+import { ClientPicker } from "@/components/client-picker";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import type { ScheduledEmail } from "@/lib/queries";
-import { Download, Mail, Plus, Trash2, CalendarClock, Clock, Send } from "lucide-react";
+import { Download, Mail, Plus, Trash2, CalendarClock, Clock, Send, X } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -145,9 +146,15 @@ function LineItemView({ mode, invoiceId, nextSortOrder, item, onSave, onCancel }
 
   return (
     <>
-      <SheetHeader className="px-6 py-5 border-b">
-        <SheetTitle>{mode === "add" ? "Add Line Item" : "Edit Line Item"}</SheetTitle>
-      </SheetHeader>
+      <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
+        <SheetTitle className="flex-1">{mode === "add" ? "Add Line Item" : "Edit Line Item"}</SheetTitle>
+        <SheetClose asChild>
+          <Button variant="ghost" size="icon" className="shrink-0 size-8">
+            <X className="size-5" />
+            <span className="sr-only">Close</span>
+          </Button>
+        </SheetClose>
+      </div>
       <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">Description</label>
@@ -161,14 +168,14 @@ function LineItemView({ mode, invoiceId, nextSortOrder, item, onSave, onCancel }
           <label className="text-sm font-medium">Amount ($)</label>
           <Input type="number" step="0.01" className="text-sm" value={amount} onChange={(e) => setAmount(e.target.value)} />
         </div>
+        {mode === "edit" && (
+          <Button variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleDelete} disabled={isDeleting || isPending}>
+            {isDeleting ? "Deleting…" : "Delete line"}
+          </Button>
+        )}
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
       <SheetFooter className="px-6 py-4 border-t flex-row gap-2">
-        {mode === "edit" && (
-          <Button variant="destructive" size="icon-lg" className="shrink-0" onClick={handleDelete} disabled={isDeleting || isPending}>
-            <Trash2 className="size-4" />
-          </Button>
-        )}
         <Button size="lg" variant="outline" className="flex-1" onClick={onCancel} disabled={isPending || isDeleting}>
           Cancel
         </Button>
@@ -193,6 +200,7 @@ export function InvoiceSheet({
   onViewEmail,
   onEntryClick,
   onLineItemMutate,
+  clients,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -206,30 +214,89 @@ export function InvoiceSheet({
   onViewEmail?: () => void;
   onEntryClick?: (entryId: string) => void;
   onLineItemMutate?: () => void;
+  clients?: Client[];
 }) {
   const [form, setForm] = useState<InvoiceFormData | null>(
     invoice ? defaultForm(invoice) : null
   );
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
+  const [isCreating, startCreateTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
-  type SheetView = "invoice" | "add-line-item" | { mode: "edit-line-item"; item: NonNullable<InvoiceDetail["line_items"][0]> };
-  const [view, setView] = useState<SheetView>("invoice");
+  type SheetView = "client-pick" | "invoice" | "add-line-item" | { mode: "edit-line-item"; item: NonNullable<InvoiceDetail["line_items"][0]> };
+  const [view, setView] = useState<SheetView>(invoice ? "invoice" : "client-pick");
+  const [createdInvoice, setCreatedInvoice] = useState<Invoice | null>(null);
+  const [localInvoiceDetail, setLocalInvoiceDetail] = useState<InvoiceDetail | null>(null);
+
+  const activeInvoice = invoice ?? createdInvoice;
+  const effectiveInvoiceDetail = invoice ? invoiceDetail : localInvoiceDetail;
 
   useEffect(() => {
+    if (!open) return;
     setForm(invoice ? defaultForm(invoice) : null);
     setError(null);
-    setView("invoice");
+    setCreatedInvoice(null);
+    setLocalInvoiceDetail(null);
+    setView(invoice ? "invoice" : "client-pick");
   }, [invoice, open]);
 
+  function handleClientSelect(client: Client) {
+    startCreateTransition(async () => {
+      try {
+        const newInvoice = await createInvoice(client.id);
+        setCreatedInvoice(newInvoice);
+        setForm(defaultForm(newInvoice));
+        setLocalInvoiceDetail({
+          id: newInvoice.id,
+          number: newInvoice.number,
+          issued_date: null,
+          due_date: null,
+          status: "draft",
+          subtotal: 0,
+          super_amount: 0,
+          total: 0,
+          notes: null,
+          client: {
+            id: client.id,
+            name: client.name,
+            color: client.color ?? "#9ca3af",
+            address: client.address,
+            suburb: client.suburb,
+            email: client.email,
+            abn: client.abn,
+            contact_name: client.contact_name,
+            entry_label: client.entry_label,
+            pays_super: client.pays_super,
+            super_rate: client.super_rate,
+            show_super_on_invoice: client.show_super_on_invoice,
+            rate_hourly: client.rate_hourly,
+          },
+          entries: [],
+          line_items: [],
+        });
+        setView("invoice");
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Something went wrong");
+      }
+    });
+  }
+
+  async function refreshLocalDetail(invoiceId: string) {
+    const detail = await loadInvoiceDetail(invoiceId);
+    if (detail) {
+      setLocalInvoiceDetail(detail);
+      setCreatedInvoice((prev) => prev ? { ...prev, total: detail.total, super_amount: detail.super_amount } : prev);
+    }
+  }
+
   async function handleDownload() {
-    if (!invoice) return;
+    if (!activeInvoice) return;
     setIsDownloading(true);
     try {
-      const res = await fetch(`/api/invoices/${invoice.id}/pdf`);
+      const res = await fetch(`/api/invoices/${activeInvoice.id}/pdf`);
       const blob = await res.blob();
-      const filename = res.headers.get("Content-Disposition")?.match(/filename="(.+?)"/)?.[1] ?? `Invoice ${invoice.number}.pdf`;
+      const filename = res.headers.get("Content-Disposition")?.match(/filename="(.+?)"/)?.[1] ?? `Invoice ${activeInvoice.number}.pdf`;
       if (navigator.maxTouchPoints > 0 && navigator.canShare?.({ files: [new File([blob], filename, { type: "application/pdf" })] })) {
         await navigator.share({ files: [new File([blob], filename, { type: "application/pdf" })] }).catch((e) => {
           if (e?.name !== "AbortError") throw e;
@@ -247,17 +314,17 @@ export function InvoiceSheet({
     }
   }
 
-  if (!invoice || !form) return null;
+  if (view !== "client-pick" && (!activeInvoice || !form)) return null;
 
   function set<K extends keyof InvoiceFormData>(key: K, value: InvoiceFormData[K]) {
     setForm((prev) => prev ? { ...prev, [key]: value } : prev);
   }
 
   function handleDelete() {
-    if (!invoice) return;
+    if (!activeInvoice) return;
     startDeleteTransition(async () => {
       try {
-        await deleteInvoice(invoice.id);
+        await deleteInvoice(activeInvoice.id);
         invalidate("invoices", "entries");
         onOpenChange(false);
       } catch (e) {
@@ -267,11 +334,11 @@ export function InvoiceSheet({
   }
 
   function handleSubmit() {
-    if (!invoice || !form) return;
+    if (!activeInvoice || !form) return;
     setError(null);
     startTransition(async () => {
       try {
-        await updateInvoice(invoice.id, form);
+        await updateInvoice(activeInvoice.id, form);
         invalidate("invoices", "entries");
         onOpenChange(false);
       } catch (e) {
@@ -283,35 +350,73 @@ export function InvoiceSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
-        {view === "add-line-item" ? (
+        {view === "client-pick" ? (
+          <>
+            <div className="flex flex-row items-center gap-1.5 px-4 py-4">
+              <SheetTitle className="text-base flex-1">New invoice</SheetTitle>
+              <SheetClose asChild>
+                <Button variant="ghost" size="icon" className="shrink-0 size-8">
+                  <X className="size-5" />
+                  <span className="sr-only">Close</span>
+                </Button>
+              </SheetClose>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {isCreating ? (
+                <div className="flex items-center justify-center h-32">
+                  <Spinner />
+                </div>
+              ) : (
+                <ClientPicker clients={clients ?? []} onSelect={handleClientSelect} />
+              )}
+            </div>
+            {error && <p className="px-6 pb-4 text-sm text-destructive">{error}</p>}
+          </>
+        ) : view === "add-line-item" ? (
           <LineItemView
             mode="add"
-            invoiceId={invoice.id}
-            nextSortOrder={(invoiceDetail?.line_items.length ?? 0) > 0
-              ? Math.max(...(invoiceDetail?.line_items.map(i => i.sort_order) ?? [0])) + 1
+            invoiceId={activeInvoice!.id}
+            nextSortOrder={(effectiveInvoiceDetail?.line_items.length ?? 0) > 0
+              ? Math.max(...(effectiveInvoiceDetail?.line_items.map(i => i.sort_order) ?? [0])) + 1
               : 0}
-            onSave={() => { setView("invoice"); onLineItemMutate?.(); }}
+            onSave={() => {
+              setView("invoice");
+              if (!invoice && activeInvoice) refreshLocalDetail(activeInvoice.id);
+              else onLineItemMutate?.();
+            }}
             onCancel={() => setView("invoice")}
           />
         ) : typeof view === "object" && view.mode === "edit-line-item" ? (
           <LineItemView
             mode="edit"
             item={view.item}
-            onSave={() => { setView("invoice"); onLineItemMutate?.(); }}
+            onSave={() => {
+              setView("invoice");
+              if (!invoice && activeInvoice) refreshLocalDetail(activeInvoice.id);
+              else onLineItemMutate?.();
+            }}
             onCancel={() => setView("invoice")}
           />
         ) : (
         <>
-        <SheetHeader className="px-6 py-5 border-b">
-          <SheetTitle>{invoice.number}</SheetTitle>
-          <div className="flex items-center gap-2">
-            <div
-              className="size-2.5 rounded-full shrink-0"
-              style={{ backgroundColor: invoice.client.color }}
-            />
-            <p className="text-sm text-muted-foreground">{invoice.client.name}</p>
+        <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
+          <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+            <SheetTitle>{activeInvoice!.number}</SheetTitle>
+            <div className="flex items-center gap-2">
+              <div
+                className="size-2.5 rounded-full shrink-0"
+                style={{ backgroundColor: activeInvoice!.client.color }}
+              />
+              <p className="text-sm text-muted-foreground">{activeInvoice!.client.name}</p>
+            </div>
           </div>
-        </SheetHeader>
+          <SheetClose asChild>
+            <Button variant="ghost" size="icon" className="shrink-0 self-center size-8">
+              <X className="size-5" />
+              <span className="sr-only">Close</span>
+            </Button>
+          </SheetClose>
+        </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
           {/* Status */}
@@ -319,7 +424,7 @@ export function InvoiceSheet({
             <label className="text-sm font-medium">Status</label>
             <ToggleGroup
               type="single"
-              value={form.status}
+              value={form!.status}
               onValueChange={(v) => v && set("status", v as InvoiceStatus)}
               variant="outline"
               className="w-full"
@@ -340,7 +445,7 @@ export function InvoiceSheet({
                 <input
                   type="date"
                   className="w-full bg-transparent outline-none text-sm text-foreground"
-                  value={form.issued_date}
+                  value={form!.issued_date}
                   onChange={(e) => set("issued_date", e.target.value)}
                 />
               </div>
@@ -351,7 +456,7 @@ export function InvoiceSheet({
                 <input
                   type="date"
                   className="w-full bg-transparent outline-none text-sm text-foreground"
-                  value={form.paid_date}
+                  value={form!.paid_date}
                   onChange={(e) => set("paid_date", e.target.value)}
                 />
               </div>
@@ -368,9 +473,9 @@ export function InvoiceSheet({
               </Button>
             </div>
           <div className="rounded-lg bg-muted/40 px-4 py-3 flex flex-col gap-3 text-sm">
-            {invoiceDetail ? (
+            {effectiveInvoiceDetail ? (
               <>
-                {invoiceDetail.entries.map((entry) => (
+                {effectiveInvoiceDetail.entries.map((entry) => (
                   <button
                     key={entry.id}
                     type="button"
@@ -389,7 +494,7 @@ export function InvoiceSheet({
                     <span className="tabular-nums shrink-0">{formatAUD(entry.base_amount)}</span>
                   </button>
                 ))}
-                {invoiceDetail.line_items.map((item) => (
+                {effectiveInvoiceDetail.line_items.map((item) => (
                   <button
                     key={item.id}
                     type="button"
@@ -413,23 +518,25 @@ export function InvoiceSheet({
                 </div>
               </>
             )}
-            <Separator />
+            {effectiveInvoiceDetail && (effectiveInvoiceDetail.entries.length > 0 || effectiveInvoiceDetail.line_items.length > 0) && (
+              <Separator />
+            )}
             <div className="flex justify-between font-medium">
               <span>Total</span>
               <span className="tabular-nums">
-                {invoiceDetail
+                {effectiveInvoiceDetail
                   ? formatAUD(
-                      invoiceDetail.entries.reduce((s, e) => s + e.base_amount + e.bonus_amount, 0) +
-                      invoiceDetail.line_items.reduce((s, i) => s + i.amount, 0) +
-                      invoiceDetail.super_amount
+                      effectiveInvoiceDetail.entries.reduce((s, e) => s + e.base_amount + e.bonus_amount, 0) +
+                      effectiveInvoiceDetail.line_items.reduce((s, i) => s + i.amount, 0) +
+                      effectiveInvoiceDetail.super_amount
                     )
-                  : formatAUD(invoice.total)}
+                  : formatAUD(activeInvoice!.total)}
               </span>
             </div>
-            {invoice.super_amount > 0 && (
+            {activeInvoice!.super_amount > 0 && (
               <div className="flex justify-between text-muted-foreground">
                 <span>incl. super</span>
-                <span className="tabular-nums">{formatAUD(invoice.super_amount)}</span>
+                <span className="tabular-nums">{formatAUD(activeInvoice!.super_amount)}</span>
               </div>
             )}
           </div>
@@ -516,7 +623,7 @@ export function InvoiceSheet({
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete {invoice.number}?</AlertDialogTitle>
+                <AlertDialogTitle>Delete {activeInvoice!.number}?</AlertDialogTitle>
                 <AlertDialogDescription>
                   This will permanently delete the invoice and all its line items. This action cannot be undone.
                 </AlertDialogDescription>
