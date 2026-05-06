@@ -12,7 +12,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import type { ScheduledEmail } from "@/lib/queries";
-import { Download, Mail, Plus, Trash2, CalendarClock, Clock, Send } from "lucide-react";
+import { Download, Mail, Plus, Trash2, CalendarClock, Clock, Send, X } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -146,9 +146,15 @@ function LineItemView({ mode, invoiceId, nextSortOrder, item, onSave, onCancel }
 
   return (
     <>
-      <SheetHeader className="px-6 py-5 border-b">
-        <SheetTitle>{mode === "add" ? "Add Line Item" : "Edit Line Item"}</SheetTitle>
-      </SheetHeader>
+      <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
+        <SheetTitle className="flex-1">{mode === "add" ? "Add Line Item" : "Edit Line Item"}</SheetTitle>
+        <SheetClose asChild>
+          <Button variant="ghost" size="icon" className="shrink-0 size-8">
+            <X className="size-5" />
+            <span className="sr-only">Close</span>
+          </Button>
+        </SheetClose>
+      </div>
       <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">Description</label>
@@ -346,9 +352,15 @@ export function InvoiceSheet({
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
         {view === "client-pick" ? (
           <>
-            <SheetHeader className="px-4 py-4 flex-row items-center gap-2">
-              <SheetTitle className="text-base">New invoice</SheetTitle>
-            </SheetHeader>
+            <div className="flex flex-row items-center gap-1.5 px-4 py-4">
+              <SheetTitle className="text-base flex-1">New invoice</SheetTitle>
+              <SheetClose asChild>
+                <Button variant="ghost" size="icon" className="shrink-0 size-8">
+                  <X className="size-5" />
+                  <span className="sr-only">Close</span>
+                </Button>
+              </SheetClose>
+            </div>
             <div className="flex-1 overflow-y-auto">
               {isCreating ? (
                 <div className="flex items-center justify-center h-32">
@@ -387,16 +399,24 @@ export function InvoiceSheet({
           />
         ) : (
         <>
-        <SheetHeader className="px-6 py-5 border-b">
-          <SheetTitle>{activeInvoice!.number}</SheetTitle>
-          <div className="flex items-center gap-2">
-            <div
-              className="size-2.5 rounded-full shrink-0"
-              style={{ backgroundColor: activeInvoice!.client.color }}
-            />
-            <p className="text-sm text-muted-foreground">{activeInvoice!.client.name}</p>
+        <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
+          <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+            <SheetTitle>{activeInvoice!.number}</SheetTitle>
+            <div className="flex items-center gap-2">
+              <div
+                className="size-2.5 rounded-full shrink-0"
+                style={{ backgroundColor: activeInvoice!.client.color }}
+              />
+              <p className="text-sm text-muted-foreground">{activeInvoice!.client.name}</p>
+            </div>
           </div>
-        </SheetHeader>
+          <SheetClose asChild>
+            <Button variant="ghost" size="icon" className="shrink-0 self-center size-8">
+              <X className="size-5" />
+              <span className="sr-only">Close</span>
+            </Button>
+          </SheetClose>
+        </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
           {/* Status */}

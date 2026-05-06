@@ -14,13 +14,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
-  SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, Minus, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, Minus, Plus, Trash2, X } from "lucide-react";
 import { ClientPicker } from "@/components/client-picker";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -330,19 +330,20 @@ export function EntrySheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="flex flex-col gap-0 p-0 w-full sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
-        <SheetHeader className={cn("px-4 py-4 flex-row items-center gap-2", selectedClient && "border-b")}>
+        <div className={cn("flex flex-row items-center gap-1.5 px-4 py-4", selectedClient && "border-b")}>
           {!entry && selectedClient && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 shrink-0"
-              onClick={() => setSelectedClient(null)}
-            >
+            <Button variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => setSelectedClient(null)}>
               <ChevronLeft className="size-4" />
             </Button>
           )}
-          <SheetTitle className="text-base">{title}</SheetTitle>
-        </SheetHeader>
+          <SheetTitle className="text-base flex-1">{title}</SheetTitle>
+          <SheetClose asChild>
+            <Button variant="ghost" size="icon" className="shrink-0 size-8">
+              <X className="size-5" />
+              <span className="sr-only">Close</span>
+            </Button>
+          </SheetClose>
+        </div>
 
         <div className="flex-1 overflow-y-auto">
           {!selectedClient ? (
