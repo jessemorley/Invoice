@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Client, BillingType } from "@/lib/types";
 import { formatAUD } from "@/lib/format";
 import {
@@ -279,7 +280,7 @@ function formToPayload(f: FormState): ClientFormData {
     entry_label: null,
     show_role: false,
     pays_super: f.pays_super,
-    super_rate: parseFloat(f.super_rate) || 0.12,
+    super_rate: f.super_rate !== "" ? parseFloat(f.super_rate) : 0.12,
     show_super_on_invoice: f.show_super_on_invoice,
     invoice_frequency: f.invoice_frequency,
     contact_name: f.contact_name.trim() || null,
@@ -291,12 +292,12 @@ function formToPayload(f: FormState): ClientFormData {
   };
 
   if (f.billing_type === "day_rate") {
-    base.rate_full_day = parseFloat(f.rate_full_day) || null;
-    base.rate_half_day = parseFloat(f.rate_half_day) || null;
+    base.rate_full_day = f.rate_full_day !== "" ? parseFloat(f.rate_full_day) : null;
+    base.rate_half_day = f.rate_half_day !== "" ? parseFloat(f.rate_half_day) : null;
   } else if (f.billing_type === "hourly") {
-    base.rate_hourly = parseFloat(f.rate_hourly) || null;
-    base.rate_hourly_photographer = parseFloat(f.rate_hourly_photographer) || null;
-    base.rate_hourly_operator = parseFloat(f.rate_hourly_operator) || null;
+    base.rate_hourly = f.rate_hourly !== "" ? parseFloat(f.rate_hourly) : null;
+    base.rate_hourly_photographer = f.rate_hourly_photographer !== "" ? parseFloat(f.rate_hourly_photographer) : null;
+    base.rate_hourly_operator = f.rate_hourly_operator !== "" ? parseFloat(f.rate_hourly_operator) : null;
     base.default_start_time = f.default_start_time || null;
     base.default_finish_time = f.default_finish_time || null;
     base.entry_label = f.entry_label.trim() || null;
@@ -323,6 +324,7 @@ function ClientForm({
 }) {
   const [form, setForm] = useState<FormState>(initial);
   const [isPending, startTransition] = useTransition();
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
 
@@ -332,15 +334,20 @@ function ClientForm({
 
   function handleSave() {
     if (!form.name.trim()) return;
+    setSaveError(null);
     startTransition(async () => {
-      const payload = formToPayload(form);
-      if (isNew) {
-        await createClientAction(payload);
-      } else {
-        await updateClientAction(clientId!, payload);
+      try {
+        const payload = formToPayload(form);
+        if (isNew) {
+          await createClientAction(payload);
+        } else {
+          await updateClientAction(clientId!, payload);
+        }
+        invalidate("clients", "entries");
+        onSaved();
+      } catch (e) {
+        setSaveError(e instanceof Error ? e.message : "Something went wrong");
       }
-      invalidate("clients", "entries");
-      onSaved();
     });
   }
 
@@ -553,13 +560,16 @@ function ClientForm({
         )}
       </div>
 
-      <div className="px-6 py-4 border-t flex gap-3">
-        <Button variant="outline" className="flex-1" onClick={onClose} disabled={isPending}>
-          Cancel
-        </Button>
-        <Button className="flex-1" onClick={handleSave} disabled={isPending || !form.name.trim()}>
-          {isPending ? <Spinner className="size-4" /> : isNew ? "Create Client" : "Save Changes"}
-        </Button>
+      <div className="px-6 py-4 border-t flex flex-col gap-3">
+        {saveError && <p className="text-sm text-destructive">{saveError}</p>}
+        <div className="flex gap-3">
+          <Button variant="outline" className="flex-1" onClick={() => { setForm(initial); onClose(); }} disabled={isPending}>
+            Cancel
+          </Button>
+          <Button className="flex-1" onClick={handleSave} disabled={isPending || !form.name.trim()}>
+            {isPending ? <Spinner className="size-4" /> : isNew ? "Create Client" : "Save Changes"}
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -570,10 +580,13 @@ function ClientForm({
 function ClientDetail({
   client,
   onEdit,
+  onClose,
 }: {
   client: Client;
   onEdit: () => void;
+  onClose: () => void;
 }) {
+  const router = useRouter();
   const [recentInvoices, setRecentInvoices] = useState<RecentInvoice[] | null>(null);
 
   useEffect(() => {
@@ -691,6 +704,14 @@ function ClientDetail({
               {recentInvoices.map((inv) => (
                 <RecentInvoiceRow key={inv.id} invoice={inv} />
               ))}
+              {client.invoice_count > 5 && (
+                <button
+                  onClick={() => { onClose(); router.push("/?view=invoices"); }}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-1 text-left"
+                >
+                  View all {client.invoice_count} invoices →
+                </button>
+              )}
             </div>
           )}
         </Section>
@@ -742,7 +763,7 @@ function ClientSheetContent({
     );
   }
 
-  return <ClientDetail key={client.id} client={client} onEdit={() => setView("edit")} />;
+  return <ClientDetail key={client.id} client={client} onEdit={() => setView("edit")} onClose={onClose} />;
 }
 
 export function ClientSheet({

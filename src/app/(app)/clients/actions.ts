@@ -67,6 +67,15 @@ export type DeleteClientResult =
 export async function deleteClientAction(clientId: string): Promise<DeleteClientResult> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
 
+  const { data: owned } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("id", clientId)
+    .eq("user_id", userId)
+    .single();
+
+  if (!owned) throw new Error("deleteClientAction: client not found");
+
   const [{ count: invoiceCount }, { count: entryCount }] = await Promise.all([
     supabase.from("invoices").select("id", { count: "exact", head: true }).eq("client_id", clientId).eq("user_id", userId),
     supabase.from("entries").select("id", { count: "exact", head: true }).eq("client_id", clientId).eq("user_id", userId),
