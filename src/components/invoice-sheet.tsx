@@ -162,14 +162,14 @@ function LineItemView({ mode, invoiceId, nextSortOrder, item, onSave, onCancel }
           <label className="text-sm font-medium">Amount ($)</label>
           <Input type="number" step="0.01" className="text-sm" value={amount} onChange={(e) => setAmount(e.target.value)} />
         </div>
+        {mode === "edit" && (
+          <Button variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleDelete} disabled={isDeleting || isPending}>
+            {isDeleting ? "Deleting…" : "Delete line"}
+          </Button>
+        )}
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
       <SheetFooter className="px-6 py-4 border-t flex-row gap-2">
-        {mode === "edit" && (
-          <Button variant="destructive" size="icon-lg" className="shrink-0" onClick={handleDelete} disabled={isDeleting || isPending}>
-            <Trash2 className="size-4" />
-          </Button>
-        )}
         <Button size="lg" variant="outline" className="flex-1" onClick={onCancel} disabled={isPending || isDeleting}>
           Cancel
         </Button>
@@ -498,7 +498,9 @@ export function InvoiceSheet({
                 </div>
               </>
             )}
-            <Separator />
+            {effectiveInvoiceDetail && (effectiveInvoiceDetail.entries.length > 0 || effectiveInvoiceDetail.line_items.length > 0) && (
+              <Separator />
+            )}
             <div className="flex justify-between font-medium">
               <span>Total</span>
               <span className="tabular-nums">
