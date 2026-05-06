@@ -16,17 +16,19 @@ export async function createInvoice(clientId: string): Promise<Invoice> {
     .eq("user_id", userId)
     .single();
   if (seqError) throw new Error(`createInvoice: ${seqError.message}`);
+  // invoice_sequence is not in generated DB types
   const seq = seqRaw as unknown as { invoice_prefix: string };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: numData, error: numError } = await (supabase.rpc as any)("next_invoice_number_for_user", { p_user_id: userId });
+  // next_invoice_number_for_user RPC is not in generated DB types
+  const { data: numData, error: numError } = await supabase.rpc("next_invoice_number_for_user" as never, { p_user_id: userId } as never);
   if (numError) throw new Error(`createInvoice: ${numError.message}`);
+  const invoiceNum = numData as number;
 
   const { data: inv, error: invError } = await supabase
     .from("invoices")
     .insert({
       user_id: userId,
-      invoice_number: `${seq.invoice_prefix}${numData}`,
+      invoice_number: `${seq.invoice_prefix}${invoiceNum}`,
       client_id: clientId,
       subtotal: 0,
       super_amount: 0,
@@ -93,6 +95,7 @@ export async function generateInvoices(groupKeys: string[]): Promise<{ created: 
     .single();
 
   if (seqError) throw new Error(`generateInvoices: ${seqError.message}`);
+  // invoice_sequence is not in generated DB types
   const seq = seqRaw as unknown as { invoice_prefix: string; due_date_offset: number };
 
   const dueOffset = seq.due_date_offset ?? 30;
@@ -113,9 +116,10 @@ export async function generateInvoices(groupKeys: string[]): Promise<{ created: 
     );
     if (entries.length === 0) continue;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: numData, error: numError } = await (supabase.rpc as any)("next_invoice_number_for_user", { p_user_id: userId });
+    // next_invoice_number_for_user RPC is not in generated DB types
+    const { data: numData, error: numError } = await supabase.rpc("next_invoice_number_for_user" as never, { p_user_id: userId } as never);
     if (numError) throw new Error(`generateInvoices: ${numError.message}`);
+    const invoiceNum = numData as number;
 
     const subtotal = entries.reduce((s, e) => s + (e.base_amount ?? 0) + (e.bonus_amount ?? 0), 0);
     const superAmount = entries.reduce((s, e) => s + (e.super_amount ?? 0), 0);
@@ -125,7 +129,7 @@ export async function generateInvoices(groupKeys: string[]): Promise<{ created: 
       .from("invoices")
       .insert({
         user_id: userId,
-        invoice_number: `${seq.invoice_prefix}${numData}`,
+        invoice_number: `${seq.invoice_prefix}${invoiceNum}`,
         client_id: group.clientId,
         subtotal,
         super_amount: superAmount,
