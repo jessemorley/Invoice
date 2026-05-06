@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetHeader,
@@ -46,7 +47,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Pencil } from "lucide-react";
+import { Pencil, X } from "lucide-react";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -595,19 +596,27 @@ function ClientDetail({
 
   return (
     <>
-      <SheetHeader className="px-6 py-5 border-b">
-        <div className="flex items-center gap-3">
-          <ColorDot clientId={client.id} current={client.color} />
-          <SheetTitle>{client.name}</SheetTitle>
-          {!client.is_active && (
-            <span className="ml-auto text-xs text-muted-foreground border rounded-full px-2 py-0.5">Inactive</span>
-          )}
-          <Button variant="ghost" size="icon" className="ml-auto shrink-0 size-8" onClick={onEdit} aria-label="Edit client">
-            <Pencil className="size-4" />
-          </Button>
+      <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
+        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <ColorDot clientId={client.id} current={client.color} />
+            <SheetTitle className="truncate">{client.name}</SheetTitle>
+            {!client.is_active && (
+              <span className="shrink-0 text-xs text-muted-foreground border rounded-full px-2 py-0.5">Inactive</span>
+            )}
+          </div>
+          <SheetDescription>{BILLING_LABEL[client.billing_type]}</SheetDescription>
         </div>
-        <SheetDescription>{BILLING_LABEL[client.billing_type]}</SheetDescription>
-      </SheetHeader>
+        <Button variant="ghost" size="icon" className="shrink-0 size-8 self-center" onClick={onEdit} aria-label="Edit client">
+          <Pencil className="size-4" />
+        </Button>
+        <SheetClose asChild>
+          <Button variant="ghost" size="icon" className="shrink-0 self-center size-8">
+            <X className="size-5" />
+            <span className="sr-only">Close</span>
+          </Button>
+        </SheetClose>
+      </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-6">
         <Section title="Contact">
