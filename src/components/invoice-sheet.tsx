@@ -163,7 +163,7 @@ function LineItemView({ mode, invoiceId, nextSortOrder, item, onSave, onCancel }
           <Input type="number" step="0.01" className="text-sm" value={amount} onChange={(e) => setAmount(e.target.value)} />
         </div>
         {mode === "edit" && (
-          <Button variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleDelete} disabled={isDeleting || isPending}>
+          <Button variant="ghost" className="self-start text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleDelete} disabled={isDeleting || isPending}>
             {isDeleting ? "Deleting…" : "Delete line"}
           </Button>
         )}
