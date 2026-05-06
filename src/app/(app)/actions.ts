@@ -9,7 +9,6 @@ import {
   fetchDashboardData,
   fetchDashboardEmails,
   fetchUninvoicedGroups,
-  fetchClients,
   fetchFullClients,
   fetchWorkflowRates,
 } from "@/lib/queries";
@@ -41,7 +40,7 @@ export async function loadInvoicesViewData() {
   const [invoices, uninvoicedGroups, clients] = await Promise.all([
     fetchInvoices(userId, token),
     fetchUninvoicedGroups(userId, token),
-    fetchClients(userId, token),
+    fetchFullClients(userId, token),
   ]);
   return { invoices, uninvoicedCount: uninvoicedGroups.length, clients };
 }

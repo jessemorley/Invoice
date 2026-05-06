@@ -5,7 +5,61 @@ import { createClient } from "@/lib/supabase-server";
 import { getAuthUserId, getAuthToken, getAuthUser } from "@/lib/auth";
 import { fetchUninvoicedGroups, fetchScheduledEmailForInvoice, fetchBusinessDetails, fetchInvoiceDetail, fetchFullClients, fetchWorkflowRates, fetchEntryById, fetchUserPreferences, CACHE_TAGS } from "@/lib/queries";
 import { inngest } from "@/lib/inngest";
-import type { InvoiceStatus } from "@/lib/types";
+import type { Invoice, InvoiceStatus } from "@/lib/types";
+
+export async function createInvoice(clientId: string): Promise<Invoice> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+
+  const { data: seqRaw, error: seqError } = await supabase
+    .from("invoice_sequence")
+    .select("invoice_prefix")
+    .eq("user_id", userId)
+    .single();
+  if (seqError) throw new Error(`createInvoice: ${seqError.message}`);
+  const seq = seqRaw as unknown as { invoice_prefix: string };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: numData, error: numError } = await (supabase.rpc as any)("next_invoice_number_for_user", { p_user_id: userId });
+  if (numError) throw new Error(`createInvoice: ${numError.message}`);
+
+  const { data: inv, error: invError } = await supabase
+    .from("invoices")
+    .insert({
+      user_id: userId,
+      invoice_number: `${seq.invoice_prefix}${numData}`,
+      client_id: clientId,
+      subtotal: 0,
+      super_amount: 0,
+      total: 0,
+      status: "draft",
+    })
+    .select("id, invoice_number, status, issued_date, paid_date, subtotal, super_amount, total, clients(id, name, color, billing_type)")
+    .single();
+  if (invError) throw new Error(`createInvoice: ${invError.message}`);
+
+  updateTag(CACHE_TAGS.invoices);
+  refresh();
+
+  const c = (Array.isArray(inv.clients) ? inv.clients[0] : inv.clients) as {
+    id: string; name: string; color: string | null; billing_type: string;
+  };
+  return {
+    id: inv.id,
+    number: inv.invoice_number,
+    status: inv.status as InvoiceStatus,
+    issued_date: inv.issued_date,
+    paid_date: inv.paid_date,
+    subtotal: inv.subtotal,
+    super_amount: inv.super_amount,
+    total: inv.total,
+    client: { id: c.id, name: c.name, color: c.color ?? "#9ca3af", billing_type: c.billing_type as Invoice["client"]["billing_type"] },
+  };
+}
+
+export async function loadInvoiceDetail(invoiceId: string) {
+  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  return fetchInvoiceDetail(invoiceId, userId, token);
+}
 
 export async function revalidateInvoices() {
   updateTag(CACHE_TAGS.invoices);

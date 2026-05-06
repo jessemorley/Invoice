@@ -49,7 +49,6 @@ import { PageHeader } from "@/components/page-header";
 import { InvoiceSheet } from "@/components/invoice-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
-import { NewInvoiceSheet } from "@/components/new-invoice-sheet";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { EntrySheet } from "@/components/entry-sheet";
 import { ChevronDown, FileText, Plus, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
@@ -220,12 +219,12 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
 type Props = {
   invoices?: Invoice[];
   uninvoicedCount?: number;
-  clients?: { id: string; name: string }[];
+  clients?: Client[];
   loading?: boolean;
 };
 
 const EMPTY_INVOICES: Invoice[] = [];
-const EMPTY_CLIENTS: { id: string; name: string }[] = [];
+const EMPTY_CLIENTS: Client[] = [];
 const PAGE_SIZE = 25;
 
 export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uninvoicedCount = 0, clients = EMPTY_CLIENTS, loading = false }: Props) {
@@ -722,9 +721,11 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         onOpenChange={setGenerateOpen}
         onBlankInvoice={() => setNewInvoiceOpen(true)}
       />
-      <NewInvoiceSheet
+      <InvoiceSheet
         open={newInvoiceOpen}
         onOpenChange={setNewInvoiceOpen}
+        invoice={null}
+        clients={clients}
       />
     </div>
   );

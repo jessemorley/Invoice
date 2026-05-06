@@ -41,7 +41,7 @@ export type ViewId = "dashboard" | "entries" | "invoices" | "clients" | "expense
 
 type DashboardState = { data: DashboardData } | null;
 type EntriesState = { entries: Entry[]; clients: Client[]; workflowRates: WorkflowRate[] } | null;
-type InvoicesState = { invoices: Invoice[]; uninvoicedCount: number; clients: { id: string; name: string }[] } | null;
+type InvoicesState = { invoices: Invoice[]; uninvoicedCount: number; clients: Client[] } | null;
 type ClientsState = Client[] | null;
 type ExpensesState = Expense[] | null;
 type SettingsState = { businessDetails: BusinessDetails | null; invoiceSequence: InvoiceSequence | null; userPreferences: UserPreferences | null } | null;
