@@ -364,7 +364,7 @@ async function recomputeInvoiceTotal(supabase: Awaited<ReturnType<typeof createC
   if (updateError) throw new Error(`recomputeInvoiceTotal: ${updateError.message}`);
 }
 
-export async function createLineItem(invoiceId: string, data: { description: string; quantity: number | null; amount: number; sort_order: number }) {
+export async function createLineItem(invoiceId: string, data: { description: string; quantity: number | null; amount: number; sort_order: number; details: string | null }) {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { error } = await supabase
     .from("invoice_line_items")
@@ -375,6 +375,7 @@ export async function createLineItem(invoiceId: string, data: { description: str
       quantity: data.quantity,
       amount: data.amount,
       sort_order: data.sort_order,
+      details: data.details,
     });
   if (error) throw new Error(`createLineItem: ${error.message}`);
   await recomputeInvoiceTotal(supabase, invoiceId);
@@ -382,11 +383,11 @@ export async function createLineItem(invoiceId: string, data: { description: str
   refresh();
 }
 
-export async function updateLineItem(id: string, data: { description: string; quantity: number | null; amount: number }) {
+export async function updateLineItem(id: string, data: { description: string; quantity: number | null; amount: number; details: string | null }) {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { data: item, error } = await supabase
     .from("invoice_line_items")
-    .update({ description: data.description, quantity: data.quantity, amount: data.amount })
+    .update({ description: data.description, quantity: data.quantity, amount: data.amount, details: data.details })
     .eq("id", id)
     .eq("user_id", userId)
     .select("invoice_id")

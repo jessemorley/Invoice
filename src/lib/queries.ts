@@ -559,7 +559,7 @@ export async function fetchInvoiceDetail(invoiceId: string, userId: string, toke
       *,
       clients (id, name, color, address, suburb, email, abn, contact_name, entry_label, pays_super, super_rate, show_super_on_invoice, rate_hourly),
       entries (id, date, description, billing_type_snapshot, day_type, workflow_type, brand, shoot_client, role, skus, hours_worked, start_time, finish_time, break_minutes, base_amount, bonus_amount, super_amount, total_amount),
-      invoice_line_items (id, invoice_id, description, quantity, amount, sort_order)
+      invoice_line_items (id, invoice_id, description, quantity, amount, sort_order, details)
     `)
     .eq("id", invoiceId)
     .eq("user_id", userId)
