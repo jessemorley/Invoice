@@ -83,20 +83,25 @@ export async function fetchEntries(userId: string, token: string, before?: strin
   "use cache";
   cacheTag(CACHE_TAGS.entries);
   const supabase = createTokenClient(token);
-  const windowEnd = before ?? new Date().toISOString().slice(0, 10);
+  const anchor = before ?? new Date().toISOString().slice(0, 10);
   const windowStart = (() => {
-    const d = new Date(windowEnd + "T00:00:00");
+    const d = new Date(anchor + "T00:00:00");
     d.setMonth(d.getMonth() - 2);
     return d.toISOString().slice(0, 10);
   })();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("entries")
     .select("*, clients(id, name, billing_type, color), invoices(id, invoice_number, status)")
     .eq("user_id", userId)
     .gte("date", windowStart)
-    .lte("date", windowEnd)
     .order("date", { ascending: false });
+
+  // Only cap at `before` when paginating backward; on initial load include all dates
+  // (including future-dated entries and today in non-UTC timezones)
+  if (before) query = query.lte("date", before);
+
+  const { data, error } = await query;
 
   if (error) throw new Error(`fetchEntries: ${error.message}`);
 
@@ -137,7 +142,6 @@ export async function fetchDashboardEntries(userId: string, token: string): Prom
   "use cache";
   cacheTag(CACHE_TAGS.entries);
   const supabase = createTokenClient(token);
-  const windowEnd = new Date().toISOString().slice(0, 10);
   const windowStart = (() => {
     const d = new Date();
     d.setMonth(d.getMonth() - 18);
@@ -149,7 +153,6 @@ export async function fetchDashboardEntries(userId: string, token: string): Prom
     .select("*, clients(id, name, billing_type, color), invoices(id, invoice_number, status)")
     .eq("user_id", userId)
     .gte("date", windowStart)
-    .lte("date", windowEnd)
     .order("date", { ascending: false });
 
   if (error) throw new Error(`fetchDashboardEntries: ${error.message}`);
