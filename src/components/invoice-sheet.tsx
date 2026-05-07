@@ -92,10 +92,11 @@ function defaultForm(invoice: Invoice): InvoiceFormData {
 
 type LineItemViewProps =
   | { mode: "add"; invoiceId: string; nextSortOrder: number; item?: never; onSave: () => void; onCancel: () => void }
-  | { mode: "edit"; invoiceId?: never; nextSortOrder?: never; item: { id: string; description: string; quantity: number | null; amount: number }; onSave: () => void; onCancel: () => void };
+  | { mode: "edit"; invoiceId?: never; nextSortOrder?: never; item: { id: string; description: string; quantity: number | null; amount: number; details: string | null }; onSave: () => void; onCancel: () => void };
 
 function LineItemView({ mode, invoiceId, nextSortOrder, item, onSave, onCancel }: LineItemViewProps) {
   const [description, setDescription] = useState(mode === "edit" ? item.description : "");
+  const [details, setDetails] = useState(mode === "edit" ? (item.details ?? "") : "");
   const [quantity, setQuantity] = useState(mode === "edit" && item.quantity != null ? String(item.quantity) : "");
   const [amount, setAmount] = useState(mode === "edit" ? String(item.amount) : "");
   const [isPending, startTransition] = useTransition();
@@ -109,9 +110,11 @@ function LineItemView({ mode, invoiceId, nextSortOrder, item, onSave, onCancel }
     setError(null);
     startTransition(async () => {
       try {
+        const detailsValue = details.trim() !== "" ? details.trim() : null;
         if (mode === "add") {
           await createLineItem(invoiceId, {
             description: description.trim(),
+            details: detailsValue,
             quantity: quantity.trim() !== "" ? parseFloat(quantity) : null,
             amount: parseFloat(amount),
             sort_order: nextSortOrder,
@@ -119,6 +122,7 @@ function LineItemView({ mode, invoiceId, nextSortOrder, item, onSave, onCancel }
         } else {
           await updateLineItem(item.id, {
             description: description.trim(),
+            details: detailsValue,
             quantity: quantity.trim() !== "" ? parseFloat(quantity) : null,
             amount: parseFloat(amount),
           });
@@ -159,6 +163,10 @@ function LineItemView({ mode, invoiceId, nextSortOrder, item, onSave, onCancel }
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">Description</label>
           <Input className="text-sm" value={description} onChange={(e) => setDescription(e.target.value)} autoFocus />
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium">Details <span className="text-muted-foreground font-normal">(optional)</span></label>
+          <Input className="text-sm" value={details} onChange={(e) => setDetails(e.target.value)} />
         </div>
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">Quantity <span className="text-muted-foreground font-normal">(optional)</span></label>

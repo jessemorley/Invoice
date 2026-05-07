@@ -138,7 +138,8 @@ type RowData =
   | { type: "entry"; entry: Entry; clientRateHourly: number }
   | { type: "sku_bonus"; entry: Entry }
   | { type: "time_range"; entry: Entry }
-  | { type: "line_item"; item: LineItem };
+  | { type: "line_item"; item: LineItem }
+  | { type: "line_item_detail"; item: LineItem };
 
 function buildRows(entries: Entry[], lineItems: LineItem[], clientRateHourly: number): RowData[] {
   const rows: RowData[] = [];
@@ -156,6 +157,9 @@ function buildRows(entries: Entry[], lineItems: LineItem[], clientRateHourly: nu
 
   for (const item of lineItems) {
     rows.push({ type: "line_item", item });
+    if (item.details) {
+      rows.push({ type: "line_item_detail", item });
+    }
   }
 
   return rows;
@@ -218,6 +222,18 @@ function TimeRangeRow({ entry }: { entry: Entry }) {
     <View style={s.tableSubRow}>
       <Text style={s.colDate} />
       <Text style={[s.colItem, s.subText]}>{label}</Text>
+      <Text style={s.colQty} />
+      <Text style={s.colRate} />
+      <Text style={s.colAmount} />
+    </View>
+  );
+}
+
+function LineItemDetailRow({ item }: { item: LineItem }) {
+  return (
+    <View style={s.tableSubRow}>
+      <Text style={s.colDate} />
+      <Text style={[s.colItem, s.subText]}>{item.details}</Text>
       <Text style={s.colQty} />
       <Text style={s.colRate} />
       <Text style={s.colAmount} />
@@ -315,6 +331,9 @@ export function InvoiceDocument({ invoice, business }: Props) {
             }
             if (row.type === "time_range") {
               return <TimeRangeRow key={`tr-${row.entry.id}-${i}`} entry={row.entry} />;
+            }
+            if (row.type === "line_item_detail") {
+              return <LineItemDetailRow key={`lid-${row.item.id}`} item={row.item} />;
             }
             return <LineItemRow key={`li-${row.item.id}`} item={row.item} />;
           })}

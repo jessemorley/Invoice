@@ -115,6 +115,7 @@ export type InvoiceLineItem = {
   quantity: number | null;
   amount: number;
   sort_order: number;
+  details: string | null;
 };
 
 export type InvoiceEntry = {
