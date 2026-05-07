@@ -369,6 +369,7 @@ export type Database = {
           amount: number
           created_at: string
           description: string
+          details: string | null
           id: string
           invoice_id: string
           quantity: number | null
@@ -379,6 +380,7 @@ export type Database = {
           amount: number
           created_at?: string
           description: string
+          details?: string | null
           id?: string
           invoice_id: string
           quantity?: number | null
@@ -389,6 +391,7 @@ export type Database = {
           amount?: number
           created_at?: string
           description?: string
+          details?: string | null
           id?: string
           invoice_id?: string
           quantity?: number | null
