@@ -94,6 +94,16 @@ export function ViewSwitch({
     }
   }, []);
 
+  // Signal to the splash that the app shell has hydrated. Deferred via
+  // rAF so the splash's listener (attached by a parent effect that runs
+  // after this child effect) is in place before the event fires.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      window.dispatchEvent(new Event("app:ready"));
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   // Fetch on first reveal of each view
   useEffect(() => {
     if (revealed.current.has(view)) return;
