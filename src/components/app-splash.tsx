@@ -37,7 +37,7 @@ export function AppSplash() {
         className="text-lg font-semibold text-foreground motion-safe:animate-[text-pulse_3s_ease-in-out_infinite]"
         style={{ fontFamily: "var(--font-sans)" }}
       >
-        Invoicing
+        Invoice
       </span>
     </div>
   );
