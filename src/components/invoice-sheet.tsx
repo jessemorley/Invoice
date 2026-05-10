@@ -305,18 +305,12 @@ export function InvoiceSheet({
       const res = await fetch(`/api/invoices/${activeInvoice.id}/pdf`);
       const blob = await res.blob();
       const filename = res.headers.get("Content-Disposition")?.match(/filename="(.+?)"/)?.[1] ?? `Invoice ${activeInvoice.number}.pdf`;
-      if (navigator.maxTouchPoints > 0 && navigator.canShare?.({ files: [new File([blob], filename, { type: "application/pdf" })] })) {
-        await navigator.share({ files: [new File([blob], filename, { type: "application/pdf" })] }).catch((e) => {
-          if (e?.name !== "AbortError") throw e;
-        });
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
-      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
     } finally {
       setIsDownloading(false);
     }
