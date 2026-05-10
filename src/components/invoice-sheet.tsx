@@ -161,20 +161,20 @@ function LineItemView({ mode, invoiceId, nextSortOrder, item, onSave, onCancel }
       </div>
       <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium">Description</label>
-          <Input className="text-sm" value={description} onChange={(e) => setDescription(e.target.value)} autoFocus />
+          <label htmlFor="li-description" className="text-sm font-medium">Description</label>
+          <Input id="li-description" className="text-sm" value={description} onChange={(e) => setDescription(e.target.value)} autoFocus />
         </div>
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium">Details <span className="text-muted-foreground font-normal">(optional)</span></label>
-          <Input className="text-sm" value={details} onChange={(e) => setDetails(e.target.value)} />
+          <label htmlFor="li-details" className="text-sm font-medium">Details <span className="text-muted-foreground font-normal">(optional)</span></label>
+          <Input id="li-details" className="text-sm" maxLength={200} value={details} onChange={(e) => setDetails(e.target.value)} />
         </div>
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium">Quantity <span className="text-muted-foreground font-normal">(optional)</span></label>
-          <Input type="number" className="text-sm" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+          <label htmlFor="li-quantity" className="text-sm font-medium">Quantity <span className="text-muted-foreground font-normal">(optional)</span></label>
+          <Input id="li-quantity" type="number" className="text-sm" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
         </div>
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium">Amount ($)</label>
-          <Input type="number" step="0.01" className="text-sm" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          <label htmlFor="li-amount" className="text-sm font-medium">Amount ($)</label>
+          <Input id="li-amount" type="number" step="0.01" className="text-sm" value={amount} onChange={(e) => setAmount(e.target.value)} />
         </div>
         {mode === "edit" && (
           <Button variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleDelete} disabled={isDeleting || isPending}>
@@ -507,9 +507,12 @@ export function InvoiceSheet({
                     key={item.id}
                     type="button"
                     onClick={() => setView({ mode: "edit-line-item", item })}
-                    className="flex justify-between gap-4 -mx-2 px-2 py-1 rounded-md hover:bg-muted/60 transition-colors text-left w-[calc(100%+1rem)]"
+                    className="flex items-center gap-4 -mx-2 px-2 py-1 rounded-md hover:bg-muted/60 transition-colors text-left w-[calc(100%+1rem)]"
                   >
-                    <span className="text-muted-foreground">{item.description}</span>
+                    <div className="flex flex-col gap-0.5 flex-1">
+                      <span className="font-medium">{item.description}</span>
+                      {item.details && <span className="text-muted-foreground">{item.details}</span>}
+                    </div>
                     <span className="tabular-nums shrink-0">{formatAUD(item.amount)}</span>
                   </button>
                 ))}

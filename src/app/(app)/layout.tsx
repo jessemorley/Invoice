@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { AppSidebar } from "@/components/app-nav";
 import { Sidebar, SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { FloatingDock } from "@/components/floating-dock";
+import { AppSplash } from "@/components/app-splash";
 import { getAuthUser } from "@/lib/auth";
 
 async function SidebarWithUser() {
@@ -21,6 +22,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <Suspense>
         <FloatingDock />
       </Suspense>
+      <AppSplash />
     </SidebarProvider>
   );
 }
