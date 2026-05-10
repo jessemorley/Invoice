@@ -184,15 +184,15 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                     key={invoice.id}
                     className="flex items-center justify-between py-2 px-3 rounded-md border border-border hover:bg-accent/50 transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <div
-                        className="size-2 rounded-full"
+                        className="size-2 rounded-full shrink-0"
                         style={{ backgroundColor: invoice.client.color }}
                       />
-                      <span className="text-sm font-medium">{invoice.number}</span>
-                      <span className="text-sm text-muted-foreground">{invoice.client.name}</span>
+                      <span className="text-sm font-medium shrink-0">{invoice.number}</span>
+                      <span className="text-sm text-muted-foreground truncate">{invoice.client.name}</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
                       <span className="text-sm tabular-nums">{formatAUD(invoice.total)}</span>
                       <Badge variant="outline">{invoice.status}</Badge>
                     </div>
