@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect, useTransition, useRef, useCallback } from "react";
-import { revalidateEntries, loadEarlierEntries } from "@/app/(app)/entries/actions";
+import {
+  revalidateEntries,
+  loadEarlierEntries,
+} from "@/app/(app)/entries/actions";
 import { invalidate } from "@/lib/invalidate";
 import type { Entry, Client, WorkflowRate } from "@/lib/types";
 import { formatAUD, formatDate } from "@/lib/format";
@@ -18,10 +21,13 @@ import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 
 type ViewMode = "invoice" | "week" | "none";
 
-const INVOICE_STATUS_VARIANT: Record<string, "outline" | "secondary" | "default"> = {
-  draft:  "outline",
+const INVOICE_STATUS_VARIANT: Record<
+  string,
+  "outline" | "secondary" | "default"
+> = {
+  draft: "outline",
   issued: "secondary",
-  paid:   "default",
+  paid: "default",
 };
 
 type ClientWeekGroup = {
@@ -64,14 +70,19 @@ function groupByClientWeek(entries: Entry[]): ClientWeekGroup[] {
       isoWeek: first.iso_week,
       dateRange: weekDateRange(groupEntries.map((e) => e.date)),
       entries: groupEntries.sort((a, b) => b.date.localeCompare(a.date)),
-      subtotal: groupEntries.reduce((sum, e) => sum + e.base_amount + e.bonus_amount, 0),
+      subtotal: groupEntries.reduce(
+        (sum, e) => sum + e.base_amount + e.bonus_amount,
+        0,
+      ),
       invoiced,
       invoiceNumber: invoiced ? first.invoice?.number : undefined,
       invoiceStatus: invoiced ? first.invoice?.status : undefined,
     });
   }
 
-  return groups.sort((a, b) => b.entries[0].date.localeCompare(a.entries[0].date));
+  return groups.sort((a, b) =>
+    b.entries[0].date.localeCompare(a.entries[0].date),
+  );
 }
 
 function weekDateRange(dates: string[]): string {
@@ -82,8 +93,10 @@ function weekDateRange(dates: string[]): string {
   const lastDay = last.getDate();
   const firstMonth = first.toLocaleDateString("en-AU", { month: "short" });
   const lastMonth = last.toLocaleDateString("en-AU", { month: "short" });
-  if (sorted[0] === sorted[sorted.length - 1]) return `${firstDay} ${firstMonth}`;
-  if (first.getMonth() === last.getMonth()) return `${firstDay}–${lastDay} ${firstMonth}`;
+  if (sorted[0] === sorted[sorted.length - 1])
+    return `${firstDay} ${firstMonth}`;
+  if (first.getMonth() === last.getMonth())
+    return `${firstDay}–${lastDay} ${firstMonth}`;
   return `${firstDay} ${firstMonth} – ${lastDay} ${lastMonth}`;
 }
 
@@ -94,7 +107,8 @@ function isoWeekDateRange(isoWeek: string): string {
   monday.setDate(jan4.getDate() - ((jan4.getDay() || 7) - 1) + (week - 1) * 7);
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
-  const fmt = (d: Date) => `${d.getDate()} ${d.toLocaleDateString("en-AU", { month: "short" })}`;
+  const fmt = (d: Date) =>
+    `${d.getDate()} ${d.toLocaleDateString("en-AU", { month: "short" })}`;
   return `${fmt(monday)} – ${fmt(sunday)}`;
 }
 
@@ -114,7 +128,10 @@ function groupByWeek(entries: Entry[]): WeekGroup[] {
       dateRange: isoWeekDateRange(key),
       latestDate: sorted[0].date,
       entries: sorted,
-      subtotal: groupEntries.reduce((sum, e) => sum + e.base_amount + e.bonus_amount, 0),
+      subtotal: groupEntries.reduce(
+        (sum, e) => sum + e.base_amount + e.bonus_amount,
+        0,
+      ),
     });
   }
 
@@ -192,15 +209,28 @@ function EntryRow({
               className="size-2 rounded-full shrink-0"
               style={{ backgroundColor: entry.client.color }}
             />
-            <span className="text-sm font-medium truncate">{entry.client.name}</span>
+            <span className="text-sm font-medium truncate">
+              {entry.client.name}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground truncate">
               {entry.shoot_client || entry.description || entry.workflow_type}
             </span>
+            {entry.brand && (
+              <span className="text-sm text-muted-foreground shrink-0">
+                ({entry.brand})
+              </span>
+            )}
             {entry.role && (
               <span className="text-sm text-muted-foreground shrink-0">
-                ({entry.role === "Photographer" ? "P" : entry.role === "Operator" || entry.role === "O" ? "O" : entry.role})
+                (
+                {entry.role === "Photographer"
+                  ? "P"
+                  : entry.role === "Operator" || entry.role === "O"
+                    ? "O"
+                    : entry.role}
+                )
               </span>
             )}
           </div>
@@ -210,22 +240,36 @@ function EntryRow({
           <span className="text-sm text-foreground truncate">
             {entry.shoot_client || entry.description || entry.workflow_type}
           </span>
+          {entry.brand && (
+            <span className="text-sm text-muted-foreground shrink-0">
+              ({entry.brand})
+            </span>
+          )}
           {entry.role && (
             <span className="text-sm text-muted-foreground shrink-0">
-              ({entry.role === "Photographer" ? "P" : entry.role === "Operator" || entry.role === "O" ? "O" : entry.role})
+              (
+              {entry.role === "Photographer"
+                ? "P"
+                : entry.role === "Operator" || entry.role === "O"
+                  ? "O"
+                  : entry.role}
+              )
             </span>
           )}
         </div>
       )}
       <span className="hidden md:block text-xs text-muted-foreground w-20 shrink-0">
-        {entry.billing_type === "day_rate" && (entry.day_type === "full" ? "Full day" : "Half day")}
+        {entry.billing_type === "day_rate" &&
+          (entry.day_type === "full" ? "Full day" : "Half day")}
         {entry.billing_type === "hourly" && entry.hours && `${entry.hours}h`}
       </span>
       <div className="flex items-center gap-3 shrink-0 ml-auto">
         {showClient && (
           <div className="hidden md:flex w-20 justify-start">
             {entry.invoice ? (
-              <Badge variant={INVOICE_STATUS_VARIANT[entry.invoice.status]}>{entry.invoice.number}</Badge>
+              <Badge variant={INVOICE_STATUS_VARIANT[entry.invoice.status]}>
+                {entry.invoice.number}
+              </Badge>
             ) : (
               <Badge variant="outline">Draft</Badge>
             )}
@@ -243,15 +287,21 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 border-b">
       {group.invoiced ? (
-        <Badge variant={INVOICE_STATUS_VARIANT[group.invoiceStatus ?? "draft"]}>{group.invoiceNumber}</Badge>
+        <Badge variant={INVOICE_STATUS_VARIANT[group.invoiceStatus ?? "draft"]}>
+          {group.invoiceNumber}
+        </Badge>
       ) : (
-        <Badge variant="outline" className="cursor-pointer">Draft</Badge>
+        <Badge variant="outline" className="cursor-pointer">
+          Draft
+        </Badge>
       )}
       <div
         className="size-2.5 rounded-full shrink-0"
         style={{ backgroundColor: group.clientColor }}
       />
-      <span className="text-sm font-semibold text-foreground">{group.clientName}</span>
+      <span className="text-sm font-semibold text-foreground">
+        {group.clientName}
+      </span>
       <div className="flex-1" />
       <span className="text-xs tabular-nums font-semibold text-foreground text-right shrink-0">
         {formatAUD(group.subtotal)}
@@ -263,7 +313,9 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
 function WeekGroupHeader({ group }: { group: WeekGroup }) {
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 border-b">
-      <span className="text-sm font-semibold text-foreground">{group.dateRange}</span>
+      <span className="text-sm font-semibold text-foreground">
+        {group.dateRange}
+      </span>
       <div className="flex-1" />
       <span className="text-xs tabular-nums font-semibold text-foreground text-right shrink-0">
         {formatAUD(group.subtotal)}
@@ -274,7 +326,13 @@ function WeekGroupHeader({ group }: { group: WeekGroup }) {
 
 const PAGE_SIZE = 10;
 
-function LoadEarlierButton({ onLoad, isPending }: { onLoad: () => void; isPending: boolean }) {
+function LoadEarlierButton({
+  onLoad,
+  isPending,
+}: {
+  onLoad: () => void;
+  isPending: boolean;
+}) {
   if (isPending) {
     return (
       <>
@@ -329,7 +387,9 @@ function InvoiceView({
           </CardContent>
         </Card>
       ))}
-      {!hasMore && <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />}
+      {!hasMore && (
+        <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
+      )}
     </div>
   );
 }
@@ -366,7 +426,9 @@ function WeekView({
           </CardContent>
         </Card>
       ))}
-      {!hasMore && <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />}
+      {!hasMore && (
+        <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
+      )}
     </div>
   );
 }
@@ -400,7 +462,9 @@ function ListView({
           ))}
         </CardContent>
       </Card>
-      {!hasMore && <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />}
+      {!hasMore && (
+        <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
+      )}
     </div>
   );
 }
@@ -453,11 +517,17 @@ export function EntriesView({
   }
 
   function handleLoadEarlier() {
-    const oldest = entries.reduce((min, e) => e.date < min ? e.date : min, entries[0]?.date ?? new Date().toISOString().slice(0, 10));
+    const oldest = entries.reduce(
+      (min, e) => (e.date < min ? e.date : min),
+      entries[0]?.date ?? new Date().toISOString().slice(0, 10),
+    );
     startTransition(async () => {
       const earlier = await loadEarlierEntries(oldest);
       const existingIds = new Set(entries.map((e) => e.id));
-      setEntries((prev) => [...prev, ...earlier.filter((e) => !existingIds.has(e.id))]);
+      setEntries((prev) => [
+        ...prev,
+        ...earlier.filter((e) => !existingIds.has(e.id)),
+      ]);
     });
   }
 
@@ -479,7 +549,12 @@ export function EntriesView({
           <ToggleGroupItem value="week">Week</ToggleGroupItem>
           <ToggleGroupItem value="none">None</ToggleGroupItem>
         </ToggleGroup>
-        <Button size="sm" className="hidden md:flex" onClick={openNew} disabled={loading}>
+        <Button
+          size="sm"
+          className="hidden md:flex"
+          onClick={openNew}
+          disabled={loading}
+        >
           <Plus className="size-4" />
           New entry
         </Button>
@@ -502,22 +577,56 @@ export function EntriesView({
         >
           <RefreshCw
             className={`size-5 text-muted-foreground ${pullState === "refreshing" ? "animate-spin" : ""}`}
-            style={{ transform: pullState !== "refreshing" ? `rotate(${(pullDistance / 70) * 180}deg)` : undefined }}
+            style={{
+              transform:
+                pullState !== "refreshing"
+                  ? `rotate(${(pullDistance / 70) * 180}deg)`
+                  : undefined,
+            }}
           />
         </div>
         {loading ? (
           <ContentSkeleton />
         ) : (
           <>
-            {viewMode === "invoice" && <InvoiceView entries={entries} displayCount={displayCount} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
-            {viewMode === "week" && <WeekView entries={entries} displayCount={displayCount} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
-            {viewMode === "none" && <ListView entries={entries} displayCount={displayCount} onEdit={openEdit} onLoadEarlier={handleLoadEarlier} isPending={isPending} />}
+            {viewMode === "invoice" && (
+              <InvoiceView
+                entries={entries}
+                displayCount={displayCount}
+                onEdit={openEdit}
+                onLoadEarlier={handleLoadEarlier}
+                isPending={isPending}
+              />
+            )}
+            {viewMode === "week" && (
+              <WeekView
+                entries={entries}
+                displayCount={displayCount}
+                onEdit={openEdit}
+                onLoadEarlier={handleLoadEarlier}
+                isPending={isPending}
+              />
+            )}
+            {viewMode === "none" && (
+              <ListView
+                entries={entries}
+                displayCount={displayCount}
+                onEdit={openEdit}
+                onLoadEarlier={handleLoadEarlier}
+                isPending={isPending}
+              />
+            )}
           </>
         )}
       </div>
 
       <div className="md:hidden fixed bottom-18 right-4 z-40">
-        <Button size="icon" className="size-14 rounded-full shadow-lg" onClick={openNew} disabled={loading}>
+        <Button
+          size="icon"
+          className="size-14 rounded-full shadow-lg"
+          onClick={openNew}
+          disabled={loading}
+        >
           <Plus />
         </Button>
       </div>
