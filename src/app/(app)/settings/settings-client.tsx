@@ -58,7 +58,7 @@ function Field({
 
 function LoadingSkeleton() {
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
+    <div className="flex flex-col gap-4 p-4 md:p-6 mx-auto w-full max-w-6xl">
       {[1, 2, 3].map((i) => (
         <Card key={i}>
           <CardHeader>
@@ -120,7 +120,7 @@ function InfoTab({
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
+    <div className="flex flex-col gap-4 p-4 md:p-6 mx-auto w-full max-w-6xl">
       <Card className="pb-0 gap-0">
         <CardHeader>
           <CardTitle>Business Details</CardTitle>
@@ -277,7 +277,7 @@ function InvoicingTab({
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
+    <div className="flex flex-col gap-4 p-4 md:p-6 mx-auto w-full max-w-6xl">
       <Card className="pb-0 gap-0">
         <CardHeader>
           <CardTitle>Invoice Sequence</CardTitle>
@@ -345,7 +345,7 @@ function EmailTab({
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
+    <div className="flex flex-col gap-4 p-4 md:p-6 mx-auto w-full max-w-6xl">
       <Card>
         <CardHeader>
           <CardTitle>Email Preferences</CardTitle>
@@ -396,7 +396,7 @@ function AccountTab({ email, name }: { email: string; name: string }) {
   const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
+    <div className="flex flex-col gap-4 p-4 md:p-6 mx-auto w-full max-w-6xl">
       <Card className="pb-0 gap-0">
         <CardHeader>
           <CardTitle>Account</CardTitle>
