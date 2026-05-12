@@ -100,16 +100,17 @@ function weekDateRange(dates: string[]): string {
   return `${firstDay} ${firstMonth} – ${lastDay} ${lastMonth}`;
 }
 
-function isoWeekDateRange(isoWeek: string): string {
+function financialYearWeekLabel(isoWeek: string): string {
   const [year, week] = isoWeek.split("-W").map(Number);
   const jan4 = new Date(year, 0, 4);
   const monday = new Date(jan4);
   monday.setDate(jan4.getDate() - ((jan4.getDay() || 7) - 1) + (week - 1) * 7);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  const fmt = (d: Date) =>
-    `${d.getDate()} ${d.toLocaleDateString("en-AU", { month: "short" })}`;
-  return `${fmt(monday)} – ${fmt(sunday)}`;
+  const fyStartYear = monday.getMonth() >= 6 ? monday.getFullYear() : monday.getFullYear() - 1;
+  const fyJul1 = new Date(fyStartYear, 6, 1);
+  const fyWeek1Monday = new Date(fyJul1);
+  fyWeek1Monday.setDate(fyJul1.getDate() - ((fyJul1.getDay() + 6) % 7));
+  const weekNum = Math.round((monday.getTime() - fyWeek1Monday.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
+  return `Week ${weekNum}`;
 }
 
 function groupByWeek(entries: Entry[]): WeekGroup[] {
@@ -125,7 +126,7 @@ function groupByWeek(entries: Entry[]): WeekGroup[] {
     const sorted = groupEntries.sort((a, b) => b.date.localeCompare(a.date));
     groups.push({
       key,
-      dateRange: isoWeekDateRange(key),
+      dateRange: financialYearWeekLabel(key),
       latestDate: sorted[0].date,
       entries: sorted,
       subtotal: groupEntries.reduce(
