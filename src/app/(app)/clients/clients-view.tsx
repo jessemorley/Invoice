@@ -338,7 +338,7 @@ if (statusFilter === "active" && !c.is_active) return false;
 
       <ClientSheet
         open={sheetOpen}
-        onOpenChange={setSheetOpen}
+        onOpenChangeAction={setSheetOpen}
         client={selectedClient}
         initialView={sheetView}
       />

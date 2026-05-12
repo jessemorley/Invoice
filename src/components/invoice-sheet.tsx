@@ -196,7 +196,7 @@ function LineItemView({ mode, invoiceId, nextSortOrder, item, onSave, onCancel }
 
 export function InvoiceSheet({
   open,
-  onOpenChange,
+  onOpenChangeAction,
   invoice,
   invoiceDetail,
   scheduledEmail,
@@ -210,7 +210,7 @@ export function InvoiceSheet({
   clients,
 }: {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChangeAction: (open: boolean) => void;
   invoice: Invoice | null;
   invoiceDetail?: InvoiceDetail | null;
   scheduledEmail?: ScheduledEmail | null;
@@ -358,7 +358,7 @@ export function InvoiceSheet({
       try {
         await deleteInvoice(activeInvoice.id);
         invalidate("invoices", "entries");
-        onOpenChange(false);
+        onOpenChangeAction(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");
       }
@@ -372,7 +372,7 @@ export function InvoiceSheet({
       try {
         await updateInvoice(activeInvoice.id, form);
         invalidate("invoices", "entries");
-        onOpenChange(false);
+        onOpenChangeAction(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");
       }
@@ -380,7 +380,7 @@ export function InvoiceSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChangeAction}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
         {view === "client-pick" ? (
           <>

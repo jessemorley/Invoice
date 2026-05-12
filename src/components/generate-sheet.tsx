@@ -16,11 +16,11 @@ import {
 
 export function GenerateSheet({
   open,
-  onOpenChange,
+  onOpenChangeAction,
   onBlankInvoice,
 }: {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChangeAction: (open: boolean) => void;
   onBlankInvoice?: () => void;
 }) {
   const [groups, setGroups] = useState<UninvoicedGroup[]>([]);
@@ -57,7 +57,7 @@ export function GenerateSheet({
       try {
         await generateInvoices(Array.from(selected));
         invalidate("invoices", "entries");
-        onOpenChange(false);
+        onOpenChangeAction(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");
       }
@@ -67,7 +67,7 @@ export function GenerateSheet({
   const selectedCount = selected.size;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChangeAction}>
       <SheetContent side="right" className="flex flex-col gap-0 p-0 w-full sm:max-w-md">
         <SheetHeader className="px-4 py-4 border-b">
           <SheetTitle className="text-base">Generate invoices</SheetTitle>
@@ -125,7 +125,7 @@ export function GenerateSheet({
               <Button
                 size="lg"
                 variant="outline"
-                onClick={() => { onOpenChange(false); onBlankInvoice(); }}
+                onClick={() => { onOpenChangeAction(false); onBlankInvoice(); }}
                 disabled={isPending}
               >
                 Blank invoice

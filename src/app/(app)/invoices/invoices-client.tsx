@@ -642,7 +642,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
 
       <InvoiceSheet
         open={sheetOpen}
-        onOpenChange={setSheetOpen}
+        onOpenChangeAction={setSheetOpen}
         invoice={selectedInvoice}
         invoiceDetail={invoiceDetail}
         scheduledEmail={scheduledEmail}
@@ -663,7 +663,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       />
       <SentEmailSheet
         open={sentEmailOpen}
-        onOpenChange={setSentEmailOpen}
+        onOpenChangeAction={setSentEmailOpen}
         email={scheduledEmail && selectedInvoice && scheduledEmail.status !== "cancelled" ? {
           ...scheduledEmail,
           status: scheduledEmail.status as "pending" | "sent" | "failed",
@@ -673,7 +673,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       />
       <EntrySheet
         open={entrySheetOpen}
-        onOpenChange={(open) => {
+        onOpenChangeAction={(open) => {
           setEntrySheetOpen(open);
           if (!open) setSheetOpen(true);
         }}
@@ -683,7 +683,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       />
       <EmailComposeSheet
         open={composeOpen}
-        onOpenChange={(open) => {
+        onOpenChangeAction={(open) => {
           setComposeOpen(open);
           if (!open && !composeSentRef.current) setSheetOpen(true);
           if (!open) composeSentRef.current = false;
@@ -711,12 +711,12 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
 
       <GenerateSheet
         open={generateOpen}
-        onOpenChange={setGenerateOpen}
+        onOpenChangeAction={setGenerateOpen}
         onBlankInvoice={() => setNewInvoiceOpen(true)}
       />
       <InvoiceSheet
         open={newInvoiceOpen}
-        onOpenChange={setNewInvoiceOpen}
+        onOpenChangeAction={setNewInvoiceOpen}
         invoice={null}
         clients={clients}
       />

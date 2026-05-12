@@ -14,11 +14,11 @@ import { Spinner } from "@/components/ui/spinner";
 
 interface SentEmailSheetProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChangeAction: (open: boolean) => void;
   email: DashboardEmail | null;
 }
 
-export function SentEmailSheet({ open, onOpenChange, email }: SentEmailSheetProps) {
+export function SentEmailSheet({ open, onOpenChangeAction, email }: SentEmailSheetProps) {
   const [isDownloading, setIsDownloading] = useState(false);
 
   async function handleDownload() {
@@ -46,7 +46,7 @@ export function SentEmailSheet({ open, onOpenChange, email }: SentEmailSheetProp
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChangeAction}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
         <SheetHeader className="sr-only" showCloseButton={false}>
           <SheetTitle>Sent Email — Invoice {email?.invoice_number}</SheetTitle>
@@ -66,7 +66,7 @@ export function SentEmailSheet({ open, onOpenChange, email }: SentEmailSheetProp
               </div>
               <button
                 type="button"
-                onClick={() => onOpenChange(false)}
+                onClick={() => onOpenChangeAction(false)}
                 className="rounded-sm opacity-70 hover:opacity-100 focus:outline-none focus:ring-1 focus:ring-ring mt-0.5 shrink-0"
               >
                 <X className="size-4" />

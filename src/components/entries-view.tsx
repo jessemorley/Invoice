@@ -632,7 +632,7 @@ export function EntriesView({
 
       <EntrySheet
         open={sheetOpen}
-        onOpenChange={setSheetOpen}
+        onOpenChangeAction={setSheetOpen}
         entry={selectedEntry}
         clients={clients}
         workflowRates={workflowRates}
