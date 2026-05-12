@@ -132,33 +132,38 @@ function SkeletonRow() {
   );
 }
 
+function SkeletonGroupHeader() {
+  return (
+    <div className="flex items-center gap-2.5 px-4 py-2.5">
+      <Skeleton className="size-2.5 rounded-full shrink-0" />
+      <Skeleton className="h-3 w-28" />
+      <div className="flex-1" />
+      <Skeleton className="h-3 w-16" />
+    </div>
+  );
+}
+
 function SkeletonCard({ rows = 3 }: { rows?: number }) {
   return (
-    <Card className="overflow-hidden py-0 gap-0">
-      <div className="flex items-center gap-2.5 px-4 py-2.5 border-b">
-        <Skeleton className="size-2.5 rounded-full shrink-0" />
-        <Skeleton className="h-3 w-28" />
-        <Skeleton className="h-3 w-14" />
-        <div className="flex-1" />
-        <Skeleton className="h-6 w-16 rounded-md" />
-        <Skeleton className="h-3 w-16" />
-        <Skeleton className="h-3 w-24" />
-      </div>
-      <CardContent className="p-0">
-        {Array.from({ length: rows }).map((_, i) => (
-          <div key={i}>
-            {i > 0 && <Separator />}
-            <SkeletonRow />
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+    <div className="flex flex-col gap-2">
+      <SkeletonGroupHeader />
+      <Card className="overflow-hidden py-0 gap-0">
+        <CardContent className="p-0">
+          {Array.from({ length: rows }).map((_, i) => (
+            <div key={i}>
+              {i > 0 && <Separator />}
+              <SkeletonRow />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
 function ContentSkeleton() {
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
       <SkeletonCard rows={2} />
       <SkeletonCard rows={3} />
       <SkeletonCard rows={1} />
@@ -285,7 +290,7 @@ function EntryRow({
 
 function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 border-b">
+    <div className="flex items-center gap-3 px-4 py-2.5">
       {group.invoiced ? (
         <Badge variant={INVOICE_STATUS_VARIANT[group.invoiceStatus ?? "draft"]}>
           {group.invoiceNumber}
@@ -312,7 +317,7 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
 
 function WeekGroupHeader({ group }: { group: WeekGroup }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 border-b">
+    <div className="flex items-center gap-3 px-4 py-2.5">
       <span className="text-sm font-semibold text-foreground">
         {group.dateRange}
       </span>
@@ -375,17 +380,19 @@ function InvoiceView({
   return (
     <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
       {visible.map((group) => (
-        <Card key={group.key} className="overflow-hidden py-0 gap-0">
+        <div key={group.key} className="flex flex-col gap-2">
           <ClientWeekGroupHeader group={group} />
-          <CardContent className="p-0">
-            {group.entries.map((entry, i) => (
-              <div key={entry.id}>
-                {i > 0 && <Separator />}
-                <EntryRow entry={entry} onEdit={onEdit} />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+          <Card className="overflow-hidden py-0 gap-0">
+            <CardContent className="p-0">
+              {group.entries.map((entry, i) => (
+                <div key={entry.id}>
+                  {i > 0 && <Separator />}
+                  <EntryRow entry={entry} onEdit={onEdit} />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       ))}
       {hasMore && (
         <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
@@ -414,17 +421,19 @@ function WeekView({
   return (
     <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
       {visible.map((group) => (
-        <Card key={group.key} className="overflow-hidden py-0 gap-0">
+        <div key={group.key} className="flex flex-col gap-2">
           <WeekGroupHeader group={group} />
-          <CardContent className="p-0">
-            {group.entries.map((entry, i) => (
-              <div key={entry.id}>
-                {i > 0 && <Separator />}
-                <EntryRow entry={entry} showClient onEdit={onEdit} />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+          <Card className="overflow-hidden py-0 gap-0">
+            <CardContent className="p-0">
+              {group.entries.map((entry, i) => (
+                <div key={entry.id}>
+                  {i > 0 && <Separator />}
+                  <EntryRow entry={entry} showClient onEdit={onEdit} />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       ))}
       {hasMore && (
         <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
