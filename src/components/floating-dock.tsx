@@ -23,7 +23,7 @@ const itemClass = (isActive: boolean) =>
 const ItemInner = ({ isActive, icon: Icon }: { isActive: boolean; icon: (typeof tabs)[0]["icon"] }) => (
   <>
     {isActive && <span className="absolute inset-0 rounded-full bg-primary/10" />}
-    <Icon className="size-5.75 relative" strokeWidth={isActive ? 2.25 : 1.75} />
+    <Icon className="size-[23px] relative" strokeWidth={isActive ? 2.25 : 1.75} />
   </>
 );
 

@@ -19,7 +19,7 @@ export function AppSplash() {
   return (
     <div
       aria-hidden
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background transition-opacity duration-250 ease-out ${
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background transition-opacity duration-[250ms] ease-out ${
         hidden ? "opacity-0 pointer-events-none" : "opacity-100"
       }`}
       onTransitionEnd={(e) => {
