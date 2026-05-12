@@ -145,7 +145,7 @@ function SkeletonGroupHeader() {
 
 function SkeletonCard({ rows = 3 }: { rows?: number }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1">
       <SkeletonGroupHeader />
       <Card className="overflow-hidden py-0 gap-0">
         <CardContent className="p-0">
@@ -382,7 +382,7 @@ function InvoiceView({
   return (
     <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
       {visible.map((group) => (
-        <div key={group.key} className="flex flex-col gap-2">
+        <div key={group.key} className="flex flex-col gap-1">
           <ClientWeekGroupHeader group={group} />
           <Card className="overflow-hidden py-0 gap-0">
             <CardContent className="p-0">
@@ -423,7 +423,7 @@ function WeekView({
   return (
     <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
       {visible.map((group) => (
-        <div key={group.key} className="flex flex-col gap-2">
+        <div key={group.key} className="flex flex-col gap-1">
           <WeekGroupHeader group={group} />
           <Card className="overflow-hidden py-0 gap-0">
             <CardContent className="p-0">
