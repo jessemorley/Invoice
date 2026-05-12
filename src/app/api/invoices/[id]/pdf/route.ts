@@ -51,8 +51,12 @@ export async function GET(
   if (sessionError || !sessionData.session) {
     return new Response("Unauthorized", { status: 401 });
   }
-  const userId = sessionData.session.user.id;
   const token = sessionData.session.access_token;
+  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+  if (claimsError || !claimsData?.claims) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+  const userId = claimsData.claims.sub;
 
   const result = await renderPdf(id, userId, token);
   if (!result) return new Response("Invoice not found", { status: 404 });

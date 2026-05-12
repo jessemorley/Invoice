@@ -3,9 +3,12 @@ import { createClient } from "./supabase-server";
 
 export async function getAuth(): Promise<{ userId: string; token: string }> {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getSession();
-  if (error || !data.session) throw new Error("Unauthenticated");
-  return { userId: data.session.user.id, token: data.session.access_token };
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !sessionData.session) throw new Error("Unauthenticated");
+  const token = sessionData.session.access_token;
+  const { data, error } = await supabase.auth.getClaims(token);
+  if (error || !data?.claims) throw new Error("Unauthenticated");
+  return { userId: data.claims.sub, token };
 }
 
 export async function getAuthUserId(): Promise<string> {
