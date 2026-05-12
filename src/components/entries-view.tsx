@@ -491,7 +491,7 @@ export function EntriesView({
   workflowRates: WorkflowRate[];
   loading?: boolean;
 }) {
-  const [viewMode, setViewMode] = useState<ViewMode>("invoice");
+  const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [sheetOpen, setSheetOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const handlePullRefresh = useCallback(async () => {
@@ -555,8 +555,8 @@ export function EntriesView({
           size="sm"
           disabled={loading}
         >
-          <ToggleGroupItem value="invoice">Invoice</ToggleGroupItem>
           <ToggleGroupItem value="week">Week</ToggleGroupItem>
+          <ToggleGroupItem value="invoice">Invoice</ToggleGroupItem>
           <ToggleGroupItem value="none">None</ToggleGroupItem>
         </ToggleGroup>
         <Button
