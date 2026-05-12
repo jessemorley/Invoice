@@ -58,7 +58,7 @@ function Field({
 
 function LoadingSkeleton() {
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
+    <div className="flex flex-col gap-4 p-4 md:p-6 mx-auto w-full max-w-6xl">
       {[1, 2, 3].map((i) => (
         <Card key={i}>
           <CardHeader>
@@ -120,7 +120,7 @@ function InfoTab({
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
+    <div className="flex flex-col gap-4 p-4 md:p-6 mx-auto w-full max-w-6xl">
       <Card className="pb-0 gap-0">
         <CardHeader>
           <CardTitle>Business Details</CardTitle>
@@ -277,7 +277,7 @@ function InvoicingTab({
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
+    <div className="flex flex-col gap-4 p-4 md:p-6 mx-auto w-full max-w-6xl">
       <Card className="pb-0 gap-0">
         <CardHeader>
           <CardTitle>Invoice Sequence</CardTitle>
@@ -345,7 +345,7 @@ function EmailTab({
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
+    <div className="flex flex-col gap-4 p-4 md:p-6 mx-auto w-full max-w-6xl">
       <Card>
         <CardHeader>
           <CardTitle>Email Preferences</CardTitle>
@@ -396,7 +396,7 @@ function AccountTab({ email, name }: { email: string; name: string }) {
   const [showPasswordForm, setShowPasswordForm] = useState(false);
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
+    <div className="flex flex-col gap-4 p-4 md:p-6 mx-auto w-full max-w-6xl">
       <Card className="pb-0 gap-0">
         <CardHeader>
           <CardTitle>Account</CardTitle>
@@ -503,12 +503,12 @@ export function SettingsClient({
     <div className="flex flex-col h-full">
       <PageHeader title="Settings" />
       <Tabs value={tab} onValueChange={(v) => setTab(v as SettingsTab)} className="flex flex-col flex-1 overflow-hidden gap-0">
-        <div className="px-4 md:px-6 pt-4">
-          <TabsList>
-            <TabsTrigger value="info">Info</TabsTrigger>
-            <TabsTrigger value="invoicing">Invoicing</TabsTrigger>
-            <TabsTrigger value="email">Email</TabsTrigger>
-            <TabsTrigger value="account">Account</TabsTrigger>
+        <div className="px-4 md:px-6 pt-4 mx-auto w-full max-w-6xl">
+          <TabsList className="bg-transparent p-0 gap-2 h-auto">
+            <TabsTrigger value="info" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Info</TabsTrigger>
+            <TabsTrigger value="invoicing" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Invoicing</TabsTrigger>
+            <TabsTrigger value="email" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Email</TabsTrigger>
+            <TabsTrigger value="account" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Account</TabsTrigger>
           </TabsList>
         </div>
         <div className="flex-1 overflow-auto pb-28 md:pb-0">
