@@ -145,7 +145,7 @@ function SkeletonGroupHeader() {
 
 function SkeletonCard({ rows = 3 }: { rows?: number }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col">
       <SkeletonGroupHeader />
       <Card className="overflow-hidden py-0 gap-0">
         <CardContent className="p-0">
@@ -163,7 +163,7 @@ function SkeletonCard({ rows = 3 }: { rows?: number }) {
 
 function ContentSkeleton() {
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
+    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       <SkeletonCard rows={2} />
       <SkeletonCard rows={3} />
       <SkeletonCard rows={1} />
@@ -380,9 +380,9 @@ function InvoiceView({
   const hasMore = displayCount < groups.length;
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
+    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       {visible.map((group) => (
-        <div key={group.key} className="flex flex-col gap-1">
+        <div key={group.key} className="flex flex-col">
           <ClientWeekGroupHeader group={group} />
           <Card className="overflow-hidden py-0 gap-0">
             <CardContent className="p-0">
@@ -421,9 +421,9 @@ function WeekView({
   const hasMore = displayCount < groups.length;
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
+    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       {visible.map((group) => (
-        <div key={group.key} className="flex flex-col gap-1">
+        <div key={group.key} className="flex flex-col">
           <WeekGroupHeader group={group} />
           <Card className="overflow-hidden py-0 gap-0">
             <CardContent className="p-0">
