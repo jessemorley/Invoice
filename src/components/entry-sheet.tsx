@@ -187,10 +187,12 @@ export function EntrySheet({
   useEffect(() => {
     if (!open) return;
     const ec = entry ? clients.find((c) => c.id === entry.client.id) ?? null : null;
-    setSelectedClient(entry ? ec : null);
-    setForm(defaultForm(entry, ec));
-    setError(null);
-  }, [open, entry]);
+    startTransition(() => {
+      setSelectedClient(entry ? ec : null);
+      setForm(defaultForm(entry, ec));
+      setError(null);
+    });
+  }, [open, entry, clients, startTransition]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));

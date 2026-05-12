@@ -81,11 +81,13 @@ export function ExpenseSheet({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setForm(defaultForm(expense));
-    setError(null);
-    setPendingFile(null);
-    setRemoveReceipt(false);
-  }, [expense, open]);
+    startTransition(() => {
+      setForm(defaultForm(expense));
+      setError(null);
+      setPendingFile(null);
+      setRemoveReceipt(false);
+    });
+  }, [expense, open, startTransition]);
 
   function set<K extends keyof ExpenseFormData>(key: K, value: ExpenseFormData[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));

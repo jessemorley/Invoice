@@ -239,10 +239,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     enabled: !loading,
   });
 
-  const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
-  const [localStatuses, setLocalStatuses] = useState<Record<string, InvoiceStatus>>(
-    () => Object.fromEntries(initialInvoices.map((inv) => [inv.id, inv.status]))
-  );
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, InvoiceStatus>>({});
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [scheduledEmail, setScheduledEmail] = useState<ScheduledEmail | null>(null);
@@ -287,20 +284,17 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [sortKey, setSortKey] = useState<SortKey>("issued_date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  useEffect(() => {
-    setInvoices(initialInvoices);
-    setLocalStatuses(Object.fromEntries(initialInvoices.map((inv) => [inv.id, inv.status])));
-  }, [initialInvoices]);
-
-  // Reset visible window whenever filters or sort change
-  useEffect(() => {
+  const filterKey = `${searchValue}|${statusFilter}|${clientFilter}|${timeframe}|${sortKey}|${sortDir}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (prevFilterKey !== filterKey) {
+    setPrevFilterKey(filterKey);
     setDisplayCount(PAGE_SIZE);
-  }, [searchValue, statusFilter, clientFilter, timeframe, sortKey, sortDir]);
+  }
 
   const filteredInvoices = useMemo(() => {
-    let result = invoices.map((inv) => ({
+    let result = initialInvoices.map((inv) => ({
       ...inv,
-      status: localStatuses[inv.id] ?? inv.status,
+      status: statusOverrides[inv.id] ?? inv.status,
     }));
 
     if (searchValue.trim()) {
@@ -338,7 +332,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     });
 
     return result;
-  }, [invoices, localStatuses, searchValue, statusFilter, clientFilter, timeframe, sortKey, sortDir]);
+  }, [initialInvoices, statusOverrides, searchValue, statusFilter, clientFilter, timeframe, sortKey, sortDir]);
 
   const visibleInvoices = filteredInvoices.slice(0, displayCount);
   const hasMore = displayCount < filteredInvoices.length;
@@ -400,7 +394,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   }
 
   function handleStatusChange(id: string, status: InvoiceStatus) {
-    setLocalStatuses((prev) => ({ ...prev, [id]: status }));
+    setStatusOverrides((prev) => ({ ...prev, [id]: status }));
   }
 
   function sh(key: SortKey) {
@@ -554,7 +548,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                       </TableCell>
                       <TableCell className="py-4 px-6 text-right">
                         <StatusBadge
-                          status={localStatuses[inv.id] ?? inv.status}
+                          status={inv.status}
                           onStatusChange={(s) => handleStatusChange(inv.id, s)}
                         />
                       </TableCell>

@@ -203,7 +203,6 @@ function ExpensesSkeleton() {
 }
 
 export function ExpensesClient({ expenses, loading = false }: { expenses: Expense[]; loading?: boolean }) {
-  if (loading) return <ExpensesSkeleton />;
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [search, setSearch] = useState("");
@@ -211,6 +210,8 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
   const [category, setCategory] = useState<ExpenseCategory | "all-categories">("all-categories");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selected, setSelected] = useState<Expense | null>(null);
+
+  if (loading) return <ExpensesSkeleton />;
 
   function openNew() {
     setSelected(null);

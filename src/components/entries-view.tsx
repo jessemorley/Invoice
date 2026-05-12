@@ -387,7 +387,7 @@ function InvoiceView({
           </CardContent>
         </Card>
       ))}
-      {!hasMore && (
+      {hasMore && (
         <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
       )}
     </div>
@@ -426,7 +426,7 @@ function WeekView({
           </CardContent>
         </Card>
       ))}
-      {!hasMore && (
+      {hasMore && (
         <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
       )}
     </div>
@@ -462,7 +462,7 @@ function ListView({
           ))}
         </CardContent>
       </Card>
-      {!hasMore && (
+      {hasMore && (
         <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
       )}
     </div>
@@ -493,18 +493,17 @@ export function EntriesView({
     enabled: !loading,
   });
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
-  const [entries, setEntries] = useState<Entry[]>(initialEntries ?? []);
+  const [additionalEntries, setAdditionalEntries] = useState<Entry[]>([]);
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
   const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
-    setEntries(initialEntries ?? []);
-    setDisplayCount(PAGE_SIZE);
-  }, [initialEntries]);
+  const entries = [...(initialEntries ?? []), ...additionalEntries];
 
-  useEffect(() => {
+  const [prevViewMode, setPrevViewMode] = useState(viewMode);
+  if (prevViewMode !== viewMode) {
+    setPrevViewMode(viewMode);
     setDisplayCount(PAGE_SIZE);
-  }, [viewMode]);
+  }
 
   function openEdit(entry: Entry) {
     setSelectedEntry(entry);
@@ -524,7 +523,7 @@ export function EntriesView({
     startTransition(async () => {
       const earlier = await loadEarlierEntries(oldest);
       const existingIds = new Set(entries.map((e) => e.id));
-      setEntries((prev) => [
+      setAdditionalEntries((prev) => [
         ...prev,
         ...earlier.filter((e) => !existingIds.has(e.id)),
       ]);
