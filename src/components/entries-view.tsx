@@ -279,7 +279,7 @@ function EntryRow({
               )}
             </div>
           )}
-          <span className="text-sm tabular-nums text-foreground text-right shrink-0">
+          <span className="text-sm tabular-nums text-foreground text-right w-20 shrink-0">
             {formatAUD(total)}
           </span>
         </div>
@@ -310,7 +310,7 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
           </Badge>
         )}
       </div>
-      <span className="text-xs tabular-nums font-medium text-muted-foreground text-right shrink-0">
+      <span className="text-xs tabular-nums font-medium text-muted-foreground text-right w-20 shrink-0">
         {formatAUD(group.subtotal)}
       </span>
     </div>
