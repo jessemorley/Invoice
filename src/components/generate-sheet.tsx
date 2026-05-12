@@ -25,23 +25,22 @@ export function GenerateSheet({
 }) {
   const [groups, setGroups] = useState<UninvoicedGroup[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [isLoading, setIsLoading] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    setError(null);
-    setIsLoading(true);
-    loadUninvoicedGroups().then((g) => {
-      setGroups(g);
-      setSelected(new Set(g.map((group) => group.key)));
-      setIsLoading(false);
-    }).catch((e) => {
-      setError(e instanceof Error ? e.message : "Failed to load groups");
-      setIsLoading(false);
+    startTransition(async () => {
+      setError(null);
+      try {
+        const g = await loadUninvoicedGroups();
+        setGroups(g);
+        setSelected(new Set(g.map((group) => group.key)));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to load groups");
+      }
     });
-  }, [open]);
+  }, [open, startTransition]);
 
   function toggle(key: string) {
     setSelected((prev) => {
@@ -75,7 +74,7 @@ export function GenerateSheet({
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto">
-          {isLoading ? (
+          {isPending && groups.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
               <svg className="size-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -136,7 +135,7 @@ export function GenerateSheet({
               size="lg"
               className="flex-1"
               onClick={handleGenerate}
-              disabled={isPending || isLoading || selectedCount === 0}
+              disabled={isPending || selectedCount === 0}
             >
               {isPending
                 ? "Generating…"

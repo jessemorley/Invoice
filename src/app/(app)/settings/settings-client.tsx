@@ -492,17 +492,12 @@ export function SettingsClient({
     ? (initialTab as SettingsTab)
     : "info";
   const [tab, setTab] = useState<SettingsTab>(validInitial);
+  const [prevInitialTab, setPrevInitialTab] = useState(initialTab);
 
-  // Sync tab when navigating to settings from a deep link (e.g. sidebar → account)
-  const prevInitialTab = useRef(initialTab);
-  useEffect(() => {
-    if (initialTab !== prevInitialTab.current) {
-      prevInitialTab.current = initialTab;
-      if (VALID_TABS.includes(initialTab as SettingsTab)) {
-        setTab(initialTab as SettingsTab);
-      }
-    }
-  }, [initialTab]);
+  if (initialTab !== prevInitialTab && VALID_TABS.includes(initialTab as SettingsTab)) {
+    setPrevInitialTab(initialTab);
+    setTab(initialTab as SettingsTab);
+  }
 
   return (
     <div className="flex flex-col h-full">
