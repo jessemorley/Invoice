@@ -34,8 +34,6 @@ type ClientWeekGroup = {
   key: string;
   clientName: string;
   clientColor: string;
-  isoWeek: string;
-  dateRange: string;
   entries: Entry[];
   subtotal: number;
   invoiced: boolean;
@@ -67,8 +65,6 @@ function groupByClientWeek(entries: Entry[]): ClientWeekGroup[] {
       key,
       clientName: first.client.name,
       clientColor: first.client.color,
-      isoWeek: first.iso_week,
-      dateRange: weekDateRange(groupEntries.map((e) => e.date)),
       entries: groupEntries.sort((a, b) => b.date.localeCompare(a.date)),
       subtotal: groupEntries.reduce(
         (sum, e) => sum + e.base_amount + e.bonus_amount,
@@ -85,20 +81,6 @@ function groupByClientWeek(entries: Entry[]): ClientWeekGroup[] {
   );
 }
 
-function weekDateRange(dates: string[]): string {
-  const sorted = [...dates].sort();
-  const first = new Date(sorted[0] + "T00:00:00");
-  const last = new Date(sorted[sorted.length - 1] + "T00:00:00");
-  const firstDay = first.getDate();
-  const lastDay = last.getDate();
-  const firstMonth = first.toLocaleDateString("en-AU", { month: "short" });
-  const lastMonth = last.toLocaleDateString("en-AU", { month: "short" });
-  if (sorted[0] === sorted[sorted.length - 1])
-    return `${firstDay} ${firstMonth}`;
-  if (first.getMonth() === last.getMonth())
-    return `${firstDay}–${lastDay} ${firstMonth}`;
-  return `${firstDay} ${firstMonth} – ${lastDay} ${lastMonth}`;
-}
 
 function financialYearWeekLabel(isoWeek: string): string {
   const [year, week] = isoWeek.split("-W").map(Number);
