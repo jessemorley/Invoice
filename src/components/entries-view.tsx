@@ -132,27 +132,32 @@ function SkeletonRow() {
   );
 }
 
+function SkeletonGroupHeader() {
+  return (
+    <div className="flex items-center gap-2.5 px-4 py-2.5">
+      <Skeleton className="size-2.5 rounded-full shrink-0" />
+      <Skeleton className="h-3 w-28" />
+      <div className="flex-1" />
+      <Skeleton className="h-3 w-16" />
+    </div>
+  );
+}
+
 function SkeletonCard({ rows = 3 }: { rows?: number }) {
   return (
-    <Card className="overflow-hidden py-0 gap-0">
-      <div className="flex items-center gap-2.5 px-4 py-2.5 border-b">
-        <Skeleton className="size-2.5 rounded-full shrink-0" />
-        <Skeleton className="h-3 w-28" />
-        <Skeleton className="h-3 w-14" />
-        <div className="flex-1" />
-        <Skeleton className="h-6 w-16 rounded-md" />
-        <Skeleton className="h-3 w-16" />
-        <Skeleton className="h-3 w-24" />
-      </div>
-      <CardContent className="p-0">
-        {Array.from({ length: rows }).map((_, i) => (
-          <div key={i}>
-            {i > 0 && <Separator />}
-            <SkeletonRow />
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+    <div className="flex flex-col">
+      <SkeletonGroupHeader />
+      <Card className="overflow-hidden py-0 gap-0">
+        <CardContent className="p-0">
+          {Array.from({ length: rows }).map((_, i) => (
+            <div key={i}>
+              {i > 0 && <Separator />}
+              <SkeletonRow />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -188,35 +193,47 @@ function EntryRow({
       {/* Mobile */}
       <div className="md:hidden flex items-center gap-3 px-4 py-3">
         <div className="flex-1 min-w-0">
-          <span className="text-sm font-medium text-foreground truncate block">
-            {description}
-          </span>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-muted-foreground tabular-nums">
-              {formatDate(entry.date)}
-            </span>
-            {showClient && (
-              <>
+          {showClient ? (
+            <>
+              <div className="flex items-center gap-1.5">
                 <div
-                  className="size-1.5 rounded-full shrink-0"
+                  className="size-2 rounded-full shrink-0"
                   style={{ backgroundColor: entry.client.color }}
                 />
-                <span className="text-xs text-muted-foreground truncate">
+                <span className="text-sm font-medium text-foreground truncate">
                   {entry.client.name}
                 </span>
-              </>
-            )}
-          </div>
+              </div>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                  {formatDate(entry.date)}
+                </span>
+                <span className="text-xs text-muted-foreground shrink-0">·</span>
+                <span className="text-xs text-muted-foreground truncate">
+                  {description}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="text-sm font-medium text-foreground truncate block">
+                {description}
+              </span>
+              <span className="text-xs text-muted-foreground tabular-nums mt-0.5 block">
+                {formatDate(entry.date)}
+              </span>
+            </>
+          )}
         </div>
         <div className="flex flex-col items-end gap-0.5 shrink-0">
           <span className="text-sm tabular-nums text-foreground">
             {formatAUD(total)}
           </span>
-          {entry.bonus_amount > 0 && (
-            <span className="text-xs tabular-nums text-muted-foreground">
-              Super {formatAUD(entry.bonus_amount)}
-            </span>
-          )}
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {entry.billing_type === "day_rate" &&
+              (entry.day_type === "full" ? "Full day" : "Half day")}
+            {entry.billing_type === "hourly" && entry.hours && `${entry.hours}h`}
+          </span>
         </div>
       </div>
 
@@ -274,7 +291,7 @@ function EntryRow({
               )}
             </div>
           )}
-          <span className="text-sm tabular-nums text-foreground text-right shrink-0">
+          <span className="text-sm tabular-nums text-foreground text-right w-20 shrink-0">
             {formatAUD(total)}
           </span>
         </div>
@@ -285,25 +302,29 @@ function EntryRow({
 
 function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 border-b">
-      {group.invoiced ? (
-        <Badge variant={INVOICE_STATUS_VARIANT[group.invoiceStatus ?? "draft"]}>
-          {group.invoiceNumber}
-        </Badge>
-      ) : (
-        <Badge variant="outline" className="cursor-pointer">
-          Draft
-        </Badge>
-      )}
-      <div
-        className="size-2.5 rounded-full shrink-0"
-        style={{ backgroundColor: group.clientColor }}
-      />
-      <span className="text-sm font-semibold text-foreground">
-        {group.clientName}
-      </span>
+    <div className="flex items-center gap-3 px-4 py-2.5">
+      <div className="flex items-center gap-1.5">
+        <div
+          className="size-2 rounded-full shrink-0"
+          style={{ backgroundColor: group.clientColor }}
+        />
+        <span className="text-sm font-medium text-muted-foreground">
+          {group.clientName}
+        </span>
+      </div>
       <div className="flex-1" />
-      <span className="text-xs tabular-nums font-semibold text-foreground text-right shrink-0">
+      <div className="flex shrink-0 md:w-20 md:justify-start justify-end">
+        {group.invoiced ? (
+          <Badge variant={INVOICE_STATUS_VARIANT[group.invoiceStatus ?? "draft"]}>
+            {group.invoiceNumber}
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="cursor-pointer">
+            Draft
+          </Badge>
+        )}
+      </div>
+      <span className="text-xs tabular-nums font-medium text-muted-foreground text-right w-20 shrink-0">
         {formatAUD(group.subtotal)}
       </span>
     </div>
@@ -312,12 +333,12 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
 
 function WeekGroupHeader({ group }: { group: WeekGroup }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 border-b">
-      <span className="text-sm font-semibold text-foreground">
+    <div className="flex items-center gap-3 px-4 py-2.5">
+      <span className="text-sm font-medium text-muted-foreground">
         {group.dateRange}
       </span>
       <div className="flex-1" />
-      <span className="text-xs tabular-nums font-semibold text-foreground text-right shrink-0">
+      <span className="text-xs tabular-nums font-medium text-muted-foreground text-right shrink-0">
         {formatAUD(group.subtotal)}
       </span>
     </div>
@@ -373,19 +394,21 @@ function InvoiceView({
   const hasMore = displayCount < groups.length;
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
+    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       {visible.map((group) => (
-        <Card key={group.key} className="overflow-hidden py-0 gap-0">
+        <div key={group.key} className="flex flex-col">
           <ClientWeekGroupHeader group={group} />
-          <CardContent className="p-0">
-            {group.entries.map((entry, i) => (
-              <div key={entry.id}>
-                {i > 0 && <Separator />}
-                <EntryRow entry={entry} onEdit={onEdit} />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+          <Card className="overflow-hidden py-0 gap-0">
+            <CardContent className="p-0">
+              {group.entries.map((entry, i) => (
+                <div key={entry.id}>
+                  {i > 0 && <Separator />}
+                  <EntryRow entry={entry} onEdit={onEdit} />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       ))}
       {hasMore && (
         <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
@@ -412,19 +435,21 @@ function WeekView({
   const hasMore = displayCount < groups.length;
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-6">
+    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       {visible.map((group) => (
-        <Card key={group.key} className="overflow-hidden py-0 gap-0">
+        <div key={group.key} className="flex flex-col">
           <WeekGroupHeader group={group} />
-          <CardContent className="p-0">
-            {group.entries.map((entry, i) => (
-              <div key={entry.id}>
-                {i > 0 && <Separator />}
-                <EntryRow entry={entry} showClient onEdit={onEdit} />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+          <Card className="overflow-hidden py-0 gap-0">
+            <CardContent className="p-0">
+              {group.entries.map((entry, i) => (
+                <div key={entry.id}>
+                  {i > 0 && <Separator />}
+                  <EntryRow entry={entry} showClient onEdit={onEdit} />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       ))}
       {hasMore && (
         <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
@@ -480,7 +505,7 @@ export function EntriesView({
   workflowRates: WorkflowRate[];
   loading?: boolean;
 }) {
-  const [viewMode, setViewMode] = useState<ViewMode>("invoice");
+  const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [sheetOpen, setSheetOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const handlePullRefresh = useCallback(async () => {
@@ -544,8 +569,8 @@ export function EntriesView({
           size="sm"
           disabled={loading}
         >
-          <ToggleGroupItem value="invoice">Invoice</ToggleGroupItem>
           <ToggleGroupItem value="week">Week</ToggleGroupItem>
+          <ToggleGroupItem value="invoice">Invoice</ToggleGroupItem>
           <ToggleGroupItem value="none">None</ToggleGroupItem>
         </ToggleGroup>
         <Button
