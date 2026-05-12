@@ -504,7 +504,7 @@ export function SettingsClient({
       <PageHeader title="Settings" />
       <Tabs value={tab} onValueChange={(v) => setTab(v as SettingsTab)} className="flex flex-col flex-1 overflow-hidden gap-0">
         <div className="px-4 md:px-6 pt-4 mx-auto w-full max-w-6xl">
-          <TabsList className="bg-transparent p-0 gap-1 h-auto">
+          <TabsList className="bg-transparent p-0 gap-2 h-auto">
             <TabsTrigger value="info" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Info</TabsTrigger>
             <TabsTrigger value="invoicing" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Invoicing</TabsTrigger>
             <TabsTrigger value="email" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Email</TabsTrigger>
