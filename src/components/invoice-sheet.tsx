@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import type { Client, Invoice, InvoiceDetail, InvoiceStatus } from "@/lib/types";
 import { formatAUD, formatRelativeTime } from "@/lib/format";
-import { createInvoice, loadInvoiceDetail, updateInvoice, deleteInvoice, createLineItem, updateLineItem, deleteLineItem } from "@/app/(app)/invoices/actions";
+import { createInvoice, loadInvoiceDetail, updateInvoice, updateInvoiceNumber, deleteInvoice, createLineItem, updateLineItem, deleteLineItem } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
 import type { InvoiceFormData } from "@/app/(app)/invoices/actions";
 import { ClientPicker } from "@/components/client-picker";
@@ -232,6 +232,11 @@ export function InvoiceSheet({
   const [isCreating, startCreateTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [editingNumber, setEditingNumber] = useState(false);
+  const [numberDraft, setNumberDraft] = useState("");
+  const [localNumber, setLocalNumber] = useState<string | null>(null);
+  const [isSavingNumber, startSaveNumberTransition] = useTransition();
+  const [numberError, setNumberError] = useState<string | null>(null);
   type SheetView = "client-pick" | "invoice" | "add-line-item" | { mode: "edit-line-item"; item: NonNullable<InvoiceDetail["line_items"][0]> };
   const [view, setView] = useState<SheetView>(invoice ? "invoice" : "client-pick");
   const [createdInvoice, setCreatedInvoice] = useState<Invoice | null>(null);
@@ -247,6 +252,10 @@ export function InvoiceSheet({
     setCreatedInvoice(null);
     setLocalInvoiceDetail(null);
     setView(invoice ? "invoice" : "client-pick");
+    setEditingNumber(false);
+    setNumberDraft("");
+    setLocalNumber(null);
+    setNumberError(null);
   }, [invoice, open]);
 
   function handleClientSelect(client: Client) {
@@ -320,6 +329,28 @@ export function InvoiceSheet({
 
   function set<K extends keyof InvoiceFormData>(key: K, value: InvoiceFormData[K]) {
     setForm((prev) => prev ? { ...prev, [key]: value } : prev);
+  }
+
+  function handleNumberSave() {
+    const trimmed = numberDraft.trim();
+    const currentNumber = localNumber ?? activeInvoice?.number ?? "";
+    if (!trimmed || trimmed === currentNumber) {
+      setEditingNumber(false);
+      return;
+    }
+    if (!activeInvoice) return;
+    setNumberError(null);
+    startSaveNumberTransition(async () => {
+      try {
+        await updateInvoiceNumber(activeInvoice.id, trimmed);
+        setLocalNumber(trimmed);
+        setEditingNumber(false);
+        invalidate("invoices");
+      } catch (e) {
+        setNumberError(e instanceof Error ? e.message : "Could not update invoice number");
+        setEditingNumber(false);
+      }
+    });
   }
 
   function handleDelete() {
@@ -403,7 +434,28 @@ export function InvoiceSheet({
         <>
         <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
           <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-            <SheetTitle>{activeInvoice!.number}</SheetTitle>
+            {editingNumber ? (
+              <input
+                autoFocus
+                className="font-semibold text-base bg-transparent border-b border-input outline-none w-full leading-tight pb-0.5"
+                value={numberDraft}
+                disabled={isSavingNumber}
+                onChange={(e) => setNumberDraft(e.target.value)}
+                onBlur={handleNumberSave}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.currentTarget.blur(); }
+                  if (e.key === "Escape") { setEditingNumber(false); setNumberError(null); }
+                }}
+              />
+            ) : (
+              <SheetTitle
+                className="cursor-pointer hover:opacity-70 transition-opacity w-fit"
+                onClick={() => { setNumberDraft(localNumber ?? activeInvoice!.number); setEditingNumber(true); setNumberError(null); }}
+              >
+                {isSavingNumber ? "Saving…" : (localNumber ?? activeInvoice!.number)}
+              </SheetTitle>
+            )}
+            {numberError && <p className="text-xs text-destructive">{numberError}</p>}
             <div className="flex items-center gap-2">
               <div
                 className="size-2.5 rounded-full shrink-0"

@@ -418,6 +418,21 @@ export async function deleteLineItem(id: string) {
   refresh();
 }
 
+export async function updateInvoiceNumber(id: string, number: string): Promise<void> {
+  const trimmed = number.trim();
+  if (!trimmed) throw new Error("Invoice number cannot be empty");
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { error } = await supabase
+    .from("invoices")
+    .update({ invoice_number: trimmed })
+    .eq("id", id)
+    .eq("user_id", userId);
+  if (error) throw new Error(error.message);
+  updateTag(CACHE_TAGS.invoices);
+  updateTag(CACHE_TAGS.entries);
+  refresh();
+}
+
 export async function updateInvoice(id: string, data: InvoiceFormData) {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { error } = await supabase
