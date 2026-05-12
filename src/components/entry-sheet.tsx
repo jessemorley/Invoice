@@ -349,7 +349,7 @@ export function EntrySheet({
 
         <div className="flex-1 overflow-y-auto">
           {!selectedClient ? (
-            <ClientPicker clients={clients} onSelect={handleSelectClient} />
+            <ClientPicker clients={clients} onSelectAction={handleSelectClient} />
           ) : (
             <div className="flex flex-col gap-4 px-4 py-4">
               {/* Date */}

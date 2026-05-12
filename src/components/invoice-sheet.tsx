@@ -399,7 +399,7 @@ export function InvoiceSheet({
                   <Spinner />
                 </div>
               ) : (
-                <ClientPicker clients={clients ?? []} onSelect={handleClientSelect} />
+                <ClientPicker clients={clients ?? []} onSelectAction={handleClientSelect} />
               )}
             </div>
             {error && <p className="px-6 pb-4 text-sm text-destructive">{error}</p>}
