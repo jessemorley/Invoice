@@ -387,7 +387,7 @@ function InvoiceView({
           </CardContent>
         </Card>
       ))}
-      {!hasMore && (
+      {hasMore && (
         <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
       )}
     </div>
@@ -426,7 +426,7 @@ function WeekView({
           </CardContent>
         </Card>
       ))}
-      {!hasMore && (
+      {hasMore && (
         <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
       )}
     </div>
@@ -462,7 +462,7 @@ function ListView({
           ))}
         </CardContent>
       </Card>
-      {!hasMore && (
+      {hasMore && (
         <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
       )}
     </div>
