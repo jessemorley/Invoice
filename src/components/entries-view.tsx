@@ -193,25 +193,37 @@ function EntryRow({
       {/* Mobile */}
       <div className="md:hidden flex items-center gap-3 px-4 py-3">
         <div className="flex-1 min-w-0">
-          <span className="text-sm font-medium text-foreground truncate block">
-            {description}
-          </span>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-muted-foreground tabular-nums">
-              {formatDate(entry.date)}
-            </span>
-            {showClient && (
-              <>
+          {showClient ? (
+            <>
+              <div className="flex items-center gap-1.5">
                 <div
                   className="size-1.5 rounded-full shrink-0"
                   style={{ backgroundColor: entry.client.color }}
                 />
-                <span className="text-xs text-muted-foreground truncate">
+                <span className="text-sm font-medium text-foreground truncate">
                   {entry.client.name}
                 </span>
-              </>
-            )}
-          </div>
+              </div>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                  {formatDate(entry.date)}
+                </span>
+                <span className="text-xs text-muted-foreground shrink-0">·</span>
+                <span className="text-xs text-muted-foreground truncate">
+                  {description}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="text-sm font-medium text-foreground truncate block">
+                {description}
+              </span>
+              <span className="text-xs text-muted-foreground tabular-nums mt-0.5 block">
+                {formatDate(entry.date)}
+              </span>
+            </>
+          )}
         </div>
         <div className="flex flex-col items-end gap-0.5 shrink-0">
           <span className="text-sm tabular-nums text-foreground">
