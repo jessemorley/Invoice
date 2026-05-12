@@ -245,7 +245,7 @@ function EntryRow({
         {showClient && (
           <div className="flex items-center gap-2 w-40 shrink-0">
             <div
-              className="size-2.5 rounded-full shrink-0"
+              className="size-2 rounded-full shrink-0"
               style={{ backgroundColor: entry.client.color }}
             />
             <span className="text-sm font-medium truncate">
@@ -303,13 +303,15 @@ function EntryRow({
 function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
   return (
     <div className="flex items-center gap-3 px-4 py-2.5">
-      <div
-        className="size-2.5 rounded-full shrink-0"
-        style={{ backgroundColor: group.clientColor }}
-      />
-      <span className="text-xs font-medium text-muted-foreground">
-        {group.clientName}
-      </span>
+      <div className="flex items-center gap-1.5">
+        <div
+          className="size-2 rounded-full shrink-0"
+          style={{ backgroundColor: group.clientColor }}
+        />
+        <span className="text-xs font-medium text-muted-foreground">
+          {group.clientName}
+        </span>
+      </div>
       <div className="flex-1" />
       <div className="flex shrink-0 md:w-20 md:justify-start justify-end">
         {group.invoiced ? (
