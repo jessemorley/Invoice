@@ -3,7 +3,6 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import React from "react";
 import { fetchInvoiceDetail, fetchBusinessDetails } from "@/lib/queries";
 import { createClient } from "@/lib/supabase-server";
-import { createTokenClient } from "@/lib/supabase";
 import { InvoiceDocument } from "@/components/invoice-document";
 
 async function renderPdf(invoiceId: string, userId: string, token: string) {

@@ -98,8 +98,6 @@ export async function generateInvoices(groupKeys: string[]): Promise<{ created: 
   // invoice_sequence is not in generated DB types
   const seq = seqRaw as unknown as { invoice_prefix: string; due_date_offset: number };
 
-  const dueOffset = seq.due_date_offset ?? 30;
-
   const { data: allEntries, error: entryError } = await supabase
     .from("entries")
     .select("id, client_id, date, base_amount, bonus_amount, super_amount, total_amount")

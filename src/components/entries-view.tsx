@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition, useRef, useCallback } from "react";
+import { useState, useTransition, useRef, useCallback } from "react";
 import {
   revalidateEntries,
   loadEarlierEntries,

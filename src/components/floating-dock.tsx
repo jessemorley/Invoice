@@ -32,16 +32,8 @@ export function FloatingDock() {
   const router = useRouter();
   const routerView = searchParams.get("view") ?? "entries";
   const [activeView, setActiveView] = useState(routerView);
-  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => { setActiveView(routerView); }, [routerView]);
-
-  useEffect(() => {
-    setIsStandalone(
-      "standalone" in window.navigator &&
-        !!(window.navigator as { standalone: boolean }).standalone
-    );
-  }, []);
 
   const handleTap = useCallback((view: string) => {
     if (activeView === view) {

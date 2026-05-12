@@ -29,7 +29,6 @@ import {
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
   SheetTitle,
   SheetFooter,
   SheetClose,

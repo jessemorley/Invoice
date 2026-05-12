@@ -113,7 +113,6 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
     .toLocaleDateString("en-AU", { month: "short" });
 
   const scheduledEmails = emails.filter((e) => e.status === "pending" || e.status === "failed");
-  const recentEmails = emails.filter((e) => e.status === "sent");
 
   async function handleEmailRowClick(email: DashboardEmail) {
     if (email.status === "sent") {
