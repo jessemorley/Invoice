@@ -304,11 +304,11 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
         className="size-2.5 rounded-full shrink-0"
         style={{ backgroundColor: group.clientColor }}
       />
-      <span className="text-sm font-semibold text-foreground">
+      <span className="text-sm font-medium text-muted-foreground">
         {group.clientName}
       </span>
       <div className="flex-1" />
-      <span className="text-xs tabular-nums font-semibold text-foreground text-right shrink-0">
+      <span className="text-xs tabular-nums font-medium text-muted-foreground text-right shrink-0">
         {formatAUD(group.subtotal)}
       </span>
     </div>
@@ -318,11 +318,11 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
 function WeekGroupHeader({ group }: { group: WeekGroup }) {
   return (
     <div className="flex items-center gap-3 px-4 py-2.5">
-      <span className="text-sm font-semibold text-foreground">
+      <span className="text-sm font-medium text-muted-foreground">
         {group.dateRange}
       </span>
       <div className="flex-1" />
-      <span className="text-xs tabular-nums font-semibold text-foreground text-right shrink-0">
+      <span className="text-xs tabular-nums font-medium text-muted-foreground text-right shrink-0">
         {formatAUD(group.subtotal)}
       </span>
     </div>
