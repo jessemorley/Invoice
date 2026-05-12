@@ -34,8 +34,6 @@ type ClientWeekGroup = {
   key: string;
   clientName: string;
   clientColor: string;
-  isoWeek: string;
-  dateRange: string;
   entries: Entry[];
   subtotal: number;
   invoiced: boolean;
@@ -67,8 +65,6 @@ function groupByClientWeek(entries: Entry[]): ClientWeekGroup[] {
       key,
       clientName: first.client.name,
       clientColor: first.client.color,
-      isoWeek: first.iso_week,
-      dateRange: weekDateRange(groupEntries.map((e) => e.date)),
       entries: groupEntries.sort((a, b) => b.date.localeCompare(a.date)),
       subtotal: groupEntries.reduce(
         (sum, e) => sum + e.base_amount + e.bonus_amount,
@@ -85,31 +81,18 @@ function groupByClientWeek(entries: Entry[]): ClientWeekGroup[] {
   );
 }
 
-function weekDateRange(dates: string[]): string {
-  const sorted = [...dates].sort();
-  const first = new Date(sorted[0] + "T00:00:00");
-  const last = new Date(sorted[sorted.length - 1] + "T00:00:00");
-  const firstDay = first.getDate();
-  const lastDay = last.getDate();
-  const firstMonth = first.toLocaleDateString("en-AU", { month: "short" });
-  const lastMonth = last.toLocaleDateString("en-AU", { month: "short" });
-  if (sorted[0] === sorted[sorted.length - 1])
-    return `${firstDay} ${firstMonth}`;
-  if (first.getMonth() === last.getMonth())
-    return `${firstDay}–${lastDay} ${firstMonth}`;
-  return `${firstDay} ${firstMonth} – ${lastDay} ${lastMonth}`;
-}
 
-function isoWeekDateRange(isoWeek: string): string {
+function financialYearWeekLabel(isoWeek: string): string {
   const [year, week] = isoWeek.split("-W").map(Number);
   const jan4 = new Date(year, 0, 4);
   const monday = new Date(jan4);
   monday.setDate(jan4.getDate() - ((jan4.getDay() || 7) - 1) + (week - 1) * 7);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  const fmt = (d: Date) =>
-    `${d.getDate()} ${d.toLocaleDateString("en-AU", { month: "short" })}`;
-  return `${fmt(monday)} – ${fmt(sunday)}`;
+  const fyStartYear = monday.getMonth() >= 6 ? monday.getFullYear() : monday.getFullYear() - 1;
+  const fyJul1 = new Date(fyStartYear, 6, 1);
+  const fyWeek1Monday = new Date(fyJul1);
+  fyWeek1Monday.setDate(fyJul1.getDate() - ((fyJul1.getDay() + 6) % 7));
+  const weekNum = Math.round((monday.getTime() - fyWeek1Monday.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
+  return `Week ${weekNum}`;
 }
 
 function groupByWeek(entries: Entry[]): WeekGroup[] {
@@ -125,7 +108,7 @@ function groupByWeek(entries: Entry[]): WeekGroup[] {
     const sorted = groupEntries.sort((a, b) => b.date.localeCompare(a.date));
     groups.push({
       key,
-      dateRange: isoWeekDateRange(key),
+      dateRange: financialYearWeekLabel(key),
       latestDate: sorted[0].date,
       entries: sorted,
       subtotal: groupEntries.reduce(
@@ -194,17 +177,56 @@ function EntryRow({
   showClient?: boolean;
   onEdit: (entry: Entry) => void;
 }) {
+  const description = entry.shoot_client || entry.description || entry.workflow_type;
+  const total = entry.base_amount + entry.bonus_amount;
+
   return (
     <div
-      className="flex items-start gap-3 px-4 py-3.5 hover:bg-accent/50 transition-colors cursor-pointer"
+      className="hover:bg-accent/50 transition-colors cursor-pointer"
       onClick={() => onEdit(entry)}
     >
-      <span className="text-xs text-muted-foreground tabular-nums w-20 shrink-0">
-        {formatDate(entry.date)}
-      </span>
-      {showClient ? (
-        <div className="flex flex-col min-w-0 flex-1 gap-0.5">
-          <div className="flex items-center gap-2">
+      {/* Mobile */}
+      <div className="md:hidden flex items-center gap-3 px-4 py-3">
+        <div className="flex-1 min-w-0">
+          <span className="text-sm font-medium text-foreground truncate block">
+            {description}
+          </span>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {formatDate(entry.date)}
+            </span>
+            {showClient && (
+              <>
+                <div
+                  className="size-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: entry.client.color }}
+                />
+                <span className="text-xs text-muted-foreground truncate">
+                  {entry.client.name}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-0.5 shrink-0">
+          <span className="text-sm tabular-nums text-foreground">
+            {formatAUD(total)}
+          </span>
+          {entry.bonus_amount > 0 && (
+            <span className="text-xs tabular-nums text-muted-foreground">
+              Super {formatAUD(entry.bonus_amount)}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop */}
+      <div className="hidden md:flex items-center gap-3 px-4 py-3.5">
+        <span className="text-xs text-muted-foreground tabular-nums w-20 shrink-0">
+          {formatDate(entry.date)}
+        </span>
+        {showClient && (
+          <div className="flex items-center gap-2 w-40 shrink-0">
             <div
               className="size-2 rounded-full shrink-0"
               style={{ backgroundColor: entry.client.color }}
@@ -213,32 +235,10 @@ function EntryRow({
               {entry.client.name}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground truncate">
-              {entry.shoot_client || entry.description || entry.workflow_type}
-            </span>
-            {entry.brand && (
-              <span className="text-sm text-muted-foreground shrink-0">
-                ({entry.brand})
-              </span>
-            )}
-            {entry.role && (
-              <span className="text-sm text-muted-foreground shrink-0">
-                (
-                {entry.role === "Photographer"
-                  ? "P"
-                  : entry.role === "Operator" || entry.role === "O"
-                    ? "O"
-                    : entry.role}
-                )
-              </span>
-            )}
-          </div>
-        </div>
-      ) : (
+        )}
         <div className="flex flex-1 min-w-0 items-center gap-2">
           <span className="text-sm text-foreground truncate">
-            {entry.shoot_client || entry.description || entry.workflow_type}
+            {description}
           </span>
           {entry.brand && (
             <span className="text-sm text-muted-foreground shrink-0">
@@ -257,27 +257,27 @@ function EntryRow({
             </span>
           )}
         </div>
-      )}
-      <span className="hidden md:block text-xs text-muted-foreground w-20 shrink-0">
-        {entry.billing_type === "day_rate" &&
-          (entry.day_type === "full" ? "Full day" : "Half day")}
-        {entry.billing_type === "hourly" && entry.hours && `${entry.hours}h`}
-      </span>
-      <div className="flex items-center gap-3 shrink-0 ml-auto">
-        {showClient && (
-          <div className="hidden md:flex w-20 justify-start">
-            {entry.invoice ? (
-              <Badge variant={INVOICE_STATUS_VARIANT[entry.invoice.status]}>
-                {entry.invoice.number}
-              </Badge>
-            ) : (
-              <Badge variant="outline">Draft</Badge>
-            )}
-          </div>
-        )}
-        <span className="text-sm tabular-nums text-foreground text-right shrink-0">
-          {formatAUD(entry.base_amount + entry.bonus_amount)}
+        <span className="text-xs text-muted-foreground w-20 shrink-0">
+          {entry.billing_type === "day_rate" &&
+            (entry.day_type === "full" ? "Full day" : "Half day")}
+          {entry.billing_type === "hourly" && entry.hours && `${entry.hours}h`}
         </span>
+        <div className="flex items-center gap-3 shrink-0 ml-auto">
+          {showClient && (
+            <div className="flex w-20 justify-start">
+              {entry.invoice ? (
+                <Badge variant={INVOICE_STATUS_VARIANT[entry.invoice.status]}>
+                  {entry.invoice.number}
+                </Badge>
+              ) : (
+                <Badge variant="outline">Draft</Badge>
+              )}
+            </div>
+          )}
+          <span className="text-sm tabular-nums text-foreground text-right shrink-0">
+            {formatAUD(total)}
+          </span>
+        </div>
       </div>
     </div>
   );
