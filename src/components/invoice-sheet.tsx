@@ -437,7 +437,7 @@ export function InvoiceSheet({
             {editingNumber ? (
               <input
                 autoFocus
-                className="font-semibold text-base bg-transparent border-b border-input outline-none w-full leading-tight pb-0.5"
+                className="font-semibold text-base bg-transparent outline-none w-full leading-tight"
                 value={numberDraft}
                 disabled={isSavingNumber}
                 onChange={(e) => setNumberDraft(e.target.value)}
