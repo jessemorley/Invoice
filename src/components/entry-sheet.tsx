@@ -162,13 +162,13 @@ const PRODUCT_WORKFLOWS = ["Batch A", "Batch B", "Batch C", "Batch D", "Flatlay"
 
 export function EntrySheet({
   open,
-  onOpenChange,
+  onOpenChangeAction,
   entry,
   clients,
   workflowRates,
 }: {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChangeAction: (open: boolean) => void;
   entry: Entry | null;
   clients: Client[];
   workflowRates: WorkflowRate[];
@@ -283,7 +283,7 @@ export function EntrySheet({
           await createEntry(payload);
         }
         invalidate("entries");
-        onOpenChange(false);
+        onOpenChangeAction(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");
       }
@@ -300,7 +300,7 @@ export function EntrySheet({
       try {
         await deleteEntry(entry.id);
         invalidate("entries");
-        onOpenChange(false);
+        onOpenChangeAction(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");
       }
@@ -330,7 +330,7 @@ export function EntrySheet({
     : "New entry";
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChangeAction}>
       <SheetContent side="right" className="flex flex-col gap-0 p-0 w-full sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
         <div className={cn("flex flex-row items-center gap-1.5 px-4 py-4", selectedClient && "border-b")}>
           {!entry && selectedClient && (
@@ -349,7 +349,7 @@ export function EntrySheet({
 
         <div className="flex-1 overflow-y-auto">
           {!selectedClient ? (
-            <ClientPicker clients={clients} onSelect={handleSelectClient} />
+            <ClientPicker clients={clients} onSelectAction={handleSelectClient} />
           ) : (
             <div className="flex flex-col gap-4 px-4 py-4">
               {/* Date */}
@@ -593,7 +593,7 @@ export function EntrySheet({
               size="lg"
               variant="outline"
               className="flex-1"
-              onClick={() => onOpenChange(false)}
+              onClick={() => onOpenChangeAction(false)}
               disabled={isPending || isDeleting}
             >
               Cancel

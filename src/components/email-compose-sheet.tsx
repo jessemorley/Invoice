@@ -328,7 +328,7 @@ function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, ini
 
 interface EmailComposeSheetProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChangeAction: (open: boolean) => void;
   invoice: InvoiceDetail | null;
   businessName: string;
   onSent: () => void;
@@ -337,11 +337,11 @@ interface EmailComposeSheetProps {
   initialBody?: string;
 }
 
-export function EmailComposeSheet({ open, onOpenChange, invoice, businessName, onSent, initialTo, initialSubject, initialBody }: EmailComposeSheetProps) {
+export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessName, onSent, initialTo, initialSubject, initialBody }: EmailComposeSheetProps) {
   if (!invoice) return null;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChangeAction}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
         <SheetHeader className="sr-only" showCloseButton={false}>
           <SheetTitle>Send Invoice {invoice.number}</SheetTitle>
@@ -349,7 +349,7 @@ export function EmailComposeSheet({ open, onOpenChange, invoice, businessName, o
         <ComposeContent
           invoice={invoice}
           businessName={businessName}
-          onClose={() => onOpenChange(false)}
+          onClose={() => onOpenChangeAction(false)}
           onSent={onSent}
           initialTo={initialTo}
           initialSubject={initialSubject}

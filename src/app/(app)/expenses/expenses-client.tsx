@@ -398,7 +398,7 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
 
       <ExpenseSheet
         open={sheetOpen}
-        onOpenChange={setSheetOpen}
+        onOpenChangeAction={setSheetOpen}
         expense={selected}
       />
     </div>

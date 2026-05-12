@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 
 export function ClientPicker({
   clients,
-  onSelect,
+  onSelectAction,
 }: {
   clients: Client[];
-  onSelect: (client: Client) => void;
+  onSelectAction: (client: Client) => void;
 }) {
   const [query, setQuery] = useState("");
   const active = clients
@@ -38,7 +38,7 @@ export function ClientPicker({
           <button
             key={c.id}
             className="flex items-center gap-3 w-full px-6 py-3.5 hover:bg-accent/50 transition-colors text-left"
-            onClick={() => onSelect(c)}
+            onClick={() => onSelectAction(c)}
           >
             <span
               className="size-2.5 rounded-full shrink-0"

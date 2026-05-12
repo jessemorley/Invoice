@@ -61,11 +61,11 @@ function defaultForm(expense: Expense | null): ExpenseFormData {
 
 export function ExpenseSheet({
   open,
-  onOpenChange,
+  onOpenChangeAction,
   expense,
 }: {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChangeAction: (open: boolean) => void;
   expense: Expense | null;
 }) {
   const [form, setForm] = useState<ExpenseFormData>(defaultForm(expense));
@@ -148,7 +148,7 @@ export function ExpenseSheet({
             setIsUploading(false);
           }
         }
-        onOpenChange(false);
+        onOpenChangeAction(false);
       } catch (e) {
         setIsUploading(false);
         setError(e instanceof Error ? e.message : "Something went wrong");
@@ -162,7 +162,7 @@ export function ExpenseSheet({
     startDeleteTransition(async () => {
       try {
         await deleteExpense(expense.id);
-        onOpenChange(false);
+        onOpenChangeAction(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");
       }
@@ -173,7 +173,7 @@ export function ExpenseSheet({
   const busy = isPending || isDeleting || isUploading;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChangeAction}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
         <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
           <div className="flex flex-col gap-1.5 flex-1 min-w-0">

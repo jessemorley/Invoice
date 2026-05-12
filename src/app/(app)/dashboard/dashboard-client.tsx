@@ -319,7 +319,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
 
       <EmailComposeSheet
         open={composeOpen}
-        onOpenChange={setComposeOpen}
+        onOpenChangeAction={setComposeOpen}
         invoice={composeInvoice}
         businessName={composeBusinessName}
         onSent={() => { setComposeInvoice(null); setComposePrefill(null); }}
@@ -329,7 +329,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
       />
       <SentEmailSheet
         open={sentSheetOpen}
-        onOpenChange={setSentSheetOpen}
+        onOpenChangeAction={setSentSheetOpen}
         email={sentEmail}
       />
     </div>

@@ -767,25 +767,25 @@ function ClientSheetContent({
 
 export function ClientSheet({
   open,
-  onOpenChange,
+  onOpenChangeAction,
   client,
   initialView = "detail",
 }: {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChangeAction: (open: boolean) => void;
   client: Client | null;
   initialView?: SheetView;
 }) {
   const contentKey = initialView === "create" ? "create" : (client?.id ?? "none");
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChangeAction}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
         <ClientSheetContent
           key={contentKey}
           client={client}
           initialView={initialView}
-          onClose={() => onOpenChange(false)}
+          onClose={() => onOpenChangeAction(false)}
         />
       </SheetContent>
     </Sheet>
