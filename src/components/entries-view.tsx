@@ -194,28 +194,91 @@ function EntryRow({
   showClient?: boolean;
   onEdit: (entry: Entry) => void;
 }) {
+  const description = entry.shoot_client || entry.description || entry.workflow_type;
+  const total = entry.base_amount + entry.bonus_amount;
+
   return (
     <div
-      className="flex items-start gap-3 px-4 py-3.5 hover:bg-accent/50 transition-colors cursor-pointer"
+      className="hover:bg-accent/50 transition-colors cursor-pointer"
       onClick={() => onEdit(entry)}
     >
-      <span className="text-xs text-muted-foreground tabular-nums w-20 shrink-0">
-        {formatDate(entry.date)}
-      </span>
-      {showClient ? (
-        <div className="flex flex-col min-w-0 flex-1 gap-0.5">
-          <div className="flex items-center gap-2">
-            <div
-              className="size-2 rounded-full shrink-0"
-              style={{ backgroundColor: entry.client.color }}
-            />
-            <span className="text-sm font-medium truncate">
-              {entry.client.name}
+      {/* Mobile */}
+      <div className="md:hidden flex items-center gap-3 px-4 py-3">
+        <div className="flex-1 min-w-0">
+          <span className="text-sm font-medium text-foreground truncate block">
+            {description}
+          </span>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {formatDate(entry.date)}
             </span>
+            {showClient && (
+              <>
+                <div
+                  className="size-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: entry.client.color }}
+                />
+                <span className="text-xs text-muted-foreground truncate">
+                  {entry.client.name}
+                </span>
+              </>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground truncate">
-              {entry.shoot_client || entry.description || entry.workflow_type}
+        </div>
+        <div className="flex flex-col items-end gap-0.5 shrink-0">
+          <span className="text-sm tabular-nums text-foreground">
+            {formatAUD(total)}
+          </span>
+          {entry.bonus_amount > 0 && (
+            <span className="text-xs tabular-nums text-muted-foreground">
+              Super {formatAUD(entry.bonus_amount)}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop */}
+      <div className="hidden md:flex items-start gap-3 px-4 py-3.5">
+        <span className="text-xs text-muted-foreground tabular-nums w-20 shrink-0">
+          {formatDate(entry.date)}
+        </span>
+        {showClient ? (
+          <div className="flex flex-col min-w-0 flex-1 gap-0.5">
+            <div className="flex items-center gap-2">
+              <div
+                className="size-2 rounded-full shrink-0"
+                style={{ backgroundColor: entry.client.color }}
+              />
+              <span className="text-sm font-medium truncate">
+                {entry.client.name}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground truncate">
+                {description}
+              </span>
+              {entry.brand && (
+                <span className="text-sm text-muted-foreground shrink-0">
+                  ({entry.brand})
+                </span>
+              )}
+              {entry.role && (
+                <span className="text-sm text-muted-foreground shrink-0">
+                  (
+                  {entry.role === "Photographer"
+                    ? "P"
+                    : entry.role === "Operator" || entry.role === "O"
+                      ? "O"
+                      : entry.role}
+                  )
+                </span>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-1 min-w-0 items-center gap-2">
+            <span className="text-sm text-foreground truncate">
+              {description}
             </span>
             {entry.brand && (
               <span className="text-sm text-muted-foreground shrink-0">
@@ -234,50 +297,28 @@ function EntryRow({
               </span>
             )}
           </div>
-        </div>
-      ) : (
-        <div className="flex flex-1 min-w-0 items-center gap-2">
-          <span className="text-sm text-foreground truncate">
-            {entry.shoot_client || entry.description || entry.workflow_type}
-          </span>
-          {entry.brand && (
-            <span className="text-sm text-muted-foreground shrink-0">
-              ({entry.brand})
-            </span>
-          )}
-          {entry.role && (
-            <span className="text-sm text-muted-foreground shrink-0">
-              (
-              {entry.role === "Photographer"
-                ? "P"
-                : entry.role === "Operator" || entry.role === "O"
-                  ? "O"
-                  : entry.role}
-              )
-            </span>
-          )}
-        </div>
-      )}
-      <span className="hidden md:block text-xs text-muted-foreground w-20 shrink-0">
-        {entry.billing_type === "day_rate" &&
-          (entry.day_type === "full" ? "Full day" : "Half day")}
-        {entry.billing_type === "hourly" && entry.hours && `${entry.hours}h`}
-      </span>
-      <div className="flex items-center gap-3 shrink-0 ml-auto">
-        {showClient && (
-          <div className="hidden md:flex w-20 justify-start">
-            {entry.invoice ? (
-              <Badge variant={INVOICE_STATUS_VARIANT[entry.invoice.status]}>
-                {entry.invoice.number}
-              </Badge>
-            ) : (
-              <Badge variant="outline">Draft</Badge>
-            )}
-          </div>
         )}
-        <span className="text-sm tabular-nums text-foreground text-right shrink-0">
-          {formatAUD(entry.base_amount + entry.bonus_amount)}
+        <span className="text-xs text-muted-foreground w-20 shrink-0">
+          {entry.billing_type === "day_rate" &&
+            (entry.day_type === "full" ? "Full day" : "Half day")}
+          {entry.billing_type === "hourly" && entry.hours && `${entry.hours}h`}
         </span>
+        <div className="flex items-center gap-3 shrink-0 ml-auto">
+          {showClient && (
+            <div className="flex w-20 justify-start">
+              {entry.invoice ? (
+                <Badge variant={INVOICE_STATUS_VARIANT[entry.invoice.status]}>
+                  {entry.invoice.number}
+                </Badge>
+              ) : (
+                <Badge variant="outline">Draft</Badge>
+              )}
+            </div>
+          )}
+          <span className="text-sm tabular-nums text-foreground text-right shrink-0">
+            {formatAUD(total)}
+          </span>
+        </div>
       </div>
     </div>
   );
