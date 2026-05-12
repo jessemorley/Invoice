@@ -712,7 +712,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       <GenerateSheet
         open={generateOpen}
         onOpenChangeAction={setGenerateOpen}
-        onBlankInvoice={() => setNewInvoiceOpen(true)}
+        onBlankInvoiceAction={() => setNewInvoiceOpen(true)}
       />
       <InvoiceSheet
         open={newInvoiceOpen}
