@@ -229,11 +229,11 @@ function EntryRow({
           <span className="text-sm tabular-nums text-foreground">
             {formatAUD(total)}
           </span>
-          {entry.bonus_amount > 0 && (
-            <span className="text-xs tabular-nums text-muted-foreground">
-              Super {formatAUD(entry.bonus_amount)}
-            </span>
-          )}
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {entry.billing_type === "day_rate" &&
+              (entry.day_type === "full" ? "Full day" : "Half day")}
+            {entry.billing_type === "hourly" && entry.hours && `${entry.hours}h`}
+          </span>
         </div>
       </div>
 
@@ -311,7 +311,7 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
         {group.clientName}
       </span>
       <div className="flex-1" />
-      <div className="flex w-20 justify-start shrink-0">
+      <div className="flex shrink-0 md:w-20 md:justify-start justify-end">
         {group.invoiced ? (
           <Badge variant={INVOICE_STATUS_VARIANT[group.invoiceStatus ?? "draft"]}>
             {group.invoiceNumber}
