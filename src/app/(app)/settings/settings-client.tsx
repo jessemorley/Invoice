@@ -503,12 +503,12 @@ export function SettingsClient({
     <div className="flex flex-col h-full">
       <PageHeader title="Settings" />
       <Tabs value={tab} onValueChange={(v) => setTab(v as SettingsTab)} className="flex flex-col flex-1 overflow-hidden gap-0">
-        <div className="px-4 md:px-6 pt-4">
-          <TabsList>
-            <TabsTrigger value="info">Info</TabsTrigger>
-            <TabsTrigger value="invoicing">Invoicing</TabsTrigger>
-            <TabsTrigger value="email">Email</TabsTrigger>
-            <TabsTrigger value="account">Account</TabsTrigger>
+        <div className="px-4 md:px-6 pt-4 mx-auto w-full max-w-6xl">
+          <TabsList className="bg-transparent p-0 gap-1 h-auto">
+            <TabsTrigger value="info" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Info</TabsTrigger>
+            <TabsTrigger value="invoicing" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Invoicing</TabsTrigger>
+            <TabsTrigger value="email" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Email</TabsTrigger>
+            <TabsTrigger value="account" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Account</TabsTrigger>
           </TabsList>
         </div>
         <div className="flex-1 overflow-auto pb-28 md:pb-0">
