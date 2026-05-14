@@ -139,17 +139,17 @@ function SummaryPanel({
               <span className="font-medium">{formatAUD(calc.bonus)}</span>
             </div>
           )}
+          <Separator />
+          <div className="flex justify-between text-sm font-semibold">
+            <span>Total</span>
+            <span>{formatAUD(calc.base + calc.bonus)}</span>
+          </div>
           {client.pays_super && (
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Super</span>
               <span className="font-medium">{formatAUD(calc.superAmt)}</span>
             </div>
           )}
-          <Separator />
-          <div className="flex justify-between text-sm font-semibold">
-            <span>Total</span>
-            <span>{formatAUD(calc.total)}</span>
-          </div>
         </CardContent>
       </Card>
     </div>

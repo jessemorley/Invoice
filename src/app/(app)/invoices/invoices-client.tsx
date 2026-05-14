@@ -155,7 +155,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
         <span className="text-sm tabular-nums text-foreground">
-          {formatAUD(invoice.total)}
+          {formatAUD(invoice.subtotal)}
         </span>
         <Badge variant={STATUS_VARIANT[invoice.status]}>
           {STATUS_LABEL[invoice.status]}
@@ -325,7 +325,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         case "issued_date": return dir * ((a.issued_date ?? "9999-99-99").localeCompare(b.issued_date ?? "9999-99-99"));
         case "number":      return dir * a.number.localeCompare(b.number);
         case "client":      return dir * a.client.name.localeCompare(b.client.name);
-        case "total":       return dir * (a.total - b.total);
+        case "total":       return dir * (a.subtotal - b.subtotal);
         case "status":      return dir * a.status.localeCompare(b.status);
       }
     });
@@ -543,7 +543,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-right tabular-nums py-4 px-6">
-                        {formatAUD(inv.total)}
+                        {formatAUD(inv.subtotal)}
                       </TableCell>
                       <TableCell className="py-4 px-6 text-right">
                         <StatusBadge

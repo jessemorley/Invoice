@@ -583,15 +583,14 @@ export function InvoiceSheet({
                 {effectiveInvoiceDetail
                   ? formatAUD(
                       effectiveInvoiceDetail.entries.reduce((s, e) => s + e.base_amount + e.bonus_amount, 0) +
-                      effectiveInvoiceDetail.line_items.reduce((s, i) => s + i.amount, 0) +
-                      effectiveInvoiceDetail.super_amount
+                      effectiveInvoiceDetail.line_items.reduce((s, i) => s + i.amount, 0)
                     )
-                  : formatAUD(activeInvoice!.total)}
+                  : formatAUD(activeInvoice!.subtotal)}
               </span>
             </div>
             {activeInvoice!.super_amount > 0 && (
               <div className="flex justify-between text-muted-foreground">
-                <span>incl. super</span>
+                <span>Super</span>
                 <span className="tabular-nums">{formatAUD(activeInvoice!.super_amount)}</span>
               </div>
             )}
