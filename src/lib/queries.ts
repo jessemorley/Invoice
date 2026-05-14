@@ -481,9 +481,9 @@ export async function fetchDashboardData(userId: string, entries: Entry[], invoi
     (inv) => inv.status === "draft" || inv.status === "issued"
   );
 
-  // Build 6-month earnings chart: current 6 months vs same 6 months prior year
+  // Build 6-month earnings chart: previous 6 complete months vs same 6 months prior year
   const monthlyEarnings: MonthlyEarning[] = [];
-  for (let i = 5; i >= 0; i--) {
+  for (let i = 6; i >= 1; i--) {
     const monthDate = new Date(currentYear, currentMonth - i, 1);
     const yr = monthDate.getFullYear();
     const mo = monthDate.getMonth();
