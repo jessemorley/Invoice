@@ -44,6 +44,19 @@ export const sendInvoiceEmail = inngest.createFunction(
         match: "data.scheduled_email_id",
       },
     ],
+    onFailure: async ({ event }) => {
+      const { invoice_id, mark_issued } = event.data.event.data as SendInvoiceEmailEvent["data"];
+      if (!mark_issued || !invoice_id) return;
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+      await supabase
+        .from("invoices")
+        .update({ status: "draft", issued_date: null })
+        .eq("id", invoice_id)
+        .eq("status", "issued");
+    },
   },
   async ({ event }: { event: SendInvoiceEmailEvent }) => {
     const {
