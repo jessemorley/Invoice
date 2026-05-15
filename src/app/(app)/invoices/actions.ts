@@ -243,6 +243,21 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
 
   if (error) throw new Error(`scheduleInvoiceEmail: ${error.message}`);
 
+  const scheduledTs = new Date(data.scheduled_for).getTime();
+  const isSendingNow = scheduledTs <= Date.now();
+
+  if (markIssued && isSendingNow) {
+    const issuedDate = new Date(data.scheduled_for).toISOString().split("T")[0];
+    await supabase
+      .from("invoices")
+      .update({ status: "issued", issued_date: issuedDate })
+      .eq("id", invoiceId)
+      .eq("user_id", userId)
+      .eq("status", "draft");
+    updateTag(CACHE_TAGS.invoices);
+    updateTag(CACHE_TAGS.entries);
+  }
+
   await inngest.send({
     name: "invoice/email.scheduled",
     data: {
@@ -258,7 +273,7 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
       mark_issued: markIssued,
       scheduled_for: data.scheduled_for,
     },
-    ts: new Date(data.scheduled_for).getTime(),
+    ts: scheduledTs,
   });
 
   updateTag(CACHE_TAGS.scheduledEmails);
@@ -306,6 +321,17 @@ export async function sendScheduledEmailNow(scheduledEmailId: string): Promise<v
     .single();
 
   if (error) throw new Error(`sendScheduledEmailNow: ${error.message}`);
+
+  if (row.mark_issued && row.invoice_id) {
+    const issuedDate = new Date().toISOString().split("T")[0];
+    await supabase
+      .from("invoices")
+      .update({ status: "issued", issued_date: issuedDate })
+      .eq("id", row.invoice_id)
+      .eq("status", "draft");
+    updateTag(CACHE_TAGS.invoices);
+    updateTag(CACHE_TAGS.entries);
+  }
 
   await inngest.send({
     name: "invoice/email.scheduled",
