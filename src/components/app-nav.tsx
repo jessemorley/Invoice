@@ -147,7 +147,7 @@ export function AppSidebar({ user }: { user: { name: string; email: string } }) 
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="cursor-default">
+            <SidebarMenuButton className="cursor-default">
               <Image src="/app_icon.png" alt="Invoicing" width={28} height={28} className="size-7 rounded-md shrink-0" />
               <span className="text-sm font-semibold tracking-tight">Invoicing</span>
             </SidebarMenuButton>
