@@ -155,7 +155,7 @@ export function AppSidebar({ user }: { user: { name: string; email: string } }) 
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup className="px-3 py-1">
+        <SidebarGroup className="px-3 py-1 group-data-[collapsible=icon]:px-2">
           <SidebarGroupContent>
             <SidebarMenu className="gap-2">
               {navItems.map((item) => (
