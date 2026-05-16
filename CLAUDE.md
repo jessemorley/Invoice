@@ -102,3 +102,14 @@ Migrations live in `supabase/migrations/`. Run `supabase db push` or apply manua
 - Simplicity First: Make every change as simple as possible. Impact minimal code.
 - No Laziness: Find root causes. No temporary fixes. Senior developer standards.
 - Minimal Impact: Only touch what's necessary. No side effects with new bugs.
+
+## Git Workflow
+
+- **Never work directly on `main`.** For any new feature, bug fix, or non-trivial change, create a branch first:
+```bash
+  git checkout -b feature/short-description
+```
+- **Branch naming:** `feature/`, `fix/`, or `chore/` prefix followed by a short kebab-case description.
+- **Commit often** with clear messages. Each commit should represent one logical change.
+- **Open a PR when the feature is complete and verified** (build + lint passing, manually tested). Do not merge directly.
+- For small, isolated fixes (typos, config tweaks) on a project with no active PRs, working on `main` is acceptable — use judgment.

@@ -301,8 +301,12 @@ function EntryRow({
 }
 
 function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
+  const status = group.invoiceStatus ?? "draft";
   return (
     <div className="flex items-center gap-3 px-4 py-2.5">
+      <Badge variant={INVOICE_STATUS_VARIANT[status]} className="shrink-0">
+        {group.invoiceNumber ?? "Draft"}
+      </Badge>
       <div className="flex items-center gap-1.5">
         <div
           className="size-2 rounded-full shrink-0"
@@ -313,17 +317,6 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
         </span>
       </div>
       <div className="flex-1" />
-      <div className="flex shrink-0 md:w-20 md:justify-start justify-end">
-        {group.invoiced ? (
-          <Badge variant={INVOICE_STATUS_VARIANT[group.invoiceStatus ?? "draft"]}>
-            {group.invoiceNumber}
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="cursor-pointer">
-            Draft
-          </Badge>
-        )}
-      </div>
       <span className="text-xs tabular-nums font-medium text-muted-foreground text-right w-20 shrink-0">
         {formatAUD(group.subtotal)}
       </span>
