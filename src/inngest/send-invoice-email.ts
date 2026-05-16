@@ -110,6 +110,14 @@ export const sendInvoiceEmail = inngest.createFunction(
     }
     const pdfBase64 = btoa(binary);
 
+    const storagePath = `${user_id}/${invoice_id}/${scheduled_email_id}.pdf`;
+    const uploadResult = await supabase.storage
+      .from("invoices")
+      .upload(storagePath, pdfBytes, { contentType: "application/pdf", upsert: true })
+      .catch((err: unknown) => ({ error: err }));
+    if (uploadResult.error) console.error("PDF storage upload failed:", uploadResult.error);
+    const sentPdfPath = uploadResult.error ? null : storagePath;
+
     await resend.emails.send({
       from: fromAddress,
       to: to_address.split(",").map((e: string) => e.trim()),
@@ -122,7 +130,7 @@ export const sendInvoiceEmail = inngest.createFunction(
 
     await supabase
       .from("scheduled_emails")
-      .update({ status: "sent", sent_at: new Date().toISOString() })
+      .update({ status: "sent", sent_at: new Date().toISOString(), ...(sentPdfPath ? { sent_pdf_path: sentPdfPath } : {}) })
       .eq("id", scheduled_email_id);
 
     if (mark_issued && invoice_id) {

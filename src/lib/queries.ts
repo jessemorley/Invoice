@@ -414,7 +414,7 @@ export async function fetchDashboardEmails(userId: string, token: string): Promi
   const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("scheduled_emails")
-    .select("id, invoice_id, to_address, subject, body_text, filename, scheduled_for, sent_at, status, invoices(invoice_number)")
+    .select("id, invoice_id, to_address, subject, body_text, filename, scheduled_for, sent_at, sent_pdf_path, status, invoices(invoice_number)")
     .eq("user_id", userId)
     .in("status", ["pending", "failed", "sent"])
     .order("status", { ascending: true })
@@ -438,6 +438,7 @@ export async function fetchDashboardEmails(userId: string, token: string): Promi
       filename: row.filename,
       scheduled_for: row.scheduled_for,
       sent_at: row.sent_at ?? null,
+      sent_pdf_path: row.sent_pdf_path ?? null,
       status: row.status as DashboardEmail["status"],
     };
     if (row.status === "pending" || row.status === "failed") {
@@ -640,6 +641,7 @@ export type ScheduledEmail = {
   filename: string;
   scheduled_for: string;
   sent_at: string | null;
+  sent_pdf_path: string | null;
   error: string | null;
 };
 
@@ -647,7 +649,7 @@ export async function fetchScheduledEmailForInvoice(invoiceId: string, userId: s
   const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("scheduled_emails")
-    .select("id, status, to_address, subject, body_text, filename, scheduled_for, sent_at, error")
+    .select("id, status, to_address, subject, body_text, filename, scheduled_for, sent_at, sent_pdf_path, error")
     .eq("invoice_id", invoiceId)
     .eq("user_id", userId)
     .neq("status", "cancelled")
@@ -665,6 +667,7 @@ export async function fetchScheduledEmailForInvoice(invoiceId: string, userId: s
     filename: data.filename,
     scheduled_for: data.scheduled_for,
     sent_at: data.sent_at ?? null,
+    sent_pdf_path: data.sent_pdf_path ?? null,
     error: data.error ?? null,
   };
 }

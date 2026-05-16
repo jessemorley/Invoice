@@ -2,7 +2,8 @@
 
 import { updateTag, refresh } from "next/cache";
 import { createClient } from "@/lib/supabase-server";
-import { getAuthUserId, getAuthToken, getAuthUser } from "@/lib/auth";
+import { createTokenClient } from "@/lib/supabase";
+import { getAuth, getAuthUserId, getAuthToken, getAuthUser } from "@/lib/auth";
 import { fetchUninvoicedGroups, fetchScheduledEmailForInvoice, fetchBusinessDetails, fetchInvoiceDetail, fetchFullClients, fetchWorkflowRates, fetchEntryById, fetchUserPreferences, CACHE_TAGS } from "@/lib/queries";
 import { inngest } from "@/lib/inngest";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
@@ -353,6 +354,23 @@ export async function sendScheduledEmailNow(scheduledEmailId: string): Promise<v
 
   updateTag(CACHE_TAGS.scheduledEmails);
   refresh();
+}
+
+export async function getSentEmailPdfUrl(scheduledEmailId: string): Promise<string | null> {
+  const { userId, token } = await getAuth();
+  const supabase = createTokenClient(token);
+  const { data, error } = await supabase
+    .from("scheduled_emails")
+    .select("sent_pdf_path")
+    .eq("id", scheduledEmailId)
+    .eq("user_id", userId)
+    .single();
+  if (error || !data?.sent_pdf_path) return null;
+  const { data: urlData, error: urlError } = await supabase.storage
+    .from("invoices")
+    .createSignedUrl(data.sent_pdf_path, 3600);
+  if (urlError) return null;
+  return urlData.signedUrl;
 }
 
 async function recomputeInvoiceTotal(supabase: Awaited<ReturnType<typeof createClient>>, invoiceId: string) {
