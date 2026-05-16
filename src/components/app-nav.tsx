@@ -83,7 +83,7 @@ function NavUser({ name, email }: { name: string; email: string }) {
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+            <SidebarMenuButton size="lg" className="cursor-pointer data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
               </Avatar>
@@ -147,8 +147,8 @@ export function AppSidebar({ user }: { user: { name: string; email: string } }) 
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="cursor-default">
-              <Image src="/app_icon.png" alt="Invoicing" width={32} height={32} className="size-7 rounded-md shrink-0 group-data-[collapsible=icon]:!size-8" />
+            <SidebarMenuButton size="lg" className="pointer-events-none">
+              <Image src="/app_icon.png" alt="Invoicing" width={32} height={32} className="size-8 rounded-md shrink-0" />
               <span className="text-sm font-semibold tracking-tight">Invoicing</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
