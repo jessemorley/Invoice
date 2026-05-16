@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { Paperclip, X } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
+import { toast } from "sonner";
 
 interface SentEmailSheetProps {
   open: boolean;
@@ -27,15 +28,18 @@ export function SentEmailSheet({ open, onOpenChangeAction, email }: SentEmailShe
     setIsDownloading(true);
     try {
       const filename = email.filename ?? "invoice.pdf";
-      let blob: Blob;
+      let url: string;
       if (email.sent_pdf_path) {
         const signedUrl = await getSentEmailPdfUrl(email.id);
-        const res = await fetch(signedUrl ?? `/api/invoices/${email.invoice_id}/pdf`);
-        blob = await res.blob();
+        if (!signedUrl) {
+          toast("Couldn't retrieve archived copy — downloading current version instead");
+        }
+        url = signedUrl ?? `/api/invoices/${email.invoice_id}/pdf`;
       } else {
-        const res = await fetch(`/api/invoices/${email.invoice_id}/pdf`);
-        blob = await res.blob();
+        url = `/api/invoices/${email.invoice_id}/pdf`;
       }
+      const res = await fetch(url);
+      const blob = await res.blob();
       if (navigator.maxTouchPoints > 0 && navigator.canShare?.({ files: [new File([blob], filename, { type: "application/pdf" })] })) {
         await navigator.share({ files: [new File([blob], filename, { type: "application/pdf" })] }).catch((e) => {
           if (e?.name !== "AbortError") throw e;
