@@ -30,6 +30,12 @@ const INVOICE_STATUS_VARIANT: Record<
   paid: "default",
 };
 
+const INVOICE_STATUS_COLOR: Record<string, string> = {
+  draft: "#94a3b8",
+  issued: "#f97316",
+  paid: "#10b981",
+};
+
 type ClientWeekGroup = {
   key: string;
   clientName: string;
@@ -304,18 +310,18 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
   const status = group.invoiceStatus ?? "draft";
   return (
     <div className="flex items-center gap-3 px-4 py-2.5">
-      <Badge variant={INVOICE_STATUS_VARIANT[status]} className="shrink-0">
+      <span
+        className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0"
+        style={{
+          color: INVOICE_STATUS_COLOR[status],
+          backgroundColor: `${INVOICE_STATUS_COLOR[status]}22`,
+        }}
+      >
         {group.invoiceNumber ?? "Draft"}
-      </Badge>
-      <div className="flex items-center gap-1.5">
-        <div
-          className="size-2 rounded-full shrink-0"
-          style={{ backgroundColor: group.clientColor }}
-        />
-        <span className="text-sm font-medium text-muted-foreground">
-          {group.clientName}
-        </span>
-      </div>
+      </span>
+      <span className="text-sm font-medium text-muted-foreground">
+        {group.clientName}
+      </span>
       <div className="flex-1" />
       <span className="text-xs tabular-nums font-medium text-muted-foreground text-right w-20 shrink-0">
         {formatAUD(group.subtotal)}
