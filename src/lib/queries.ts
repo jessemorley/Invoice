@@ -220,7 +220,7 @@ export async function fetchInvoices(userId: string, token: string, filters: Invo
 
   let query = supabase
     .from("invoices")
-    .select("*, clients(id, name, billing_type, color)")
+    .select("*, clients(id, name, billing_type, color), scheduled_emails(status, scheduled_for, sent_at)")
     .eq("user_id", userId);
 
   if (status && status !== "all") query = query.eq("status", status);
@@ -241,6 +241,10 @@ export async function fetchInvoices(userId: string, token: string, filters: Invo
 
   return (data ?? []).map((inv) => {
     const client = Array.isArray(inv.clients) ? inv.clients[0] : inv.clients;
+    const emails = (Array.isArray(inv.scheduled_emails) ? inv.scheduled_emails : inv.scheduled_emails ? [inv.scheduled_emails] : []) as Array<{ status: string; scheduled_for: string; sent_at: string | null }>;
+    const activeEmail = emails
+      .filter((e) => e.status !== "cancelled")
+      .sort((a, b) => b.scheduled_for.localeCompare(a.scheduled_for))[0] ?? null;
     return {
       id: inv.id,
       number: inv.invoice_number,
@@ -251,6 +255,11 @@ export async function fetchInvoices(userId: string, token: string, filters: Invo
       super_amount: inv.super_amount,
       total: inv.total,
       status: inv.status,
+      email: activeEmail ? {
+        status: activeEmail.status as "pending" | "sent" | "failed",
+        scheduled_for: activeEmail.scheduled_for,
+        sent_at: activeEmail.sent_at,
+      } : null,
     };
   });
 }
