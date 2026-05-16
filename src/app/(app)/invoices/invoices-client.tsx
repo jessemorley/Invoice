@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { revalidateInvoices, loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow, loadEntrySheetData } from "./actions";
 import { invalidate } from "@/lib/invalidate";
-import type { Invoice, InvoiceStatus, InvoiceDetail, Entry, Client, WorkflowRate } from "@/lib/types";
+import type { Invoice, InvoiceEmail, InvoiceStatus, InvoiceDetail, Entry, Client, WorkflowRate } from "@/lib/types";
 import type { ScheduledEmail } from "@/lib/queries";
 import type { InvoiceFilters } from "@/lib/queries";
 import { formatAUD, formatDateShort } from "@/lib/format";
@@ -34,6 +34,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
@@ -50,7 +51,7 @@ import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { EntrySheet } from "@/components/entry-sheet";
-import { ChevronDown, FileText, Plus, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, Clock, FileText, MailWarning, Plus, RefreshCw, Search, Send, SlidersHorizontal, X } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
 
@@ -131,6 +132,33 @@ function StatusBadge({
   );
 }
 
+const EMAIL_COLORS: Record<InvoiceEmail["status"], string> = {
+  pending: "#f97316",
+  sent:    "#10b981",
+  failed:  "#ef4444",
+};
+
+function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate?: boolean }) {
+  const color = EMAIL_COLORS[email.status];
+  const date = email.status === "sent" && email.sent_at
+    ? formatDateShort(email.sent_at.slice(0, 10))
+    : email.status === "pending"
+    ? formatDateShort(email.scheduled_for.slice(0, 10))
+    : null;
+
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+      style={{ backgroundColor: `${color}22`, color }}
+    >
+      {email.status === "sent" && <Send className="size-3 shrink-0" />}
+      {email.status === "pending" && <Clock className="size-3 shrink-0" />}
+      {email.status === "failed" && <MailWarning className="size-3 shrink-0" />}
+      {showDate && date && <span>{date}</span>}
+    </span>
+  );
+}
+
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
@@ -147,10 +175,11 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
             {invoice.client.name}
           </span>
         </div>
-        <div className="flex items-center gap-2 mt-0.5">
+        <div className="flex items-center gap-1.5 mt-0.5">
           <span className="text-xs text-muted-foreground">
             {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
           </span>
+          {invoice.email && <EmailBadge email={invoice.email} />}
         </div>
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
@@ -178,9 +207,8 @@ function SkeletonTableRows({ count = 8 }: { count?: number }) {
               <Skeleton className="h-3 w-28" />
             </div>
           </TableCell>
-          <TableCell className="py-4 px-6 text-right"><Skeleton className="h-3 w-6 ml-auto" /></TableCell>
-          <TableCell className="py-4 px-6"><Skeleton className="h-3 w-20" /></TableCell>
           <TableCell className="py-4 px-6 text-right"><Skeleton className="h-3 w-16 ml-auto" /></TableCell>
+          <TableCell className="py-4 px-6"><Skeleton className="h-3 w-20" /></TableCell>
           <TableCell className="py-4 px-6 text-right"><Skeleton className="h-5 w-14 ml-auto rounded-full" /></TableCell>
         </TableRow>
       ))}
@@ -512,6 +540,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                   <SortableTableHead className="w-24 py-4 px-6" {...sh("number")}>Number</SortableTableHead>
                   <SortableTableHead className="py-4 px-6" {...sh("client")}>Client</SortableTableHead>
                   <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("total")}>Total</SortableTableHead>
+                  <TableHead className="w-36 py-4 px-6 text-muted-foreground font-medium text-sm">Email</TableHead>
                   <SortableTableHead className="w-24 py-4 px-6" align="right" {...sh("status")}>Status</SortableTableHead>
                 </TableRow>
               </TableHeader>
@@ -520,7 +549,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                   <SkeletonTableRows />
                 ) : filteredInvoices.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
                       No invoices match these filters.
                     </TableCell>
                   </TableRow>
@@ -544,6 +573,9 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                       </TableCell>
                       <TableCell className="text-sm text-right tabular-nums py-4 px-6">
                         {formatAUD(inv.subtotal)}
+                      </TableCell>
+                      <TableCell className="py-4 px-6">
+                        {inv.email && <EmailBadge email={inv.email} showDate />}
                       </TableCell>
                       <TableCell className="py-4 px-6 text-right">
                         <StatusBadge

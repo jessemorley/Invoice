@@ -43,6 +43,12 @@ export type Entry = {
   iso_week: string;
 };
 
+export type InvoiceEmail = {
+  status: "pending" | "sent" | "failed";
+  scheduled_for: string;
+  sent_at: string | null;
+};
+
 export type Invoice = {
   id: string;
   number: string;
@@ -53,6 +59,7 @@ export type Invoice = {
   super_amount: number;
   total: number;
   status: InvoiceStatus;
+  email: InvoiceEmail | null;
 };
 
 export type Expense = {
