@@ -519,6 +519,7 @@ export type Database = {
           mark_issued: boolean
           scheduled_for: string
           sent_at: string | null
+          sent_pdf_path: string | null
           status: string
           subject: string
           to_address: string
@@ -536,6 +537,7 @@ export type Database = {
           mark_issued?: boolean
           scheduled_for: string
           sent_at?: string | null
+          sent_pdf_path?: string | null
           status?: string
           subject: string
           to_address: string
@@ -553,6 +555,7 @@ export type Database = {
           mark_issued?: boolean
           scheduled_for?: string
           sent_at?: string | null
+          sent_pdf_path?: string | null
           status?: string
           subject?: string
           to_address?: string

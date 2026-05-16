@@ -355,6 +355,22 @@ export async function sendScheduledEmailNow(scheduledEmailId: string): Promise<v
   refresh();
 }
 
+export async function getSentEmailPdfUrl(scheduledEmailId: string): Promise<string | null> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { data, error } = await supabase
+    .from("scheduled_emails")
+    .select("sent_pdf_path")
+    .eq("id", scheduledEmailId)
+    .eq("user_id", userId)
+    .single();
+  if (error || !data?.sent_pdf_path) return null;
+  const { data: urlData, error: urlError } = await supabase.storage
+    .from("invoices")
+    .createSignedUrl(data.sent_pdf_path, 3600);
+  if (urlError) return null;
+  return urlData.signedUrl;
+}
+
 async function recomputeInvoiceTotal(supabase: Awaited<ReturnType<typeof createClient>>, invoiceId: string) {
   const { data: inv } = await supabase
     .from("invoices")

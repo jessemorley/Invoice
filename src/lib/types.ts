@@ -184,6 +184,7 @@ export type DashboardEmail = {
   filename: string;
   scheduled_for: string;
   sent_at: string | null;
+  sent_pdf_path: string | null;
   status: "pending" | "sent" | "failed";
 };
 

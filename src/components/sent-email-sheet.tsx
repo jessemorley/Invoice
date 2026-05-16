@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { DashboardEmail } from "@/lib/types";
+import { getSentEmailPdfUrl } from "@/app/(app)/invoices/actions";
 import { formatRelativeTime } from "@/lib/format";
 import {
   Sheet,
@@ -25,9 +26,16 @@ export function SentEmailSheet({ open, onOpenChangeAction, email }: SentEmailShe
     if (!email) return;
     setIsDownloading(true);
     try {
-      const res = await fetch(`/api/invoices/${email.invoice_id}/pdf`);
-      const blob = await res.blob();
-      const filename = email.filename ?? res.headers.get("Content-Disposition")?.match(/filename="(.+?)"/)?.[1] ?? "invoice.pdf";
+      const filename = email.filename ?? "invoice.pdf";
+      let blob: Blob;
+      if (email.sent_pdf_path) {
+        const signedUrl = await getSentEmailPdfUrl(email.id);
+        const res = await fetch(signedUrl ?? `/api/invoices/${email.invoice_id}/pdf`);
+        blob = await res.blob();
+      } else {
+        const res = await fetch(`/api/invoices/${email.invoice_id}/pdf`);
+        blob = await res.blob();
+      }
       if (navigator.maxTouchPoints > 0 && navigator.canShare?.({ files: [new File([blob], filename, { type: "application/pdf" })] })) {
         await navigator.share({ files: [new File([blob], filename, { type: "application/pdf" })] }).catch((e) => {
           if (e?.name !== "AbortError") throw e;
@@ -99,7 +107,7 @@ export function SentEmailSheet({ open, onOpenChangeAction, email }: SentEmailShe
                   className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-accent transition-colors w-fit disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isDownloading ? <Spinner data-icon="inline-start" className="size-3 shrink-0" /> : <Paperclip className="size-3 shrink-0" />}
-                  <span className="truncate max-w-56">{isDownloading ? "Generating…" : email.filename}</span>
+                  <span className="truncate max-w-56">{isDownloading ? (email.sent_pdf_path ? "Downloading…" : "Generating…") : email.filename}</span>
                 </button>
               </div>
             </div>
