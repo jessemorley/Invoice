@@ -114,7 +114,8 @@ export const sendInvoiceEmail = inngest.createFunction(
     const uploadResult = await supabase.storage
       .from("invoices")
       .upload(storagePath, pdfBytes, { contentType: "application/pdf", upsert: true })
-      .catch(() => ({ error: new Error("upload threw") }));
+      .catch((err: unknown) => ({ error: err }));
+    if (uploadResult.error) console.error("PDF storage upload failed:", uploadResult.error);
     const sentPdfPath = uploadResult.error ? null : storagePath;
 
     await resend.emails.send({

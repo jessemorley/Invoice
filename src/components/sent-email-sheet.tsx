@@ -32,7 +32,7 @@ export function SentEmailSheet({ open, onOpenChangeAction, email }: SentEmailShe
       if (email.sent_pdf_path) {
         const signedUrl = await getSentEmailPdfUrl(email.id);
         if (!signedUrl) {
-          toast("Couldn't retrieve archived copy — downloading current version instead");
+          toast.warning("Couldn't retrieve archived copy — downloading current version instead");
         }
         url = signedUrl ?? `/api/invoices/${email.invoice_id}/pdf`;
       } else {
