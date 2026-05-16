@@ -51,7 +51,7 @@ import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { EntrySheet } from "@/components/entry-sheet";
-import { ChevronDown, Clock, FileText, Mail, MailWarning, Plus, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, Clock, FileText, MailWarning, Plus, RefreshCw, Search, Send, SlidersHorizontal, X } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
 
@@ -132,10 +132,31 @@ function StatusBadge({
   );
 }
 
-function EmailIcon({ email }: { email: InvoiceEmail }) {
-  if (email.status === "sent") return <Mail className="size-3 shrink-0" />;
-  if (email.status === "failed") return <MailWarning className="size-3 shrink-0" />;
-  return <Clock className="size-3 shrink-0" />;
+const EMAIL_COLORS: Record<InvoiceEmail["status"], string> = {
+  pending: "#f97316",
+  sent:    "#10b981",
+  failed:  "#ef4444",
+};
+
+function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate?: boolean }) {
+  const color = EMAIL_COLORS[email.status];
+  const date = email.status === "sent" && email.sent_at
+    ? formatDateShort(email.sent_at.slice(0, 10))
+    : email.status === "pending"
+    ? formatDateShort(email.scheduled_for.slice(0, 10))
+    : null;
+
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+      style={{ backgroundColor: `${color}22`, color }}
+    >
+      {email.status === "sent" && <Send className="size-3 shrink-0" />}
+      {email.status === "pending" && <Clock className="size-3 shrink-0" />}
+      {email.status === "failed" && <MailWarning className="size-3 shrink-0" />}
+      {showDate && date && <span>{date}</span>}
+    </span>
+  );
 }
 
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
@@ -154,11 +175,11 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
             {invoice.client.name}
           </span>
         </div>
-        <div className="flex items-center gap-1.5 mt-0.5 text-muted-foreground">
-          <span className="text-xs">
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <span className="text-xs text-muted-foreground">
             {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
           </span>
-          {invoice.email && <EmailIcon email={invoice.email} />}
+          {invoice.email && <EmailBadge email={invoice.email} />}
         </div>
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
@@ -554,17 +575,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                         {formatAUD(inv.subtotal)}
                       </TableCell>
                       <TableCell className="py-4 px-6">
-                        {inv.email && (
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <EmailIcon email={inv.email} />
-                            {inv.email.status === "sent" && inv.email.sent_at && (
-                              <span className="text-xs">{formatDateShort(inv.email.sent_at.slice(0, 10))}</span>
-                            )}
-                            {inv.email.status === "pending" && (
-                              <span className="text-xs">{formatDateShort(inv.email.scheduled_for.slice(0, 10))}</span>
-                            )}
-                          </div>
-                        )}
+                        {inv.email && <EmailBadge email={inv.email} showDate />}
                       </TableCell>
                       <TableCell className="py-4 px-6 text-right">
                         <StatusBadge
