@@ -69,6 +69,7 @@ Migrations live in `supabase/migrations/`. Run `supabase db push` or apply manua
 - Offload research, exploration, and parallel analysis to subagents
 - For complex problems, throw more compute at it via subagents
 - One task per subagent for focused execution
+- Use **Haiku** (`model: "haiku"`) for research, exploration, and read-only analysis subagents to conserve usage; reserve Sonnet/Opus for subagents that write or architect code
 
 ### 3. Self-Improvement Loop
 - After ANY correction from the user: update tasks/lessons.md with the pattern
