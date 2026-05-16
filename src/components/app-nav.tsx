@@ -147,8 +147,8 @@ export function AppSidebar({ user }: { user: { name: string; email: string } }) 
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="cursor-default h-12">
-              <Image src="/app_icon.png" alt="Invoicing" width={28} height={28} className="size-7 rounded-md shrink-0 transition-[width,height] group-data-[collapsible=icon]:!size-4" />
+            <SidebarMenuButton size="lg" className="cursor-default">
+              <Image src="/app_icon.png" alt="Invoicing" width={32} height={32} className="size-7 rounded-md shrink-0 group-data-[collapsible=icon]:!size-8" />
               <span className="text-sm font-semibold tracking-tight">Invoicing</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
