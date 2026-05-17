@@ -210,8 +210,8 @@ function SkeletonTableRows({ count = 8 }: { count?: number }) {
           <TableCell className="py-4 px-6"><Skeleton className="h-3 w-24" /></TableCell>
           <TableCell className="py-4 px-6"><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
           <TableCell className="py-4 px-6"><Skeleton className="h-3 w-28" /></TableCell>
-          <TableCell className="py-4 px-6 text-right"><Skeleton className="h-3 w-16 ml-auto" /></TableCell>
           <TableCell className="py-4 px-6"><Skeleton className="h-3 w-20" /></TableCell>
+          <TableCell className="py-4 px-6 text-right"><Skeleton className="h-3 w-16 ml-auto" /></TableCell>
           <TableCell className="py-4 px-6 text-right"><Skeleton className="h-5 w-14 ml-auto rounded-full" /></TableCell>
         </TableRow>
       ))}
@@ -541,8 +541,8 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                   <SortableTableHead className="w-28 py-4 px-6" {...sh("issued_date")}>Issued</SortableTableHead>
                   <SortableTableHead className="w-24 py-4 px-6" {...sh("number")}>Number</SortableTableHead>
                   <SortableTableHead className="py-4 px-6" {...sh("client")}>Client</SortableTableHead>
-                  <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("total")}>Total</SortableTableHead>
                   <TableHead className="w-36 py-4 px-6 text-muted-foreground font-medium text-sm">Email</TableHead>
+                  <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("total")}>Total</SortableTableHead>
                   <SortableTableHead className="w-24 py-4 px-6" align="right" {...sh("status")}>Status</SortableTableHead>
                 </TableRow>
               </TableHeader>
@@ -572,11 +572,11 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                       <TableCell className="py-4 px-6">
                         <span className="text-sm">{inv.client.name}</span>
                       </TableCell>
-                      <TableCell className="text-sm text-right tabular-nums py-4 px-6">
-                        {formatAUD(inv.subtotal)}
-                      </TableCell>
                       <TableCell className="py-4 px-6">
                         {inv.email && <EmailBadge email={inv.email} showDate />}
+                      </TableCell>
+                      <TableCell className="text-sm text-right tabular-nums py-4 px-6">
+                        {formatAUD(inv.subtotal)}
                       </TableCell>
                       <TableCell className="py-4 px-6 text-right">
                         <StatusBadge
