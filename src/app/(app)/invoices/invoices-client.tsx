@@ -146,7 +146,7 @@ function StatusBadge({
 
 const EMAIL_VARIANT: Record<InvoiceEmail["status"], "default" | "secondary" | "destructive"> = {
   pending: "secondary",
-  sent:    "default",
+  sent:    "secondary",
   failed:  "destructive",
 };
 
