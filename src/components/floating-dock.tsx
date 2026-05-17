@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback } from "react";
 import { LayoutDashboard, FileText, Receipt, Users, Wallet, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useActiveView } from "@/components/active-view-context";
 
 const tabs = [
   { view: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -28,27 +28,21 @@ const ItemInner = ({ isActive, icon: Icon }: { isActive: boolean; icon: (typeof 
 );
 
 export function FloatingDock() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const routerView = searchParams.get("view") ?? "entries";
-  const [activeView, setActiveView] = useState(routerView);
+  const { view, setView } = useActiveView();
 
-  useEffect(() => { setActiveView(routerView); }, [routerView]);
-
-  const handleTap = useCallback((view: string) => {
-    if (activeView === view) {
+  const handleTap = useCallback((tab: string) => {
+    if (view === tab) {
       window.dispatchEvent(new CustomEvent("dock:focus-search"));
     } else {
-      setActiveView(view);
-      router.replace(`/?view=${view}`, { scroll: false });
+      setView(tab as Parameters<typeof setView>[0]);
     }
-  }, [activeView, router]);
+  }, [view, setView]);
 
   return (
     <div className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden" style={{ bottom: "env(safe-area-inset-bottom, 0px)" }}>
       <nav className="flex items-center gap-0.5 bg-background/95 backdrop-blur-md border border-border/50 rounded-full px-1.5 py-1 shadow-xl shadow-black/10">
         {tabs.map((tab) => {
-          const isActive = activeView === tab.view;
+          const isActive = view === tab.view;
           return (
             <button
               key={tab.view}

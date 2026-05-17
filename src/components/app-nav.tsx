@@ -1,8 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useActiveView } from "@/components/active-view-context";
 import { signOut } from "@/app/login/actions";
 import {
   LayoutDashboard,
@@ -70,7 +69,7 @@ function NavItem({
 
 function NavUser({ name, email }: { name: string; email: string }) {
   const { isMobile } = useSidebar();
-  const router = useRouter();
+  const { setView } = useActiveView();
   const initials = name
     .split(" ")
     .map((p) => p[0])
@@ -112,7 +111,7 @@ function NavUser({ name, email }: { name: string; email: string }) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.replace("/?view=settings&tab=account", { scroll: false })}>
+            <DropdownMenuItem onClick={() => setView("settings", { settingsTab: "account" })}>
               <Settings />Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -127,18 +126,13 @@ function NavUser({ name, email }: { name: string; email: string }) {
 }
 
 export function AppSidebar({ user }: { user: { name: string; email: string } }) {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const routerView = searchParams.get("view") ?? "entries";
-  const [activeView, setActiveView] = useState(routerView);
-  useEffect(() => { setActiveView(routerView); }, [routerView]);
+  const { view: activeView, setView } = useActiveView();
 
-  const handleNavigate = (view: string) => {
-    if (activeView === view) {
+  const handleNavigate = (v: string) => {
+    if (activeView === v) {
       window.dispatchEvent(new CustomEvent("dock:focus-search"));
     } else {
-      setActiveView(view);
-      router.replace(`/?view=${view}`, { scroll: false });
+      setView(v as Parameters<typeof setView>[0]);
     }
   };
 

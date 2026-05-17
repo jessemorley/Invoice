@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import type { InvalidationTag } from "@/lib/invalidate";
+import { useActiveView, type ViewId } from "@/components/active-view-context";
 import type { DashboardData, Entry, Expense, Client, WorkflowRate, Invoice } from "@/lib/types";
 import type { BusinessDetails, InvoiceSequence, UserPreferences } from "@/lib/queries";
 import dynamic from "next/dynamic";
@@ -37,8 +37,6 @@ import {
   loadSettingsViewData,
 } from "@/app/(app)/actions";
 
-export type ViewId = "dashboard" | "entries" | "invoices" | "clients" | "expenses" | "settings";
-
 type DashboardState = { data: DashboardData } | null;
 type EntriesState = { entries: Entry[]; clients: Client[]; workflowRates: WorkflowRate[] } | null;
 type InvoicesState = { invoices: Invoice[]; uninvoicedCount: number; clients: Client[] } | null;
@@ -67,9 +65,7 @@ export function ViewSwitch({
   userName: string;
   initialEntriesData?: InitialEntriesData;
 }) {
-  const searchParams = useSearchParams();
-  const view = (searchParams.get("view") ?? "entries") as ViewId;
-  const settingsTab = searchParams.get("tab") ?? undefined;
+  const { view, settingsTab } = useActiveView();
 
   const [dashboardData, setDashboardData] = useState<DashboardState>(null);
   const [entriesData, setEntriesData] = useState<EntriesState>(initialEntriesData ?? null);
