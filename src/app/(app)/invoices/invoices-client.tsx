@@ -171,9 +171,9 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
         style={{ backgroundColor: `${statusColor}22` }}
       >
         {(() => {
-          const sep = invoice.number.indexOf("-");
-          const prefix = sep > -1 ? invoice.number.slice(0, sep) : invoice.number;
-          const num    = sep > -1 ? invoice.number.slice(sep + 1) : null;
+          const match = invoice.number.match(/^([A-Za-z]+)(\d+)$/);
+          const prefix = match ? match[1] : invoice.number;
+          const num    = match ? match[2] : null;
           return (
             <div className="flex flex-col items-center leading-tight text-center px-0.5" style={{ color: statusColor }}>
               <span className="text-[10px] font-semibold">{prefix}</span>
