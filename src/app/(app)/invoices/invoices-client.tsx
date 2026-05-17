@@ -183,10 +183,6 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
           <span className="text-sm font-medium text-foreground">
             {invoice.number}
           </span>
-          <div
-            className="size-2 rounded-full shrink-0"
-            style={{ backgroundColor: invoice.client.color }}
-          />
           <span className="text-sm text-muted-foreground truncate">
             {invoice.client.name}
           </span>
@@ -238,7 +234,6 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
               <div className="flex-1 min-w-0 space-y-1.5">
                 <div className="flex items-center gap-2">
                   <Skeleton className="h-3 w-16" />
-                  <Skeleton className="size-2 rounded-full shrink-0" />
                   <Skeleton className="h-3 w-24" />
                 </div>
                 <Skeleton className="h-3 w-20" />
