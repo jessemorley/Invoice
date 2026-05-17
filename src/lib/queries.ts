@@ -138,7 +138,9 @@ export async function fetchEntries(userId: string, token: string, before?: strin
   });
 }
 
-export async function fetchDashboardEntries(userId: string, token: string): Promise<Entry[]> {
+type DashboardEntry = { date: string; base_amount: number; bonus_amount: number };
+
+export async function fetchDashboardEntries(userId: string, token: string): Promise<DashboardEntry[]> {
   "use cache";
   cacheTag(CACHE_TAGS.entries);
   const supabase = createTokenClient(token);
@@ -150,42 +152,45 @@ export async function fetchDashboardEntries(userId: string, token: string): Prom
 
   const { data, error } = await supabase
     .from("entries")
-    .select("*, clients(id, name, billing_type, color), invoices(id, invoice_number, status)")
+    .select("date, base_amount, bonus_amount")
     .eq("user_id", userId)
-    .gte("date", windowStart)
-    .order("date", { ascending: false });
+    .gte("date", windowStart);
 
   if (error) throw new Error(`fetchDashboardEntries: ${error.message}`);
 
-  return (data ?? []).map((e) => {
-    const client = Array.isArray(e.clients) ? e.clients[0] : e.clients;
-    const inv = Array.isArray(e.invoices) ? e.invoices[0] : e.invoices;
-    const invoiceRef: InvoiceRef | null = inv
-      ? { id: inv.id, number: inv.invoice_number, status: inv.status as InvoiceStatus }
-      : null;
+  return (data ?? []).map((e) => ({
+    date: e.date,
+    base_amount: e.base_amount,
+    bonus_amount: e.bonus_amount,
+  }));
+}
+
+export async function fetchOutstandingInvoices(userId: string, token: string): Promise<Invoice[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.invoices);
+  const supabase = createTokenClient(token);
+
+  const { data, error } = await supabase
+    .from("invoices")
+    .select("id, invoice_number, issued_date, paid_date, subtotal, super_amount, total, status, clients(id, name, billing_type, color)")
+    .eq("user_id", userId)
+    .in("status", ["draft", "issued"]);
+
+  if (error) throw new Error(`fetchOutstandingInvoices: ${error.message}`);
+
+  return (data ?? []).map((inv) => {
+    const client = Array.isArray(inv.clients) ? inv.clients[0] : inv.clients;
     return {
-      id: e.id,
-      client: toClientRef(client ?? { id: e.client_id, name: "Unknown", billing_type: "day_rate" }),
-      date: e.date,
-      description: e.description,
-      role: e.role,
-      workflow_type: e.workflow_type,
-      billing_type: e.billing_type_snapshot,
-      day_type: e.day_type,
-      hours: e.hours_worked,
-      shoot_client: e.shoot_client,
-      skus: e.skus,
-      brand: e.brand,
-      start_time: e.start_time,
-      finish_time: e.finish_time,
-      break_minutes: e.break_minutes,
-      base_amount: e.base_amount,
-      bonus_amount: e.bonus_amount,
-      super_amount: e.super_amount,
-      total: e.total_amount,
-      invoice_id: e.invoice_id,
-      invoice: invoiceRef,
-      iso_week: isoWeek(e.date),
+      id: inv.id,
+      number: inv.invoice_number,
+      client: toClientRef(client ?? { id: "", name: "Unknown", billing_type: "day_rate" }),
+      issued_date: inv.issued_date,
+      paid_date: inv.paid_date ?? null,
+      subtotal: inv.subtotal,
+      super_amount: inv.super_amount,
+      total: inv.total,
+      status: inv.status as InvoiceStatus,
+      email: null,
     };
   });
 }
@@ -460,7 +465,7 @@ export async function fetchDashboardEmails(userId: string, token: string): Promi
   return [...scheduled, ...recent].slice(0, 4);
 }
 
-export async function fetchDashboardData(userId: string, entries: Entry[], invoices: Invoice[], emails: DashboardEmail[]): Promise<DashboardData> {
+export async function fetchDashboardData(userId: string, entries: DashboardEntry[], invoices: Invoice[], emails: DashboardEmail[]): Promise<DashboardData> {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();

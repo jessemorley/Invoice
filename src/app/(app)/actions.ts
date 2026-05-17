@@ -5,6 +5,7 @@ import {
   fetchEntries,
   fetchDashboardEntries,
   fetchInvoices,
+  fetchOutstandingInvoices,
   fetchExpenses,
   fetchDashboardData,
   fetchDashboardEmails,
@@ -28,7 +29,7 @@ export async function loadDashboardViewData() {
   const { userId, token } = await getAuth();
   const [entries, invoices, emails] = await Promise.all([
     fetchDashboardEntries(userId, token),
-    fetchInvoices(userId, token, { from: "all" }),
+    fetchOutstandingInvoices(userId, token),
     fetchDashboardEmails(userId, token),
   ]);
   const data = await fetchDashboardData(userId, entries, invoices, emails);
