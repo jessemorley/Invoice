@@ -140,6 +140,28 @@ function StatusBadge({
   );
 }
 
+const EMAIL_VARIANT: Record<InvoiceEmail["status"], "default" | "secondary" | "destructive"> = {
+  pending: "secondary",
+  sent:    "secondary",
+  failed:  "destructive",
+};
+
+function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate?: boolean }) {
+  const date = email.status === "sent" && email.sent_at
+    ? formatDateShort(email.sent_at.slice(0, 10))
+    : email.status === "pending"
+    ? formatDateShort(email.scheduled_for.slice(0, 10))
+    : null;
+
+  return (
+    <Badge variant={EMAIL_VARIANT[email.status]} className="h-5 py-0">
+      {email.status === "sent" && <Send />}
+      {email.status === "pending" && <Clock />}
+      {email.status === "failed" && <MailWarning />}
+      {showDate && date && <span>{date}</span>}
+    </Badge>
+  );
+}
 
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
   const statusColor = STATUS_COLOR[invoice.status];
@@ -554,20 +576,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                         {formatAUD(inv.subtotal)}
                       </TableCell>
                       <TableCell className="py-4 px-6">
-                        {inv.email && (
-                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            {inv.email.status === "sent" && <Send className="size-3.5 shrink-0" />}
-                            {inv.email.status === "pending" && <Clock className="size-3.5 shrink-0" />}
-                            {inv.email.status === "failed" && <MailWarning className="size-3.5 shrink-0 text-destructive" />}
-                            <span>
-                              {inv.email.status === "sent" && inv.email.sent_at
-                                ? formatDateShort(inv.email.sent_at.slice(0, 10))
-                                : inv.email.status === "pending"
-                                ? formatDateShort(inv.email.scheduled_for.slice(0, 10))
-                                : null}
-                            </span>
-                          </div>
-                        )}
+                        {inv.email && <EmailBadge email={inv.email} showDate />}
                       </TableCell>
                       <TableCell className="py-4 px-6 text-right">
                         <StatusBadge
