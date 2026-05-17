@@ -95,6 +95,24 @@ const STATUS_VARIANT: Record<InvoiceStatus, "outline" | "secondary" | "default">
   paid:   "default",
 };
 
+const STATUS_COLOR: Record<InvoiceStatus, string> = {
+  draft:  "#94a3b8",
+  issued: "#f97316",
+  paid:   "#10b981",
+};
+
+function InvoiceNumberBadge({ number, status }: { number: string; status: InvoiceStatus }) {
+  const color = STATUS_COLOR[status];
+  return (
+    <span
+      className="inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium shrink-0"
+      style={{ color, backgroundColor: `${color}22` }}
+    >
+      {number}
+    </span>
+  );
+}
+
 const STATUS_LABEL: Record<InvoiceStatus, string> = {
   draft:  "Draft",
   issued: "Issued",
@@ -132,14 +150,13 @@ function StatusBadge({
   );
 }
 
-const EMAIL_COLORS: Record<InvoiceEmail["status"], string> = {
-  pending: "#f97316",
-  sent:    "#10b981",
-  failed:  "#ef4444",
+const EMAIL_VARIANT: Record<InvoiceEmail["status"], "default" | "secondary" | "destructive"> = {
+  pending: "secondary",
+  sent:    "secondary",
+  failed:  "destructive",
 };
 
 function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate?: boolean }) {
-  const color = EMAIL_COLORS[email.status];
   const date = email.status === "sent" && email.sent_at
     ? formatDateShort(email.sent_at.slice(0, 10))
     : email.status === "pending"
@@ -147,48 +164,43 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
     : null;
 
   return (
-    <span
-      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
-      style={{ backgroundColor: `${color}22`, color }}
-    >
-      {email.status === "sent" && <Send className="size-3 shrink-0" />}
-      {email.status === "pending" && <Clock className="size-3 shrink-0" />}
-      {email.status === "failed" && <MailWarning className="size-3 shrink-0" />}
+    <Badge variant={EMAIL_VARIANT[email.status]} className="h-5 py-0">
+      {email.status === "sent" && <Send />}
+      {email.status === "pending" && <Clock />}
+      {email.status === "failed" && <MailWarning />}
       {showDate && date && <span>{date}</span>}
-    </span>
+    </Badge>
   );
 }
 
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
-      <div
-        className="size-2.5 rounded-full shrink-0"
-        style={{ backgroundColor: invoice.client.color }}
-      />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-foreground">
-            {invoice.number}
-          </span>
-          <span className="text-sm text-muted-foreground truncate">
+      <div className="flex items-center gap-4 flex-1 min-w-0">
+        <InvoiceNumberBadge number={invoice.number} status={invoice.status} />
+        <div className="min-w-0">
+          <span className="text-sm text-foreground truncate block">
             {invoice.client.name}
           </span>
-        </div>
-        <div className="flex items-center gap-1.5 mt-0.5">
-          <span className="text-xs text-muted-foreground">
-            {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
-          </span>
-          {invoice.email && <EmailBadge email={invoice.email} />}
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-xs text-muted-foreground">
+              {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
+            </span>
+            {invoice.email?.status === "sent" && <Send className="size-3.5 text-muted-foreground shrink-0 my-[3px]" />}
+            {invoice.email?.status === "pending" && <Clock className="size-3.5 text-muted-foreground shrink-0 my-[3px]" />}
+            {invoice.email?.status === "failed" && <MailWarning className="size-3.5 text-destructive shrink-0 my-[3px]" />}
+          </div>
         </div>
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
         <span className="text-sm tabular-nums text-foreground">
           {formatAUD(invoice.subtotal)}
         </span>
-        <Badge variant={STATUS_VARIANT[invoice.status]}>
-          {STATUS_LABEL[invoice.status]}
-        </Badge>
+        {invoice.super_amount > 0 && (
+          <span className="text-xs tabular-nums text-muted-foreground">
+            Super {formatAUD(invoice.super_amount)}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -200,15 +212,10 @@ function SkeletonTableRows({ count = 8 }: { count?: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <TableRow key={i}>
           <TableCell className="py-4 px-6"><Skeleton className="h-3 w-24" /></TableCell>
-          <TableCell className="py-4 px-6"><Skeleton className="h-3 w-16" /></TableCell>
-          <TableCell className="py-4 px-6">
-            <div className="flex items-center gap-2">
-              <Skeleton className="size-2 rounded-full shrink-0" />
-              <Skeleton className="h-3 w-28" />
-            </div>
-          </TableCell>
-          <TableCell className="py-4 px-6 text-right"><Skeleton className="h-3 w-16 ml-auto" /></TableCell>
+          <TableCell className="py-4 px-6"><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+          <TableCell className="py-4 px-6"><Skeleton className="h-3 w-28" /></TableCell>
           <TableCell className="py-4 px-6"><Skeleton className="h-3 w-20" /></TableCell>
+          <TableCell className="py-4 px-6 text-right"><Skeleton className="h-3 w-16 ml-auto" /></TableCell>
           <TableCell className="py-4 px-6 text-right"><Skeleton className="h-5 w-14 ml-auto rounded-full" /></TableCell>
         </TableRow>
       ))}
@@ -223,17 +230,16 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
         <Card key={i} className="py-0">
           <CardContent className="p-0">
             <div className="flex items-center gap-3 px-4 py-3">
-              <Skeleton className="size-2.5 rounded-full shrink-0" />
               <div className="flex-1 min-w-0 space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-5 w-14 rounded-full shrink-0" />
                   <Skeleton className="h-3 w-24" />
                 </div>
-                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-3 w-20" />
               </div>
-              <div className="flex flex-col items-end gap-1.5 shrink-0">
+              <div className="flex flex-col items-end gap-1 shrink-0">
                 <Skeleton className="h-3 w-16" />
-                <Skeleton className="h-5 w-12 rounded-full" />
+                <Skeleton className="h-3 w-12" />
               </div>
             </div>
           </CardContent>
@@ -539,8 +545,8 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                   <SortableTableHead className="w-28 py-4 px-6" {...sh("issued_date")}>Issued</SortableTableHead>
                   <SortableTableHead className="w-24 py-4 px-6" {...sh("number")}>Number</SortableTableHead>
                   <SortableTableHead className="py-4 px-6" {...sh("client")}>Client</SortableTableHead>
-                  <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("total")}>Total</SortableTableHead>
                   <TableHead className="w-36 py-4 px-6 text-muted-foreground font-medium text-sm">Email</TableHead>
+                  <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("total")}>Total</SortableTableHead>
                   <SortableTableHead className="w-24 py-4 px-6" align="right" {...sh("status")}>Status</SortableTableHead>
                 </TableRow>
               </TableHeader>
@@ -559,23 +565,17 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                       <TableCell className="text-sm text-muted-foreground py-4 px-6">
                         {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
                       </TableCell>
-                      <TableCell className="font-medium text-sm py-4 px-6">
-                        {inv.number}
+                      <TableCell className="py-4 px-6">
+                        <InvoiceNumberBadge number={inv.number} status={inv.status} />
                       </TableCell>
                       <TableCell className="py-4 px-6">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="size-2 rounded-full shrink-0"
-                            style={{ backgroundColor: inv.client.color }}
-                          />
-                          <span className="text-sm">{inv.client.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-right tabular-nums py-4 px-6">
-                        {formatAUD(inv.subtotal)}
+                        <span className="text-sm">{inv.client.name}</span>
                       </TableCell>
                       <TableCell className="py-4 px-6">
                         {inv.email && <EmailBadge email={inv.email} showDate />}
+                      </TableCell>
+                      <TableCell className="text-sm text-right tabular-nums py-4 px-6">
+                        {formatAUD(inv.subtotal)}
                       </TableCell>
                       <TableCell className="py-4 px-6 text-right">
                         <StatusBadge
