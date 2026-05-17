@@ -14,15 +14,17 @@ async function SidebarWithUser() {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider className="h-full">
-      <ActiveViewProvider>
-        <Suspense fallback={<Sidebar collapsible="icon" className="hidden md:flex border-r" />}>
-          <SidebarWithUser />
-        </Suspense>
-        <SidebarInset className="bg-background">
-          {children}
-        </SidebarInset>
-        <FloatingDock />
-      </ActiveViewProvider>
+      <Suspense>
+        <ActiveViewProvider>
+          <Suspense fallback={<Sidebar collapsible="icon" className="hidden md:flex border-r" />}>
+            <SidebarWithUser />
+          </Suspense>
+          <SidebarInset className="bg-background">
+            {children}
+          </SidebarInset>
+          <FloatingDock />
+        </ActiveViewProvider>
+      </Suspense>
       <AppSplash />
     </SidebarProvider>
   );

@@ -1,7 +1,7 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { createContext, useCallback, useContext, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export type ViewId = "dashboard" | "entries" | "invoices" | "clients" | "expenses" | "settings";
 
@@ -15,18 +15,16 @@ const ActiveViewContext = createContext<ActiveViewContextValue | null>(null);
 
 export function ActiveViewProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [view, setViewState] = useState<ViewId>("entries");
-  const [settingsTab, setSettingsTab] = useState<string | undefined>(undefined);
-
-  // Seed from URL on mount — handles direct links and page refreshes.
-  // Must be an effect (not lazy initializer) to avoid SSR/client hydration mismatch.
-  // AppSplash hides the app until app:ready fires so there's no visible flash.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setViewState((params.get("view") as ViewId) ?? "entries");
-    setSettingsTab(params.get("tab") ?? undefined);
-  }, []);
+  // useSearchParams is server-safe and returns the request URL's params during
+  // SSR, so seeding state from it in a lazy initializer keeps server and client
+  // initial renders identical — no hydration mismatch on data-active.
+  const searchParams = useSearchParams();
+  const [view, setViewState] = useState<ViewId>(
+    () => (searchParams.get("view") as ViewId) ?? "entries"
+  );
+  const [settingsTab, setSettingsTab] = useState<string | undefined>(
+    () => searchParams.get("tab") ?? undefined
+  );
 
   const setView = useCallback(
     (v: ViewId, opts?: { settingsTab?: string }) => {
