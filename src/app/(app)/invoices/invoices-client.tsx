@@ -170,9 +170,17 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
         className="flex items-center justify-center size-11 rounded-lg shrink-0"
         style={{ backgroundColor: `${statusColor}22` }}
       >
-        <span className="text-[10px] font-semibold leading-tight text-center px-0.5" style={{ color: statusColor }}>
-          {invoice.number}
-        </span>
+        {(() => {
+          const sep = invoice.number.indexOf("-");
+          const prefix = sep > -1 ? invoice.number.slice(0, sep) : invoice.number;
+          const num    = sep > -1 ? invoice.number.slice(sep + 1) : null;
+          return (
+            <div className="flex flex-col items-center leading-tight text-center px-0.5" style={{ color: statusColor }}>
+              <span className="text-[10px] font-semibold">{prefix}</span>
+              {num && <span className="text-[10px] font-semibold">{num}</span>}
+            </div>
+          );
+        })()}
       </div>
       <div className="flex-1 min-w-0">
         <span className="text-sm font-medium text-foreground truncate block">
