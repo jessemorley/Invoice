@@ -158,7 +158,7 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
     : null;
 
   return (
-    <Badge variant={EMAIL_VARIANT[email.status]}>
+    <Badge variant={EMAIL_VARIANT[email.status]} className="h-5 py-0">
       {email.status === "sent" && <Send />}
       {email.status === "pending" && <Clock />}
       {email.status === "failed" && <MailWarning />}
