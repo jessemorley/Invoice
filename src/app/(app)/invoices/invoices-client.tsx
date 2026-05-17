@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback, Fragment } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { revalidateInvoices, loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow, loadEntrySheetData } from "./actions";
 import { invalidate } from "@/lib/invalidate";
@@ -221,11 +221,9 @@ function SkeletonTableRows({ count = 8 }: { count?: number }) {
 
 function SkeletonMobileCards({ count = 6 }: { count?: number }) {
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col divide-y divide-border">
       {Array.from({ length: count }).map((_, i) => (
-        <Fragment key={i}>
-          {i > 0 && <div className="h-px bg-border mx-4" />}
-        <div className="flex items-center gap-3 px-4 py-3">
+        <div key={i} className="flex items-center gap-3 px-4 py-3">
           <Skeleton className="size-11 rounded-lg shrink-0" />
           <div className="flex-1 min-w-0 space-y-1.5">
             <div className="flex items-center gap-2">
@@ -236,7 +234,6 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
           </div>
           <Skeleton className="h-3 w-16 shrink-0" />
         </div>
-        </Fragment>
       ))}
     </div>
   );
@@ -658,14 +655,11 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             </EmptyHeader>
           </Empty>
         ) : (
-          <div className="flex flex-col pb-28">
-            {visibleInvoices.map((inv, i) => (
-              <Fragment key={inv.id}>
-                {i > 0 && <div className="h-px bg-border mx-4" />}
-                <div onClick={() => openInvoice(inv)}>
-                  <InvoiceCard invoice={inv} />
-                </div>
-              </Fragment>
+          <div className="flex flex-col divide-y divide-border pb-28">
+            {visibleInvoices.map((inv) => (
+              <div key={inv.id} onClick={() => openInvoice(inv)}>
+                <InvoiceCard invoice={inv} />
+              </div>
             ))}
             {hasMore && <div className="h-8" />}
           </div>
