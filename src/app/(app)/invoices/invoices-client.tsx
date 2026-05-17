@@ -192,7 +192,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
           >
             {STATUS_LABEL[invoice.status]}
           </span>
-          {invoice.email && <EmailBadge email={invoice.email} />}
+          {invoice.email && <EmailBadge email={invoice.email} showDate />}
         </div>
       </div>
       <span className="text-sm tabular-nums text-foreground shrink-0">
