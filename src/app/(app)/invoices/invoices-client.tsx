@@ -154,12 +154,12 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
 
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+      className="inline-flex items-center gap-1 rounded-full px-2 h-5 text-xs font-medium"
       style={{ backgroundColor: `${color}22`, color }}
     >
-      {email.status === "sent" && <Send className="size-4 shrink-0" />}
-      {email.status === "pending" && <Clock className="size-4 shrink-0" />}
-      {email.status === "failed" && <MailWarning className="size-4 shrink-0" />}
+      {email.status === "sent" && <Send className="size-3 shrink-0" />}
+      {email.status === "pending" && <Clock className="size-3 shrink-0" />}
+      {email.status === "failed" && <MailWarning className="size-3 shrink-0" />}
       {showDate && date && <span>{date}</span>}
     </span>
   );
