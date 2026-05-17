@@ -182,9 +182,9 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
           <span className="text-xs text-muted-foreground">
             {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
           </span>
-          {invoice.email?.status === "sent" && <Send className="size-3.5 text-muted-foreground shrink-0 mt-[4px]" />}
-          {invoice.email?.status === "pending" && <Clock className="size-3.5 text-muted-foreground shrink-0 mt-[4px]" />}
-          {invoice.email?.status === "failed" && <MailWarning className="size-3.5 text-destructive shrink-0 mt-[4px]" />}
+          {invoice.email?.status === "sent" && <Send className="size-3.5 text-muted-foreground shrink-0 my-[3px]" />}
+          {invoice.email?.status === "pending" && <Clock className="size-3.5 text-muted-foreground shrink-0 my-[3px]" />}
+          {invoice.email?.status === "failed" && <MailWarning className="size-3.5 text-destructive shrink-0 my-[3px]" />}
         </div>
       </div>
       <span className="text-sm tabular-nums text-foreground shrink-0">
