@@ -176,7 +176,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
         className="flex items-center justify-center size-11 rounded-lg shrink-0"
         style={{ backgroundColor: `${statusColor}22` }}
       >
-        <StatusIcon className="size-4" style={{ color: statusColor }} />
+        <StatusIcon className="size-5" style={{ color: statusColor }} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
