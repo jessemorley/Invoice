@@ -51,7 +51,7 @@ import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { EntrySheet } from "@/components/entry-sheet";
-import { ChevronDown, Clock, File, FileCheck, FileClock, FileText, MailWarning, Plus, RefreshCw, Search, Send, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, CircleCheck, CircleDashed, CircleDot, Clock, FileText, MailWarning, Plus, RefreshCw, Search, Send, SlidersHorizontal, X } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
 
@@ -102,9 +102,9 @@ const STATUS_COLOR: Record<InvoiceStatus, string> = {
 };
 
 const STATUS_ICON = {
-  draft:  File,
-  issued: FileClock,
-  paid:   FileCheck,
+  draft:  CircleDashed,
+  issued: CircleDot,
+  paid:   CircleCheck,
 } as const;
 
 const STATUS_LABEL: Record<InvoiceStatus, string> = {
