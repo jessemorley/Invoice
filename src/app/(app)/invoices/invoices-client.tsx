@@ -167,7 +167,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
   const StatusIcon = STATUS_ICON[invoice.status];
   const statusColor = STATUS_COLOR[invoice.status];
   return (
-    <div className="flex items-center gap-3 px-4 py-4 hover:bg-accent/50 transition-colors cursor-pointer">
+    <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
       <div
         className="flex items-center justify-center size-11 rounded-lg shrink-0"
         style={{ backgroundColor: `${statusColor}22` }}
@@ -223,7 +223,7 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
   return (
     <div className="flex flex-col divide-y divide-border">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 px-4 py-4">
+        <div key={i} className="flex items-center gap-3 px-4 py-3">
           <Skeleton className="size-11 rounded-lg shrink-0" />
           <div className="flex-1 min-w-0 space-y-1.5">
             <div className="flex items-center gap-2">
