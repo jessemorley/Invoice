@@ -173,8 +173,8 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
       <div
-        className="flex items-center justify-center size-11 rounded-lg shrink-0"
-        style={{ backgroundColor: `${statusColor}22` }}
+        className="flex items-center justify-center size-11 rounded-lg shrink-0 border"
+        style={{ backgroundColor: `${statusColor}22`, borderColor: `${statusColor}44` }}
       >
         <StatusIcon className="size-5" style={{ color: statusColor }} />
       </div>
