@@ -144,14 +144,13 @@ function StatusBadge({
   );
 }
 
-const EMAIL_COLORS: Record<InvoiceEmail["status"], string> = {
-  pending: "#f97316",
-  sent:    "#10b981",
-  failed:  "#ef4444",
+const EMAIL_VARIANT: Record<InvoiceEmail["status"], "default" | "secondary" | "destructive"> = {
+  pending: "secondary",
+  sent:    "default",
+  failed:  "destructive",
 };
 
 function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate?: boolean }) {
-  const color = EMAIL_COLORS[email.status];
   const date = email.status === "sent" && email.sent_at
     ? formatDateShort(email.sent_at.slice(0, 10))
     : email.status === "pending"
@@ -159,15 +158,12 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
     : null;
 
   return (
-    <span
-      className="inline-flex items-center gap-1 rounded-full px-2 h-5 text-xs font-medium"
-      style={{ backgroundColor: `${color}22`, color }}
-    >
-      {email.status === "sent" && <Send className="size-3 shrink-0" />}
-      {email.status === "pending" && <Clock className="size-3 shrink-0" />}
-      {email.status === "failed" && <MailWarning className="size-3 shrink-0" />}
+    <Badge variant={EMAIL_VARIANT[email.status]}>
+      {email.status === "sent" && <Send />}
+      {email.status === "pending" && <Clock />}
+      {email.status === "failed" && <MailWarning />}
       {showDate && date && <span>{date}</span>}
-    </span>
+    </Badge>
   );
 }
 
