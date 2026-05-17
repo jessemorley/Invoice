@@ -47,7 +47,7 @@ import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { EntrySheet } from "@/components/entry-sheet";
-import { ChevronDown, CircleCheck, CircleDashed, CircleDot, Clock, FileText, MailWarning, Plus, RefreshCw, Search, Send, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, Clock, FileText, MailWarning, Plus, RefreshCw, Search, Send, SlidersHorizontal, X } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
 
@@ -97,11 +97,6 @@ const STATUS_COLOR: Record<InvoiceStatus, string> = {
   paid:   "#10b981",
 };
 
-const STATUS_ICON = {
-  draft:  CircleDashed,
-  issued: CircleDot,
-  paid:   CircleCheck,
-} as const;
 
 const STATUS_LABEL: Record<InvoiceStatus, string> = {
   draft:  "Draft",
@@ -164,7 +159,6 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
 }
 
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
-  const StatusIcon = STATUS_ICON[invoice.status];
   const statusColor = STATUS_COLOR[invoice.status];
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
@@ -172,17 +166,14 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
         className="flex items-center justify-center size-11 rounded-lg shrink-0"
         style={{ backgroundColor: `${statusColor}22` }}
       >
-        <StatusIcon className="size-5" style={{ color: statusColor }} />
+        <span className="text-[10px] font-semibold leading-tight text-center px-0.5" style={{ color: statusColor }}>
+          {invoice.number}
+        </span>
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-foreground">
-            {invoice.number}
-          </span>
-          <span className="text-sm text-muted-foreground truncate">
-            {invoice.client.name}
-          </span>
-        </div>
+        <span className="text-sm font-medium text-foreground truncate block">
+          {invoice.client.name}
+        </span>
         <div className="flex items-center gap-1.5 mt-0.5">
           <span className="text-xs text-muted-foreground">
             {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
