@@ -16,7 +16,7 @@ const tabs = [
 
 const itemClass = (isActive: boolean) =>
   cn(
-    "relative flex items-center justify-center w-14 h-11 rounded-full transition-colors",
+    "relative flex items-center justify-center w-14 h-11 rounded-full transition-colors touch-manipulation",
     isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
   );
 
