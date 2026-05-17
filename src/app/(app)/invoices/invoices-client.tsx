@@ -188,9 +188,16 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
           </div>
         </div>
       </div>
-      <span className="text-sm tabular-nums text-foreground shrink-0">
-        {formatAUD(invoice.subtotal)}
-      </span>
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        <span className="text-sm tabular-nums text-foreground">
+          {formatAUD(invoice.subtotal)}
+        </span>
+        {invoice.super_amount > 0 && (
+          <span className="text-xs tabular-nums text-muted-foreground">
+            Super {formatAUD(invoice.super_amount)}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -231,7 +238,10 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
                 </div>
                 <Skeleton className="h-3 w-20" />
               </div>
-              <Skeleton className="h-3 w-16 shrink-0" />
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-3 w-12" />
+              </div>
             </div>
           </CardContent>
         </Card>
