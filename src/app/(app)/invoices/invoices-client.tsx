@@ -95,11 +95,6 @@ const STATUS_VARIANT: Record<InvoiceStatus, "outline" | "secondary" | "default">
   paid:   "default",
 };
 
-const STATUS_COLOR: Record<InvoiceStatus, string> = {
-  draft:  "#94a3b8",
-  issued: "#f97316",
-  paid:   "#10b981",
-};
 
 
 const STATUS_LABEL: Record<InvoiceStatus, string> = {
@@ -163,29 +158,17 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
 }
 
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
-  const statusColor = STATUS_COLOR[invoice.status];
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
-      <div
-        className="flex items-center justify-center size-9 rounded-lg shrink-0"
-        style={{ backgroundColor: `${statusColor}22` }}
-      >
-        {(() => {
-          const match = invoice.number.match(/^([A-Za-z]+)(\d+)$/);
-          const prefix = match ? match[1] : invoice.number;
-          const num    = match ? match[2] : null;
-          return (
-            <div className="flex flex-col items-center leading-tight text-center px-0.5" style={{ color: statusColor }}>
-              <span className="text-[10px] font-semibold">{prefix}</span>
-              {num && <span className="text-[10px] font-semibold">{num}</span>}
-            </div>
-          );
-        })()}
-      </div>
       <div className="flex-1 min-w-0">
-        <span className="text-sm font-medium text-foreground truncate block">
-          {invoice.client.name}
-        </span>
+        <div className="flex items-center gap-2">
+          <Badge variant={STATUS_VARIANT[invoice.status]} className="shrink-0">
+            {invoice.number}
+          </Badge>
+          <span className="text-sm text-muted-foreground truncate">
+            {invoice.client.name}
+          </span>
+        </div>
         <div className="flex items-center gap-1.5 mt-0.5">
           <span className="text-xs text-muted-foreground">
             {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
@@ -231,10 +214,9 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
         <Card key={i} className="py-0">
           <CardContent className="p-0">
             <div className="flex items-center gap-3 px-4 py-3">
-              <Skeleton className="size-9 rounded-lg shrink-0" />
               <div className="flex-1 min-w-0 space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-5 w-14 rounded-full shrink-0" />
                   <Skeleton className="h-3 w-24" />
                 </div>
                 <Skeleton className="h-3 w-20" />
