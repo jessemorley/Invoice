@@ -38,14 +38,6 @@ function fyLabel(year: number, month: number): string {
   return `FY ${String(startYear).slice(2)}–${String(startYear + 1).slice(2)}`;
 }
 
-const now = new Date();
-const currentFY = fyLabel(now.getFullYear(), now.getMonth());
-const priorFY = fyLabel(now.getFullYear() - 1, now.getMonth());
-
-const chartConfig = {
-  current: { label: currentFY, color: "var(--color-primary)" },
-  prior: { label: priorFY, color: "var(--color-muted-foreground)" },
-};
 
 function DashboardSkeleton() {
   return (
@@ -118,8 +110,14 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const isUp = delta >= 0;
 
   const now = new Date();
-  const priorMonthName = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    .toLocaleDateString("en-AU", { month: "short" });
+  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const currentFY = fyLabel(lastMonth.getFullYear(), lastMonth.getMonth());
+  const priorFY = fyLabel(lastMonth.getFullYear() - 1, lastMonth.getMonth());
+  const chartConfig = {
+    current: { label: currentFY, color: "var(--color-primary)" },
+    prior: { label: priorFY, color: "var(--color-muted-foreground)" },
+  };
+  const priorMonthName = lastMonth.toLocaleDateString("en-AU", { month: "short" });
 
   const scheduledEmails = emails.filter((e) => e.status === "pending" || e.status === "failed");
 
@@ -264,7 +262,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                   </div>
                 </CardDescription>
               </div>
-              <Select value={String(timeframe)} onValueChange={(v) => setTimeframe(Number(v) as 6 | 12)}>
+              <Select value={String(timeframe)} onValueChange={(v) => setTimeframe(v === "12" ? 12 : 6)}>
                 <SelectTrigger className="w-28 h-7 text-xs shrink-0">
                   <SelectValue />
                 </SelectTrigger>
