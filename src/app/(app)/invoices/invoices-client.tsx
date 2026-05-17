@@ -175,7 +175,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
           >
             {invoice.number}
           </span>
-          <span className="text-sm text-muted-foreground truncate">
+          <span className="text-sm text-foreground truncate">
             {invoice.client.name}
           </span>
         </div>
