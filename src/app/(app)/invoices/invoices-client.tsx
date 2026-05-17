@@ -208,13 +208,8 @@ function SkeletonTableRows({ count = 8 }: { count?: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <TableRow key={i}>
           <TableCell className="py-4 px-6"><Skeleton className="h-3 w-24" /></TableCell>
-          <TableCell className="py-4 px-6"><Skeleton className="h-3 w-16" /></TableCell>
-          <TableCell className="py-4 px-6">
-            <div className="flex items-center gap-2">
-              <Skeleton className="size-2 rounded-full shrink-0" />
-              <Skeleton className="h-3 w-28" />
-            </div>
-          </TableCell>
+          <TableCell className="py-4 px-6"><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+          <TableCell className="py-4 px-6"><Skeleton className="h-3 w-28" /></TableCell>
           <TableCell className="py-4 px-6 text-right"><Skeleton className="h-3 w-16 ml-auto" /></TableCell>
           <TableCell className="py-4 px-6"><Skeleton className="h-3 w-20" /></TableCell>
           <TableCell className="py-4 px-6 text-right"><Skeleton className="h-5 w-14 ml-auto rounded-full" /></TableCell>
@@ -566,17 +561,16 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                       <TableCell className="text-sm text-muted-foreground py-4 px-6">
                         {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
                       </TableCell>
-                      <TableCell className="font-medium text-sm py-4 px-6">
-                        {inv.number}
+                      <TableCell className="py-4 px-6">
+                        <span
+                          className="inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium"
+                          style={{ color: STATUS_COLOR[inv.status], backgroundColor: `${STATUS_COLOR[inv.status]}22` }}
+                        >
+                          {inv.number}
+                        </span>
                       </TableCell>
                       <TableCell className="py-4 px-6">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="size-2 rounded-full shrink-0"
-                            style={{ backgroundColor: inv.client.color }}
-                          />
-                          <span className="text-sm">{inv.client.name}</span>
-                        </div>
+                        <span className="text-sm">{inv.client.name}</span>
                       </TableCell>
                       <TableCell className="text-sm text-right tabular-nums py-4 px-6">
                         {formatAUD(inv.subtotal)}
