@@ -101,7 +101,17 @@ const STATUS_COLOR: Record<InvoiceStatus, string> = {
   paid:   "#10b981",
 };
 
-
+function InvoiceNumberBadge({ number, status }: { number: string; status: InvoiceStatus }) {
+  const color = STATUS_COLOR[status];
+  return (
+    <span
+      className="inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium shrink-0"
+      style={{ color, backgroundColor: `${color}22` }}
+    >
+      {number}
+    </span>
+  );
+}
 
 const STATUS_LABEL: Record<InvoiceStatus, string> = {
   draft:  "Draft",
@@ -164,16 +174,10 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
 }
 
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
-  const statusColor = STATUS_COLOR[invoice.status];
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
       <div className="flex items-center gap-4 flex-1 min-w-0">
-        <span
-          className="inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium shrink-0"
-          style={{ color: statusColor, backgroundColor: `${statusColor}22` }}
-        >
-          {invoice.number}
-        </span>
+        <InvoiceNumberBadge number={invoice.number} status={invoice.status} />
         <div className="min-w-0">
           <span className="text-sm text-foreground truncate block">
             {invoice.client.name}
@@ -562,12 +566,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                         {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
                       </TableCell>
                       <TableCell className="py-4 px-6">
-                        <span
-                          className="inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium"
-                          style={{ color: STATUS_COLOR[inv.status], backgroundColor: `${STATUS_COLOR[inv.status]}22` }}
-                        >
-                          {inv.number}
-                        </span>
+                        <InvoiceNumberBadge number={inv.number} status={inv.status} />
                       </TableCell>
                       <TableCell className="py-4 px-6">
                         <span className="text-sm">{inv.client.name}</span>

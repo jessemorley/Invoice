@@ -6,9 +6,8 @@ import {
   loadEarlierEntries,
 } from "@/app/(app)/entries/actions";
 import { invalidate } from "@/lib/invalidate";
-import type { Entry, Client, WorkflowRate } from "@/lib/types";
+import type { Entry, Client, WorkflowRate, InvoiceRef } from "@/lib/types";
 import { formatAUD, formatDate } from "@/lib/format";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -21,20 +20,24 @@ import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 
 type ViewMode = "invoice" | "week" | "none";
 
-const INVOICE_STATUS_VARIANT: Record<
-  string,
-  "outline" | "secondary" | "default"
-> = {
-  draft: "outline",
-  issued: "secondary",
-  paid: "default",
-};
-
 const INVOICE_STATUS_COLOR: Record<string, string> = {
   draft: "#94a3b8",
   issued: "#f97316",
   paid: "#10b981",
 };
+
+function EntryInvoiceBadge({ invoice }: { invoice: InvoiceRef | null | undefined }) {
+  const status = invoice?.status ?? "draft";
+  const color = INVOICE_STATUS_COLOR[status];
+  return (
+    <span
+      className="inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium"
+      style={{ color, backgroundColor: `${color}22` }}
+    >
+      {invoice?.number ?? "Draft"}
+    </span>
+  );
+}
 
 type ClientWeekGroup = {
   key: string;
@@ -288,13 +291,7 @@ function EntryRow({
         <div className="flex items-center gap-3 shrink-0 ml-auto">
           {showClient && (
             <div className="flex w-20 justify-start">
-              {entry.invoice ? (
-                <Badge variant={INVOICE_STATUS_VARIANT[entry.invoice.status]}>
-                  {entry.invoice.number}
-                </Badge>
-              ) : (
-                <Badge variant="outline">Draft</Badge>
-              )}
+              <EntryInvoiceBadge invoice={entry.invoice} />
             </div>
           )}
           <span className="text-sm tabular-nums text-foreground text-right w-20 shrink-0">
