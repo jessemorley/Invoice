@@ -95,6 +95,12 @@ const STATUS_VARIANT: Record<InvoiceStatus, "outline" | "secondary" | "default">
   paid:   "default",
 };
 
+const STATUS_COLOR: Record<InvoiceStatus, string> = {
+  draft:  "#94a3b8",
+  issued: "#f97316",
+  paid:   "#10b981",
+};
+
 const STATUS_LABEL: Record<InvoiceStatus, string> = {
   draft:  "Draft",
   issued: "Issued",
@@ -160,17 +166,18 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
 }
 
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
+  const statusColor = STATUS_COLOR[invoice.status];
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
-      <div
-        className="size-2.5 rounded-full shrink-0"
-        style={{ backgroundColor: invoice.client.color }}
-      />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-foreground">
             {invoice.number}
           </span>
+          <div
+            className="size-2 rounded-full shrink-0"
+            style={{ backgroundColor: invoice.client.color }}
+          />
           <span className="text-sm text-muted-foreground truncate">
             {invoice.client.name}
           </span>
@@ -179,17 +186,18 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
           <span className="text-xs text-muted-foreground">
             {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
           </span>
+          <span
+            className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+            style={{ color: statusColor, backgroundColor: `${statusColor}22` }}
+          >
+            {STATUS_LABEL[invoice.status]}
+          </span>
           {invoice.email && <EmailBadge email={invoice.email} />}
         </div>
       </div>
-      <div className="flex flex-col items-end gap-1 shrink-0">
-        <span className="text-sm tabular-nums text-foreground">
-          {formatAUD(invoice.subtotal)}
-        </span>
-        <Badge variant={STATUS_VARIANT[invoice.status]}>
-          {STATUS_LABEL[invoice.status]}
-        </Badge>
-      </div>
+      <span className="text-sm tabular-nums text-foreground shrink-0">
+        {formatAUD(invoice.subtotal)}
+      </span>
     </div>
   );
 }
@@ -223,18 +231,18 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
         <Card key={i} className="py-0">
           <CardContent className="p-0">
             <div className="flex items-center gap-3 px-4 py-3">
-              <Skeleton className="size-2.5 rounded-full shrink-0" />
               <div className="flex-1 min-w-0 space-y-1.5">
                 <div className="flex items-center gap-2">
                   <Skeleton className="h-3 w-16" />
+                  <Skeleton className="size-2 rounded-full shrink-0" />
                   <Skeleton className="h-3 w-24" />
                 </div>
-                <Skeleton className="h-3 w-32" />
+                <div className="flex items-center gap-1.5">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-4 w-12 rounded-full" />
+                </div>
               </div>
-              <div className="flex flex-col items-end gap-1.5 shrink-0">
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="h-5 w-12 rounded-full" />
-              </div>
+              <Skeleton className="h-3 w-16 shrink-0" />
             </div>
           </CardContent>
         </Card>
