@@ -95,6 +95,12 @@ const STATUS_VARIANT: Record<InvoiceStatus, "outline" | "secondary" | "default">
   paid:   "default",
 };
 
+const STATUS_COLOR: Record<InvoiceStatus, string> = {
+  draft:  "#94a3b8",
+  issued: "#f97316",
+  paid:   "#10b981",
+};
+
 
 
 const STATUS_LABEL: Record<InvoiceStatus, string> = {
@@ -158,13 +164,17 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
 }
 
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
+  const statusColor = STATUS_COLOR[invoice.status];
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <Badge variant={STATUS_VARIANT[invoice.status]} className="shrink-0">
+          <span
+            className="inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium shrink-0"
+            style={{ color: statusColor, backgroundColor: `${statusColor}22` }}
+          >
             {invoice.number}
-          </Badge>
+          </span>
           <span className="text-sm text-muted-foreground truncate">
             {invoice.client.name}
           </span>
