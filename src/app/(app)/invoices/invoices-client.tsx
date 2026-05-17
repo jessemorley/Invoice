@@ -51,7 +51,7 @@ import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { EntrySheet } from "@/components/entry-sheet";
-import { ChevronDown, Clock, FileText, MailWarning, Plus, RefreshCw, Search, Send, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, CircleCheck, CircleDashed, CircleDot, Clock, FileText, MailWarning, Plus, RefreshCw, Search, Send, SlidersHorizontal, X } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
 
@@ -100,6 +100,12 @@ const STATUS_COLOR: Record<InvoiceStatus, string> = {
   issued: "#f97316",
   paid:   "#10b981",
 };
+
+const STATUS_ICON = {
+  draft:  CircleDashed,
+  issued: CircleDot,
+  paid:   CircleCheck,
+} as const;
 
 const STATUS_LABEL: Record<InvoiceStatus, string> = {
   draft:  "Draft",
@@ -166,9 +172,11 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
 }
 
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
+  const StatusIcon = STATUS_ICON[invoice.status];
   const statusColor = STATUS_COLOR[invoice.status];
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
+      <StatusIcon className="size-5 shrink-0" style={{ color: statusColor }} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-foreground">
@@ -185,12 +193,6 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
         <div className="flex items-center gap-1.5 mt-0.5">
           <span className="text-xs text-muted-foreground">
             {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
-          </span>
-          <span
-            className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-            style={{ color: statusColor, backgroundColor: `${statusColor}22` }}
-          >
-            {STATUS_LABEL[invoice.status]}
           </span>
           {invoice.email && <EmailBadge email={invoice.email} showDate />}
         </div>
@@ -231,16 +233,14 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
         <Card key={i} className="py-0">
           <CardContent className="p-0">
             <div className="flex items-center gap-3 px-4 py-3">
+              <Skeleton className="size-5 rounded-full shrink-0" />
               <div className="flex-1 min-w-0 space-y-1.5">
                 <div className="flex items-center gap-2">
                   <Skeleton className="h-3 w-16" />
                   <Skeleton className="size-2 rounded-full shrink-0" />
                   <Skeleton className="h-3 w-24" />
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Skeleton className="h-3 w-20" />
-                  <Skeleton className="h-4 w-12 rounded-full" />
-                </div>
+                <Skeleton className="h-3 w-20" />
               </div>
               <Skeleton className="h-3 w-16 shrink-0" />
             </div>
