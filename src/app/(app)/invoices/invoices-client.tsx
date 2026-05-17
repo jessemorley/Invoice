@@ -167,25 +167,25 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
   const statusColor = STATUS_COLOR[invoice.status];
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span
-            className="inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium shrink-0"
-            style={{ color: statusColor, backgroundColor: `${statusColor}22` }}
-          >
-            {invoice.number}
-          </span>
-          <span className="text-sm text-foreground truncate">
+      <div className="flex items-start gap-2 flex-1 min-w-0">
+        <span
+          className="inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium shrink-0 mt-px"
+          style={{ color: statusColor, backgroundColor: `${statusColor}22` }}
+        >
+          {invoice.number}
+        </span>
+        <div className="min-w-0">
+          <span className="text-sm text-foreground truncate block">
             {invoice.client.name}
           </span>
-        </div>
-        <div className="flex items-center gap-1.5 mt-0.5">
-          <span className="text-xs text-muted-foreground">
-            {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
-          </span>
-          {invoice.email?.status === "sent" && <Send className="size-3.5 text-muted-foreground shrink-0 my-[3px]" />}
-          {invoice.email?.status === "pending" && <Clock className="size-3.5 text-muted-foreground shrink-0 my-[3px]" />}
-          {invoice.email?.status === "failed" && <MailWarning className="size-3.5 text-destructive shrink-0 my-[3px]" />}
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-xs text-muted-foreground">
+              {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
+            </span>
+            {invoice.email?.status === "sent" && <Send className="size-3.5 text-muted-foreground shrink-0 my-[3px]" />}
+            {invoice.email?.status === "pending" && <Clock className="size-3.5 text-muted-foreground shrink-0 my-[3px]" />}
+            {invoice.email?.status === "failed" && <MailWarning className="size-3.5 text-destructive shrink-0 my-[3px]" />}
+          </div>
         </div>
       </div>
       <span className="text-sm tabular-nums text-foreground shrink-0">
