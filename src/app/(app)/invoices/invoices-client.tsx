@@ -20,6 +20,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Card,
+  CardContent,
+} from "@/components/ui/card";
+import {
   Empty,
   EmptyHeader,
   EmptyMedia,
@@ -222,19 +226,23 @@ function SkeletonTableRows({ count = 8 }: { count?: number }) {
 
 function SkeletonMobileCards({ count = 6 }: { count?: number }) {
   return (
-    <div className="flex flex-col divide-y divide-border">
+    <div className="px-4 py-4 flex flex-col gap-3">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 px-4 py-3">
-          <Skeleton className="size-9 rounded-lg shrink-0" />
-          <div className="flex-1 min-w-0 space-y-1.5">
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-3 w-24" />
+        <Card key={i} className="py-0">
+          <CardContent className="p-0">
+            <div className="flex items-center gap-3 px-4 py-3">
+              <Skeleton className="size-9 rounded-lg shrink-0" />
+              <div className="flex-1 min-w-0 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+                <Skeleton className="h-3 w-20" />
+              </div>
+              <Skeleton className="h-3 w-16 shrink-0" />
             </div>
-            <Skeleton className="h-3 w-20" />
-          </div>
-          <Skeleton className="h-3 w-16 shrink-0" />
-        </div>
+          </CardContent>
+        </Card>
       ))}
     </div>
   );
@@ -656,11 +664,13 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             </EmptyHeader>
           </Empty>
         ) : (
-          <div className="flex flex-col divide-y divide-border pb-28">
+          <div className="px-4 py-4 pb-28 flex flex-col gap-3">
             {visibleInvoices.map((inv) => (
-              <div key={inv.id} onClick={() => openInvoice(inv)}>
-                <InvoiceCard invoice={inv} />
-              </div>
+              <Card key={inv.id} className="py-0" onClick={() => openInvoice(inv)}>
+                <CardContent className="p-0">
+                  <InvoiceCard invoice={inv} />
+                </CardContent>
+              </Card>
             ))}
             {hasMore && <div className="h-8" />}
           </div>
