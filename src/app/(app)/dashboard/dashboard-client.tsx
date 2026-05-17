@@ -24,6 +24,13 @@ import { Area, AreaChart, XAxis, YAxis } from "recharts";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { loadScheduledEmail } from "@/app/(app)/invoices/actions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 function fyLabel(year: number, month: number): string {
   // AU financial year: July (6) – June. If month >= 6, FY is year/year+1, else year-1/year.
@@ -31,14 +38,6 @@ function fyLabel(year: number, month: number): string {
   return `FY ${String(startYear).slice(2)}–${String(startYear + 1).slice(2)}`;
 }
 
-const now = new Date();
-const currentFY = fyLabel(now.getFullYear(), now.getMonth());
-const priorFY = fyLabel(now.getFullYear() - 1, now.getMonth());
-
-const chartConfig = {
-  current: { label: currentFY, color: "var(--color-primary)" },
-  prior: { label: priorFY, color: "var(--color-muted-foreground)" },
-};
 
 function DashboardSkeleton() {
   return (
@@ -95,6 +94,7 @@ function emailStatusLabel(email: DashboardEmail): string {
 }
 
 export function DashboardClient({ data }: { data?: DashboardData }) {
+  const [timeframe, setTimeframe] = useState<6 | 12>(6);
   const [composeOpen, setComposeOpen] = useState(false);
   const [sentSheetOpen, setSentSheetOpen] = useState(false);
   const [composeInvoice, setComposeInvoice] = useState<InvoiceDetail | null>(null);
@@ -104,13 +104,20 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
 
   if (!data) return <DashboardSkeleton />;
   const { mtdEarnings, mtdPriorMonth, outstanding, monthlyEarnings, emails } = data;
+  const chartData = timeframe === 6 ? monthlyEarnings.slice(6) : monthlyEarnings;
   const delta = mtdEarnings - mtdPriorMonth;
   const deltaPercent = mtdPriorMonth > 0 ? ((delta / mtdPriorMonth) * 100).toFixed(0) : "0";
   const isUp = delta >= 0;
 
   const now = new Date();
-  const priorMonthName = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    .toLocaleDateString("en-AU", { month: "short" });
+  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const currentFY = fyLabel(lastMonth.getFullYear(), lastMonth.getMonth());
+  const priorFY = fyLabel(lastMonth.getFullYear() - 1, lastMonth.getMonth());
+  const chartConfig = {
+    current: { label: currentFY, color: "var(--color-primary)" },
+    prior: { label: priorFY, color: "var(--color-muted-foreground)" },
+  };
+  const priorMonthName = lastMonth.toLocaleDateString("en-AU", { month: "short" });
 
   const scheduledEmails = emails.filter((e) => e.status === "pending" || e.status === "failed");
 
@@ -237,26 +244,37 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
             )}
           </Card>
 
-          {/* 6-month earnings chart */}
+          {/* Earnings chart */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">6-month earnings</CardTitle>
-              <CardDescription>
-                <div className="flex items-center gap-4 text-xs">
-                  <div className="flex items-center gap-1.5">
-                    <div className="h-2 w-6 rounded-sm bg-primary" />
-                    <span>{currentFY}</span>
+            <CardHeader className="flex flex-row items-start justify-between gap-2">
+              <div>
+                <CardTitle className="text-sm font-medium">{timeframe}-month earnings</CardTitle>
+                <CardDescription>
+                  <div className="flex items-center gap-4 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-2 w-6 rounded-sm bg-primary" />
+                      <span>{currentFY}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-2 w-6 rounded-sm bg-muted-foreground/40" />
+                      <span>{priorFY}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="h-2 w-6 rounded-sm bg-muted-foreground/40" />
-                    <span>{priorFY}</span>
-                  </div>
-                </div>
-              </CardDescription>
+                </CardDescription>
+              </div>
+              <Select value={String(timeframe)} onValueChange={(v) => setTimeframe(v === "12" ? 12 : 6)}>
+                <SelectTrigger className="w-28 h-7 text-xs shrink-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="6">6 months</SelectItem>
+                  <SelectItem value="12">12 months</SelectItem>
+                </SelectContent>
+              </Select>
             </CardHeader>
             <CardContent>
               <ChartContainer config={chartConfig} className="h-48 w-full">
-                <AreaChart data={monthlyEarnings}>
+                <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="gradCurrent" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.3} />
