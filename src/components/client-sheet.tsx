@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useActiveView } from "@/components/active-view-context";
 import type { Client, BillingType } from "@/lib/types";
 import { formatAUD } from "@/lib/format";
 import {
@@ -585,7 +585,7 @@ function ClientDetail({
   onEdit: () => void;
   onClose: () => void;
 }) {
-  const router = useRouter();
+  const { setView } = useActiveView();
   const [recentInvoices, setRecentInvoices] = useState<RecentInvoice[] | null>(null);
 
   useEffect(() => {
@@ -705,7 +705,7 @@ function ClientDetail({
               ))}
               {client.invoice_count > 5 && (
                 <button
-                  onClick={() => { onClose(); router.push("/?view=invoices"); }}
+                  onClick={() => { onClose(); setView("invoices"); }}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-1 text-left"
                 >
                   View all {client.invoice_count} invoices →

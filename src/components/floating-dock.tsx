@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback } from "react";
 import { LayoutDashboard, FileText, Receipt, Users, Wallet, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useActiveView, type ViewId } from "@/components/active-view-context";
 
-const tabs = [
+const tabs: { view: ViewId; icon: React.ComponentType<{ className?: string; strokeWidth?: number }>; label: string }[] = [
   { view: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { view: "entries", icon: FileText, label: "Entries" },
   { view: "invoices", icon: Receipt, label: "Invoices" },
@@ -16,7 +16,7 @@ const tabs = [
 
 const itemClass = (isActive: boolean) =>
   cn(
-    "relative flex items-center justify-center w-14 h-11 rounded-full transition-colors",
+    "relative flex items-center justify-center w-14 h-11 rounded-full transition-colors touch-manipulation",
     isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
   );
 
@@ -28,27 +28,21 @@ const ItemInner = ({ isActive, icon: Icon }: { isActive: boolean; icon: (typeof 
 );
 
 export function FloatingDock() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const routerView = searchParams.get("view") ?? "entries";
-  const [activeView, setActiveView] = useState(routerView);
+  const { view, setView } = useActiveView();
 
-  useEffect(() => { setActiveView(routerView); }, [routerView]);
-
-  const handleTap = useCallback((view: string) => {
-    if (activeView === view) {
+  const handleTap = useCallback((tab: ViewId) => {
+    if (view === tab) {
       window.dispatchEvent(new CustomEvent("dock:focus-search"));
     } else {
-      setActiveView(view);
-      router.replace(`/?view=${view}`, { scroll: false });
+      setView(tab);
     }
-  }, [activeView, router]);
+  }, [view, setView]);
 
   return (
     <div className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden" style={{ bottom: "env(safe-area-inset-bottom, 0px)" }}>
       <nav className="flex items-center gap-0.5 bg-background/95 backdrop-blur-md border border-border/50 rounded-full px-1.5 py-1 shadow-xl shadow-black/10">
         {tabs.map((tab) => {
-          const isActive = activeView === tab.view;
+          const isActive = view === tab.view;
           return (
             <button
               key={tab.view}
