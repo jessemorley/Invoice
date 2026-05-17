@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useActiveView } from "@/components/active-view-context";
+import { useActiveView, type ViewId } from "@/components/active-view-context";
 import { signOut } from "@/app/login/actions";
 import {
   LayoutDashboard,
@@ -36,7 +36,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
-const navItems = [
+const navItems: { view: ViewId; label: string; icon: React.ComponentType }[] = [
   { view: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { view: "entries", label: "Entries", icon: FileText },
   { view: "invoices", label: "Invoices", icon: Receipt },
@@ -51,7 +51,7 @@ function NavItem({
   icon: Icon,
   currentView,
   onNavigate,
-}: (typeof navItems)[0] & { currentView: string; onNavigate: (view: string) => void }) {
+}: (typeof navItems)[0] & { currentView: ViewId; onNavigate: (view: ViewId) => void }) {
   const isActive = currentView === view;
   return (
     <SidebarMenuItem>
@@ -128,11 +128,11 @@ function NavUser({ name, email }: { name: string; email: string }) {
 export function AppSidebar({ user }: { user: { name: string; email: string } }) {
   const { view: activeView, setView } = useActiveView();
 
-  const handleNavigate = (v: string) => {
+  const handleNavigate = (v: ViewId) => {
     if (activeView === v) {
       window.dispatchEvent(new CustomEvent("dock:focus-search"));
     } else {
-      setView(v as Parameters<typeof setView>[0]);
+      setView(v);
     }
   };
 

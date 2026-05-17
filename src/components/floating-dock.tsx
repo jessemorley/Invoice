@@ -3,9 +3,9 @@
 import { useCallback } from "react";
 import { LayoutDashboard, FileText, Receipt, Users, Wallet, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useActiveView } from "@/components/active-view-context";
+import { useActiveView, type ViewId } from "@/components/active-view-context";
 
-const tabs = [
+const tabs: { view: ViewId; icon: React.ComponentType<{ className?: string; strokeWidth?: number }>; label: string }[] = [
   { view: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { view: "entries", icon: FileText, label: "Entries" },
   { view: "invoices", icon: Receipt, label: "Invoices" },
@@ -30,11 +30,11 @@ const ItemInner = ({ isActive, icon: Icon }: { isActive: boolean; icon: (typeof 
 export function FloatingDock() {
   const { view, setView } = useActiveView();
 
-  const handleTap = useCallback((tab: string) => {
+  const handleTap = useCallback((tab: ViewId) => {
     if (view === tab) {
       window.dispatchEvent(new CustomEvent("dock:focus-search"));
     } else {
-      setView(tab as Parameters<typeof setView>[0]);
+      setView(tab);
     }
   }, [view, setView]);
 
