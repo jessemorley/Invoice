@@ -22,7 +22,9 @@ const PRIMARY_VIEWS = new Set<ViewId>(["entries", "invoices", "expenses"]);
 export function FloatingDock() {
   const { view, setView } = useActiveView();
   const [menuOpen, setMenuOpen] = useState(false);
+  const innerRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLButtonElement>(null);
   const [pillStyle, setPillStyle] = useState({ x: 0, w: 46 });
   const [uninvoicedCount, setUninvoicedCount] = useState(0);
 
@@ -32,18 +34,25 @@ export function FloatingDock() {
     return () => window.removeEventListener("dock:uninvoiced-count", handler);
   }, []);
 
-  // Measure active tab position for the sliding pill
+  // Measure active element position for the sliding pill, relative to innerRef
   useEffect(() => {
-    const activeIndex = PRIMARY_TABS.findIndex((t) => t.view === view);
-    if (activeIndex === -1) return;
     const id = requestAnimationFrame(() => {
-      const container = tabsRef.current;
-      if (!container) return;
-      const el = container.children[activeIndex] as HTMLElement | undefined;
-      if (!el) return;
-      const containerRect = container.getBoundingClientRect();
-      const elRect = el.getBoundingClientRect();
-      setPillStyle({ x: elRect.left - containerRect.left, w: elRect.width });
+      const inner = innerRef.current;
+      if (!inner) return;
+      const innerRect = inner.getBoundingClientRect();
+
+      const activeIndex = PRIMARY_TABS.findIndex((t) => t.view === view);
+      let targetEl: HTMLElement | null = null;
+
+      if (activeIndex !== -1 && tabsRef.current) {
+        targetEl = tabsRef.current.children[activeIndex] as HTMLElement;
+      } else if (menuRef.current) {
+        targetEl = menuRef.current;
+      }
+
+      if (!targetEl) return;
+      const elRect = targetEl.getBoundingClientRect();
+      setPillStyle({ x: elRect.left - innerRect.left, w: elRect.width });
     });
     return () => cancelAnimationFrame(id);
   }, [view]);
@@ -68,6 +77,8 @@ export function FloatingDock() {
     },
     [setView]
   );
+
+  const isSecondaryView = !PRIMARY_TABS.some((t) => t.view === view);
 
   return (
     <>
@@ -104,33 +115,33 @@ export function FloatingDock() {
 
       {/* Dock */}
       <div className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden" style={{ bottom: "max(env(safe-area-inset-bottom, 0px), 1.5rem)" }}>
-        <nav className="flex items-center gap-1 bg-background/95 backdrop-blur-md border border-border/50 rounded-full px-2 py-2 shadow-xl shadow-black/10">
+        <nav className="bg-background/95 backdrop-blur-md border border-border/50 rounded-full px-2 py-2 shadow-xl shadow-black/10">
+          {/* Inner wrapper — pill is positioned relative to this */}
+          <div ref={innerRef} className="relative flex items-center gap-1">
 
-          {/* Plus button — active for primary views, greyed out otherwise */}
-          <button
-            aria-label="New"
-            disabled={!PRIMARY_VIEWS.has(view)}
-            onClick={() => window.dispatchEvent(new CustomEvent("dock:new", { detail: view }))}
-            className={cn(
-              "flex items-center justify-center p-3 rounded-full transition-colors duration-200 touch-manipulation",
-              PRIMARY_VIEWS.has(view)
-                ? "text-primary hover:bg-muted"
-                : "text-muted-foreground/30 cursor-default"
-            )}
-          >
-            <Plus className="size-6" strokeWidth={1.75} />
-          </button>
-
-          {/* Divider */}
-          <div className="w-px h-6 bg-border mx-1" />
-
-          {/* Primary tabs with sliding pill */}
-          <div className="relative flex items-center">
-            {/* Sliding pill indicator */}
+            {/* Sliding pill — spans the full inner area so it can reach any button */}
             <div
-              className="absolute top-0 h-full bg-muted rounded-full transition-all duration-300 ease-in-out pointer-events-none"
-              style={{ transform: `translateX(${pillStyle.x}px)`, width: `${pillStyle.w}px` }}
+              className="absolute inset-y-0 bg-muted rounded-full transition-[left,width] duration-150 ease-in-out pointer-events-none"
+              style={{ left: pillStyle.x, width: pillStyle.w }}
             />
+
+            {/* Plus button — active for primary views, greyed out otherwise */}
+            <button
+              aria-label="New"
+              disabled={!PRIMARY_VIEWS.has(view)}
+              onClick={() => window.dispatchEvent(new CustomEvent("dock:new", { detail: view }))}
+              className={cn(
+                "relative z-10 flex items-center justify-center p-3 rounded-full transition-colors duration-150 touch-manipulation",
+                PRIMARY_VIEWS.has(view) ? "text-primary" : "text-muted-foreground/30 cursor-default"
+              )}
+            >
+              <Plus className="size-6" strokeWidth={1.75} />
+            </button>
+
+            {/* Divider */}
+            <div className="relative z-10 w-px h-6 bg-border" />
+
+            {/* Primary tabs */}
             <div ref={tabsRef} className="flex items-center">
               {PRIMARY_TABS.map((tab) => {
                 const Icon = tab.icon;
@@ -141,7 +152,7 @@ export function FloatingDock() {
                     aria-label={tab.label}
                     onClick={() => handlePrimaryTap(tab.view)}
                     className={cn(
-                      "relative z-10 flex items-center justify-center p-3 rounded-full transition-colors duration-200 touch-manipulation",
+                      "relative z-10 flex items-center justify-center p-3 rounded-full transition-colors duration-150 touch-manipulation",
                       isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                     )}
                   >
@@ -156,26 +167,26 @@ export function FloatingDock() {
                 );
               })}
             </div>
+
+            {/* Divider */}
+            <div className="relative z-10 w-px h-6 bg-border" />
+
+            {/* Menu button — active when on a secondary view */}
+            <button
+              ref={menuRef}
+              aria-label="Menu"
+              onClick={() => setMenuOpen((o) => !o)}
+              className={cn(
+                "relative z-10 flex items-center justify-center p-3 rounded-full transition-colors duration-150 touch-manipulation",
+                isSecondaryView ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {menuOpen
+                ? <X className="size-6" strokeWidth={1.75} />
+                : <Menu className="size-6" strokeWidth={isSecondaryView ? 2.25 : 1.75} />}
+            </button>
+
           </div>
-
-          {/* Divider */}
-          <div className="w-px h-6 bg-border mx-1" />
-
-          {/* Menu button — active highlight when on a secondary view */}
-          <button
-            aria-label="Menu"
-            onClick={() => setMenuOpen((o) => !o)}
-            className={cn(
-              "flex items-center justify-center p-3 rounded-full transition-colors duration-200 touch-manipulation",
-              menuOpen || !PRIMARY_TABS.some((t) => t.view === view)
-                ? "text-foreground hover:bg-muted"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
-            )}
-          >
-            {menuOpen
-              ? <X className="size-6" strokeWidth={1.75} />
-              : <Menu className="size-6" strokeWidth={!PRIMARY_TABS.some((t) => t.view === view) ? 2.25 : 1.75} />}
-          </button>
         </nav>
       </div>
     </>
