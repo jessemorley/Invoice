@@ -71,8 +71,6 @@ export function FloatingDock() {
     [setView]
   );
 
-  const isSecondaryView = !PRIMARY_TABS.some((t) => t.view === view);
-
   return (
     <>
       {/* Overflow menu overlay + panel */}
@@ -171,14 +169,11 @@ export function FloatingDock() {
             <button
               aria-label="Menu"
               onClick={() => setMenuOpen((o) => !o)}
-              className={cn(
-                "relative z-10 flex items-center justify-center p-3 rounded-full transition-colors duration-150 touch-manipulation",
-                isSecondaryView ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-              )}
+              className="relative z-10 flex items-center justify-center p-3 rounded-full text-muted-foreground hover:text-foreground transition-colors duration-150 touch-manipulation"
             >
               {menuOpen
                 ? <X className="size-6" strokeWidth={1.75} />
-                : <Menu className="size-6" strokeWidth={isSecondaryView ? 2.25 : 1.75} />}
+                : <Menu className="size-6" strokeWidth={1.75} />}
             </button>
 
           </div>
