@@ -24,7 +24,6 @@ export function FloatingDock() {
   const [menuOpen, setMenuOpen] = useState(false);
   const innerRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLButtonElement>(null);
   const [pillStyle, setPillStyle] = useState({ x: 0, w: 46 });
   const [uninvoicedCount, setUninvoicedCount] = useState(0);
 
@@ -34,24 +33,18 @@ export function FloatingDock() {
     return () => window.removeEventListener("dock:uninvoiced-count", handler);
   }, []);
 
-  // Measure active element position for the sliding pill, relative to innerRef
+  // Measure active primary tab position for the sliding pill
   useEffect(() => {
+    const activeIndex = PRIMARY_TABS.findIndex((t) => t.view === view);
+    if (activeIndex === -1) return;
     const id = requestAnimationFrame(() => {
       const inner = innerRef.current;
-      if (!inner) return;
+      const container = tabsRef.current;
+      if (!inner || !container) return;
+      const el = container.children[activeIndex] as HTMLElement | undefined;
+      if (!el) return;
       const innerRect = inner.getBoundingClientRect();
-
-      const activeIndex = PRIMARY_TABS.findIndex((t) => t.view === view);
-      let targetEl: HTMLElement | null = null;
-
-      if (activeIndex !== -1 && tabsRef.current) {
-        targetEl = tabsRef.current.children[activeIndex] as HTMLElement;
-      } else if (menuRef.current) {
-        targetEl = menuRef.current;
-      }
-
-      if (!targetEl) return;
-      const elRect = targetEl.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
       setPillStyle({ x: elRect.left - innerRect.left, w: elRect.width });
     });
     return () => cancelAnimationFrame(id);
@@ -119,9 +112,12 @@ export function FloatingDock() {
           {/* Inner wrapper — pill is positioned relative to this */}
           <div ref={innerRef} className="relative flex items-center gap-1">
 
-            {/* Sliding pill — spans the full inner area so it can reach any button */}
+            {/* Sliding pill — hidden on secondary views */}
             <div
-              className="absolute inset-y-0 bg-muted rounded-full transition-[left,width] duration-150 ease-in-out pointer-events-none"
+              className={cn(
+                "absolute inset-y-0 bg-muted rounded-full transition-[left,width] duration-150 ease-in-out pointer-events-none",
+                isSecondaryView && "hidden"
+              )}
               style={{ left: pillStyle.x, width: pillStyle.w }}
             />
 
@@ -173,7 +169,6 @@ export function FloatingDock() {
 
             {/* Menu button — active when on a secondary view */}
             <button
-              ref={menuRef}
               aria-label="Menu"
               onClick={() => setMenuOpen((o) => !o)}
               className={cn(
