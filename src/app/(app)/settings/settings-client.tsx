@@ -359,7 +359,7 @@ function InvoicingTab({
           <div className="flex items-start justify-between gap-4">
             <div className="flex flex-col gap-1">
               <label htmlFor="weekly_invoice_reminder" className="text-sm font-medium">
-                Weekly invoice badge
+                Show badge
               </label>
               <p className="text-sm text-muted-foreground">
                 Show the uninvoiced badge for weekly clients.
@@ -389,8 +389,8 @@ function InvoicingTab({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="immediately">Immediately</SelectItem>
-                  <SelectItem value="friday_5pm">Friday 5pm</SelectItem>
-                  <SelectItem value="sunday_midnight">Sunday midnight</SelectItem>
+                  <SelectItem value="friday_5pm">From Friday 5pm</SelectItem>
+                  <SelectItem value="sunday_midnight">From Sunday midnight</SelectItem>
                 </SelectContent>
               </Select>
             </div>
