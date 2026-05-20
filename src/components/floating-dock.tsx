@@ -17,7 +17,7 @@ const SECONDARY_TABS: { view: ViewId; icon: React.ComponentType<{ className?: st
   { view: "settings", icon: Settings, label: "Settings" },
 ];
 
-const PRIMARY_VIEWS = new Set<ViewId>(["entries", "invoices"]);
+const PRIMARY_VIEWS = new Set<ViewId>(["entries", "invoices", "expenses"]);
 
 export function FloatingDock() {
   const { view, setView } = useActiveView();
@@ -106,19 +106,23 @@ export function FloatingDock() {
       <div className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden" style={{ bottom: "max(env(safe-area-inset-bottom, 0px), 1.5rem)" }}>
         <nav className="flex items-center gap-1 bg-background/95 backdrop-blur-md border border-border/50 rounded-full px-2 py-2 shadow-xl shadow-black/10">
 
-          {/* Plus button — only shown for primary views */}
-          {PRIMARY_VIEWS.has(view) && (
-            <button
-              aria-label="New"
-              onClick={() => window.dispatchEvent(new CustomEvent("dock:new", { detail: view }))}
-              className="flex items-center justify-center p-3 text-primary hover:bg-muted rounded-full transition-colors duration-200 touch-manipulation"
-            >
-              <Plus className="size-6" strokeWidth={1.75} />
-            </button>
-          )}
+          {/* Plus button — active for primary views, greyed out otherwise */}
+          <button
+            aria-label="New"
+            disabled={!PRIMARY_VIEWS.has(view)}
+            onClick={() => window.dispatchEvent(new CustomEvent("dock:new", { detail: view }))}
+            className={cn(
+              "flex items-center justify-center p-3 rounded-full transition-colors duration-200 touch-manipulation",
+              PRIMARY_VIEWS.has(view)
+                ? "text-primary hover:bg-muted"
+                : "text-muted-foreground/30 cursor-default"
+            )}
+          >
+            <Plus className="size-6" strokeWidth={1.75} />
+          </button>
 
           {/* Divider */}
-          {PRIMARY_VIEWS.has(view) && <div className="w-px h-6 bg-border mx-1" />}
+          <div className="w-px h-6 bg-border mx-1" />
 
           {/* Primary tabs with sliding pill */}
           <div className="relative flex items-center">
@@ -157,13 +161,20 @@ export function FloatingDock() {
           {/* Divider */}
           <div className="w-px h-6 bg-border mx-1" />
 
-          {/* Menu button */}
+          {/* Menu button — active highlight when on a secondary view */}
           <button
             aria-label="Menu"
             onClick={() => setMenuOpen((o) => !o)}
-            className="flex items-center justify-center p-3 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors duration-200 touch-manipulation"
+            className={cn(
+              "flex items-center justify-center p-3 rounded-full transition-colors duration-200 touch-manipulation",
+              menuOpen || !PRIMARY_TABS.some((t) => t.view === view)
+                ? "text-foreground hover:bg-muted"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            )}
           >
-            {menuOpen ? <X className="size-6" strokeWidth={1.75} /> : <Menu className="size-6" strokeWidth={1.75} />}
+            {menuOpen
+              ? <X className="size-6" strokeWidth={1.75} />
+              : <Menu className="size-6" strokeWidth={!PRIMARY_TABS.some((t) => t.view === view) ? 2.25 : 1.75} />}
           </button>
         </nav>
       </div>
