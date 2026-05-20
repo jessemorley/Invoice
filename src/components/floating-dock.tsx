@@ -114,7 +114,7 @@ export function FloatingDock() {
             <div
               className={cn(
                 "absolute inset-y-0 bg-muted rounded-full transition-[left,width] duration-150 ease-in-out pointer-events-none",
-                isSecondaryView && "hidden"
+                !PRIMARY_TABS.some((t) => t.view === view) && "hidden"
               )}
               style={{ left: pillStyle.x, width: pillStyle.w }}
             />
