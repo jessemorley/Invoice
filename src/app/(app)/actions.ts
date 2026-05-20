@@ -50,9 +50,10 @@ function mondayOfIsoWeek(isoWeek: string): Date {
   return monday;
 }
 
-// Converts a Sydney local date/time to a UTC Date, respecting AEST/AEDT automatically.
+// Converts a Sydney wall-clock date/time to a UTC Date, respecting AEST/AEDT automatically.
+// Strategy: treat the local time as UTC to get a probe instant, format that probe back through
+// the Sydney timezone to measure the actual offset, then subtract it.
 function sydneyLocalToUtc(year: number, month: number, day: number, hour: number, minute: number): Date {
-  // Build the wall-clock string as Australia/Sydney local time, then parse the UTC equivalent.
   const localStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`;
   const fmt = new Intl.DateTimeFormat("en-AU", {
     timeZone: "Australia/Sydney",
@@ -60,8 +61,6 @@ function sydneyLocalToUtc(year: number, month: number, day: number, hour: number
     hour: "2-digit", minute: "2-digit", second: "2-digit",
     hour12: false,
   });
-  // Find the UTC instant where Sydney local time equals localStr by binary-searching the offset.
-  // Simpler: use the fact that Date.parse + the offset from Intl gives us the answer directly.
   const probe = new Date(localStr + "Z"); // treat as UTC initially
   const parts = Object.fromEntries(fmt.formatToParts(probe).map((p) => [p.type, p.value]));
   const probeLocal = `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
@@ -83,11 +82,13 @@ function sundayCutoffForIsoWeek(isoWeek: string): Date {
   const monday = mondayOfIsoWeek(isoWeek);
   const sundayUtc = new Date(monday);
   sundayUtc.setUTCDate(monday.getUTCDate() + 6);
-  const y = sundayUtc.getUTCFullYear();
-  const m = sundayUtc.getUTCMonth() + 1;
-  const d = sundayUtc.getUTCDate();
-  // End of Sunday in Sydney = start of Monday UTC-adjusted
-  return sydneyLocalToUtc(y, m, d, 23, 59);
+  // Monday 00:00 Sydney = the exact moment Sunday ends in that timezone.
+  const mondayAfter = new Date(sundayUtc);
+  mondayAfter.setUTCDate(sundayUtc.getUTCDate() + 1);
+  const y = mondayAfter.getUTCFullYear();
+  const m = mondayAfter.getUTCMonth() + 1;
+  const d = mondayAfter.getUTCDate();
+  return sydneyLocalToUtc(y, m, d, 0, 0);
 }
 
 export async function loadInvoicesViewData() {
