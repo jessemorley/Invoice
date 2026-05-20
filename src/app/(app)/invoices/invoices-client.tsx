@@ -310,6 +310,19 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     return () => window.removeEventListener("dock:focus-search", handler);
   }, [searchOpen]);
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if ((e as CustomEvent<string>).detail !== "invoices") return;
+      if (uninvoicedCount > 0) {
+        setGenerateOpen(true);
+      } else {
+        setNewInvoiceOpen(true);
+      }
+    };
+    window.addEventListener("dock:new", handler);
+    return () => window.removeEventListener("dock:new", handler);
+  }, [uninvoicedCount]);
+
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [clientFilter, setClientFilter] = useState("all");
@@ -724,23 +737,6 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         businessName={businessName}
         onSent={() => { composeSentRef.current = true; invalidate("invoices"); }}
       />
-      {/* Mobile FAB */}
-      <div className="md:hidden fixed bottom-18 right-4 z-40">
-        <Button
-          size="icon"
-          className="relative size-14 rounded-full shadow-lg"
-          disabled={loading}
-          onClick={() => uninvoicedCount > 0 ? setGenerateOpen(true) : setNewInvoiceOpen(true)}
-        >
-          <Plus className="size-6" />
-          {uninvoicedCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none ring-2 ring-background">
-              {uninvoicedCount}
-            </span>
-          )}
-        </Button>
-      </div>
-
       <GenerateSheet
         open={generateOpen}
         onOpenChangeAction={setGenerateOpen}

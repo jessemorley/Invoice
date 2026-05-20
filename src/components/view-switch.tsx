@@ -83,7 +83,10 @@ export function ViewSwitch({
     switch (v) {
       case "dashboard": loadDashboardViewData().then(setDashboardData); break;
       case "entries":   loadEntriesViewData().then(setEntriesData); break;
-      case "invoices":  loadInvoicesViewData().then(setInvoicesData); break;
+      case "invoices":  loadInvoicesViewData().then((data) => {
+        setInvoicesData(data);
+        window.dispatchEvent(new CustomEvent("dock:uninvoiced-count", { detail: data.uninvoicedCount }));
+      }); break;
       case "clients":   loadClientsViewData().then(setClientsData); break;
       case "expenses":  loadExpensesViewData().then(setExpensesData); break;
       case "settings":  loadSettingsViewData().then(setSettingsData); break;
