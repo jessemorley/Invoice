@@ -11,6 +11,7 @@ import {
   type BusinessDetails,
   type InvoiceSequence,
   type UserPreferences,
+  type WeeklyInvoiceReminderCutoff,
 } from "@/lib/queries";
 
 export type BusinessDetailsFormData = {
@@ -37,6 +38,11 @@ export type InvoicingFormData = {
 export type EmailFormData = {
   mark_as_issued_on_send: boolean;
   bcc_self: boolean;
+};
+
+export type NotificationFormData = {
+  weekly_invoice_reminder: boolean;
+  weekly_invoice_reminder_cutoff: WeeklyInvoiceReminderCutoff;
 };
 
 export async function fetchSettings(): Promise<{
@@ -104,6 +110,23 @@ export async function saveEmailSettings(data: EmailFormData) {
     .from("user_preferences")
     .upsert({ user_id: userId, bcc_self: data.bcc_self, mark_as_issued_on_send: data.mark_as_issued_on_send }, { onConflict: "user_id" });
   if (error) throw new Error(`saveEmailSettings: ${error.message}`);
+  updateTag(CACHE_TAGS.settings);
+  refresh();
+}
+
+export async function saveNotificationSettings(data: NotificationFormData) {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { error } = await supabase
+    .from("user_preferences")
+    .upsert(
+      {
+        user_id: userId,
+        weekly_invoice_reminder: data.weekly_invoice_reminder,
+        weekly_invoice_reminder_cutoff: data.weekly_invoice_reminder_cutoff,
+      },
+      { onConflict: "user_id" }
+    );
+  if (error) throw new Error(`saveNotificationSettings: ${error.message}`);
   updateTag(CACHE_TAGS.settings);
   refresh();
 }

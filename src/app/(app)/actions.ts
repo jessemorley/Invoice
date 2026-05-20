@@ -12,6 +12,7 @@ import {
   fetchUninvoicedGroups,
   fetchFullClients,
   fetchWorkflowRates,
+  fetchUserPreferences,
 } from "@/lib/queries";
 import { fetchSettings } from "./settings/actions";
 
@@ -36,40 +37,58 @@ export async function loadDashboardViewData() {
   return { data };
 }
 
-// Returns the Friday 17:00 AEST (UTC+10) cutoff for the given ISO week string (e.g. "2026-W21").
-// ISO weeks start on Monday, so Friday = Monday + 4 days. 17:00 AEST = 07:00 UTC.
-function fridayCutoffForIsoWeek(isoWeek: string): Date {
+// Returns the Monday (UTC) of the ISO week string (e.g. "2026-W21").
+function mondayOfIsoWeek(isoWeek: string): Date {
   const [yearStr, weekStr] = isoWeek.split("-W");
   const year = parseInt(yearStr, 10);
   const week = parseInt(weekStr, 10);
-  // Jan 4 is always in ISO week 1
   const jan4 = new Date(Date.UTC(year, 0, 4));
   const mondayOfWeek1 = new Date(jan4);
   mondayOfWeek1.setUTCDate(jan4.getUTCDate() - ((jan4.getUTCDay() + 6) % 7));
-  // Monday of target week
   const monday = new Date(mondayOfWeek1);
   monday.setUTCDate(mondayOfWeek1.getUTCDate() + (week - 1) * 7);
-  // Friday 17:00 AEST = Friday 07:00 UTC
+  return monday;
+}
+
+// Friday 17:00 AEST (UTC+10) = Friday 07:00 UTC
+function fridayCutoffForIsoWeek(isoWeek: string): Date {
+  const monday = mondayOfIsoWeek(isoWeek);
   const friday = new Date(monday);
   friday.setUTCDate(monday.getUTCDate() + 4);
   friday.setUTCHours(7, 0, 0, 0);
   return friday;
 }
 
+// Sunday 23:59:59 AEST (UTC+10) = Sunday 13:59:59 UTC
+function sundayCutoffForIsoWeek(isoWeek: string): Date {
+  const monday = mondayOfIsoWeek(isoWeek);
+  const sunday = new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
+  sunday.setUTCHours(13, 59, 59, 999);
+  return sunday;
+}
+
 export async function loadInvoicesViewData() {
   const { userId, token } = await getAuth();
-  const [invoices, uninvoicedGroups, clients] = await Promise.all([
+  const [invoices, uninvoicedGroups, clients, userPreferences] = await Promise.all([
     fetchInvoices(userId, token),
     fetchUninvoicedGroups(userId, token),
     fetchFullClients(userId, token),
+    fetchUserPreferences(userId, token),
   ]);
 
   const now = new Date();
+  const reminderEnabled = userPreferences?.weekly_invoice_reminder ?? true;
+  const cutoffType = userPreferences?.weekly_invoice_reminder_cutoff ?? "friday_5pm";
   const clientMap = new Map(clients.map((c) => [c.id, c]));
+
   const uninvoicedCount = uninvoicedGroups.filter((g) => {
     const client = clientMap.get(g.clientId);
-    if (client?.invoice_frequency === "weekly") {
-      return now >= fridayCutoffForIsoWeek(g.isoWeek);
+    if (reminderEnabled && client?.invoice_frequency === "weekly") {
+      const cutoff = cutoffType === "sunday_midnight"
+        ? sundayCutoffForIsoWeek(g.isoWeek)
+        : fridayCutoffForIsoWeek(g.isoWeek);
+      return now >= cutoff;
     }
     return true;
   }).length;
