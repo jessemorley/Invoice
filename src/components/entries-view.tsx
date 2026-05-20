@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef, useCallback } from "react";
+import { useState, useTransition, useRef, useCallback, useEffect } from "react";
 import {
   revalidateEntries,
   loadEarlierEntries,
@@ -530,10 +530,18 @@ export function EntriesView({
     setSheetOpen(true);
   }
 
-  function openNew() {
+  const openNew = useCallback(() => {
     setSelectedEntry(null);
     setSheetOpen(true);
-  }
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if ((e as CustomEvent<string>).detail === "entries") openNew();
+    };
+    window.addEventListener("dock:new", handler);
+    return () => window.removeEventListener("dock:new", handler);
+  }, [openNew]);
 
   function handleLoadEarlier() {
     const oldest = entries.reduce(
@@ -637,17 +645,6 @@ export function EntriesView({
             )}
           </>
         )}
-      </div>
-
-      <div className="md:hidden fixed bottom-18 right-4 z-40">
-        <Button
-          size="icon"
-          className="size-14 rounded-full shadow-lg"
-          onClick={openNew}
-          disabled={loading}
-        >
-          <Plus />
-        </Button>
       </div>
 
       <EntrySheet

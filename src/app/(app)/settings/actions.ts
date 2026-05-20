@@ -2,6 +2,7 @@
 
 import { updateTag, refresh } from "next/cache";
 import { createClient } from "@/lib/supabase-server";
+import { createTokenClient } from "@/lib/supabase";
 import { getAuth, getAuthUserId } from "@/lib/auth";
 import {
   fetchBusinessDetails,
@@ -115,7 +116,8 @@ export async function saveEmailSettings(data: EmailFormData) {
 }
 
 export async function saveNotificationSettings(data: NotificationFormData) {
-  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { userId, token } = await getAuth();
+  const supabase = createTokenClient(token);
   const { error } = await supabase
     .from("user_preferences")
     .upsert(
