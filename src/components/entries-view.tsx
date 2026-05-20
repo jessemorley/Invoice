@@ -143,8 +143,7 @@ function SkeletonRow() {
 
 function SkeletonGroupHeader() {
   return (
-    <div className="flex items-center gap-2.5 px-4 py-2.5">
-      <Skeleton className="size-2.5 rounded-full shrink-0" />
+    <div className="flex items-center gap-3 px-4 py-2.5">
       <Skeleton className="h-3 w-28" />
       <div className="flex-1" />
       <Skeleton className="h-3 w-16" />
