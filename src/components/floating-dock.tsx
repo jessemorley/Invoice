@@ -73,15 +73,22 @@ export function FloatingDock() {
 
   return (
     <>
-      {/* Overflow menu overlay + panel */}
+      {/* Backdrop — full screen, click to close */}
       {menuOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
           data-testid="menu-overlay"
           onClick={() => setMenuOpen(false)}
-        >
+        />
+      )}
+
+      {/* Dock */}
+      <div className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden" style={{ bottom: "max(env(safe-area-inset-bottom, 0px), 1.5rem)" }}>
+
+        {/* Popover — positioned above the dock, centered on it */}
+        {menuOpen && (
           <div
-            className="absolute bottom-24 left-4 right-4 max-w-sm mx-auto bg-background border border-border/50 rounded-xl shadow-lg overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200"
+            className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-[calc(100vw-2rem)] max-w-sm bg-background border border-border/50 rounded-xl shadow-lg overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-1">
@@ -101,11 +108,8 @@ export function FloatingDock() {
               })}
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Dock */}
-      <div className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden" style={{ bottom: "max(env(safe-area-inset-bottom, 0px), 1.5rem)" }}>
         <nav className="bg-background/95 backdrop-blur-md border border-border/50 rounded-full px-2 py-2 shadow-xl shadow-black/10">
           {/* Inner wrapper — pill is positioned relative to this */}
           <div ref={innerRef} className="relative flex items-center gap-1">
