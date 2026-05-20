@@ -101,13 +101,15 @@ export async function loadInvoicesViewData() {
   ]);
 
   const now = new Date();
-  const reminderEnabled = userPreferences?.weekly_invoice_reminder ?? true;
-  const cutoffType = userPreferences?.weekly_invoice_reminder_cutoff ?? "friday_5pm";
+  const badgeEnabled = userPreferences?.weekly_invoice_reminder ?? true;
+  const cutoffType = userPreferences?.weekly_invoice_reminder_cutoff ?? "immediately";
   const clientMap = new Map(clients.map((c) => [c.id, c]));
 
   const uninvoicedCount = uninvoicedGroups.filter((g) => {
     const client = clientMap.get(g.clientId);
-    if (reminderEnabled && client?.invoice_frequency === "weekly") {
+    if (client?.invoice_frequency === "weekly") {
+      if (!badgeEnabled) return false;
+      if (cutoffType === "immediately") return true;
       const cutoff = cutoffType === "sunday_midnight"
         ? sundayCutoffForIsoWeek(g.isoWeek)
         : fridayCutoffForIsoWeek(g.isoWeek);

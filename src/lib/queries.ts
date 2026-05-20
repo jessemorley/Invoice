@@ -699,7 +699,7 @@ export async function fetchInvoiceSequence(userId: string, token: string): Promi
   return data as InvoiceSequence | null;
 }
 
-export type WeeklyInvoiceReminderCutoff = "friday_5pm" | "sunday_midnight";
+export type WeeklyInvoiceReminderCutoff = "immediately" | "friday_5pm" | "sunday_midnight";
 
 export type UserPreferences = {
   user_id: string;

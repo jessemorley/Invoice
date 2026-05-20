@@ -271,7 +271,7 @@ function InvoicingTab({
 
   const [notifForm, setNotifForm] = useState<NotificationFormData>({
     weekly_invoice_reminder: userPreferences?.weekly_invoice_reminder ?? true,
-    weekly_invoice_reminder_cutoff: userPreferences?.weekly_invoice_reminder_cutoff ?? "friday_5pm",
+    weekly_invoice_reminder_cutoff: userPreferences?.weekly_invoice_reminder_cutoff ?? "immediately",
   });
   const [notifError, setNotifError] = useState<string | null>(null);
   const [notifPending, startNotifTransition] = useTransition();
@@ -362,7 +362,7 @@ function InvoicingTab({
                 Weekly invoice badge
               </label>
               <p className="text-sm text-muted-foreground">
-                For weekly clients, only show the uninvoiced badge after the week&apos;s cutoff.
+                Show the uninvoiced badge for weekly clients.
               </p>
             </div>
             <Switch
@@ -384,10 +384,11 @@ function InvoicingTab({
                   handleNotifChange({ weekly_invoice_reminder_cutoff: v as WeeklyInvoiceReminderCutoff })
                 }
               >
-                <SelectTrigger id="weekly_invoice_reminder_cutoff" className="w-40">
+                <SelectTrigger id="weekly_invoice_reminder_cutoff" className="w-44">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="immediately">Immediately</SelectItem>
                   <SelectItem value="friday_5pm">Friday 5pm</SelectItem>
                   <SelectItem value="sunday_midnight">Sunday midnight</SelectItem>
                 </SelectContent>
