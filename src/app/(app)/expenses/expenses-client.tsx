@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Expense, ExpenseCategory } from "@/lib/types";
 import { EXPENSE_CATEGORY_LABELS } from "@/lib/mock-data";
 import { formatAUD, formatDateShort } from "@/lib/format";
@@ -211,6 +211,16 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selected, setSelected] = useState<Expense | null>(null);
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if ((e as CustomEvent<string>).detail !== "expenses") return;
+      setSelected(null);
+      setSheetOpen(true);
+    };
+    window.addEventListener("dock:new", handler);
+    return () => window.removeEventListener("dock:new", handler);
+  }, []);
+
   if (loading) return <ExpensesSkeleton />;
 
   function openNew() {
@@ -388,12 +398,6 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
             ))}
           </div>
         )}
-      </div>
-
-      <div className="md:hidden fixed bottom-18 right-4 z-40">
-        <Button size="icon" className="size-14 rounded-full shadow-lg" onClick={openNew}>
-          <Plus />
-        </Button>
       </div>
 
       <ExpenseSheet
