@@ -389,8 +389,8 @@ function InvoicingTab({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="immediately">Immediately</SelectItem>
-                  <SelectItem value="friday_5pm">From Friday 5pm</SelectItem>
-                  <SelectItem value="sunday_midnight">From Sunday midnight</SelectItem>
+                  <SelectItem value="friday_5pm">Friday 5pm</SelectItem>
+                  <SelectItem value="sunday_midnight">Sunday midnight</SelectItem>
                 </SelectContent>
               </Select>
             </div>
