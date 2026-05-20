@@ -15,9 +15,12 @@ import {
   saveBusinessDetails,
   saveInvoicingSettings,
   saveEmailSettings,
+  saveNotificationSettings,
   type BusinessDetailsFormData,
   type InvoicingFormData,
+  type NotificationFormData,
 } from "./actions";
+import type { WeeklyInvoiceReminderCutoff } from "@/lib/queries";
 import { changePassword, updateDisplayName } from "@/app/login/actions";
 import type { BusinessDetails, InvoiceSequence, UserPreferences } from "@/lib/queries";
 
@@ -253,8 +256,10 @@ function InfoTab({
 
 function InvoicingTab({
   invoiceSequence,
+  userPreferences,
 }: {
   invoiceSequence: InvoiceSequence | null;
+  userPreferences: UserPreferences | null;
 }) {
   const [form, setForm] = useState<InvoicingFormData>({
     invoice_prefix: invoiceSequence?.invoice_prefix ?? "",
@@ -264,6 +269,13 @@ function InvoicingTab({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  const [notifForm, setNotifForm] = useState<NotificationFormData>({
+    weekly_invoice_reminder: userPreferences?.weekly_invoice_reminder ?? true,
+    weekly_invoice_reminder_cutoff: userPreferences?.weekly_invoice_reminder_cutoff ?? "immediately",
+  });
+  const [notifError, setNotifError] = useState<string | null>(null);
+  const [notifPending, startNotifTransition] = useTransition();
+
   function handleSave() {
     setError(null);
     startTransition(async () => {
@@ -272,6 +284,20 @@ function InvoicingTab({
         invalidate("settings");
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to save");
+      }
+    });
+  }
+
+  function handleNotifChange(patch: Partial<NotificationFormData>) {
+    const next = { ...notifForm, ...patch };
+    setNotifForm(next);
+    setNotifError(null);
+    startNotifTransition(async () => {
+      try {
+        await saveNotificationSettings(next);
+        invalidate("settings");
+      } catch (e) {
+        setNotifError(e instanceof Error ? e.message : "Failed to save");
       }
     });
   }
@@ -323,6 +349,54 @@ function InvoicingTab({
             {pending ? "Saving…" : "Save"}
           </Button>
         </CardFooter>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Notifications</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="weekly_invoice_reminder" className="text-sm font-medium">
+                Show badge
+              </label>
+              <p className="text-sm text-muted-foreground">
+                Show the uninvoiced badge for weekly clients.
+              </p>
+            </div>
+            <Switch
+              id="weekly_invoice_reminder"
+              checked={notifForm.weekly_invoice_reminder}
+              disabled={notifPending}
+              onCheckedChange={(v) => handleNotifChange({ weekly_invoice_reminder: v })}
+            />
+          </div>
+          {notifForm.weekly_invoice_reminder && (
+            <div className="flex items-center justify-between gap-4">
+              <label htmlFor="weekly_invoice_reminder_cutoff" className="text-sm font-medium">
+                Show badge from
+              </label>
+              <Select
+                value={notifForm.weekly_invoice_reminder_cutoff}
+                disabled={notifPending}
+                onValueChange={(v) =>
+                  handleNotifChange({ weekly_invoice_reminder_cutoff: v as WeeklyInvoiceReminderCutoff })
+                }
+              >
+                <SelectTrigger id="weekly_invoice_reminder_cutoff" className="w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="immediately">Immediately</SelectItem>
+                  <SelectItem value="friday_5pm">Friday 5pm</SelectItem>
+                  <SelectItem value="sunday_midnight">Sunday midnight</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {notifError && <p className="text-sm text-destructive">{notifError}</p>}
+        </CardContent>
       </Card>
     </div>
   );
@@ -520,7 +594,7 @@ export function SettingsClient({
                 <InfoTab businessDetails={businessDetails ?? null} />
               </TabsContent>
               <TabsContent value="invoicing">
-                <InvoicingTab invoiceSequence={invoiceSequence ?? null} />
+                <InvoicingTab invoiceSequence={invoiceSequence ?? null} userPreferences={userPreferences ?? null} />
               </TabsContent>
               <TabsContent value="email">
                 <EmailTab userPreferences={userPreferences ?? null} />

@@ -493,16 +493,22 @@ export type Database = {
           bcc_self: boolean
           mark_as_issued_on_send: boolean
           user_id: string
+          weekly_invoice_reminder: boolean
+          weekly_invoice_reminder_cutoff: string
         }
         Insert: {
           bcc_self?: boolean
           mark_as_issued_on_send?: boolean
           user_id: string
+          weekly_invoice_reminder?: boolean
+          weekly_invoice_reminder_cutoff?: string
         }
         Update: {
           bcc_self?: boolean
           mark_as_issued_on_send?: boolean
           user_id?: string
+          weekly_invoice_reminder?: boolean
+          weekly_invoice_reminder_cutoff?: string
         }
         Relationships: []
       }

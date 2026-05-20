@@ -699,10 +699,14 @@ export async function fetchInvoiceSequence(userId: string, token: string): Promi
   return data as InvoiceSequence | null;
 }
 
+export type WeeklyInvoiceReminderCutoff = "immediately" | "friday_5pm" | "sunday_midnight";
+
 export type UserPreferences = {
   user_id: string;
   bcc_self: boolean;
   mark_as_issued_on_send: boolean;
+  weekly_invoice_reminder: boolean;
+  weekly_invoice_reminder_cutoff: WeeklyInvoiceReminderCutoff;
 };
 
 export async function fetchUserPreferences(userId: string, token: string): Promise<UserPreferences | null> {
