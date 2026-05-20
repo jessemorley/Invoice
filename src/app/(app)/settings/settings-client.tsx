@@ -273,7 +273,8 @@ function InvoicingTab({
     weekly_invoice_reminder: userPreferences?.weekly_invoice_reminder ?? true,
     weekly_invoice_reminder_cutoff: userPreferences?.weekly_invoice_reminder_cutoff ?? "friday_5pm",
   });
-  const [, startNotifTransition] = useTransition();
+  const [notifError, setNotifError] = useState<string | null>(null);
+  const [notifPending, startNotifTransition] = useTransition();
 
   function handleSave() {
     setError(null);
@@ -290,9 +291,14 @@ function InvoicingTab({
   function handleNotifChange(patch: Partial<NotificationFormData>) {
     const next = { ...notifForm, ...patch };
     setNotifForm(next);
+    setNotifError(null);
     startNotifTransition(async () => {
-      await saveNotificationSettings(next);
-      invalidate("settings");
+      try {
+        await saveNotificationSettings(next);
+        invalidate("settings");
+      } catch (e) {
+        setNotifError(e instanceof Error ? e.message : "Failed to save");
+      }
     });
   }
 
@@ -362,6 +368,7 @@ function InvoicingTab({
             <Switch
               id="weekly_invoice_reminder"
               checked={notifForm.weekly_invoice_reminder}
+              disabled={notifPending}
               onCheckedChange={(v) => handleNotifChange({ weekly_invoice_reminder: v })}
             />
           </div>
@@ -372,6 +379,7 @@ function InvoicingTab({
               </label>
               <Select
                 value={notifForm.weekly_invoice_reminder_cutoff}
+                disabled={notifPending}
                 onValueChange={(v) =>
                   handleNotifChange({ weekly_invoice_reminder_cutoff: v as WeeklyInvoiceReminderCutoff })
                 }
@@ -386,6 +394,7 @@ function InvoicingTab({
               </Select>
             </div>
           )}
+          {notifError && <p className="text-sm text-destructive">{notifError}</p>}
         </CardContent>
       </Card>
     </div>

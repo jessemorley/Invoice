@@ -50,22 +50,44 @@ function mondayOfIsoWeek(isoWeek: string): Date {
   return monday;
 }
 
-// Friday 17:00 AEST (UTC+10) = Friday 07:00 UTC
-function fridayCutoffForIsoWeek(isoWeek: string): Date {
-  const monday = mondayOfIsoWeek(isoWeek);
-  const friday = new Date(monday);
-  friday.setUTCDate(monday.getUTCDate() + 4);
-  friday.setUTCHours(7, 0, 0, 0);
-  return friday;
+// Converts a Sydney local date/time to a UTC Date, respecting AEST/AEDT automatically.
+function sydneyLocalToUtc(year: number, month: number, day: number, hour: number, minute: number): Date {
+  // Build the wall-clock string as Australia/Sydney local time, then parse the UTC equivalent.
+  const localStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`;
+  const fmt = new Intl.DateTimeFormat("en-AU", {
+    timeZone: "Australia/Sydney",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hour12: false,
+  });
+  // Find the UTC instant where Sydney local time equals localStr by binary-searching the offset.
+  // Simpler: use the fact that Date.parse + the offset from Intl gives us the answer directly.
+  const probe = new Date(localStr + "Z"); // treat as UTC initially
+  const parts = Object.fromEntries(fmt.formatToParts(probe).map((p) => [p.type, p.value]));
+  const probeLocal = `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
+  const diffMs = probe.getTime() - new Date(probeLocal + "Z").getTime();
+  return new Date(probe.getTime() - diffMs);
 }
 
-// Sunday 23:59:59 AEST (UTC+10) = Sunday 13:59:59 UTC
+function fridayCutoffForIsoWeek(isoWeek: string): Date {
+  const monday = mondayOfIsoWeek(isoWeek);
+  const fridayUtc = new Date(monday);
+  fridayUtc.setUTCDate(monday.getUTCDate() + 4);
+  const y = fridayUtc.getUTCFullYear();
+  const m = fridayUtc.getUTCMonth() + 1;
+  const d = fridayUtc.getUTCDate();
+  return sydneyLocalToUtc(y, m, d, 17, 0);
+}
+
 function sundayCutoffForIsoWeek(isoWeek: string): Date {
   const monday = mondayOfIsoWeek(isoWeek);
-  const sunday = new Date(monday);
-  sunday.setUTCDate(monday.getUTCDate() + 6);
-  sunday.setUTCHours(13, 59, 59, 999);
-  return sunday;
+  const sundayUtc = new Date(monday);
+  sundayUtc.setUTCDate(monday.getUTCDate() + 6);
+  const y = sundayUtc.getUTCFullYear();
+  const m = sundayUtc.getUTCMonth() + 1;
+  const d = sundayUtc.getUTCDate();
+  // End of Sunday in Sydney = start of Monday UTC-adjusted
+  return sydneyLocalToUtc(y, m, d, 23, 59);
 }
 
 export async function loadInvoicesViewData() {
