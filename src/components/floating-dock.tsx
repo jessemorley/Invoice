@@ -128,29 +128,29 @@ export function FloatingDock() {
               style={{ transform: `translateX(${pillStyle.x}px)`, width: `${pillStyle.w}px` }}
             />
             <div ref={tabsRef} className="flex items-center">
-            {PRIMARY_TABS.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = view === tab.view;
-              return (
-                <button
-                  key={tab.view}
-                  aria-label={tab.label}
-                  onClick={() => handlePrimaryTap(tab.view)}
-                  className={cn(
-                    "relative z-10 flex items-center justify-center p-3 rounded-full transition-colors duration-200 touch-manipulation",
-                    isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Icon className="size-6 relative" strokeWidth={isActive ? 2.25 : 1.75} />
-                  {/* Badge on invoices tab */}
-                  {tab.view === "invoices" && uninvoicedCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
-                      {uninvoicedCount}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+              {PRIMARY_TABS.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = view === tab.view;
+                return (
+                  <button
+                    key={tab.view}
+                    aria-label={tab.label}
+                    onClick={() => handlePrimaryTap(tab.view)}
+                    className={cn(
+                      "relative z-10 flex items-center justify-center p-3 rounded-full transition-colors duration-200 touch-manipulation",
+                      isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="size-6 relative" strokeWidth={isActive ? 2.25 : 1.75} />
+                    {/* Badge on invoices tab */}
+                    {tab.view === "invoices" && uninvoicedCount > 0 && (
+                      <span className="absolute top-1.5 right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
+                        {uninvoicedCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
