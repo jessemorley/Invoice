@@ -16,7 +16,7 @@ import {
 import { fetchSettings } from "./settings/actions";
 
 export async function loadEntriesViewData() {
-  const { userId, token } = await getAuth();
+const { userId, token } = await getAuth();
   const [entries, clients, workflowRates] = await Promise.all([
     fetchEntries(userId, token),
     fetchFullClients(userId, token),
