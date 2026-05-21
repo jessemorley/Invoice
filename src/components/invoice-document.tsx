@@ -147,7 +147,7 @@ function buildRows(entries: Entry[], lineItems: LineItem[], clientRateHourly: nu
 
   for (const entry of sorted) {
     rows.push({ type: "entry", entry, clientRateHourly });
-    if (entry.bonus_amount > 0) {
+    if (entry.bonus_amount > 0 && entry.skus != null) {
       rows.push({ type: "sku_bonus", entry });
     }
     if (entry.billing_type === "hourly" && entry.start_time && entry.finish_time) {
@@ -188,7 +188,7 @@ function EntryRow({ entry, clientRateHourly, showHours }: { entry: Entry; client
     : entry.billing_type === "day_rate"
     ? fmtAmount(entry.base_amount)
     : "";
-  const amount = fmtAmount(entry.base_amount);
+  const amount = fmtAmount(entry.skus == null ? entry.base_amount + entry.bonus_amount : entry.base_amount);
 
   return (
     <View style={s.tableRow}>
