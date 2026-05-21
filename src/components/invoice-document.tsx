@@ -188,7 +188,7 @@ function EntryRow({ entry, clientRateHourly, showHours }: { entry: Entry; client
     : entry.billing_type === "day_rate"
     ? fmtAmount(entry.base_amount)
     : "";
-  const amount = fmtAmount(entry.base_amount);
+  const amount = fmtAmount(entry.skus == null ? entry.base_amount + entry.bonus_amount : entry.base_amount);
 
   return (
     <View style={s.tableRow}>
@@ -202,10 +202,13 @@ function EntryRow({ entry, clientRateHourly, showHours }: { entry: Entry; client
 }
 
 function SkuBonusRow({ entry }: { entry: Entry }) {
+  const label = entry.skus != null
+    ? `  + SKU bonus (${entry.skus} SKUs)`
+    : `  + bonus`;
   return (
     <View style={s.tableRow}>
       <Text style={s.colDate} />
-      <Text style={[s.colItem, s.subText]}>{`  + SKU bonus (${entry.skus} SKUs)`}</Text>
+      <Text style={[s.colItem, s.subText]}>{label}</Text>
       <Text style={s.colQty} />
       <Text style={s.colRate} />
       <Text style={[s.colAmount, s.subText]}>{fmtAmount(entry.bonus_amount)}</Text>
