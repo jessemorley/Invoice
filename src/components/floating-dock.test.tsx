@@ -106,25 +106,6 @@ describe("Plus button", () => {
 });
 
 describe("Tab buttons", () => {
-  it("dispatches dock:focus-search when Invoices tab tapped while already active", async () => {
-    mockView = "invoices";
-    renderDock();
-    const eventPromise = listenForEvent("dock:focus-search");
-    fireEvent.click(screen.getByRole("button", { name: /invoices/i }));
-    await expect(eventPromise).resolves.toBeDefined();
-  });
-
-  it("does not dispatch dock:focus-search when Entries tab tapped while already active", async () => {
-    mockView = "entries";
-    renderDock();
-    let fired = false;
-    window.addEventListener("dock:focus-search", () => { fired = true; }, { once: true });
-    fireEvent.click(screen.getByRole("button", { name: /entries/i }));
-    // Give event loop a tick
-    await new Promise((r) => setTimeout(r, 0));
-    expect(fired).toBe(false);
-  });
-
   it("calls setView when an inactive tab is tapped", () => {
     mockView = "entries";
     renderDock();

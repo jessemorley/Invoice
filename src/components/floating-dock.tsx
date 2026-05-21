@@ -57,13 +57,7 @@ export function FloatingDock() {
 
   const handlePrimaryTap = useCallback(
     (tab: ViewId) => {
-      if (view === tab) {
-        if (tab === "invoices") {
-          window.dispatchEvent(new CustomEvent("dock:focus-search"));
-        }
-      } else {
-        setView(tab);
-      }
+      if (view !== tab) setView(tab);
     },
     [view, setView]
   );
