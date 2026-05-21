@@ -48,9 +48,11 @@ function SheetContent({
   className,
   children,
   side = "right",
+  mobileFade = false,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left"
+  mobileFade?: boolean
 }) {
   return (
     <SheetPortal>
@@ -59,8 +61,9 @@ function SheetContent({
         data-slot="sheet-content"
         className={cn(
           "fixed z-50 flex flex-col gap-4 bg-background shadow-lg transition ease-in-out data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:animate-in data-[state=open]:duration-500",
-          side === "right" &&
-            "inset-y-0 right-0 h-full w-3/4 sm:border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
+          side === "right" && (mobileFade
+            ? "inset-y-0 right-0 h-full w-3/4 sm:border-l sm:max-w-sm max-sm:data-[state=open]:fade-in-0 max-sm:data-[state=closed]:fade-out-0 sm:data-[state=open]:slide-in-from-right sm:data-[state=closed]:slide-out-to-right"
+            : "inset-y-0 right-0 h-full w-3/4 sm:border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm"),
           side === "left" &&
             "inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
           side === "top" &&
@@ -76,6 +79,7 @@ function SheetContent({
     </SheetPortal>
   )
 }
+
 
 function SheetHeader({
   className,

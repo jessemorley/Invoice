@@ -331,7 +331,7 @@ export function EntrySheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChangeAction}>
-      <SheetContent side="right" className="flex flex-col gap-0 p-0 w-full sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
+      <SheetContent side="right" mobileFade className="flex flex-col gap-0 p-0 w-full sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
         <div className={cn("flex flex-row items-center gap-1.5 px-4 py-4", selectedClient && "border-b")}>
           {!entry && selectedClient && (
             <Button variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => setSelectedClient(null)}>

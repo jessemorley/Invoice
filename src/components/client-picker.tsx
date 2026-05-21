@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { Client } from "@/lib/types";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,14 @@ export function ClientPicker({
   onSelectAction: (client: Client) => void;
 }) {
   const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
   const active = clients
     .filter((c) => c.is_active)
     .sort((a, b) => b.invoice_count - a.invoice_count);
@@ -26,10 +34,12 @@ export function ClientPicker({
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
+            ref={inputRef}
             className="pl-9"
             placeholder="Search clients…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            enterKeyHint="search"
           />
         </div>
       </div>
