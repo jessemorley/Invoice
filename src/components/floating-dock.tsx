@@ -17,13 +17,15 @@ const SECONDARY_TABS: { view: ViewId; icon: React.ComponentType<{ className?: st
   { view: "settings", icon: Settings, label: "Settings" },
 ];
 
-const PRIMARY_VIEWS = new Set<ViewId>(["entries", "invoices"]);
+const DOCK_NEW_VIEWS = new Set<ViewId>(["entries", "invoices", "expenses"]);
 
 export function FloatingDock() {
   const { view, setView } = useActiveView();
   const [menuOpen, setMenuOpen] = useState(false);
+  const innerRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
   const [pillStyle, setPillStyle] = useState({ x: 0, w: 46 });
+  const [pillVisible, setPillVisible] = useState(false);
   const [uninvoicedCount, setUninvoicedCount] = useState(0);
 
   useEffect(() => {
@@ -32,31 +34,30 @@ export function FloatingDock() {
     return () => window.removeEventListener("dock:uninvoiced-count", handler);
   }, []);
 
-  // Measure active tab position for the sliding pill
+  // Measure active primary tab position for the sliding pill
   useEffect(() => {
     const activeIndex = PRIMARY_TABS.findIndex((t) => t.view === view);
-    if (activeIndex === -1) return;
+    if (activeIndex === -1) {
+      setPillVisible(false);
+      return;
+    }
     const id = requestAnimationFrame(() => {
+      const inner = innerRef.current;
       const container = tabsRef.current;
-      if (!container) return;
+      if (!inner || !container) return;
       const el = container.children[activeIndex] as HTMLElement | undefined;
       if (!el) return;
-      const containerRect = container.getBoundingClientRect();
+      const innerRect = inner.getBoundingClientRect();
       const elRect = el.getBoundingClientRect();
-      setPillStyle({ x: elRect.left - containerRect.left, w: elRect.width });
+      setPillStyle({ x: elRect.left - innerRect.left, w: elRect.width });
+      setPillVisible(true);
     });
     return () => cancelAnimationFrame(id);
   }, [view]);
 
   const handlePrimaryTap = useCallback(
     (tab: ViewId) => {
-      if (view === tab) {
-        if (tab === "invoices") {
-          window.dispatchEvent(new CustomEvent("dock:focus-search"));
-        }
-      } else {
-        setView(tab);
-      }
+      if (view !== tab) setView(tab);
     },
     [view, setView]
   );
@@ -71,15 +72,22 @@ export function FloatingDock() {
 
   return (
     <>
-      {/* Overflow menu overlay + panel */}
+      {/* Backdrop — full screen, click to close */}
       {menuOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
           data-testid="menu-overlay"
           onClick={() => setMenuOpen(false)}
-        >
+        />
+      )}
+
+      {/* Dock */}
+      <div className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden" style={{ bottom: "max(env(safe-area-inset-bottom, 0px), 1.5rem)" }}>
+
+        {/* Popover — positioned above the dock, centered on it */}
+        {menuOpen && (
           <div
-            className="absolute bottom-24 left-4 right-4 max-w-sm mx-auto bg-background border border-border/50 rounded-xl shadow-lg overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200"
+            className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-[calc(100vw-2rem)] max-w-sm bg-background border border-border/50 rounded-xl shadow-lg overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-1">
@@ -99,34 +107,38 @@ export function FloatingDock() {
               })}
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Dock */}
-      <div className="fixed left-1/2 -translate-x-1/2 z-50 md:hidden" style={{ bottom: "max(env(safe-area-inset-bottom, 0px), 1.5rem)" }}>
-        <nav className="flex items-center gap-1 bg-background/95 backdrop-blur-md border border-border/50 rounded-full px-2 py-2 shadow-xl shadow-black/10">
+        <nav className="bg-background/95 backdrop-blur-md border border-border/50 rounded-full px-2 py-2 shadow-xl shadow-black/10">
+          {/* Inner wrapper — pill is positioned relative to this */}
+          <div ref={innerRef} className="relative flex items-center gap-1">
 
-          {/* Plus button — only shown for primary views */}
-          {PRIMARY_VIEWS.has(view) && (
+            {/* Sliding pill — hidden on secondary views */}
+            <div
+              className={cn(
+                "absolute inset-y-0 bg-muted rounded-full transition-[left,width] duration-150 ease-in-out pointer-events-none",
+                (!pillVisible || !PRIMARY_TABS.some((t) => t.view === view)) && "hidden"
+              )}
+              style={{ left: pillStyle.x, width: pillStyle.w }}
+            />
+
+            {/* Plus button — active for primary views, greyed out otherwise */}
             <button
               aria-label="New"
+              disabled={!DOCK_NEW_VIEWS.has(view)}
               onClick={() => window.dispatchEvent(new CustomEvent("dock:new", { detail: view }))}
-              className="flex items-center justify-center p-3 text-primary hover:bg-muted rounded-full transition-colors duration-200 touch-manipulation"
+              className={cn(
+                "relative z-10 flex items-center justify-center p-3 rounded-full transition-colors duration-150 touch-manipulation",
+                DOCK_NEW_VIEWS.has(view) ? "text-primary" : "text-muted-foreground/30"
+              )}
             >
               <Plus className="size-6" strokeWidth={1.75} />
             </button>
-          )}
 
-          {/* Divider */}
-          {PRIMARY_VIEWS.has(view) && <div className="w-px h-6 bg-border mx-1" />}
+            {/* Divider */}
+            <div className="relative z-10 w-px h-6 bg-border" />
 
-          {/* Primary tabs with sliding pill */}
-          <div className="relative flex items-center">
-            {/* Sliding pill indicator */}
-            <div
-              className="absolute top-0 h-full bg-muted rounded-full transition-all duration-300 ease-in-out pointer-events-none"
-              style={{ transform: `translateX(${pillStyle.x}px)`, width: `${pillStyle.w}px` }}
-            />
+            {/* Primary tabs */}
             <div ref={tabsRef} className="flex items-center">
               {PRIMARY_TABS.map((tab) => {
                 const Icon = tab.icon;
@@ -137,7 +149,7 @@ export function FloatingDock() {
                     aria-label={tab.label}
                     onClick={() => handlePrimaryTap(tab.view)}
                     className={cn(
-                      "relative z-10 flex items-center justify-center p-3 rounded-full transition-colors duration-200 touch-manipulation",
+                      "relative z-10 flex items-center justify-center p-3 rounded-full transition-colors duration-150 touch-manipulation",
                       isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                     )}
                   >
@@ -152,19 +164,22 @@ export function FloatingDock() {
                 );
               })}
             </div>
+
+            {/* Divider */}
+            <div className="relative z-10 w-px h-6 bg-border" />
+
+            {/* Menu button — active when on a secondary view */}
+            <button
+              aria-label="Menu"
+              onClick={() => setMenuOpen((o) => !o)}
+              className="relative z-10 flex items-center justify-center p-3 rounded-full text-muted-foreground hover:text-foreground transition-colors duration-150 touch-manipulation"
+            >
+              {menuOpen
+                ? <X className="size-6" strokeWidth={1.75} />
+                : <Menu className="size-6" strokeWidth={1.75} />}
+            </button>
+
           </div>
-
-          {/* Divider */}
-          <div className="w-px h-6 bg-border mx-1" />
-
-          {/* Menu button */}
-          <button
-            aria-label="Menu"
-            onClick={() => setMenuOpen((o) => !o)}
-            className="flex items-center justify-center p-3 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors duration-200 touch-manipulation"
-          >
-            {menuOpen ? <X className="size-6" strokeWidth={1.75} /> : <Menu className="size-6" strokeWidth={1.75} />}
-          </button>
         </nav>
       </div>
     </>
