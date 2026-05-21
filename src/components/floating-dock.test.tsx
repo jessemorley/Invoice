@@ -61,28 +61,47 @@ describe("Plus button", () => {
     expect(e.detail).toBe("invoices");
   });
 
-  it("is hidden when active view is dashboard", () => {
-    mockView = "dashboard";
-    renderDock();
-    expect(screen.queryByRole("button", { name: /new/i })).not.toBeInTheDocument();
-  });
-
-  it("is hidden when active view is clients", () => {
-    mockView = "clients";
-    renderDock();
-    expect(screen.queryByRole("button", { name: /new/i })).not.toBeInTheDocument();
-  });
-
-  it("is hidden when active view is expenses", () => {
+  it("dispatches dock:new with expenses detail when tapped on expenses view", async () => {
     mockView = "expenses";
     renderDock();
-    expect(screen.queryByRole("button", { name: /new/i })).not.toBeInTheDocument();
+    const eventPromise = listenForEvent("dock:new") as Promise<CustomEvent<string>>;
+    fireEvent.click(screen.getByRole("button", { name: /new/i }));
+    const e = await eventPromise;
+    expect(e.detail).toBe("expenses");
   });
 
-  it("is hidden when active view is settings", () => {
+  it("is enabled on expenses view", () => {
+    mockView = "expenses";
+    renderDock();
+    expect(screen.getByRole("button", { name: /new/i })).not.toBeDisabled();
+  });
+
+  it("is present but disabled when active view is dashboard", () => {
+    mockView = "dashboard";
+    renderDock();
+    expect(screen.getByRole("button", { name: /new/i })).toBeDisabled();
+  });
+
+  it("is present but disabled when active view is clients", () => {
+    mockView = "clients";
+    renderDock();
+    expect(screen.getByRole("button", { name: /new/i })).toBeDisabled();
+  });
+
+  it("is present but disabled when active view is settings", () => {
     mockView = "settings";
     renderDock();
-    expect(screen.queryByRole("button", { name: /new/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /new/i })).toBeDisabled();
+  });
+
+  it("does not dispatch dock:new when disabled (settings view)", async () => {
+    mockView = "settings";
+    renderDock();
+    let fired = false;
+    window.addEventListener("dock:new", () => { fired = true; }, { once: true });
+    fireEvent.click(screen.getByRole("button", { name: /new/i }));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(fired).toBe(false);
   });
 });
 

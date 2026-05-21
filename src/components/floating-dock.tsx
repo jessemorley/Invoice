@@ -17,7 +17,7 @@ const SECONDARY_TABS: { view: ViewId; icon: React.ComponentType<{ className?: st
   { view: "settings", icon: Settings, label: "Settings" },
 ];
 
-const PRIMARY_VIEWS = new Set<ViewId>(["entries", "invoices", "expenses"]);
+const DOCK_NEW_VIEWS = new Set<ViewId>(["entries", "invoices", "expenses"]);
 
 export function FloatingDock() {
   const { view, setView } = useActiveView();
@@ -25,6 +25,7 @@ export function FloatingDock() {
   const innerRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
   const [pillStyle, setPillStyle] = useState({ x: 0, w: 46 });
+  const [pillVisible, setPillVisible] = useState(false);
   const [uninvoicedCount, setUninvoicedCount] = useState(0);
 
   useEffect(() => {
@@ -36,7 +37,10 @@ export function FloatingDock() {
   // Measure active primary tab position for the sliding pill
   useEffect(() => {
     const activeIndex = PRIMARY_TABS.findIndex((t) => t.view === view);
-    if (activeIndex === -1) return;
+    if (activeIndex === -1) {
+      setPillVisible(false);
+      return;
+    }
     const id = requestAnimationFrame(() => {
       const inner = innerRef.current;
       const container = tabsRef.current;
@@ -46,6 +50,7 @@ export function FloatingDock() {
       const innerRect = inner.getBoundingClientRect();
       const elRect = el.getBoundingClientRect();
       setPillStyle({ x: elRect.left - innerRect.left, w: elRect.width });
+      setPillVisible(true);
     });
     return () => cancelAnimationFrame(id);
   }, [view]);
@@ -118,7 +123,7 @@ export function FloatingDock() {
             <div
               className={cn(
                 "absolute inset-y-0 bg-muted rounded-full transition-[left,width] duration-150 ease-in-out pointer-events-none",
-                !PRIMARY_TABS.some((t) => t.view === view) && "hidden"
+                (!pillVisible || !PRIMARY_TABS.some((t) => t.view === view)) && "hidden"
               )}
               style={{ left: pillStyle.x, width: pillStyle.w }}
             />
@@ -126,11 +131,11 @@ export function FloatingDock() {
             {/* Plus button — active for primary views, greyed out otherwise */}
             <button
               aria-label="New"
-              disabled={!PRIMARY_VIEWS.has(view)}
+              disabled={!DOCK_NEW_VIEWS.has(view)}
               onClick={() => window.dispatchEvent(new CustomEvent("dock:new", { detail: view }))}
               className={cn(
                 "relative z-10 flex items-center justify-center p-3 rounded-full transition-colors duration-150 touch-manipulation",
-                PRIMARY_VIEWS.has(view) ? "text-primary" : "text-muted-foreground/30 cursor-default"
+                DOCK_NEW_VIEWS.has(view) ? "text-primary" : "text-muted-foreground/30"
               )}
             >
               <Plus className="size-6" strokeWidth={1.75} />
