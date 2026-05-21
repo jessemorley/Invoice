@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo, useTransition } from "react";
-import { cn } from "@/lib/utils";
 import type { Entry, Client, WorkflowRate, BillingType } from "@/lib/types";
 import { createEntry, updateEntry, deleteEntry } from "@/app/(app)/entries/actions";
 import { invalidate } from "@/lib/invalidate";
