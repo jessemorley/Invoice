@@ -2,24 +2,23 @@
 
 import { useState, useRef, useEffect } from "react";
 import type { Client } from "@/lib/types";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 export function ClientPicker({
   clients,
   onSelectAction,
+  onCloseAction,
 }: {
   clients: Client[];
   onSelectAction: (client: Client) => void;
+  onCloseAction: () => void;
 }) {
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      inputRef.current?.focus();
-    });
-    return () => cancelAnimationFrame(frame);
+    inputRef.current?.focus();
   }, []);
   const active = clients
     .filter((c) => c.is_active)
@@ -30,18 +29,24 @@ export function ClientPicker({
 
   return (
     <div className="flex flex-col">
-      <div className="px-4 py-3">
-        <div className="relative">
+      <div className="flex items-center gap-2 px-4 py-3">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
             ref={inputRef}
             className="pl-9"
-            placeholder="Search clients…"
+            placeholder="New entry client"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            enterKeyHint="search"
           />
         </div>
+        <button
+          onClick={onCloseAction}
+          className="shrink-0 rounded-xs p-1 opacity-70 transition-opacity hover:opacity-100"
+        >
+          <X className="size-5" />
+          <span className="sr-only">Close</span>
+        </button>
       </div>
       <div className="overflow-y-auto">
         {filtered.map((c) => (

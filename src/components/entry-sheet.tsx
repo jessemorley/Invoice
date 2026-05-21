@@ -331,25 +331,29 @@ export function EntrySheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChangeAction}>
-      <SheetContent side="right" mobileFade className="flex flex-col gap-0 p-0 w-full sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
-        <div className={cn("flex flex-row items-center gap-1.5 px-4 py-4", selectedClient && "border-b")}>
-          {!entry && selectedClient && (
-            <Button variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => setSelectedClient(null)}>
-              <ChevronLeft className="size-4" />
-            </Button>
-          )}
-          <SheetTitle className="text-base flex-1">{title}</SheetTitle>
-          <SheetClose asChild>
-            <Button variant="ghost" size="icon" className="shrink-0 size-8">
-              <X className="size-5" />
-              <span className="sr-only">Close</span>
-            </Button>
-          </SheetClose>
-        </div>
+      <SheetContent side="right" mobileFade className="flex flex-col gap-0 p-0 w-full sm:max-w-md" onOpenAutoFocus={(e) => { if (selectedClient) e.preventDefault(); }}>
+        <SheetTitle className="sr-only">{title}</SheetTitle>
+
+        {selectedClient && (
+          <div className="flex flex-row items-center gap-1.5 px-4 py-4 border-b">
+            {!entry && (
+              <Button variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => setSelectedClient(null)}>
+                <ChevronLeft className="size-4" />
+              </Button>
+            )}
+            <span className="text-base font-semibold flex-1">{title}</span>
+            <SheetClose asChild>
+              <Button variant="ghost" size="icon" className="shrink-0 size-8">
+                <X className="size-5" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </SheetClose>
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto">
           {!selectedClient ? (
-            <ClientPicker clients={clients} onSelectAction={handleSelectClient} />
+            <ClientPicker clients={clients} onSelectAction={handleSelectClient} onCloseAction={() => onOpenChangeAction(false)} />
           ) : (
             <div className="flex flex-col gap-4 px-4 py-4">
               {/* Date */}
