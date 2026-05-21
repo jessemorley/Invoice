@@ -147,7 +147,7 @@ function buildRows(entries: Entry[], lineItems: LineItem[], clientRateHourly: nu
 
   for (const entry of sorted) {
     rows.push({ type: "entry", entry, clientRateHourly });
-    if (entry.bonus_amount > 0 && entry.skus != null) {
+    if (entry.bonus_amount > 0) {
       rows.push({ type: "sku_bonus", entry });
     }
     if (entry.billing_type === "hourly" && entry.start_time && entry.finish_time) {
@@ -202,10 +202,13 @@ function EntryRow({ entry, clientRateHourly, showHours }: { entry: Entry; client
 }
 
 function SkuBonusRow({ entry }: { entry: Entry }) {
+  const label = entry.skus != null
+    ? `  + SKU bonus (${entry.skus} SKUs)`
+    : `  + bonus`;
   return (
     <View style={s.tableRow}>
       <Text style={s.colDate} />
-      <Text style={[s.colItem, s.subText]}>{`  + SKU bonus (${entry.skus} SKUs)`}</Text>
+      <Text style={[s.colItem, s.subText]}>{label}</Text>
       <Text style={s.colQty} />
       <Text style={s.colRate} />
       <Text style={[s.colAmount, s.subText]}>{fmtAmount(entry.bonus_amount)}</Text>
