@@ -605,14 +605,30 @@ export function EntriesView({
 
         {/* Inline page header — sticky on desktop */}
         <div className="relative md:sticky md:top-0 md:z-10">
-          {/* Single blur element spanning header + 48px below, fading out via mask */}
-          <div
-            className="hidden md:block absolute inset-0 -bottom-12 pointer-events-none backdrop-blur-md"
-            style={{
-              WebkitMaskImage: "linear-gradient(to bottom, black, transparent)",
-              maskImage: "linear-gradient(to bottom, black, transparent)",
-            }}
-          />
+          {/* Colour gradient overlay — strong fade from bg to transparent */}
+          <div className="hidden md:block absolute inset-0 -bottom-12 pointer-events-none bg-gradient-to-b from-background via-background/60 to-transparent" />
+          {/* Stacked blur bands — each confined to a vertical slice via mask */}
+          <div className="hidden md:block absolute inset-0 -bottom-12 pointer-events-none">
+            {[16, 8, 4, 2].map((blur, i) => {
+              const start = (i / 4) * 100;
+              const end = ((i + 1) / 4) * 100;
+              return (
+                <div
+                  key={blur}
+                  className="absolute inset-0"
+                  style={{
+                    backdropFilter: `blur(${blur}px)`,
+                    WebkitBackdropFilter: `blur(${blur}px)`,
+                    maskImage: `linear-gradient(to bottom,
+                      transparent ${Math.max(0, start - 12.5)}%,
+                      black ${start}%,
+                      black ${end}%,
+                      transparent ${Math.min(100, end + 12.5)}%)`,
+                  }}
+                />
+              );
+            })}
+          </div>
           <div className="relative px-4 md:px-6 pt-8 pb-6 mx-auto w-full max-w-6xl flex flex-col md:flex-row md:items-center gap-3">
             <h1 className="text-2xl font-bold md:mr-auto">Entries</h1>
             <div className="flex gap-2">
