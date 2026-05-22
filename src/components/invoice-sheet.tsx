@@ -384,7 +384,7 @@ export function InvoiceSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChangeAction}>
-      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
+      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
         {view === "client-pick" ? (
           <>
             <div className="flex flex-row items-center gap-1.5 px-4 py-4">
