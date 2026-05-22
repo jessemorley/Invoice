@@ -589,12 +589,12 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         </div>
 
         <div className="px-4 md:px-6 pb-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
-          <div className="rounded-lg border bg-card overflow-hidden">
+          <div className="overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableTableHead className="w-28 py-4 px-6" {...sh("issued_date")}>Issued</SortableTableHead>
                   <SortableTableHead className="w-24 py-4 px-6" {...sh("number")}>Number</SortableTableHead>
+                  <SortableTableHead className="w-28 py-4 px-6" {...sh("issued_date")}>Issued</SortableTableHead>
                   <SortableTableHead className="py-4 px-6" {...sh("client")}>Client</SortableTableHead>
                   <TableHead className="w-36 py-4 px-6 text-muted-foreground font-medium text-sm">Email</TableHead>
                   <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("total")}>Total</SortableTableHead>
@@ -613,11 +613,11 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                 ) : (
                   visibleInvoices.map((inv) => (
                     <TableRow key={inv.id} className="cursor-pointer" onClick={() => openInvoice(inv)}>
-                      <TableCell className="text-sm text-muted-foreground py-4 px-6">
-                        {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
-                      </TableCell>
                       <TableCell className="py-4 px-6">
                         <InvoiceNumberBadge number={inv.number} status={inv.status} />
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground py-4 px-6">
+                        {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
                       </TableCell>
                       <TableCell className="py-4 px-6">
                         <span className="text-sm">{inv.client.name}</span>
