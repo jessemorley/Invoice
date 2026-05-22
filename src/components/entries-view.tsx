@@ -319,7 +319,7 @@ function EntryRow({
 function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
   const status = group.invoiceStatus ?? "draft";
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5">
+    <div className="flex items-center gap-3 px-4 py-2 border rounded-xl">
       <span
         className="inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium shrink-0"
         style={{
@@ -342,7 +342,7 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
 
 function WeekGroupHeader({ group }: { group: WeekGroup }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5">
+    <div className="flex items-center gap-3 px-4 py-2 border rounded-xl">
       <span className="text-sm font-medium text-muted-foreground">
         {group.dateRange}
       </span>
@@ -405,7 +405,7 @@ function InvoiceView({
   return (
     <div className="px-4 md:px-6 pb-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       {visible.map((group) => (
-        <div key={group.key} className="flex flex-col">
+        <div key={group.key} className="flex flex-col gap-2">
           <ClientWeekGroupHeader group={group} />
           <Card className="overflow-hidden py-0 gap-0">
             <CardContent className="p-0">
@@ -446,7 +446,7 @@ function WeekView({
   return (
     <div className="px-4 md:px-6 pb-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       {visible.map((group) => (
-        <div key={group.key} className="flex flex-col">
+        <div key={group.key} className="flex flex-col gap-2">
           <WeekGroupHeader group={group} />
           <Card className="overflow-hidden py-0 gap-0">
             <CardContent className="p-0">
