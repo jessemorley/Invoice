@@ -1,18 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import type { Client } from "@/lib/types";
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
 
 export function ClientPicker({
   clients,
+  query,
   onSelectAction,
 }: {
   clients: Client[];
+  query: string;
   onSelectAction: (client: Client) => void;
 }) {
-  const [query, setQuery] = useState("");
   const active = clients
     .filter((c) => c.is_active)
     .sort((a, b) => b.invoice_count - a.invoice_count);
@@ -22,17 +20,6 @@ export function ClientPicker({
 
   return (
     <div className="flex flex-col">
-      <div className="px-4 py-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input
-            className="pl-9"
-            placeholder="Search clients…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
-      </div>
       <div className="overflow-y-auto">
         {filtered.map((c) => (
           <button

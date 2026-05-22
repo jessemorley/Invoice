@@ -182,6 +182,7 @@ export function EntrySheet({
   const [selectedClient, setSelectedClient] = useState<Client | null>(
     entry ? editClient : null
   );
+  const [clientQuery, setClientQuery] = useState("");
   const [form, setForm] = useState<FormState>(() => defaultForm(entry, editClient));
 
   useEffect(() => {
@@ -189,6 +190,7 @@ export function EntrySheet({
     const ec = entry ? clients.find((c) => c.id === entry.client.id) ?? null : null;
     startTransition(() => {
       setSelectedClient(entry ? ec : null);
+      setClientQuery("");
       setForm(defaultForm(entry, ec));
       setError(null);
     });
@@ -200,6 +202,7 @@ export function EntrySheet({
 
   function handleSelectClient(client: Client) {
     setSelectedClient(client);
+    setClientQuery("");
     setForm((prev) => ({
       ...prev,
       client_id: client.id,
@@ -338,7 +341,20 @@ export function EntrySheet({
               <ChevronLeft className="size-4" />
             </Button>
           )}
-          <SheetTitle className="text-base flex-1">{title}</SheetTitle>
+          {!selectedClient ? (
+            <>
+              <SheetTitle className="sr-only">New entry</SheetTitle>
+              <input
+                className="text-base font-semibold text-foreground flex-1 bg-transparent border-none outline-none placeholder:text-foreground focus:placeholder:text-muted-foreground"
+                placeholder="New entry"
+                value={clientQuery}
+                onChange={(e) => setClientQuery(e.target.value)}
+                autoFocus
+              />
+            </>
+          ) : (
+            <SheetTitle className="text-base flex-1">{title}</SheetTitle>
+          )}
           <SheetClose asChild>
             <Button variant="ghost" size="icon" className="shrink-0 size-8">
               <X className="size-5" />
@@ -349,7 +365,7 @@ export function EntrySheet({
 
         <div className="flex-1 overflow-y-auto">
           {!selectedClient ? (
-            <ClientPicker clients={clients} onSelectAction={handleSelectClient} />
+            <ClientPicker clients={clients} query={clientQuery} onSelectAction={handleSelectClient} />
           ) : (
             <div className="flex flex-col gap-4 px-4 py-4">
               {/* Date */}
