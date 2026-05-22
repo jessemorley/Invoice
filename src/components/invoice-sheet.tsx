@@ -387,10 +387,10 @@ export function InvoiceSheet({
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
         {view === "client-pick" ? (
           <>
-            <div className="flex flex-row items-center gap-1.5 px-4 py-4">
+            <div className="flex h-14 flex-row items-center gap-1.5 px-4 border-b">
               <SheetTitle className="sr-only">New invoice</SheetTitle>
               <input
-                className="text-base font-semibold text-foreground flex-1 bg-transparent border-none outline-none placeholder:text-foreground focus:placeholder:text-muted-foreground"
+                className="text-lg font-semibold text-foreground flex-1 bg-transparent border-none outline-none p-0 placeholder:text-foreground focus:placeholder:text-muted-foreground"
                 placeholder="New invoice"
                 value={clientQuery}
                 onChange={(e) => setClientQuery(e.target.value)}

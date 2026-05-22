@@ -335,7 +335,7 @@ export function EntrySheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChangeAction}>
       <SheetContent side="right" className="flex flex-col gap-0 p-0 w-full sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
-        <div className={cn("flex flex-row items-center gap-1.5 px-4 py-4", selectedClient && "border-b")}>
+        <div className={cn("flex h-14 flex-row items-center gap-1.5 px-4 border-b")}>
           {!entry && selectedClient && (
             <Button variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => setSelectedClient(null)}>
               <ChevronLeft className="size-4" />
@@ -345,14 +345,14 @@ export function EntrySheet({
             <>
               <SheetTitle className="sr-only">New entry</SheetTitle>
               <input
-                className="text-base font-semibold text-foreground flex-1 bg-transparent border-none outline-none placeholder:text-foreground focus:placeholder:text-muted-foreground"
+                className="text-lg font-semibold text-foreground flex-1 bg-transparent border-none outline-none p-0 placeholder:text-foreground focus:placeholder:text-muted-foreground"
                 placeholder="New entry"
                 value={clientQuery}
                 onChange={(e) => setClientQuery(e.target.value)}
               />
             </>
           ) : (
-            <SheetTitle className="text-base flex-1">{title}</SheetTitle>
+            <SheetTitle className="text-lg flex-1">{title}</SheetTitle>
           )}
           <SheetClose asChild>
             <Button variant="ghost" size="icon" className="shrink-0 size-8">
