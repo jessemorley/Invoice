@@ -319,7 +319,7 @@ function EntryRow({
 function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
   const status = group.invoiceStatus ?? "draft";
   return (
-    <div className="flex items-center gap-3 px-4 py-2 border rounded-xl">
+    <div className="flex items-center gap-3 px-4 py-2.5">
       <span
         className="inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium shrink-0"
         style={{
@@ -342,7 +342,7 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
 
 function WeekGroupHeader({ group }: { group: WeekGroup }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2 border rounded-xl">
+    <div className="flex items-center gap-3 px-4 py-2.5">
       <span className="text-sm font-medium text-muted-foreground">
         {group.dateRange}
       </span>
@@ -405,7 +405,7 @@ function InvoiceView({
   return (
     <div className="px-4 md:px-6 pb-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       {visible.map((group) => (
-        <div key={group.key} className="flex flex-col gap-2">
+        <div key={group.key} className="flex flex-col">
           <ClientWeekGroupHeader group={group} />
           <Card className="overflow-hidden py-0 gap-0">
             <CardContent className="p-0">
@@ -446,7 +446,7 @@ function WeekView({
   return (
     <div className="px-4 md:px-6 pb-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       {visible.map((group) => (
-        <div key={group.key} className="flex flex-col gap-2">
+        <div key={group.key} className="flex flex-col">
           <WeekGroupHeader group={group} />
           <Card className="overflow-hidden py-0 gap-0">
             <CardContent className="p-0">
@@ -604,37 +604,39 @@ export function EntriesView({
         </div>
 
         {/* Inline page header */}
-        <div className="px-4 md:px-6 pt-8 pb-6 mx-auto w-full max-w-6xl flex items-center gap-3">
-          <h1 className="text-2xl font-bold mr-auto">Entries</h1>
-          <Select
-            value={viewMode}
-            onValueChange={(v) => setViewMode(v as ViewMode)}
-            disabled={loading}
-          >
-            <SelectTrigger size="sm" className="w-[130px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="week">Week</SelectItem>
-              <SelectItem value="invoice">Invoice</SelectItem>
-              <SelectItem value="none">None</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select
-            value={dateRange}
-            onValueChange={(v) => setDateRange(v as DateRange)}
-            disabled={loading}
-          >
-            <SelectTrigger size="sm" className="w-[130px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="15d">Last 15 days</SelectItem>
-              <SelectItem value="30d">Last 30 days</SelectItem>
-              <SelectItem value="90d">Last 90 days</SelectItem>
-              <SelectItem value="all">All time</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="px-4 md:px-6 pt-8 pb-6 mx-auto w-full max-w-6xl flex flex-col md:flex-row md:items-center gap-3">
+          <h1 className="text-2xl font-bold md:mr-auto">Entries</h1>
+          <div className="flex gap-2">
+            <Select
+              value={viewMode}
+              onValueChange={(v) => setViewMode(v as ViewMode)}
+              disabled={loading}
+            >
+              <SelectTrigger size="sm" className="flex-1 md:flex-none md:w-[130px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="week">Week</SelectItem>
+                <SelectItem value="invoice">Invoice</SelectItem>
+                <SelectItem value="none">None</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={dateRange}
+              onValueChange={(v) => setDateRange(v as DateRange)}
+              disabled={loading}
+            >
+              <SelectTrigger size="sm" className="flex-1 md:flex-none md:w-[150px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="15d">Last 15 days</SelectItem>
+                <SelectItem value="30d">Last 30 days</SelectItem>
+                <SelectItem value="90d">Last 90 days</SelectItem>
+                <SelectItem value="all">All time</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <Button
             size="sm"
             className="hidden md:flex"
