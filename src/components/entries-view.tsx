@@ -19,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { EntrySheet } from "@/components/entry-sheet";
 import { Plus, RefreshCw } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
@@ -320,7 +319,7 @@ function EntryRow({
 function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
   const status = group.invoiceStatus ?? "draft";
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5">
+    <div className="flex items-center gap-3 px-4 py-2 bg-muted/60 border-b">
       <span
         className="inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium shrink-0"
         style={{
@@ -343,7 +342,7 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
 
 function WeekGroupHeader({ group }: { group: WeekGroup }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5">
+    <div className="flex items-center gap-3 px-4 py-2 bg-muted/60 border-b">
       <span className="text-sm font-medium text-muted-foreground">
         {group.dateRange}
       </span>
@@ -406,18 +405,16 @@ function InvoiceView({
   return (
     <div className="px-4 md:px-6 pb-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       {visible.map((group) => (
-        <div key={group.key} className="flex flex-col">
+        <div key={group.key} className="rounded-xl border overflow-hidden bg-card">
           <ClientWeekGroupHeader group={group} />
-          <Card className="overflow-hidden py-0 gap-0">
-            <CardContent className="p-0">
-              {group.entries.map((entry, i) => (
-                <div key={entry.id}>
-                  {i > 0 && <Separator />}
-                  <EntryRow entry={entry} onEdit={onEdit} />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <div>
+            {group.entries.map((entry, i) => (
+              <div key={entry.id}>
+                {i > 0 && <Separator />}
+                <EntryRow entry={entry} onEdit={onEdit} />
+              </div>
+            ))}
+          </div>
         </div>
       ))}
       {hasMore && (
@@ -447,18 +444,16 @@ function WeekView({
   return (
     <div className="px-4 md:px-6 pb-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       {visible.map((group) => (
-        <div key={group.key} className="flex flex-col">
+        <div key={group.key} className="rounded-xl border overflow-hidden bg-card">
           <WeekGroupHeader group={group} />
-          <Card className="overflow-hidden py-0 gap-0">
-            <CardContent className="p-0">
-              {group.entries.map((entry, i) => (
-                <div key={entry.id}>
-                  {i > 0 && <Separator />}
-                  <EntryRow entry={entry} showClient onEdit={onEdit} />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <div>
+            {group.entries.map((entry, i) => (
+              <div key={entry.id}>
+                {i > 0 && <Separator />}
+                <EntryRow entry={entry} showClient onEdit={onEdit} />
+              </div>
+            ))}
+          </div>
         </div>
       ))}
       {hasMore && (
@@ -605,48 +600,46 @@ export function EntriesView({
         </div>
 
         {/* Inline page header */}
-        <div className="px-4 md:px-6 pt-8 pb-2 mx-auto w-full max-w-6xl">
-          <div className="flex items-center justify-between gap-4 mb-3">
-            <h1 className="text-2xl font-bold">Entries</h1>
-            <Button
-              size="sm"
-              className="hidden md:flex"
-              onClick={openNew}
-              disabled={loading}
-            >
-              <Plus className="size-4" />
-              New entry
-            </Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <ToggleGroup
-              type="single"
-              value={viewMode}
-              onValueChange={(value) => value && setViewMode(value as ViewMode)}
-              variant="outline"
-              size="sm"
-              disabled={loading}
-            >
-              <ToggleGroupItem value="week">Week</ToggleGroupItem>
-              <ToggleGroupItem value="invoice">Invoice</ToggleGroupItem>
-              <ToggleGroupItem value="none">None</ToggleGroupItem>
-            </ToggleGroup>
-            <Select
-              value={dateRange}
-              onValueChange={(v) => setDateRange(v as DateRange)}
-              disabled={loading}
-            >
-              <SelectTrigger size="sm" className="w-[130px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="15d">Last 15 days</SelectItem>
-                <SelectItem value="30d">Last 30 days</SelectItem>
-                <SelectItem value="90d">Last 90 days</SelectItem>
-                <SelectItem value="all">All time</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="px-4 md:px-6 pt-8 pb-6 mx-auto w-full max-w-6xl flex items-center gap-3">
+          <h1 className="text-2xl font-bold mr-auto">Entries</h1>
+          <Select
+            value={viewMode}
+            onValueChange={(v) => setViewMode(v as ViewMode)}
+            disabled={loading}
+          >
+            <SelectTrigger size="sm" className="w-[130px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="week">Week</SelectItem>
+              <SelectItem value="invoice">Invoice</SelectItem>
+              <SelectItem value="none">None</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={dateRange}
+            onValueChange={(v) => setDateRange(v as DateRange)}
+            disabled={loading}
+          >
+            <SelectTrigger size="sm" className="w-[130px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="15d">Last 15 days</SelectItem>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+              <SelectItem value="90d">Last 90 days</SelectItem>
+              <SelectItem value="all">All time</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            size="sm"
+            className="hidden md:flex"
+            onClick={openNew}
+            disabled={loading}
+          >
+            <Plus className="size-4" />
+            Add entry
+          </Button>
         </div>
 
         {loading ? (
