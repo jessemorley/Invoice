@@ -21,10 +21,11 @@ export function ClientPicker({
   return (
     <div className="flex flex-col">
       <div className="overflow-y-auto">
-        {filtered.map((c) => (
+        {filtered.map((c, i) => (
           <button
             key={c.id}
-            className="flex items-center gap-3 w-full px-6 py-3.5 hover:bg-accent/50 transition-colors text-left"
+            className="flex items-center gap-3 w-full px-6 py-3.5 hover:bg-accent/50 transition-colors text-left animate-in fade-in-0 slide-in-from-bottom-3 duration-200 [animation-fill-mode:both]"
+            style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
             onClick={() => onSelectAction(c)}
           >
             <span
