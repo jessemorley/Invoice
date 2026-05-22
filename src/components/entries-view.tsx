@@ -319,7 +319,7 @@ function EntryRow({
 function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
   const status = group.invoiceStatus ?? "draft";
   return (
-    <div className="flex items-center gap-3 px-4 py-2 bg-muted/60 border-b">
+    <div className="flex items-center gap-3 px-4 py-2.5">
       <span
         className="inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium shrink-0"
         style={{
@@ -342,7 +342,7 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
 
 function WeekGroupHeader({ group }: { group: WeekGroup }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2 bg-muted/60 border-b">
+    <div className="flex items-center gap-3 px-4 py-2.5">
       <span className="text-sm font-medium text-muted-foreground">
         {group.dateRange}
       </span>
@@ -405,16 +405,18 @@ function InvoiceView({
   return (
     <div className="px-4 md:px-6 pb-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       {visible.map((group) => (
-        <div key={group.key} className="rounded-xl border overflow-hidden bg-card">
+        <div key={group.key} className="flex flex-col">
           <ClientWeekGroupHeader group={group} />
-          <div>
-            {group.entries.map((entry, i) => (
-              <div key={entry.id}>
-                {i > 0 && <Separator />}
-                <EntryRow entry={entry} onEdit={onEdit} />
-              </div>
-            ))}
-          </div>
+          <Card className="overflow-hidden py-0 gap-0">
+            <CardContent className="p-0">
+              {group.entries.map((entry, i) => (
+                <div key={entry.id}>
+                  {i > 0 && <Separator />}
+                  <EntryRow entry={entry} onEdit={onEdit} />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
       ))}
       {hasMore && (
@@ -444,16 +446,18 @@ function WeekView({
   return (
     <div className="px-4 md:px-6 pb-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       {visible.map((group) => (
-        <div key={group.key} className="rounded-xl border overflow-hidden bg-card">
+        <div key={group.key} className="flex flex-col">
           <WeekGroupHeader group={group} />
-          <div>
-            {group.entries.map((entry, i) => (
-              <div key={entry.id}>
-                {i > 0 && <Separator />}
-                <EntryRow entry={entry} showClient onEdit={onEdit} />
-              </div>
-            ))}
-          </div>
+          <Card className="overflow-hidden py-0 gap-0">
+            <CardContent className="p-0">
+              {group.entries.map((entry, i) => (
+                <div key={entry.id}>
+                  {i > 0 && <Separator />}
+                  <EntryRow entry={entry} showClient onEdit={onEdit} />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
       ))}
       {hasMore && (
