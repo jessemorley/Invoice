@@ -21,7 +21,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ChevronLeft, Minus, Plus, Trash2, X } from "lucide-react";
-import { ClientPicker } from "@/components/client-picker";
+import { ClientPicker, ClientSearchInput } from "@/components/client-picker";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -182,6 +182,7 @@ export function EntrySheet({
   const [selectedClient, setSelectedClient] = useState<Client | null>(
     entry ? editClient : null
   );
+  const [clientQuery, setClientQuery] = useState("");
   const [form, setForm] = useState<FormState>(() => defaultForm(entry, editClient));
 
   useEffect(() => {
@@ -189,6 +190,7 @@ export function EntrySheet({
     const ec = entry ? clients.find((c) => c.id === entry.client.id) ?? null : null;
     startTransition(() => {
       setSelectedClient(entry ? ec : null);
+      setClientQuery("");
       setForm(defaultForm(entry, ec));
       setError(null);
     });
@@ -200,6 +202,7 @@ export function EntrySheet({
 
   function handleSelectClient(client: Client) {
     setSelectedClient(client);
+    setClientQuery("");
     setForm((prev) => ({
       ...prev,
       client_id: client.id,
@@ -332,13 +335,21 @@ export function EntrySheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChangeAction}>
       <SheetContent side="right" className="flex flex-col gap-0 p-0 w-full sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
-        <div className={cn("flex flex-row items-center gap-1.5 px-4 py-4", selectedClient && "border-b")}>
+        <div className={cn("flex h-14 flex-row items-center gap-1.5 px-4 border-b")}>
           {!entry && selectedClient && (
             <Button variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => setSelectedClient(null)}>
               <ChevronLeft className="size-4" />
             </Button>
           )}
-          <SheetTitle className="text-base flex-1">{title}</SheetTitle>
+          {!selectedClient ? (
+            <ClientSearchInput
+              placeholder="New entry"
+              value={clientQuery}
+              onChange={setClientQuery}
+            />
+          ) : (
+            <SheetTitle className="text-lg flex-1">{title}</SheetTitle>
+          )}
           <SheetClose asChild>
             <Button variant="ghost" size="icon" className="shrink-0 size-8">
               <X className="size-5" />
@@ -349,7 +360,7 @@ export function EntrySheet({
 
         <div className="flex-1 overflow-y-auto">
           {!selectedClient ? (
-            <ClientPicker clients={clients} onSelectAction={handleSelectClient} />
+            <ClientPicker clients={clients} query={clientQuery} onSelectAction={handleSelectClient} />
           ) : (
             <div className="flex flex-col gap-4 px-4 py-4">
               {/* Date */}

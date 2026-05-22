@@ -6,7 +6,7 @@ import { formatAUD, formatRelativeTime } from "@/lib/format";
 import { createInvoice, loadInvoiceDetail, updateInvoice, updateInvoiceNumber, deleteInvoice, createLineItem, updateLineItem, deleteLineItem } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
 import type { InvoiceFormData } from "@/app/(app)/invoices/actions";
-import { ClientPicker } from "@/components/client-picker";
+import { ClientPicker, ClientSearchInput } from "@/components/client-picker";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Input } from "@/components/ui/input";
@@ -238,6 +238,7 @@ export function InvoiceSheet({
   const [numberError, setNumberError] = useState<string | null>(null);
   type SheetView = "client-pick" | "invoice" | "add-line-item" | { mode: "edit-line-item"; item: NonNullable<InvoiceDetail["line_items"][0]> };
   const [view, setView] = useState<SheetView>(invoice ? "invoice" : "client-pick");
+  const [clientQuery, setClientQuery] = useState("");
   const [createdInvoice, setCreatedInvoice] = useState<Invoice | null>(null);
   const [localInvoiceDetail, setLocalInvoiceDetail] = useState<InvoiceDetail | null>(null);
 
@@ -251,6 +252,7 @@ export function InvoiceSheet({
     setCreatedInvoice(null);
     setLocalInvoiceDetail(null);
     setView(invoice ? "invoice" : "client-pick");
+    setClientQuery("");
     setEditingNumber(false);
     setNumberDraft("");
     setLocalNumber(null);
@@ -258,6 +260,7 @@ export function InvoiceSheet({
   }, [invoice, open]);
 
   function handleClientSelect(client: Client) {
+    setClientQuery("");
     startCreateTransition(async () => {
       try {
         const newInvoice = await createInvoice(client.id);
@@ -381,11 +384,15 @@ export function InvoiceSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChangeAction}>
-      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
+      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
         {view === "client-pick" ? (
           <>
-            <div className="flex flex-row items-center gap-1.5 px-4 py-4">
-              <SheetTitle className="text-base flex-1">New invoice</SheetTitle>
+            <div className="flex h-14 flex-row items-center gap-1.5 px-4 border-b">
+              <ClientSearchInput
+                placeholder="New invoice"
+                value={clientQuery}
+                onChange={setClientQuery}
+              />
               <SheetClose asChild>
                 <Button variant="ghost" size="icon" className="shrink-0 size-8">
                   <X className="size-5" />
@@ -399,7 +406,7 @@ export function InvoiceSheet({
                   <Spinner />
                 </div>
               ) : (
-                <ClientPicker clients={clients ?? []} onSelectAction={handleClientSelect} />
+                <ClientPicker clients={clients ?? []} query={clientQuery} onSelectAction={handleClientSelect} />
               )}
             </div>
             {error && <p className="px-6 pb-4 text-sm text-destructive">{error}</p>}
