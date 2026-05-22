@@ -606,10 +606,10 @@ export function EntriesView({
         {/* Inline page header — sticky on desktop */}
         <div className="relative md:sticky md:top-0 md:z-10">
           {/* Colour gradient overlay — strong fade from bg to transparent */}
-          <div className="hidden md:block absolute inset-0 -bottom-12 pointer-events-none bg-gradient-to-b from-background via-background/90 to-transparent" />
+          <div className="hidden md:block absolute inset-0 -bottom-4 pointer-events-none bg-gradient-to-b from-background via-background/90 to-transparent" />
           {/* Stacked blur bands — each confined to a vertical slice via mask */}
-          <div className="hidden md:block absolute inset-0 -bottom-12 pointer-events-none">
-            {[6, 3, 1.5, 0.5].map((blur, i) => {
+          <div className="hidden md:block absolute inset-0 -bottom-4 pointer-events-none">
+            {[6, 3, 1.5, .5].map((blur, i) => {
               const start = (i / 4) * 100;
               const end = ((i + 1) / 4) * 100;
               return (
@@ -637,7 +637,7 @@ export function EntriesView({
                 onValueChange={(v) => setViewMode(v as ViewMode)}
                 disabled={loading}
               >
-                <SelectTrigger size="sm" className="flex-1 md:flex-none md:w-[130px]">
+                <SelectTrigger size="sm" className="flex-1 md:flex-none md:w-[130px] backdrop-blur-md">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -651,7 +651,7 @@ export function EntriesView({
                 onValueChange={(v) => setDateRange(v as DateRange)}
                 disabled={loading}
               >
-                <SelectTrigger size="sm" className="flex-1 md:flex-none md:w-[150px]">
+                <SelectTrigger size="sm" className="flex-1 md:flex-none md:w-[150px] backdrop-blur-md">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
