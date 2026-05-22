@@ -394,7 +394,6 @@ export function InvoiceSheet({
                 placeholder="New invoice"
                 value={clientQuery}
                 onChange={(e) => setClientQuery(e.target.value)}
-                autoFocus
               />
               <SheetClose asChild>
                 <Button variant="ghost" size="icon" className="shrink-0 size-8">

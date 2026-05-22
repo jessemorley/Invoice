@@ -349,7 +349,6 @@ export function EntrySheet({
                 placeholder="New entry"
                 value={clientQuery}
                 onChange={(e) => setClientQuery(e.target.value)}
-                autoFocus
               />
             </>
           ) : (
