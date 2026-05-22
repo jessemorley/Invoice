@@ -12,7 +12,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import type { ScheduledEmail } from "@/lib/queries";
-import { Download, Mail, Plus, Trash2, CalendarClock, Clock, Send, X } from "lucide-react";
+import { Download, Mail, Plus, Search, Trash2, CalendarClock, Clock, Send, X } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -389,8 +389,9 @@ export function InvoiceSheet({
           <>
             <div className="flex h-14 flex-row items-center gap-1.5 px-4 border-b">
               <SheetTitle className="sr-only">New invoice</SheetTitle>
+              <Search className="size-4 text-muted-foreground shrink-0" />
               <input
-                className="text-lg font-semibold text-foreground flex-1 bg-transparent border-none outline-none p-0 placeholder:text-foreground focus:placeholder:text-muted-foreground"
+                className="text-lg font-semibold text-foreground flex-1 bg-transparent border-none outline-none p-0 ml-1.5 placeholder:text-foreground focus:placeholder:text-muted-foreground"
                 placeholder="New invoice"
                 value={clientQuery}
                 onChange={(e) => setClientQuery(e.target.value)}
