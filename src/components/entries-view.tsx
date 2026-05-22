@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { EntrySheet } from "@/components/entry-sheet";
 import { Plus, RefreshCw } from "lucide-react";
@@ -389,7 +388,7 @@ function InvoiceView({
   const hasMore = displayCount < groups.length;
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+    <div className="px-4 md:px-6 pb-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       {visible.map((group) => (
         <div key={group.key} className="flex flex-col">
           <ClientWeekGroupHeader group={group} />
@@ -430,7 +429,7 @@ function WeekView({
   const hasMore = displayCount < groups.length;
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+    <div className="px-4 md:px-6 pb-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       {visible.map((group) => (
         <div key={group.key} className="flex flex-col">
           <WeekGroupHeader group={group} />
@@ -471,7 +470,7 @@ function ListView({
   const hasMore = visible.length < sorted.length;
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl">
+    <div className="px-4 md:px-6 pb-6 mx-auto w-full max-w-6xl">
       <Card className="overflow-hidden py-0 gap-0">
         <CardContent className="p-0">
           {visible.map((entry, i) => (
@@ -560,33 +559,6 @@ export function EntriesView({
 
   return (
     <div className="flex flex-col h-full">
-      <header className="flex h-14 items-center gap-2 border-b px-4">
-        <SidebarTrigger className="hidden md:flex" />
-        <h1 className="text-lg font-semibold">Entries</h1>
-        <div className="flex-1" />
-        <ToggleGroup
-          type="single"
-          value={viewMode}
-          onValueChange={(value) => value && setViewMode(value as ViewMode)}
-          variant="outline"
-          size="sm"
-          disabled={loading}
-        >
-          <ToggleGroupItem value="week">Week</ToggleGroupItem>
-          <ToggleGroupItem value="invoice">Invoice</ToggleGroupItem>
-          <ToggleGroupItem value="none">None</ToggleGroupItem>
-        </ToggleGroup>
-        <Button
-          size="sm"
-          className="hidden md:flex"
-          onClick={openNew}
-          disabled={loading}
-        >
-          <Plus className="size-4" />
-          New entry
-        </Button>
-      </header>
-
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto pb-28 md:pb-0"
@@ -612,6 +584,35 @@ export function EntriesView({
             }}
           />
         </div>
+
+        {/* Inline page header */}
+        <div className="px-4 md:px-6 pt-8 pb-4 mx-auto w-full max-w-6xl flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-bold">Entries</h1>
+          <div className="flex items-center gap-2">
+            <ToggleGroup
+              type="single"
+              value={viewMode}
+              onValueChange={(value) => value && setViewMode(value as ViewMode)}
+              variant="outline"
+              size="sm"
+              disabled={loading}
+            >
+              <ToggleGroupItem value="week">Week</ToggleGroupItem>
+              <ToggleGroupItem value="invoice">Invoice</ToggleGroupItem>
+              <ToggleGroupItem value="none">None</ToggleGroupItem>
+            </ToggleGroup>
+            <Button
+              size="sm"
+              className="hidden md:flex"
+              onClick={openNew}
+              disabled={loading}
+            >
+              <Plus className="size-4" />
+              New entry
+            </Button>
+          </div>
+        </div>
+
         {loading ? (
           <ContentSkeleton />
         ) : (
