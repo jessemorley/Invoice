@@ -606,10 +606,10 @@ export function EntriesView({
         {/* Inline page header — sticky on desktop */}
         <div className="relative md:sticky md:top-0 md:z-10">
           {/* Colour gradient overlay — strong fade from bg to transparent */}
-          <div className="hidden md:block absolute inset-0 -bottom-12 pointer-events-none bg-gradient-to-b from-background via-background/60 to-transparent" />
+          <div className="hidden md:block absolute inset-0 -bottom-12 pointer-events-none bg-gradient-to-b from-background via-background/90 to-transparent" />
           {/* Stacked blur bands — each confined to a vertical slice via mask */}
           <div className="hidden md:block absolute inset-0 -bottom-12 pointer-events-none">
-            {[16, 8, 4, 2].map((blur, i) => {
+            {[6, 3, 1.5, 0.5].map((blur, i) => {
               const start = (i / 4) * 100;
               const end = ((i + 1) / 4) * 100;
               return (
