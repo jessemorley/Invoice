@@ -45,7 +45,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SortableTableHead } from "@/components/sortable-table-head";
-import { PageHeader } from "@/components/page-header";
 import { InvoiceSheet } from "@/components/invoice-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
@@ -474,83 +473,122 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Invoices" mobileTitle={mobileTitle}>
-        {!searchOpen && (
-          <Button size="icon" variant="ghost" className="relative size-8 md:hidden" onClick={() => setFilterOpen((o) => !o)} disabled={loading}>
-            <SlidersHorizontal className="size-4" />
-            {hasActiveFilters && (
-              <span className="absolute top-1 right-1 size-1.5 rounded-full bg-primary" />
-            )}
-          </Button>
-        )}
-        <Button size="icon" variant="ghost" className="size-8 md:hidden" onClick={() => searchOpen ? closeSearch() : openSearch()} disabled={loading}>
-          {searchOpen ? <X className="size-4" /> : <Search className="size-4" />}
-        </Button>
-        <Button
-          size="sm"
-          className="relative hidden md:flex"
-          disabled={loading}
-          onClick={() => uninvoicedCount > 0 ? setGenerateOpen(true) : setNewInvoiceOpen(true)}
-        >
-          {uninvoicedCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
-              {uninvoicedCount}
-            </span>
+      {/* Mobile header */}
+      <header className="md:hidden flex h-14 items-center justify-between gap-2 border-b px-4">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {mobileTitle}
+        </div>
+        <div className="flex items-center gap-2">
+          {!searchOpen && (
+            <Button size="icon" variant="ghost" className="relative size-8" onClick={() => setFilterOpen((o) => !o)} disabled={loading}>
+              <SlidersHorizontal className="size-4" />
+              {hasActiveFilters && (
+                <span className="absolute top-1 right-1 size-1.5 rounded-full bg-primary" />
+              )}
+            </Button>
           )}
-          <Plus className="size-4" />
-          New invoice
-        </Button>
-      </PageHeader>
+          <Button size="icon" variant="ghost" className="size-8" onClick={() => searchOpen ? closeSearch() : openSearch()} disabled={loading}>
+            {searchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+          </Button>
+        </div>
+      </header>
 
       {/* Desktop table */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto" onScroll={handleScroll}>
-        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-48">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input
-                placeholder="Search invoices..."
-                className="pl-8"
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <Select value={timeframe} onValueChange={setTimeframe} disabled={loading}>
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="Timeframe" />
-              </SelectTrigger>
-              <SelectContent>
-                {TIMEFRAME_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={clientFilter} onValueChange={setClientFilter} disabled={loading}>
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="Client" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All clients</SelectItem>
-                {clients.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter} disabled={loading}>
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All status</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="issued">Issued</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-              </SelectContent>
-            </Select>
+        {/* Inline page header — sticky on desktop */}
+        <div className="relative md:sticky md:top-0 md:z-10">
+          {/* Colour gradient overlay — strong fade from bg to transparent */}
+          <div className="absolute inset-0 -bottom-4 pointer-events-none bg-gradient-to-b from-background via-background/90 to-transparent" />
+          {/* Stacked blur bands — each confined to a vertical slice via mask */}
+          <div className="absolute inset-0 -bottom-4 pointer-events-none">
+            {[6, 3, 1.5, 0.5].map((blur, i) => {
+              const start = (i / 4) * 100;
+              const end = ((i + 1) / 4) * 100;
+              return (
+                <div
+                  key={blur}
+                  className="absolute inset-0"
+                  style={{
+                    backdropFilter: `blur(${blur}px)`,
+                    WebkitBackdropFilter: `blur(${blur}px)`,
+                    maskImage: `linear-gradient(to bottom,
+                      transparent ${Math.max(0, start - 12.5)}%,
+                      black ${start}%,
+                      black ${end}%,
+                      transparent ${Math.min(100, end + 12.5)}%)`,
+                  }}
+                />
+              );
+            })}
           </div>
+          <div className="relative px-4 md:px-6 pt-8 pb-4 mx-auto w-full max-w-6xl flex flex-col gap-8">
+            {/* Row 1: title + new invoice button */}
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold mr-auto">Invoices</h1>
+              <Button
+                size="sm"
+                className="relative rounded-lg"
+                disabled={loading}
+                onClick={() => uninvoicedCount > 0 ? setGenerateOpen(true) : setNewInvoiceOpen(true)}
+              >
+                {uninvoicedCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
+                    {uninvoicedCount}
+                  </span>
+                )}
+                <Plus className="size-4" />
+                Add invoice
+              </Button>
+            </div>
+            {/* Row 2: search + filters */}
+            <div className="flex flex-wrap items-center gap-3 pb-2">
+              <div className="relative flex-1 min-w-48">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search invoices..."
+                  className="h-8 pl-8 rounded-lg backdrop-blur-md text-sm"
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              <Select value={timeframe} onValueChange={setTimeframe} disabled={loading}>
+                <SelectTrigger size="sm" className="w-36 rounded-lg backdrop-blur-md">
+                  <SelectValue placeholder="Timeframe" />
+                </SelectTrigger>
+                <SelectContent className="rounded-lg">
+                  {TIMEFRAME_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={clientFilter} onValueChange={setClientFilter} disabled={loading}>
+                <SelectTrigger size="sm" className="w-36 rounded-lg backdrop-blur-md">
+                  <SelectValue placeholder="Client" />
+                </SelectTrigger>
+                <SelectContent className="rounded-lg">
+                  <SelectItem value="all">All clients</SelectItem>
+                  {clients.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={setStatusFilter} disabled={loading}>
+                <SelectTrigger size="sm" className="w-32 rounded-lg backdrop-blur-md">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent className="rounded-lg">
+                  <SelectItem value="all">All status</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="issued">Issued</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
 
+        <div className="px-4 md:px-6 pb-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
           <div className="rounded-lg border bg-card overflow-hidden">
             <Table>
               <TableHeader>

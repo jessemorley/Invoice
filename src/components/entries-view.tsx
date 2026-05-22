@@ -637,10 +637,10 @@ export function EntriesView({
                 onValueChange={(v) => setViewMode(v as ViewMode)}
                 disabled={loading}
               >
-                <SelectTrigger size="sm" className="flex-1 md:flex-none md:w-[130px] backdrop-blur-md">
+                <SelectTrigger size="sm" className="flex-1 md:flex-none md:w-[130px] backdrop-blur-md rounded-lg">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-lg">
                   <SelectItem value="week">Week</SelectItem>
                   <SelectItem value="invoice">Invoice</SelectItem>
                   <SelectItem value="none">None</SelectItem>
@@ -651,10 +651,10 @@ export function EntriesView({
                 onValueChange={(v) => setDateRange(v as DateRange)}
                 disabled={loading}
               >
-                <SelectTrigger size="sm" className="flex-1 md:flex-none md:w-[150px] backdrop-blur-md">
+                <SelectTrigger size="sm" className="flex-1 md:flex-none md:w-[150px] backdrop-blur-md rounded-lg">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-lg">
                   <SelectItem value="15d">Last 15 days</SelectItem>
                   <SelectItem value="30d">Last 30 days</SelectItem>
                   <SelectItem value="90d">Last 90 days</SelectItem>
@@ -664,7 +664,7 @@ export function EntriesView({
             </div>
             <Button
               size="sm"
-              className="hidden md:flex"
+              className="hidden md:flex rounded-lg"
               onClick={openNew}
               disabled={loading}
             >

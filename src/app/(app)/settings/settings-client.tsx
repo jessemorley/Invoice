@@ -3,7 +3,6 @@
 import { useState, useTransition, useActionState } from "react";
 import { useTheme } from "next-themes";
 import { invalidate } from "@/lib/invalidate";
-import { PageHeader } from "@/components/page-header";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -575,9 +574,14 @@ export function SettingsClient({
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Settings" />
       <Tabs value={tab} onValueChange={(v) => setTab(v as SettingsTab)} className="flex flex-col flex-1 overflow-hidden gap-0">
-        <div className="px-4 md:px-6 pt-4 mx-auto w-full max-w-6xl">
+        {/* Mobile header */}
+        <header className="md:hidden flex h-14 items-center gap-2 border-b px-4">
+          <h1 className="text-lg font-semibold mr-auto">Settings</h1>
+        </header>
+
+        {/* Mobile tabs */}
+        <div className="md:hidden px-4 pt-3 pb-1">
           <TabsList className="bg-transparent p-0 gap-2 h-auto">
             <TabsTrigger value="info" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Info</TabsTrigger>
             <TabsTrigger value="invoicing" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Invoicing</TabsTrigger>
@@ -585,7 +589,44 @@ export function SettingsClient({
             <TabsTrigger value="account" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Account</TabsTrigger>
           </TabsList>
         </div>
+
         <div className="flex-1 overflow-auto pb-28 md:pb-0">
+          {/* Inline page header — sticky on desktop, inside the scroll container */}
+          <div className="hidden md:block relative md:sticky md:top-0 md:z-10">
+            {/* Colour gradient overlay */}
+            <div className="absolute inset-0 -bottom-4 pointer-events-none bg-gradient-to-b from-background via-background/90 to-transparent" />
+            {/* Stacked blur bands */}
+            <div className="absolute inset-0 -bottom-4 pointer-events-none">
+              {[6, 3, 1.5, 0.5].map((blur, i) => {
+                const start = (i / 4) * 100;
+                const end = ((i + 1) / 4) * 100;
+                return (
+                  <div
+                    key={blur}
+                    className="absolute inset-0"
+                    style={{
+                      backdropFilter: `blur(${blur}px)`,
+                      WebkitBackdropFilter: `blur(${blur}px)`,
+                      maskImage: `linear-gradient(to bottom,
+                        transparent ${Math.max(0, start - 12.5)}%,
+                        black ${start}%,
+                        black ${end}%,
+                        transparent ${Math.min(100, end + 12.5)}%)`,
+                    }}
+                  />
+                );
+              })}
+            </div>
+            <div className="relative px-4 md:px-6 pt-8 pb-4 mx-auto w-full max-w-6xl flex flex-col gap-8">
+              <h1 className="text-2xl font-bold">Settings</h1>
+              <TabsList className="bg-transparent p-0 gap-2 h-auto pb-2">
+                <TabsTrigger value="info" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Info</TabsTrigger>
+                <TabsTrigger value="invoicing" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Invoicing</TabsTrigger>
+                <TabsTrigger value="email" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Email</TabsTrigger>
+                <TabsTrigger value="account" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Account</TabsTrigger>
+              </TabsList>
+            </div>
+          </div>
           {loading ? (
             <LoadingSkeleton />
           ) : (
