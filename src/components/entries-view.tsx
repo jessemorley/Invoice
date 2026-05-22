@@ -185,7 +185,7 @@ function SkeletonCard({ rows = 3 }: { rows?: number }) {
 
 function ContentSkeleton() {
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+    <div className="py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       <SkeletonCard rows={2} />
       <SkeletonCard rows={3} />
       <SkeletonCard rows={1} />
@@ -407,16 +407,14 @@ function InvoiceView({
       {visible.map((group) => (
         <div key={group.key} className="flex flex-col">
           <ClientWeekGroupHeader group={group} />
-          <Card className="overflow-hidden py-0 gap-0">
-            <CardContent className="p-0">
-              {group.entries.map((entry, i) => (
-                <div key={entry.id}>
-                  {i > 0 && <Separator />}
-                  <EntryRow entry={entry} onEdit={onEdit} />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <div>
+            {group.entries.map((entry, i) => (
+              <div key={entry.id}>
+                {i > 0 && <Separator />}
+                <EntryRow entry={entry} onEdit={onEdit} />
+              </div>
+            ))}
+          </div>
         </div>
       ))}
       {hasMore && (
@@ -448,16 +446,14 @@ function WeekView({
       {visible.map((group) => (
         <div key={group.key} className="flex flex-col">
           <WeekGroupHeader group={group} />
-          <Card className="overflow-hidden py-0 gap-0">
-            <CardContent className="p-0">
-              {group.entries.map((entry, i) => (
-                <div key={entry.id}>
-                  {i > 0 && <Separator />}
-                  <EntryRow entry={entry} showClient onEdit={onEdit} />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <div>
+            {group.entries.map((entry, i) => (
+              <div key={entry.id}>
+                {i > 0 && <Separator />}
+                <EntryRow entry={entry} showClient onEdit={onEdit} />
+              </div>
+            ))}
+          </div>
         </div>
       ))}
       {hasMore && (
@@ -486,16 +482,14 @@ function ListView({
 
   return (
     <div className="px-4 md:px-6 pb-6 mx-auto w-full max-w-6xl">
-      <Card className="overflow-hidden py-0 gap-0">
-        <CardContent className="p-0">
-          {visible.map((entry, i) => (
-            <div key={entry.id}>
-              {i > 0 && <Separator />}
-              <EntryRow entry={entry} showClient onEdit={onEdit} />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      <div>
+        {visible.map((entry, i) => (
+          <div key={entry.id}>
+            {i > 0 && <Separator />}
+            <EntryRow entry={entry} showClient onEdit={onEdit} />
+          </div>
+        ))}
+      </div>
       {hasMore && (
         <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
       )}
