@@ -12,12 +12,28 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { EntrySheet } from "@/components/entry-sheet";
 import { Plus, RefreshCw } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 
 type ViewMode = "invoice" | "week" | "none";
+type DateRange = "15d" | "30d" | "90d" | "all";
+
+function getDateCutoff(range: DateRange): string | null {
+  if (range === "all") return null;
+  const days = range === "15d" ? 15 : range === "30d" ? 30 : 90;
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+}
 
 const INVOICE_STATUS_COLOR: Record<string, string> = {
   draft: "#94a3b8",
@@ -500,6 +516,7 @@ export function EntriesView({
   loading?: boolean;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
+  const [dateRange, setDateRange] = useState<DateRange>("15d");
   const [sheetOpen, setSheetOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const handlePullRefresh = useCallback(async () => {
@@ -517,6 +534,8 @@ export function EntriesView({
   const [isPending, startTransition] = useTransition();
 
   const entries = [...(initialEntries ?? []), ...additionalEntries];
+  const cutoff = getDateCutoff(dateRange);
+  const filteredEntries = cutoff ? entries.filter((e) => e.date >= cutoff) : entries;
 
   const [prevViewMode, setPrevViewMode] = useState(viewMode);
   if (prevViewMode !== viewMode) {
@@ -586,8 +605,19 @@ export function EntriesView({
         </div>
 
         {/* Inline page header */}
-        <div className="px-4 md:px-6 pt-8 pb-4 mx-auto w-full max-w-6xl flex items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold">Entries</h1>
+        <div className="px-4 md:px-6 pt-8 pb-2 mx-auto w-full max-w-6xl">
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <h1 className="text-2xl font-bold">Entries</h1>
+            <Button
+              size="sm"
+              className="hidden md:flex"
+              onClick={openNew}
+              disabled={loading}
+            >
+              <Plus className="size-4" />
+              New entry
+            </Button>
+          </div>
           <div className="flex items-center gap-2">
             <ToggleGroup
               type="single"
@@ -601,15 +631,21 @@ export function EntriesView({
               <ToggleGroupItem value="invoice">Invoice</ToggleGroupItem>
               <ToggleGroupItem value="none">None</ToggleGroupItem>
             </ToggleGroup>
-            <Button
-              size="sm"
-              className="hidden md:flex"
-              onClick={openNew}
+            <Select
+              value={dateRange}
+              onValueChange={(v) => setDateRange(v as DateRange)}
               disabled={loading}
             >
-              <Plus className="size-4" />
-              New entry
-            </Button>
+              <SelectTrigger size="sm" className="w-[130px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="15d">Last 15 days</SelectItem>
+                <SelectItem value="30d">Last 30 days</SelectItem>
+                <SelectItem value="90d">Last 90 days</SelectItem>
+                <SelectItem value="all">All time</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -619,7 +655,7 @@ export function EntriesView({
           <>
             {viewMode === "invoice" && (
               <InvoiceView
-                entries={entries}
+                entries={filteredEntries}
                 displayCount={displayCount}
                 onEdit={openEdit}
                 onLoadEarlier={handleLoadEarlier}
@@ -628,7 +664,7 @@ export function EntriesView({
             )}
             {viewMode === "week" && (
               <WeekView
-                entries={entries}
+                entries={filteredEntries}
                 displayCount={displayCount}
                 onEdit={openEdit}
                 onLoadEarlier={handleLoadEarlier}
@@ -637,7 +673,7 @@ export function EntriesView({
             )}
             {viewMode === "none" && (
               <ListView
-                entries={entries}
+                entries={filteredEntries}
                 displayCount={displayCount}
                 onEdit={openEdit}
                 onLoadEarlier={handleLoadEarlier}
