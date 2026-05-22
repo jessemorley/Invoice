@@ -603,49 +603,59 @@ export function EntriesView({
           />
         </div>
 
-        {/* Inline page header */}
-        <div className="px-4 md:px-6 pt-8 pb-6 mx-auto w-full max-w-6xl flex flex-col md:flex-row md:items-center gap-3">
-          <h1 className="text-2xl font-bold md:mr-auto">Entries</h1>
-          <div className="flex gap-2">
-            <Select
-              value={viewMode}
-              onValueChange={(v) => setViewMode(v as ViewMode)}
+        {/* Inline page header — sticky on desktop */}
+        <div className="relative md:sticky md:top-0 md:z-10">
+          {/* Single blur element spanning header + 48px below, fading out via mask */}
+          <div
+            className="hidden md:block absolute inset-0 -bottom-12 pointer-events-none backdrop-blur-md"
+            style={{
+              WebkitMaskImage: "linear-gradient(to bottom, black, transparent)",
+              maskImage: "linear-gradient(to bottom, black, transparent)",
+            }}
+          />
+          <div className="relative px-4 md:px-6 pt-8 pb-6 mx-auto w-full max-w-6xl flex flex-col md:flex-row md:items-center gap-3">
+            <h1 className="text-2xl font-bold md:mr-auto">Entries</h1>
+            <div className="flex gap-2">
+              <Select
+                value={viewMode}
+                onValueChange={(v) => setViewMode(v as ViewMode)}
+                disabled={loading}
+              >
+                <SelectTrigger size="sm" className="flex-1 md:flex-none md:w-[130px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="week">Week</SelectItem>
+                  <SelectItem value="invoice">Invoice</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={dateRange}
+                onValueChange={(v) => setDateRange(v as DateRange)}
+                disabled={loading}
+              >
+                <SelectTrigger size="sm" className="flex-1 md:flex-none md:w-[150px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="15d">Last 15 days</SelectItem>
+                  <SelectItem value="30d">Last 30 days</SelectItem>
+                  <SelectItem value="90d">Last 90 days</SelectItem>
+                  <SelectItem value="all">All time</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              size="sm"
+              className="hidden md:flex"
+              onClick={openNew}
               disabled={loading}
             >
-              <SelectTrigger size="sm" className="flex-1 md:flex-none md:w-[130px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="week">Week</SelectItem>
-                <SelectItem value="invoice">Invoice</SelectItem>
-                <SelectItem value="none">None</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={dateRange}
-              onValueChange={(v) => setDateRange(v as DateRange)}
-              disabled={loading}
-            >
-              <SelectTrigger size="sm" className="flex-1 md:flex-none md:w-[150px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="15d">Last 15 days</SelectItem>
-                <SelectItem value="30d">Last 30 days</SelectItem>
-                <SelectItem value="90d">Last 90 days</SelectItem>
-                <SelectItem value="all">All time</SelectItem>
-              </SelectContent>
-            </Select>
+              <Plus className="size-4" />
+              Add entry
+            </Button>
           </div>
-          <Button
-            size="sm"
-            className="hidden md:flex"
-            onClick={openNew}
-            disabled={loading}
-          >
-            <Plus className="size-4" />
-            Add entry
-          </Button>
         </div>
 
         {loading ? (
