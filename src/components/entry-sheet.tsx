@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/sheet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, Minus, Plus, Search, Trash2, X } from "lucide-react";
-import { ClientPicker } from "@/components/client-picker";
+import { ChevronLeft, Minus, Plus, Trash2, X } from "lucide-react";
+import { ClientPicker, ClientSearchInput } from "@/components/client-picker";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -342,16 +342,11 @@ export function EntrySheet({
             </Button>
           )}
           {!selectedClient ? (
-            <>
-              <SheetTitle className="sr-only">New entry</SheetTitle>
-              <Search className="size-4 text-muted-foreground shrink-0" />
-              <input
-                className="text-lg font-semibold text-foreground flex-1 bg-transparent border-none outline-none p-0 ml-1.5 placeholder:text-foreground focus:placeholder:text-muted-foreground"
-                placeholder="New entry"
-                value={clientQuery}
-                onChange={(e) => setClientQuery(e.target.value)}
-              />
-            </>
+            <ClientSearchInput
+              placeholder="New entry"
+              value={clientQuery}
+              onChange={setClientQuery}
+            />
           ) : (
             <SheetTitle className="text-lg flex-1">{title}</SheetTitle>
           )}

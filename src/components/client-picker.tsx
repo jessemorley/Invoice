@@ -1,6 +1,31 @@
 "use client";
 
 import type { Client } from "@/lib/types";
+import { Search } from "lucide-react";
+import { SheetTitle } from "@/components/ui/sheet";
+
+export function ClientSearchInput({
+  placeholder,
+  value,
+  onChange,
+}: {
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <>
+      <SheetTitle className="sr-only">{placeholder}</SheetTitle>
+      <Search className="size-4 text-muted-foreground shrink-0" />
+      <input
+        className="text-lg font-semibold text-foreground flex-1 bg-transparent border-none outline-none p-0 ml-1.5 placeholder:text-foreground focus:placeholder:text-muted-foreground"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </>
+  );
+}
 
 export function ClientPicker({
   clients,
