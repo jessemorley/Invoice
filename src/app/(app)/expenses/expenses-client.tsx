@@ -155,11 +155,11 @@ function ExpensesSkeleton() {
           <Table className="border-separate border-spacing-0">
               <TableHeader className="[&_tr]:border-0">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className={cn(tableHeadCellBase, "w-28 border-l rounded-l-xl")}>Date</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-28 border-l rounded-l-lg")}>Date</TableHead>
                   <TableHead className={cn(tableHeadCellBase, "w-24")}>Category</TableHead>
                   <TableHead className={cn(tableHeadCellBase)}>Description</TableHead>
                   <TableHead className={cn(tableHeadCellBase)}>Receipt</TableHead>
-                  <TableHead className={cn(tableHeadCellBase, "w-28 border-r rounded-r-xl text-right")}>Amount</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-28 border-r rounded-r-lg text-right")}>Amount</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className="[&_td]:border-b [&_td]:border-border/70 [&_tr:last-child_td]:border-0">
@@ -358,11 +358,11 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
           <Table className="border-separate border-spacing-0">
               <TableHeader className="[&_tr]:border-0">
                 <TableRow className="hover:bg-transparent">
-                  <SortableTableHead className={cn(tableHeadCellBase, "w-28 border-l rounded-l-xl hover:text-foreground")} {...sh("date")}>Date</SortableTableHead>
+                  <SortableTableHead className={cn(tableHeadCellBase, "w-28 border-l rounded-l-lg hover:text-foreground")} {...sh("date")}>Date</SortableTableHead>
                   <SortableTableHead className={cn(tableHeadCellBase, "w-24 hover:text-foreground")} {...sh("category")}>Category</SortableTableHead>
                   <TableHead className={cn(tableHeadCellBase)}>Description</TableHead>
                   <TableHead className={cn(tableHeadCellBase)}>Receipt</TableHead>
-                  <SortableTableHead className={cn(tableHeadCellBase, "w-28 border-r rounded-r-xl hover:text-foreground")} align="right" {...sh("amount")}>Amount</SortableTableHead>
+                  <SortableTableHead className={cn(tableHeadCellBase, "w-28 border-r rounded-r-lg hover:text-foreground")} align="right" {...sh("amount")}>Amount</SortableTableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className="[&_td]:border-b [&_td]:border-border/70 [&_tr:last-child_td]:border-0">

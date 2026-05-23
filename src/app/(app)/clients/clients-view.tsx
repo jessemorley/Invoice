@@ -88,11 +88,11 @@ function ClientsSkeleton() {
           <Table className="border-separate border-spacing-0">
               <TableHeader className="[&_tr]:border-0">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className={cn(tableHeadCellBase, "w-64 border-l rounded-l-xl")}>Name</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-64 border-l rounded-l-lg")}>Name</TableHead>
                   <TableHead className={cn(tableHeadCellBase)}>Contact</TableHead>
                   <TableHead className={cn(tableHeadCellBase, "w-28")}>Billing</TableHead>
                   <TableHead className={cn(tableHeadCellBase, "w-24 text-right")}>Invoices</TableHead>
-                  <TableHead className={cn(tableHeadCellBase, "w-24 border-r rounded-r-xl text-right")}>Status</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-24 border-r rounded-r-lg text-right")}>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className="[&_td]:border-b [&_td]:border-border/70 [&_tr:last-child_td]:border-0">
@@ -256,11 +256,11 @@ if (statusFilter === "active" && !c.is_active) return false;
           <Table className="border-separate border-spacing-0">
               <TableHeader className="[&_tr]:border-0">
                 <TableRow className="hover:bg-transparent">
-                  <SortableTableHead className={cn(tableHeadCellBase, "w-64 border-l rounded-l-xl hover:text-foreground")} {...sh("name")}>Name</SortableTableHead>
+                  <SortableTableHead className={cn(tableHeadCellBase, "w-64 border-l rounded-l-lg hover:text-foreground")} {...sh("name")}>Name</SortableTableHead>
                   <TableHead className={cn(tableHeadCellBase)}>Contact</TableHead>
                   <SortableTableHead className={cn(tableHeadCellBase, "w-28 hover:text-foreground")} {...sh("billing_type")}>Billing</SortableTableHead>
                   <TableHead className={cn(tableHeadCellBase, "w-24 text-right")}>Invoices</TableHead>
-                  <TableHead className={cn(tableHeadCellBase, "w-24 border-r rounded-r-xl text-right")}>Status</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-24 border-r rounded-r-lg text-right")}>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className="[&_td]:border-b [&_td]:border-border/70 [&_tr:last-child_td]:border-0">
