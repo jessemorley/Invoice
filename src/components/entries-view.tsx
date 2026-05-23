@@ -473,6 +473,7 @@ function ListView({
 
   return (
     <div>
+      {visible.length > 0 && (
       <Card className="overflow-hidden py-0 gap-0">
         <CardContent className="p-0">
           {visible.map((entry, i) => (
@@ -483,6 +484,7 @@ function ListView({
           ))}
         </CardContent>
       </Card>
+      )}
       {hasMore && (
         <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
       )}
@@ -641,7 +643,7 @@ export function EntriesView({
             }}
           />
         </div>
-        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
+        <div className="px-4 md:px-6 pt-4 pb-6 md:py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
           {/* Desktop filter row */}
           <div className="hidden md:flex items-center gap-3">
             <div className="relative flex-1 min-w-48">

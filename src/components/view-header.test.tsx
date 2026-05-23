@@ -24,7 +24,7 @@ describe("ViewHeader", () => {
     expect(screen.getByText("Entries")).toBeInTheDocument();
   });
 
-  it("tapping search icon replaces title with input", async () => {
+  it("tapping search icon hides title and shows close button", async () => {
     const user = userEvent.setup();
     renderHeader();
     await user.click(screen.getByRole("button", { name: /search/i }));
@@ -71,11 +71,11 @@ describe("ViewHeader", () => {
     expect(onFilterToggle).toHaveBeenCalledOnce();
   });
 
-  it("opening search hides the filter button", async () => {
+  it("filter button stays visible when search is open", async () => {
     const user = userEvent.setup();
     renderHeader({ onFilterToggle: vi.fn() });
     await user.click(screen.getByRole("button", { name: /search/i }));
-    expect(screen.queryByRole("button", { name: /filter/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /filter/i })).toBeInTheDocument();
   });
 
   it("loading prop disables search and filter buttons", () => {

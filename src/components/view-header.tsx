@@ -37,21 +37,35 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
       <div className="flex items-center justify-between gap-2 w-full max-w-6xl mx-auto px-4 md:px-6">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <SidebarTrigger className="hidden md:flex" />
-          {searchOpen ? (
+          <div className="relative flex-1 min-w-0">
+            <h1
+              className={`text-lg font-semibold transition-opacity duration-150 md:opacity-100 ${searchOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+              aria-hidden={searchOpen || undefined}
+            >
+              {title}
+            </h1>
             <input
               ref={searchInputRef}
-              className="text-lg font-semibold bg-transparent border-none outline-none w-full text-foreground placeholder:font-normal placeholder:text-muted-foreground/60"
+              className={`absolute inset-0 text-lg font-semibold bg-transparent border-none outline-none w-full text-foreground placeholder:text-muted-foreground/60 transition-opacity duration-150 md:hidden ${searchOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
               placeholder={`Search ${title.toLowerCase()}...`}
               value={searchValue}
               onChange={(e) => onSearchChange(e.target.value)}
               onKeyDown={(e) => e.key === "Escape" && closeSearch()}
             />
-          ) : (
-            <h1 className="text-lg font-semibold">{title}</h1>
-          )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          {onFilterToggle && !searchOpen && (
+          <Button
+            size="icon"
+            variant="ghost"
+            className="size-8 md:hidden"
+            aria-label={searchOpen ? "Close search" : "Search"}
+            onClick={() => searchOpen ? closeSearch() : openSearch()}
+            disabled={loading}
+          >
+            {searchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+          </Button>
+          {onFilterToggle && (
             <Button
               size="icon"
               variant={filterOpen ? "secondary" : "ghost"}
@@ -63,16 +77,6 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
               <SlidersHorizontal className="size-4" />
             </Button>
           )}
-          <Button
-            size="icon"
-            variant="ghost"
-            className="size-8 md:hidden"
-            aria-label={searchOpen ? "Close search" : "Search"}
-            onClick={() => searchOpen ? closeSearch() : openSearch()}
-            disabled={loading}
-          >
-            {searchOpen ? <X className="size-4" /> : <Search className="size-4" />}
-          </Button>
           {actions}
         </div>
       </div>
