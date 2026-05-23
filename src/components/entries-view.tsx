@@ -593,7 +593,7 @@ export function EntriesView({
         actions={
           <Button size="sm" className="hidden md:flex" onClick={openNew} disabled={loading}>
             <Plus className="size-4" />
-            New entry
+            Add entry
           </Button>
         }
       />

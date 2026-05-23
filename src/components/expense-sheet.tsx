@@ -178,7 +178,7 @@ export function ExpenseSheet({
         <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
           <div className="flex flex-col gap-1.5 flex-1 min-w-0">
             <SheetTitle>
-              {expense ? expense.description || "Edit expense" : "New expense"}
+              {expense ? expense.description || "Edit expense" : "Add expense"}
             </SheetTitle>
             {expense && (
               <p className="text-sm text-muted-foreground">{formatDateShort(expense.date)}</p>

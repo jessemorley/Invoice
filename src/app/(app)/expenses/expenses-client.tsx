@@ -278,7 +278,7 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
         actions={
           <Button size="sm" className="hidden md:flex" onClick={openNew}>
             <Plus className="size-4" />
-            New expense
+            Add expense
           </Button>
         }
       />

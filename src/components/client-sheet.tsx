@@ -369,7 +369,7 @@ function ClientForm({
     <div className="flex flex-col gap-0 h-full">
       <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
         <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-          <SheetTitle>{isNew ? "New Client" : "Edit Client"}</SheetTitle>
+          <SheetTitle>{isNew ? "Add Client" : "Edit Client"}</SheetTitle>
           <SheetDescription>{isNew ? "Add a new client" : "Update client details"}</SheetDescription>
         </div>
         <SheetClose asChild>

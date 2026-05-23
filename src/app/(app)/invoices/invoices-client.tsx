@@ -469,7 +469,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
               </span>
             )}
             <Plus className="size-4" />
-            New invoice
+            Add invoice
           </Button>
         }
       />

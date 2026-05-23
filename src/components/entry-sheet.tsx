@@ -330,7 +330,7 @@ export function EntrySheet({
     ? selectedClient?.name ?? "Edit entry"
     : selectedClient
     ? selectedClient.name
-    : "New entry";
+    : "Add entry";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChangeAction}>

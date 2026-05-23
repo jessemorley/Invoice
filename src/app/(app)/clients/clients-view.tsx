@@ -209,7 +209,7 @@ if (statusFilter === "active" && !c.is_active) return false;
         actions={
           <Button size="sm" className="hidden md:flex" onClick={openNew}>
             <Plus className="size-4" />
-            New client
+            Add client
           </Button>
         }
       />
