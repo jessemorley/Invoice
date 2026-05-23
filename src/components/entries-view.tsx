@@ -539,6 +539,12 @@ export function EntriesView({
     setDisplayCount(PAGE_SIZE);
   }
 
+  const [prevSearchValue, setPrevSearchValue] = useState(searchValue);
+  if (prevSearchValue !== searchValue) {
+    setPrevSearchValue(searchValue);
+    setDisplayCount(PAGE_SIZE);
+  }
+
   function openEdit(entry: Entry) {
     setSelectedEntry(entry);
     setSheetOpen(true);
