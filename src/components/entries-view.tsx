@@ -172,7 +172,7 @@ function SkeletonCard({ rows = 3 }: { rows?: number }) {
 
 function ContentSkeleton() {
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <SkeletonCard rows={2} />
       <SkeletonCard rows={3} />
       <SkeletonCard rows={1} />
@@ -390,7 +390,7 @@ function InvoiceView({
   const hasMore = displayCount < groups.length;
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
       {visible.map((group) => (
         <div key={group.key} className="flex flex-col">
           <ClientWeekGroupHeader group={group} />
@@ -431,7 +431,7 @@ function WeekView({
   const hasMore = displayCount < groups.length;
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
       {visible.map((group) => (
         <div key={group.key} className="flex flex-col">
           <WeekGroupHeader group={group} />
@@ -472,7 +472,7 @@ function ListView({
   const hasMore = visible.length < sorted.length;
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl">
+    <div>
       <Card className="overflow-hidden py-0 gap-0">
         <CardContent className="p-0">
           {visible.map((entry, i) => (
@@ -610,64 +610,66 @@ export function EntriesView({
             }}
           />
         </div>
-        <div className="px-4 md:px-6 pt-6 pb-3 mx-auto w-full max-w-6xl flex items-center gap-3">
-          <div className="relative flex-1 min-w-48">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input
-              placeholder="Search entries..."
-              className="pl-8"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-            />
+        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 min-w-48">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                placeholder="Search entries..."
+                className="pl-8"
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+              />
+            </div>
+            <Select
+              value={viewMode}
+              onValueChange={(value) => setViewMode(value as ViewMode)}
+              disabled={loading || isSearching}
+            >
+              <SelectTrigger className="w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="week">Group by week</SelectItem>
+                <SelectItem value="invoice">Group by invoice</SelectItem>
+                <SelectItem value="none">No grouping</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Select
-            value={viewMode}
-            onValueChange={(value) => setViewMode(value as ViewMode)}
-            disabled={loading || isSearching}
-          >
-            <SelectTrigger className="w-44">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="week">Group by week</SelectItem>
-              <SelectItem value="invoice">Group by invoice</SelectItem>
-              <SelectItem value="none">No grouping</SelectItem>
-            </SelectContent>
-          </Select>
+          {loading ? (
+            <ContentSkeleton />
+          ) : (
+            <>
+              {activeViewMode === "invoice" && (
+                <InvoiceView
+                  entries={filteredEntries}
+                  displayCount={displayCount}
+                  onEdit={openEdit}
+                  onLoadEarlier={handleLoadEarlier}
+                  isPending={isPending}
+                />
+              )}
+              {activeViewMode === "week" && (
+                <WeekView
+                  entries={filteredEntries}
+                  displayCount={displayCount}
+                  onEdit={openEdit}
+                  onLoadEarlier={handleLoadEarlier}
+                  isPending={isPending}
+                />
+              )}
+              {activeViewMode === "none" && (
+                <ListView
+                  entries={filteredEntries}
+                  displayCount={displayCount}
+                  onEdit={openEdit}
+                  onLoadEarlier={handleLoadEarlier}
+                  isPending={isPending}
+                />
+              )}
+            </>
+          )}
         </div>
-        {loading ? (
-          <ContentSkeleton />
-        ) : (
-          <>
-            {activeViewMode === "invoice" && (
-              <InvoiceView
-                entries={filteredEntries}
-                displayCount={displayCount}
-                onEdit={openEdit}
-                onLoadEarlier={handleLoadEarlier}
-                isPending={isPending}
-              />
-            )}
-            {activeViewMode === "week" && (
-              <WeekView
-                entries={filteredEntries}
-                displayCount={displayCount}
-                onEdit={openEdit}
-                onLoadEarlier={handleLoadEarlier}
-                isPending={isPending}
-              />
-            )}
-            {activeViewMode === "none" && (
-              <ListView
-                entries={filteredEntries}
-                displayCount={displayCount}
-                onEdit={openEdit}
-                onLoadEarlier={handleLoadEarlier}
-                isPending={isPending}
-              />
-            )}
-          </>
-        )}
       </div>
 
       <EntrySheet
