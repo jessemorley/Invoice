@@ -21,6 +21,12 @@ import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 
 type ViewMode = "invoice" | "week" | "none";
 
+const VIEW_MODE_LABELS: Record<ViewMode, string> = {
+  week: "Group by week",
+  invoice: "Group by invoice",
+  none: "No grouping",
+};
+
 const INVOICE_STATUS_COLOR: Record<string, string> = {
   draft: "#94a3b8",
   issued: "#f97316",
@@ -598,7 +604,7 @@ export function EntriesView({
                 disabled={loading || isSearching}
                 className={`flex items-center justify-between px-2 py-2 text-sm rounded-sm transition-colors hover:bg-accent disabled:opacity-50 ${viewMode === mode ? "text-foreground font-medium" : "text-muted-foreground"}`}
               >
-                {{ week: "Group by week", invoice: "Group by invoice", none: "No grouping" }[mode]}
+                {VIEW_MODE_LABELS[mode]}
                 {viewMode === mode && <Check className="size-3.5" />}
               </button>
             ))}

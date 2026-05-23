@@ -39,6 +39,8 @@ import {
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
+const STATUS_LABELS = { all: "All", active: "Active", inactive: "Inactive" } as const;
+
 const BILLING_LABEL: Record<string, string> = {
   day_rate: "Day rate",
   hourly: "Hourly",
@@ -212,7 +214,7 @@ if (statusFilter === "active" && !c.is_active) return false;
                 onClick={() => setStatusFilter(s)}
                 className={`flex items-center justify-between px-2 py-2 text-sm rounded-sm transition-colors hover:bg-accent ${statusFilter === s ? "text-foreground font-medium" : "text-muted-foreground"}`}
               >
-                {{ all: "All", active: "Active", inactive: "Inactive" }[s]}
+                {STATUS_LABELS[s]}
                 {statusFilter === s && <Check className="size-3.5" />}
               </button>
             ))}
@@ -225,7 +227,6 @@ if (statusFilter === "active" && !c.is_active) return false;
           </Button>
         }
       />
-
 
       {/* Desktop table */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto">

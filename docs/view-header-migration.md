@@ -4,19 +4,14 @@
 
 ## Completed
 
-| View | Status |
+| View | Mobile filter |
 |---|---|
-| Entries | ✅ Migrated |
-| Invoices | ✅ Migrated |
-
-## Remaining
-
-| View | Search | Filters | Notes |
-|---|---|---|---|
-| Clients | ✅ has `searchValue` state | ❌ none | Desktop search input exists in content area |
-| Expenses | ❌ none | ❌ none | Title-only header |
-| Dashboard | ❌ none | ❌ none | Title-only header |
-| Settings | ❌ none | ❌ none | Title-only header |
+| Entries | Popover (single filter) |
+| Invoices | Slide-down bar (two filters) |
+| Clients | Popover (single filter) |
+| Expenses | Slide-down bar (two filters) |
+| Dashboard | No filters |
+| Settings | No filters |
 
 ---
 

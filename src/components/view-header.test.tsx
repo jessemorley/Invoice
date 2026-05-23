@@ -83,4 +83,25 @@ describe("ViewHeader", () => {
     expect(screen.getByRole("button", { name: /search/i })).toBeDisabled();
     expect(screen.getByRole("button", { name: /filter/i })).toBeDisabled();
   });
+
+  it("renders a filter button when filterPopover is provided", () => {
+    renderHeader({ filterPopover: <div>options</div> });
+    expect(screen.getByRole("button", { name: /filter/i })).toBeInTheDocument();
+  });
+
+  it("filterActive dot shows on popover filter button", () => {
+    const { container } = renderHeader({ filterPopover: <div>options</div>, filterActive: true });
+    expect(container.querySelector(".bg-primary")).toBeInTheDocument();
+  });
+
+  it("clicking popover option closes the popover", async () => {
+    const user = userEvent.setup();
+    renderHeader({
+      filterPopover: <button>Option A</button>,
+    });
+    await user.click(screen.getByRole("button", { name: /filter/i }));
+    expect(screen.getByText("Option A")).toBeInTheDocument();
+    await user.click(screen.getByText("Option A"));
+    expect(screen.queryByText("Option A")).not.toBeInTheDocument();
+  });
 });

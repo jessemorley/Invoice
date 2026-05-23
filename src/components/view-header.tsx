@@ -22,6 +22,7 @@ interface ViewHeaderProps {
 
 export function ViewHeader({ title, searchValue, onSearchChange, actions, filterOpen, filterActive, onFilterToggle, filterPopover, searchOpen: searchOpenProp, onSearchOpenChange, loading }: ViewHeaderProps) {
   const [searchOpenInternal, setSearchOpenInternal] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
   const searchOpen = searchOpenProp !== undefined ? searchOpenProp : searchOpenInternal;
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -74,7 +75,7 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
             {searchOpen ? <X className="size-4" /> : <Search className="size-4" />}
           </Button>
           {filterPopover ? (
-            <Popover>
+            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
               <PopoverTrigger asChild>
                 <Button
                   size="icon"
@@ -89,7 +90,7 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="end" className="w-44 p-1">
+              <PopoverContent align="end" className="w-44 p-1" onClick={() => setPopoverOpen(false)}>
                 {filterPopover}
               </PopoverContent>
             </Popover>

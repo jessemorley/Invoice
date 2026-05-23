@@ -290,12 +290,15 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handler = () => {
       if (!searchOpen) {
         setFilterOpen(false);
         setSearchOpen(true);
+      } else {
+        headerRef.current?.querySelector<HTMLInputElement>("input[placeholder]")?.focus();
       }
     };
     window.addEventListener("dock:focus-search", handler);
@@ -442,7 +445,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const hasActiveFilters = timeframe !== "all" || statusFilter !== "all" || clientFilter !== "all";
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" ref={headerRef}>
       <ViewHeader
         title="Invoices"
         searchValue={searchValue}
