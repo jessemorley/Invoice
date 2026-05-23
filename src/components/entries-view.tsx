@@ -405,7 +405,7 @@ function InvoiceView({
   return (
     <div className="px-4 md:px-6 pb-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       {visible.map((group) => (
-        <div key={group.key} className="rounded-lg border px-6 py-6 flex flex-col gap-3">
+        <div key={group.key} className="rounded-2xl border px-6 py-4 flex flex-col gap-3">
           <ClientWeekGroupHeader group={group} />
           <div className="flex flex-col">
             {group.entries.map((entry, i) => (
@@ -444,7 +444,7 @@ function WeekView({
   return (
     <div className="px-4 md:px-6 pb-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
       {visible.map((group) => (
-        <div key={group.key} className="rounded-lg border px-6 py-6 flex flex-col gap-3">
+        <div key={group.key} className="rounded-2xl border px-6 py-4 flex flex-col gap-3">
           <WeekGroupHeader group={group} />
           <div className="flex flex-col">
             {group.entries.map((entry, i) => (
