@@ -32,7 +32,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { SortableTableHead } from "@/components/sortable-table-head";
+import { SortableTableHead, tableHeadCellBase } from "@/components/sortable-table-head";
+import { cn } from "@/lib/utils";
 import { ViewHeader } from "@/components/view-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ExpenseSheet } from "@/components/expense-sheet";
@@ -152,16 +153,16 @@ function ExpensesSkeleton() {
             <Skeleton className="h-9 w-36" />
           </div>
           <Table className="border-separate border-spacing-0">
-              <TableHeader>
+              <TableHeader className="[&_tr]:border-0">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-28 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs border-l rounded-l-xl text-muted-foreground font-medium">Date</TableHead>
-                  <TableHead className="w-24 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground font-medium">Category</TableHead>
-                  <TableHead className="h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground font-medium">Description</TableHead>
-                  <TableHead className="h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground font-medium">Receipt</TableHead>
-                  <TableHead className="w-28 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs border-r rounded-r-xl text-muted-foreground font-medium text-right">Amount</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-28 border-l rounded-l-xl")}>Date</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-24")}>Category</TableHead>
+                  <TableHead className={cn(tableHeadCellBase)}>Description</TableHead>
+                  <TableHead className={cn(tableHeadCellBase)}>Receipt</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-28 border-r rounded-r-xl text-right")}>Amount</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody className="[&_td]:border-b [&_tr:last-child_td]:border-0">
+              <TableBody className="[&_td]:border-b [&_td]:border-border/70 [&_tr:last-child_td]:border-0">
                 {[...Array(7)].map((_, i) => (
                   <TableRow key={i}>
                     <TableCell className="py-4 px-6"><Skeleton className="h-3 w-16" /></TableCell>
@@ -355,16 +356,16 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
           </div>
 
           <Table className="border-separate border-spacing-0">
-              <TableHeader>
+              <TableHeader className="[&_tr]:border-0">
                 <TableRow className="hover:bg-transparent">
-                  <SortableTableHead className="w-28 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs border-l rounded-l-xl text-muted-foreground hover:text-foreground" {...sh("date")}>Date</SortableTableHead>
-                  <SortableTableHead className="w-24 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground hover:text-foreground" {...sh("category")}>Category</SortableTableHead>
-                  <TableHead className="h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground font-medium">Description</TableHead>
-                  <TableHead className="h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground font-medium">Receipt</TableHead>
-                  <SortableTableHead className="w-28 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs border-r rounded-r-xl text-muted-foreground hover:text-foreground" align="right" {...sh("amount")}>Amount</SortableTableHead>
+                  <SortableTableHead className={cn(tableHeadCellBase, "w-28 border-l rounded-l-xl hover:text-foreground")} {...sh("date")}>Date</SortableTableHead>
+                  <SortableTableHead className={cn(tableHeadCellBase, "w-24 hover:text-foreground")} {...sh("category")}>Category</SortableTableHead>
+                  <TableHead className={cn(tableHeadCellBase)}>Description</TableHead>
+                  <TableHead className={cn(tableHeadCellBase)}>Receipt</TableHead>
+                  <SortableTableHead className={cn(tableHeadCellBase, "w-28 border-r rounded-r-xl hover:text-foreground")} align="right" {...sh("amount")}>Amount</SortableTableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody className="[&_td]:border-b [&_tr:last-child_td]:border-0">
+              <TableBody className="[&_td]:border-b [&_td]:border-border/70 [&_tr:last-child_td]:border-0">
                 {sorted.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground py-12 text-sm">
