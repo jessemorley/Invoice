@@ -505,57 +505,55 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             </Select>
           </div>
 
-          <div className="rounded-lg border bg-card overflow-hidden">
-            <Table>
-              <TableHeader>
+          <Table className="border-separate border-spacing-0">
+            <TableHeader className="[&_tr]:border-0">
+              <TableRow>
+                <SortableTableHead className="w-24 h-9 px-6 bg-card border-y text-xs border-l rounded-l-lg" {...sh("number")}>Number</SortableTableHead>
+                <SortableTableHead className="w-28 h-9 px-6 bg-card border-y text-xs" {...sh("issued_date")}>Issued</SortableTableHead>
+                <SortableTableHead className="h-9 px-6 bg-card border-y text-xs" {...sh("client")}>Client</SortableTableHead>
+                <TableHead className="w-36 h-9 px-6 bg-card border-y text-xs text-muted-foreground font-medium">Email</TableHead>
+                <SortableTableHead className="w-28 h-9 px-6 bg-card border-y text-xs" align="right" {...sh("total")}>Total</SortableTableHead>
+                <SortableTableHead className="w-24 h-9 px-6 bg-card border-y text-xs border-r rounded-r-lg" align="right" {...sh("status")}>Status</SortableTableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="[&_td]:border-b [&_tr:last-child_td]:border-0">
+              {loading ? (
+                <SkeletonTableRows />
+              ) : filteredInvoices.length === 0 ? (
                 <TableRow>
-                  <SortableTableHead className="w-28 py-4 px-6" {...sh("issued_date")}>Issued</SortableTableHead>
-                  <SortableTableHead className="w-24 py-4 px-6" {...sh("number")}>Number</SortableTableHead>
-                  <SortableTableHead className="py-4 px-6" {...sh("client")}>Client</SortableTableHead>
-                  <TableHead className="w-36 py-4 px-6 text-muted-foreground font-medium text-sm">Email</TableHead>
-                  <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("total")}>Total</SortableTableHead>
-                  <SortableTableHead className="w-24 py-4 px-6" align="right" {...sh("status")}>Status</SortableTableHead>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
+                    No invoices match these filters.
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <SkeletonTableRows />
-                ) : filteredInvoices.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
-                      No invoices match these filters.
+              ) : (
+                visibleInvoices.map((inv) => (
+                  <TableRow key={inv.id} className="cursor-pointer" onClick={() => openInvoice(inv)}>
+                    <TableCell className="py-4 px-6">
+                      <InvoiceNumberBadge number={inv.number} status={inv.status} />
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground py-4 px-6">
+                      {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
+                    </TableCell>
+                    <TableCell className="py-4 px-6">
+                      <span className="text-sm">{inv.client.name}</span>
+                    </TableCell>
+                    <TableCell className="py-4 px-6">
+                      {inv.email && <EmailBadge email={inv.email} showDate />}
+                    </TableCell>
+                    <TableCell className="text-sm text-right tabular-nums py-4 px-6">
+                      {formatAUD(inv.subtotal)}
+                    </TableCell>
+                    <TableCell className="py-4 px-6 text-right">
+                      <StatusBadge
+                        status={inv.status}
+                        onStatusChange={(s) => handleStatusChange(inv.id, s)}
+                      />
                     </TableCell>
                   </TableRow>
-                ) : (
-                  visibleInvoices.map((inv) => (
-                    <TableRow key={inv.id} className="cursor-pointer" onClick={() => openInvoice(inv)}>
-                      <TableCell className="text-sm text-muted-foreground py-4 px-6">
-                        {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
-                      </TableCell>
-                      <TableCell className="py-4 px-6">
-                        <InvoiceNumberBadge number={inv.number} status={inv.status} />
-                      </TableCell>
-                      <TableCell className="py-4 px-6">
-                        <span className="text-sm">{inv.client.name}</span>
-                      </TableCell>
-                      <TableCell className="py-4 px-6">
-                        {inv.email && <EmailBadge email={inv.email} showDate />}
-                      </TableCell>
-                      <TableCell className="text-sm text-right tabular-nums py-4 px-6">
-                        {formatAUD(inv.subtotal)}
-                      </TableCell>
-                      <TableCell className="py-4 px-6 text-right">
-                        <StatusBadge
-                          status={inv.status}
-                          onStatusChange={(s) => handleStatusChange(inv.id, s)}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
       </div>
 
