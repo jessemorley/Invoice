@@ -57,8 +57,8 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn(
-        // hover:bg-muted/50 removed — tables use separator lines only, no row highlight
-        "border-b transition-colors has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
+        // hover:bg-muted/50 removed — separator lines only; opacity dims rows to draw focus to hovered row
+        "border-b transition-[colors,opacity] opacity-80 hover:opacity-100 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
         className
       )}
       {...props}
