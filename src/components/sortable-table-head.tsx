@@ -2,6 +2,9 @@ import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import { TableHead } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
+export const tableHeadCellBase =
+  "h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground font-medium";
+
 interface SortableTableHeadProps {
   children: React.ReactNode;
   active: boolean;

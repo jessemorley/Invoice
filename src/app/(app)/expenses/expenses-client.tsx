@@ -32,7 +32,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { SortableTableHead } from "@/components/sortable-table-head";
+import { SortableTableHead, tableHeadCellBase } from "@/components/sortable-table-head";
+import { cn } from "@/lib/utils";
 import { ViewHeader } from "@/components/view-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ExpenseSheet } from "@/components/expense-sheet";
@@ -151,18 +152,17 @@ function ExpensesSkeleton() {
             <Skeleton className="h-9 w-36" />
             <Skeleton className="h-9 w-36" />
           </div>
-          <div className="rounded-lg border bg-card overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-28 py-4 px-6">Date</TableHead>
-                  <TableHead className="w-24 py-4 px-6">Category</TableHead>
-                  <TableHead className="py-4 px-6">Description</TableHead>
-                  <TableHead className="py-4 px-6">Receipt</TableHead>
-                  <TableHead className="w-28 py-4 px-6 text-right">Amount</TableHead>
+          <Table className="border-separate border-spacing-0">
+              <TableHeader className="[&_tr]:border-0">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className={cn(tableHeadCellBase, "w-28 border-l rounded-l-lg")}>Date</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-24")}>Category</TableHead>
+                  <TableHead className={cn(tableHeadCellBase)}>Description</TableHead>
+                  <TableHead className={cn(tableHeadCellBase)}>Receipt</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-28 border-r rounded-r-lg text-right")}>Amount</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="[&_td]:border-b [&_td]:border-border/70 [&_tr:last-child_td]:border-0">
                 {[...Array(7)].map((_, i) => (
                   <TableRow key={i}>
                     <TableCell className="py-4 px-6"><Skeleton className="h-3 w-16" /></TableCell>
@@ -174,7 +174,6 @@ function ExpensesSkeleton() {
                 ))}
               </TableBody>
             </Table>
-          </div>
         </div>
       </div>
       {/* Mobile */}
@@ -356,18 +355,17 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
             </Select>
           </div>
 
-          <div className="rounded-lg border bg-card overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <SortableTableHead className="w-28 py-4 px-6" {...sh("date")}>Date</SortableTableHead>
-                  <SortableTableHead className="w-24 py-4 px-6" {...sh("category")}>Category</SortableTableHead>
-                  <TableHead className="py-4 px-6">Description</TableHead>
-                  <TableHead className="py-4 px-6">Receipt</TableHead>
-                  <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("amount")}>Amount</SortableTableHead>
+          <Table className="border-separate border-spacing-0">
+              <TableHeader className="[&_tr]:border-0">
+                <TableRow className="hover:bg-transparent">
+                  <SortableTableHead className={cn(tableHeadCellBase, "w-28 border-l rounded-l-lg hover:text-foreground")} {...sh("date")}>Date</SortableTableHead>
+                  <SortableTableHead className={cn(tableHeadCellBase, "w-24 hover:text-foreground")} {...sh("category")}>Category</SortableTableHead>
+                  <TableHead className={cn(tableHeadCellBase)}>Description</TableHead>
+                  <TableHead className={cn(tableHeadCellBase)}>Receipt</TableHead>
+                  <SortableTableHead className={cn(tableHeadCellBase, "w-28 border-r rounded-r-lg hover:text-foreground")} align="right" {...sh("amount")}>Amount</SortableTableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="[&_td]:border-b [&_td]:border-border/70 [&_tr:last-child_td]:border-0">
                 {sorted.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground py-12 text-sm">
@@ -408,7 +406,6 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
                 ))}
               </TableBody>
             </Table>
-          </div>
         </div>
       </div>
 

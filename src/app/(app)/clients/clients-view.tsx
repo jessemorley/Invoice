@@ -25,7 +25,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { SortableTableHead } from "@/components/sortable-table-head";
+import { SortableTableHead, tableHeadCellBase } from "@/components/sortable-table-head";
+import { cn } from "@/lib/utils";
 import { ViewHeader } from "@/components/view-header";
 import { ClientSheet } from "@/components/client-sheet";
 import { Check, Plus, Search, Users } from "lucide-react";
@@ -84,18 +85,17 @@ function ClientsSkeleton() {
             <Skeleton className="h-9 flex-1" />
             <Skeleton className="h-9 w-32" />
           </div>
-          <div className="rounded-lg border bg-card overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-64 py-4 px-6">Name</TableHead>
-                  <TableHead className="py-4 px-6">Contact</TableHead>
-                  <TableHead className="w-28 py-4 px-6">Billing</TableHead>
-                  <TableHead className="w-24 py-4 px-6 text-right">Invoices</TableHead>
-                  <TableHead className="w-24 py-4 px-6 text-right">Status</TableHead>
+          <Table className="border-separate border-spacing-0">
+              <TableHeader className="[&_tr]:border-0">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className={cn(tableHeadCellBase, "w-64 border-l rounded-l-lg")}>Name</TableHead>
+                  <TableHead className={cn(tableHeadCellBase)}>Contact</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-28")}>Billing</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-24 text-right")}>Invoices</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-24 border-r rounded-r-lg text-right")}>Status</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="[&_td]:border-b [&_td]:border-border/70 [&_tr:last-child_td]:border-0">
                 {[...Array(6)].map((_, i) => (
                   <TableRow key={i}>
                     <TableCell className="py-4 px-6">
@@ -112,7 +112,6 @@ function ClientsSkeleton() {
                 ))}
               </TableBody>
             </Table>
-          </div>
         </div>
       </div>
       {/* Mobile */}
@@ -254,18 +253,17 @@ if (statusFilter === "active" && !c.is_active) return false;
             </Select>
           </div>
 
-          <div className="rounded-lg border bg-card overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <SortableTableHead className="w-64 py-4 px-6" {...sh("name")}>Name</SortableTableHead>
-                  <TableHead className="py-4 px-6">Contact</TableHead>
-                  <SortableTableHead className="w-28 py-4 px-6" {...sh("billing_type")}>Billing</SortableTableHead>
-                  <TableHead className="w-24 py-4 px-6 text-right">Invoices</TableHead>
-                  <TableHead className="w-24 py-4 px-6 text-right">Status</TableHead>
+          <Table className="border-separate border-spacing-0">
+              <TableHeader className="[&_tr]:border-0">
+                <TableRow className="hover:bg-transparent">
+                  <SortableTableHead className={cn(tableHeadCellBase, "w-64 border-l rounded-l-lg hover:text-foreground")} {...sh("name")}>Name</SortableTableHead>
+                  <TableHead className={cn(tableHeadCellBase)}>Contact</TableHead>
+                  <SortableTableHead className={cn(tableHeadCellBase, "w-28 hover:text-foreground")} {...sh("billing_type")}>Billing</SortableTableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-24 text-right")}>Invoices</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-24 border-r rounded-r-lg text-right")}>Status</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="[&_td]:border-b [&_td]:border-border/70 [&_tr:last-child_td]:border-0">
                 {clients.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
@@ -306,7 +304,6 @@ if (statusFilter === "active" && !c.is_active) return false;
                 )}
               </TableBody>
             </Table>
-          </div>
         </div>
       </div>
 
