@@ -15,11 +15,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { EntrySheet } from "@/components/entry-sheet";
-import { PageHeader } from "@/components/page-header";
-import { Plus, RefreshCw, Search } from "lucide-react";
+import { ViewHeader } from "@/components/view-header";
+import { Check, Plus, RefreshCw, Search } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 
 type ViewMode = "invoice" | "week" | "none";
+
+const VIEW_MODE_LABELS: Record<ViewMode, string> = {
+  week: "Group by week",
+  invoice: "Group by invoice",
+  none: "No grouping",
+};
 
 const INVOICE_STATUS_COLOR: Record<string, string> = {
   draft: "#94a3b8",
@@ -471,6 +477,8 @@ function ListView({
   const visible = sorted.slice(0, displayCount * 5);
   const hasMore = visible.length < sorted.length;
 
+  if (visible.length === 0) return null;
+
   return (
     <div>
       <Card className="overflow-hidden py-0 gap-0">
@@ -503,6 +511,7 @@ export function EntriesView({
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [searchValue, setSearchValue] = useState("");
+
   const [sheetOpen, setSheetOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const handlePullRefresh = useCallback(async () => {
@@ -580,17 +589,34 @@ export function EntriesView({
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Entries">
-        <Button
-          size="sm"
-          className="hidden md:flex"
-          onClick={openNew}
-          disabled={loading}
-        >
-          <Plus className="size-4" />
-          New entry
-        </Button>
-      </PageHeader>
+      <ViewHeader
+        title="Entries"
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
+        loading={loading}
+        filterActive={viewMode !== "week"}
+        filterPopover={
+          <div className="flex flex-col">
+            {(["week", "invoice", "none"] as ViewMode[]).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode)}
+                disabled={loading || isSearching}
+                className={`flex items-center justify-between px-2 py-2 text-sm rounded-sm transition-colors hover:bg-accent disabled:opacity-50 ${viewMode === mode ? "text-foreground font-medium" : "text-muted-foreground"}`}
+              >
+                {VIEW_MODE_LABELS[mode]}
+                {viewMode === mode && <Check className="size-3.5" />}
+              </button>
+            ))}
+          </div>
+        }
+        actions={
+          <Button size="sm" className="hidden md:flex" onClick={openNew} disabled={loading}>
+            <Plus className="size-4" />
+            Add entry
+          </Button>
+        }
+      />
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto pb-28 md:pb-0"
@@ -616,8 +642,9 @@ export function EntriesView({
             }}
           />
         </div>
-        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
-          <div className="flex items-center gap-3">
+        <div className="px-4 md:px-6 pt-4 pb-6 md:py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
+          {/* Desktop filter row */}
+          <div className="hidden md:flex items-center gap-3">
             <div className="relative flex-1 min-w-48">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
@@ -625,6 +652,7 @@ export function EntriesView({
                 className="pl-8"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
+                disabled={loading}
               />
             </div>
             <Select

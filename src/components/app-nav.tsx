@@ -129,11 +129,7 @@ export function AppSidebar({ user }: { user: { name: string; email: string } }) 
   const { view: activeView, setView } = useActiveView();
 
   const handleNavigate = (v: ViewId) => {
-    if (activeView === v) {
-      window.dispatchEvent(new CustomEvent("dock:focus-search"));
-    } else {
-      setView(v);
-    }
+    setView(v);
   };
 
   return (
