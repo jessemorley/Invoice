@@ -477,9 +477,10 @@ function ListView({
   const visible = sorted.slice(0, displayCount * 5);
   const hasMore = visible.length < sorted.length;
 
+  if (visible.length === 0) return null;
+
   return (
     <div>
-      {visible.length > 0 && (
       <Card className="overflow-hidden py-0 gap-0">
         <CardContent className="p-0">
           {visible.map((entry, i) => (
@@ -490,7 +491,6 @@ function ListView({
           ))}
         </CardContent>
       </Card>
-      )}
       {hasMore && (
         <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
       )}
