@@ -142,7 +142,7 @@ function ExpenseCard({ expense, onClick }: { expense: Expense; onClick: () => vo
 function ExpensesSkeleton() {
   return (
     <div className="flex flex-col h-full">
-      <ViewHeader title="Expenses" searchValue="" onSearchChange={() => {}} />
+      <ViewHeader title="Expenses" searchValue="" onSearchChange={() => {}} loading />
       {/* Desktop */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
         <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">

@@ -36,9 +36,12 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
   }
 
   function closeSearch() {
-    if (onSearchOpenChange) onSearchOpenChange(false);
-    else setSearchOpenInternal(false);
-    onSearchChange("");
+    if (onSearchOpenChange) {
+      onSearchOpenChange(false);
+    } else {
+      setSearchOpenInternal(false);
+      onSearchChange("");
+    }
   }
 
   return (
