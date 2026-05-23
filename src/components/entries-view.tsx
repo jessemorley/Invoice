@@ -13,9 +13,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { EntrySheet } from "@/components/entry-sheet";
 import { ViewHeader } from "@/components/view-header";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, Search } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 
 type ViewMode = "invoice" | "week" | "none";
@@ -502,6 +503,7 @@ export function EntriesView({
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [searchValue, setSearchValue] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const handlePullRefresh = useCallback(async () => {
@@ -584,28 +586,15 @@ export function EntriesView({
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         loading={loading}
+        filterOpen={filterOpen}
+        onFilterToggle={() => setFilterOpen((o) => !o)}
         actions={
           <Button size="sm" className="hidden md:flex" onClick={openNew} disabled={loading}>
             <Plus className="size-4" />
             New entry
           </Button>
         }
-      >
-        <Select
-          value={viewMode}
-          onValueChange={(value) => setViewMode(value as ViewMode)}
-          disabled={loading || isSearching}
-        >
-          <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs md:w-44 md:text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="week">Group by week</SelectItem>
-            <SelectItem value="invoice">Group by invoice</SelectItem>
-            <SelectItem value="none">No grouping</SelectItem>
-          </SelectContent>
-        </Select>
-      </ViewHeader>
+      />
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto pb-28 md:pb-0"
@@ -632,6 +621,60 @@ export function EntriesView({
           />
         </div>
         <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
+          {/* Mobile filter row */}
+          <div className="md:hidden relative">
+            {/* Spacer that animates open to push content down */}
+            <div
+              className="transition-[height] duration-200 ease-out"
+              style={{ height: filterOpen ? "2.25rem" : "0rem" }}
+            />
+            {/* Filter content fades in on top of the expanding space */}
+            <div
+              className={`absolute inset-x-0 top-0 flex gap-2 transition-opacity duration-200 ${filterOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+            >
+              <Select
+                value={viewMode}
+                onValueChange={(value) => setViewMode(value as ViewMode)}
+                disabled={loading || isSearching}
+              >
+                <SelectTrigger size="sm" className="flex-1 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="week">Group by week</SelectItem>
+                  <SelectItem value="invoice">Group by invoice</SelectItem>
+                  <SelectItem value="none">No grouping</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          {/* Desktop filter row */}
+          <div className="hidden md:flex items-center gap-3">
+            <div className="relative flex-1 min-w-48">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                placeholder="Search entries..."
+                className="pl-8"
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+            <Select
+              value={viewMode}
+              onValueChange={(value) => setViewMode(value as ViewMode)}
+              disabled={loading || isSearching}
+            >
+              <SelectTrigger className="w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="week">Group by week</SelectItem>
+                <SelectItem value="invoice">Group by invoice</SelectItem>
+                <SelectItem value="none">No grouping</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           {loading ? (
             <ContentSkeleton />
           ) : (

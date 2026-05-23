@@ -3,7 +3,6 @@
 import { useRef, useEffect, useState } from "react";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 interface ViewHeaderProps {
@@ -11,13 +10,13 @@ interface ViewHeaderProps {
   searchValue: string;
   onSearchChange: (value: string) => void;
   actions?: React.ReactNode;
-  children?: React.ReactNode;
+  filterOpen?: boolean;
+  onFilterToggle?: () => void;
   loading?: boolean;
 }
 
-export function ViewHeader({ title, searchValue, onSearchChange, actions, children, loading }: ViewHeaderProps) {
+export function ViewHeader({ title, searchValue, onSearchChange, actions, filterOpen, onFilterToggle, loading }: ViewHeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -25,7 +24,6 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, childr
   }, [searchOpen]);
 
   function openSearch() {
-    setFilterOpen(false);
     setSearchOpen(true);
   }
 
@@ -35,7 +33,6 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, childr
   }
 
   return (
-    <>
     <header className="flex h-14 items-center border-b">
       <div className="flex items-center justify-between gap-2 w-full max-w-6xl mx-auto px-4 md:px-6">
         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -54,13 +51,13 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, childr
           )}
         </div>
         <div className="flex items-center gap-2">
-          {children && !searchOpen && (
+          {onFilterToggle && !searchOpen && (
             <Button
               size="icon"
               variant="ghost"
               className="size-8 md:hidden"
               aria-label="Filter"
-              onClick={() => setFilterOpen((o) => !o)}
+              onClick={onFilterToggle}
               disabled={loading}
             >
               <SlidersHorizontal className="size-4" />
@@ -80,31 +77,5 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, childr
         </div>
       </div>
     </header>
-    {children && (
-      <div className="md:hidden grid transition-[grid-template-rows] duration-200 ease-out" style={{ gridTemplateRows: filterOpen ? "1fr" : "0fr" }}>
-        <div className="overflow-hidden" hidden={!filterOpen} data-testid="mobile-filter-bar">
-          <div className="border-b px-4 py-2 flex gap-2">
-            {children}
-          </div>
-        </div>
-      </div>
-    )}
-    {/* Desktop filter row */}
-    <div className="hidden md:block border-b">
-      <div className="px-4 md:px-6 py-3 mx-auto w-full max-w-6xl flex items-center gap-3">
-        <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input
-            placeholder={`Search ${title.toLowerCase()}...`}
-            className="pl-8"
-            value={searchValue}
-            onChange={(e) => onSearchChange(e.target.value)}
-            disabled={loading}
-          />
-        </div>
-        {children}
-      </div>
-    </div>
-    </>
   );
 }

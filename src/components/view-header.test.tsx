@@ -53,41 +53,33 @@ describe("ViewHeader", () => {
     expect(onSearchChange).toHaveBeenCalledWith("");
   });
 
-  it("renders no filter button when children are absent", () => {
+  it("renders no filter button when onFilterToggle is absent", () => {
     renderHeader();
     expect(screen.queryByRole("button", { name: /filter/i })).not.toBeInTheDocument();
   });
 
-  it("renders a filter button when children are provided", () => {
-    renderHeader({ children: <div>a filter</div> });
+  it("renders a filter button when onFilterToggle is provided", () => {
+    renderHeader({ onFilterToggle: vi.fn() });
     expect(screen.getByRole("button", { name: /filter/i })).toBeInTheDocument();
   });
 
-  it("filter button tap shows children in filter bar", async () => {
+  it("tapping filter button calls onFilterToggle", async () => {
     const user = userEvent.setup();
-    renderHeader({ children: <div>a filter</div> });
-    expect(screen.getByTestId("mobile-filter-bar")).not.toBeVisible();
+    const onFilterToggle = vi.fn();
+    renderHeader({ onFilterToggle });
     await user.click(screen.getByRole("button", { name: /filter/i }));
-    expect(screen.getByTestId("mobile-filter-bar")).toBeVisible();
-  });
-
-  it("second filter button tap hides filter bar", async () => {
-    const user = userEvent.setup();
-    renderHeader({ children: <div>a filter</div> });
-    await user.click(screen.getByRole("button", { name: /filter/i }));
-    await user.click(screen.getByRole("button", { name: /filter/i }));
-    expect(screen.getByTestId("mobile-filter-bar")).not.toBeVisible();
+    expect(onFilterToggle).toHaveBeenCalledOnce();
   });
 
   it("opening search hides the filter button", async () => {
     const user = userEvent.setup();
-    renderHeader({ children: <div>a filter</div> });
+    renderHeader({ onFilterToggle: vi.fn() });
     await user.click(screen.getByRole("button", { name: /search/i }));
     expect(screen.queryByRole("button", { name: /filter/i })).not.toBeInTheDocument();
   });
 
   it("loading prop disables search and filter buttons", () => {
-    renderHeader({ children: <div>a filter</div>, loading: true });
+    renderHeader({ onFilterToggle: vi.fn(), loading: true });
     expect(screen.getByRole("button", { name: /search/i })).toBeDisabled();
     expect(screen.getByRole("button", { name: /filter/i })).toBeDisabled();
   });
