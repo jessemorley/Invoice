@@ -508,12 +508,12 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
           <Table className="border-separate border-spacing-0">
             <TableHeader className="[&_tr]:border-0">
               <TableRow className="hover:bg-transparent">
-                <SortableTableHead className="w-24 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs border-l rounded-l-lg text-muted-foreground hover:text-foreground" {...sh("number")}>Number</SortableTableHead>
+                <SortableTableHead className="w-24 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs border-l rounded-l-xl text-muted-foreground hover:text-foreground" {...sh("number")}>Number</SortableTableHead>
                 <SortableTableHead className="w-28 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground hover:text-foreground" {...sh("issued_date")}>Issued</SortableTableHead>
                 <SortableTableHead className="h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground hover:text-foreground" {...sh("client")}>Client</SortableTableHead>
                 <TableHead className="w-36 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground font-medium">Email</TableHead>
                 <SortableTableHead className="w-28 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground hover:text-foreground" align="right" {...sh("total")}>Total</SortableTableHead>
-                <SortableTableHead className="w-24 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs border-r rounded-r-lg text-muted-foreground hover:text-foreground" align="right" {...sh("status")}>Status</SortableTableHead>
+                <SortableTableHead className="w-24 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs border-r rounded-r-xl text-muted-foreground hover:text-foreground" align="right" {...sh("status")}>Status</SortableTableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="[&_td]:border-b [&_tr:last-child_td]:border-0">

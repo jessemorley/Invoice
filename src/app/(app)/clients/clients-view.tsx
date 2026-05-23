@@ -84,18 +84,17 @@ function ClientsSkeleton() {
             <Skeleton className="h-9 flex-1" />
             <Skeleton className="h-9 w-32" />
           </div>
-          <div className="rounded-lg border bg-card overflow-hidden">
-            <Table>
+          <Table className="border-separate border-spacing-0">
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-64 py-4 px-6">Name</TableHead>
-                  <TableHead className="py-4 px-6">Contact</TableHead>
-                  <TableHead className="w-28 py-4 px-6">Billing</TableHead>
-                  <TableHead className="w-24 py-4 px-6 text-right">Invoices</TableHead>
-                  <TableHead className="w-24 py-4 px-6 text-right">Status</TableHead>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-64 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs border-l rounded-l-xl text-muted-foreground font-medium">Name</TableHead>
+                  <TableHead className="h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground font-medium">Contact</TableHead>
+                  <TableHead className="w-28 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground font-medium">Billing</TableHead>
+                  <TableHead className="w-24 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground font-medium text-right">Invoices</TableHead>
+                  <TableHead className="w-24 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs border-r rounded-r-xl text-muted-foreground font-medium text-right">Status</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="[&_td]:border-b [&_tr:last-child_td]:border-0">
                 {[...Array(6)].map((_, i) => (
                   <TableRow key={i}>
                     <TableCell className="py-4 px-6">
@@ -112,7 +111,6 @@ function ClientsSkeleton() {
                 ))}
               </TableBody>
             </Table>
-          </div>
         </div>
       </div>
       {/* Mobile */}
@@ -254,18 +252,17 @@ if (statusFilter === "active" && !c.is_active) return false;
             </Select>
           </div>
 
-          <div className="rounded-lg border bg-card overflow-hidden">
-            <Table>
+          <Table className="border-separate border-spacing-0">
               <TableHeader>
-                <TableRow>
-                  <SortableTableHead className="w-64 py-4 px-6" {...sh("name")}>Name</SortableTableHead>
-                  <TableHead className="py-4 px-6">Contact</TableHead>
-                  <SortableTableHead className="w-28 py-4 px-6" {...sh("billing_type")}>Billing</SortableTableHead>
-                  <TableHead className="w-24 py-4 px-6 text-right">Invoices</TableHead>
-                  <TableHead className="w-24 py-4 px-6 text-right">Status</TableHead>
+                <TableRow className="hover:bg-transparent">
+                  <SortableTableHead className="w-64 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs border-l rounded-l-xl text-muted-foreground hover:text-foreground" {...sh("name")}>Name</SortableTableHead>
+                  <TableHead className="h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground font-medium">Contact</TableHead>
+                  <SortableTableHead className="w-28 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground hover:text-foreground" {...sh("billing_type")}>Billing</SortableTableHead>
+                  <TableHead className="w-24 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground font-medium text-right">Invoices</TableHead>
+                  <TableHead className="w-24 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs border-r rounded-r-xl text-muted-foreground font-medium text-right">Status</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="[&_td]:border-b [&_tr:last-child_td]:border-0">
                 {clients.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
@@ -306,7 +303,6 @@ if (statusFilter === "active" && !c.is_active) return false;
                 )}
               </TableBody>
             </Table>
-          </div>
         </div>
       </div>
 

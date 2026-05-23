@@ -151,18 +151,17 @@ function ExpensesSkeleton() {
             <Skeleton className="h-9 w-36" />
             <Skeleton className="h-9 w-36" />
           </div>
-          <div className="rounded-lg border bg-card overflow-hidden">
-            <Table>
+          <Table className="border-separate border-spacing-0">
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-28 py-4 px-6">Date</TableHead>
-                  <TableHead className="w-24 py-4 px-6">Category</TableHead>
-                  <TableHead className="py-4 px-6">Description</TableHead>
-                  <TableHead className="py-4 px-6">Receipt</TableHead>
-                  <TableHead className="w-28 py-4 px-6 text-right">Amount</TableHead>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-28 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs border-l rounded-l-xl text-muted-foreground font-medium">Date</TableHead>
+                  <TableHead className="w-24 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground font-medium">Category</TableHead>
+                  <TableHead className="h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground font-medium">Description</TableHead>
+                  <TableHead className="h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground font-medium">Receipt</TableHead>
+                  <TableHead className="w-28 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs border-r rounded-r-xl text-muted-foreground font-medium text-right">Amount</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="[&_td]:border-b [&_tr:last-child_td]:border-0">
                 {[...Array(7)].map((_, i) => (
                   <TableRow key={i}>
                     <TableCell className="py-4 px-6"><Skeleton className="h-3 w-16" /></TableCell>
@@ -174,7 +173,6 @@ function ExpensesSkeleton() {
                 ))}
               </TableBody>
             </Table>
-          </div>
         </div>
       </div>
       {/* Mobile */}
@@ -356,18 +354,17 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
             </Select>
           </div>
 
-          <div className="rounded-lg border bg-card overflow-hidden">
-            <Table>
+          <Table className="border-separate border-spacing-0">
               <TableHeader>
-                <TableRow>
-                  <SortableTableHead className="w-28 py-4 px-6" {...sh("date")}>Date</SortableTableHead>
-                  <SortableTableHead className="w-24 py-4 px-6" {...sh("category")}>Category</SortableTableHead>
-                  <TableHead className="py-4 px-6">Description</TableHead>
-                  <TableHead className="py-4 px-6">Receipt</TableHead>
-                  <SortableTableHead className="w-28 py-4 px-6" align="right" {...sh("amount")}>Amount</SortableTableHead>
+                <TableRow className="hover:bg-transparent">
+                  <SortableTableHead className="w-28 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs border-l rounded-l-xl text-muted-foreground hover:text-foreground" {...sh("date")}>Date</SortableTableHead>
+                  <SortableTableHead className="w-24 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground hover:text-foreground" {...sh("category")}>Category</SortableTableHead>
+                  <TableHead className="h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground font-medium">Description</TableHead>
+                  <TableHead className="h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs text-muted-foreground font-medium">Receipt</TableHead>
+                  <SortableTableHead className="w-28 h-9 px-6 bg-transparent dark:bg-input/30 border-y border-input text-xs border-r rounded-r-xl text-muted-foreground hover:text-foreground" align="right" {...sh("amount")}>Amount</SortableTableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="[&_td]:border-b [&_tr:last-child_td]:border-0">
                 {sorted.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground py-12 text-sm">
@@ -408,7 +405,6 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
                 ))}
               </TableBody>
             </Table>
-          </div>
         </div>
       </div>
 
