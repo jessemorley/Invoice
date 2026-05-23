@@ -54,7 +54,7 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
           {onFilterToggle && !searchOpen && (
             <Button
               size="icon"
-              variant="ghost"
+              variant={filterOpen ? "secondary" : "ghost"}
               className="size-8 md:hidden"
               aria-label="Filter"
               onClick={onFilterToggle}

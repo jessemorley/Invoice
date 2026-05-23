@@ -595,6 +595,27 @@ export function EntriesView({
           </Button>
         }
       />
+      {/* Mobile filter bar — collapsible, below header */}
+      <div className={`md:hidden grid transition-[grid-template-rows] duration-200 ease-out ${filterOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+        <div className="overflow-hidden">
+          <div className="border-b px-4 py-2 flex gap-2">
+            <Select
+              value={viewMode}
+              onValueChange={(value) => setViewMode(value as ViewMode)}
+              disabled={loading || isSearching}
+            >
+              <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="week">Group by week</SelectItem>
+                <SelectItem value="invoice">Group by invoice</SelectItem>
+                <SelectItem value="none">No grouping</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto pb-28 md:pb-0"
@@ -621,33 +642,6 @@ export function EntriesView({
           />
         </div>
         <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
-          {/* Mobile filter row */}
-          <div className="md:hidden relative">
-            {/* Spacer that animates open to push content down */}
-            <div
-              className="transition-[height] duration-200 ease-out"
-              style={{ height: filterOpen ? "2.25rem" : "0rem" }}
-            />
-            {/* Filter content fades in on top of the expanding space */}
-            <div
-              className={`absolute inset-x-0 top-0 flex gap-2 transition-opacity duration-200 ${filterOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-            >
-              <Select
-                value={viewMode}
-                onValueChange={(value) => setViewMode(value as ViewMode)}
-                disabled={loading || isSearching}
-              >
-                <SelectTrigger size="sm" className="flex-1 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="week">Group by week</SelectItem>
-                  <SelectItem value="invoice">Group by invoice</SelectItem>
-                  <SelectItem value="none">No grouping</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
           {/* Desktop filter row */}
           <div className="hidden md:flex items-center gap-3">
             <div className="relative flex-1 min-w-48">
