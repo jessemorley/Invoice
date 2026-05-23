@@ -33,7 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { SortableTableHead } from "@/components/sortable-table-head";
-import { PageHeader } from "@/components/page-header";
+import { ViewHeader } from "@/components/view-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ExpenseSheet } from "@/components/expense-sheet";
 import { Paperclip, Plus, Receipt, Search } from "lucide-react";
@@ -142,7 +142,7 @@ function ExpenseCard({ expense, onClick }: { expense: Expense; onClick: () => vo
 function ExpensesSkeleton() {
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Expenses" />
+      <ViewHeader title="Expenses" searchValue="" onSearchChange={() => {}} />
       {/* Desktop */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
         <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
@@ -208,6 +208,7 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
   const [search, setSearch] = useState("");
   const [timeframe, setTimeframe] = useState<Timeframe>("all-time");
   const [category, setCategory] = useState<ExpenseCategory | "all-categories">("all-categories");
+  const [filterOpen, setFilterOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selected, setSelected] = useState<Expense | null>(null);
 
@@ -263,14 +264,56 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
     return { active: sortKey === key, dir: sortDir, onSort: () => handleSort(key) };
   }
 
+  const hasActiveFilters = timeframe !== "all-time" || category !== "all-categories";
+
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Expenses">
-        <Button size="sm" className="hidden md:flex" onClick={openNew}>
-          <Plus className="size-4" />
-          New expense
-        </Button>
-      </PageHeader>
+      <ViewHeader
+        title="Expenses"
+        searchValue={search}
+        onSearchChange={setSearch}
+        filterOpen={filterOpen}
+        filterActive={hasActiveFilters}
+        onFilterToggle={() => setFilterOpen((o) => !o)}
+        actions={
+          <Button size="sm" className="hidden md:flex" onClick={openNew}>
+            <Plus className="size-4" />
+            New expense
+          </Button>
+        }
+      />
+      {/* Mobile filter bar */}
+      <div className={`md:hidden grid transition-[grid-template-rows] duration-200 ease-out ${filterOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+        <div className="overflow-hidden">
+          <div className="border-b px-4 py-2 flex gap-2">
+            <Select value={timeframe} onValueChange={(v) => setTimeframe(v as Timeframe)}>
+              <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
+                <SelectValue placeholder="Timeframe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-time">All time</SelectItem>
+                <SelectItem value="this-week">This week</SelectItem>
+                <SelectItem value="this-month">This month</SelectItem>
+                <SelectItem value="last-month">Last month</SelectItem>
+                <SelectItem value="this-year">This year</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={category} onValueChange={(v) => setCategory(v as ExpenseCategory | "all-categories")}>
+              <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-categories">All categories</SelectItem>
+                {(Object.keys(EXPENSE_CATEGORY_LABELS) as ExpenseCategory[]).map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {EXPENSE_CATEGORY_LABELS[cat]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
 
       {/* Desktop table */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto">

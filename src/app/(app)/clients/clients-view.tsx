@@ -26,7 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { SortableTableHead } from "@/components/sortable-table-head";
-import { PageHeader } from "@/components/page-header";
+import { ViewHeader } from "@/components/view-header";
 import { ClientSheet } from "@/components/client-sheet";
 import { Plus, Search, Users } from "lucide-react";
 import {
@@ -74,7 +74,7 @@ function ClientCard({ client, onClick }: { client: Client; onClick: () => void }
 function ClientsSkeleton() {
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Clients" />
+      <ViewHeader title="Clients" searchValue="" onSearchChange={() => {}} />
       {/* Desktop */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
         <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
@@ -146,6 +146,7 @@ export function ClientsView({ clients: allClients, loading = false }: { clients:
   const [sheetView, setSheetView] = useState<"detail" | "create">("detail");
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("active");
+  const [filterOpen, setFilterOpen] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
@@ -194,14 +195,41 @@ if (statusFilter === "active" && !c.is_active) return false;
       return 0;
     });
 
+  const hasActiveFilters = statusFilter !== "active";
+
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Clients">
-        <Button size="sm" className="hidden md:flex" onClick={openNew}>
-          <Plus className="size-4" />
-          New client
-        </Button>
-      </PageHeader>
+      <ViewHeader
+        title="Clients"
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
+        filterOpen={filterOpen}
+        filterActive={hasActiveFilters}
+        onFilterToggle={() => setFilterOpen((o) => !o)}
+        actions={
+          <Button size="sm" className="hidden md:flex" onClick={openNew}>
+            <Plus className="size-4" />
+            New client
+          </Button>
+        }
+      />
+      {/* Mobile filter bar */}
+      <div className={`md:hidden grid transition-[grid-template-rows] duration-200 ease-out ${filterOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+        <div className="overflow-hidden">
+          <div className="border-b px-4 py-2 flex gap-2">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
 
       {/* Desktop table */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
@@ -287,27 +315,6 @@ if (statusFilter === "active" && !c.is_active) return false;
 
       {/* Mobile card list */}
       <div className="md:hidden flex-1 overflow-y-auto pb-28">
-        <div className="px-4 pt-4 pb-2 flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input
-              placeholder="Search..."
-              className="pl-8"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-            />
-          </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-28">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
         {clients.length === 0 ? (
           <Empty className="h-64">
             <EmptyHeader>

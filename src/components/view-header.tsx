@@ -11,12 +11,16 @@ interface ViewHeaderProps {
   onSearchChange: (value: string) => void;
   actions?: React.ReactNode;
   filterOpen?: boolean;
+  filterActive?: boolean;
   onFilterToggle?: () => void;
+  searchOpen?: boolean;
+  onSearchOpenChange?: (open: boolean) => void;
   loading?: boolean;
 }
 
-export function ViewHeader({ title, searchValue, onSearchChange, actions, filterOpen, onFilterToggle, loading }: ViewHeaderProps) {
-  const [searchOpen, setSearchOpen] = useState(false);
+export function ViewHeader({ title, searchValue, onSearchChange, actions, filterOpen, filterActive, onFilterToggle, searchOpen: searchOpenProp, onSearchOpenChange, loading }: ViewHeaderProps) {
+  const [searchOpenInternal, setSearchOpenInternal] = useState(false);
+  const searchOpen = searchOpenProp !== undefined ? searchOpenProp : searchOpenInternal;
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -24,11 +28,13 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
   }, [searchOpen]);
 
   function openSearch() {
-    setSearchOpen(true);
+    if (onSearchOpenChange) onSearchOpenChange(true);
+    else setSearchOpenInternal(true);
   }
 
   function closeSearch() {
-    setSearchOpen(false);
+    if (onSearchOpenChange) onSearchOpenChange(false);
+    else setSearchOpenInternal(false);
     onSearchChange("");
   }
 
@@ -69,12 +75,15 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
             <Button
               size="icon"
               variant={filterOpen ? "secondary" : "ghost"}
-              className="size-8 md:hidden"
+              className="relative size-8 md:hidden"
               aria-label="Filter"
               onClick={onFilterToggle}
               disabled={loading}
             >
               <SlidersHorizontal className="size-4" />
+              {filterActive && !filterOpen && (
+                <span className="absolute top-1 right-1 size-1.5 rounded-full bg-primary" />
+              )}
             </Button>
           )}
           {actions}

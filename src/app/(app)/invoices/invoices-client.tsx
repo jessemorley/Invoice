@@ -45,13 +45,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SortableTableHead } from "@/components/sortable-table-head";
-import { PageHeader } from "@/components/page-header";
+import { ViewHeader } from "@/components/view-header";
 import { InvoiceSheet } from "@/components/invoice-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { EntrySheet } from "@/components/entry-sheet";
-import { ChevronDown, Clock, FileText, MailWarning, Plus, RefreshCw, Search, Send, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, Clock, FileText, MailWarning, Plus, RefreshCw, Search, Send } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
 
@@ -291,19 +291,11 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [filterOpen, setFilterOpen] = useState(false);
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
 
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (searchOpen) searchInputRef.current?.focus();
-  }, [searchOpen]);
-
   useEffect(() => {
     const handler = () => {
       if (!searchOpen) {
         setFilterOpen(false);
         setSearchOpen(true);
-      } else {
-        searchInputRef.current?.focus();
       }
     };
     window.addEventListener("dock:focus-search", handler);
@@ -447,60 +439,40 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     return { active: sortKey === key, dir: sortDir, onSort: () => handleSort(key) };
   }
 
-  function closeSearch() {
-    setSearchOpen(false);
-    setSearchValue("");
-  }
-
-  function openSearch() {
-    setFilterOpen(false);
-    setSearchOpen(true);
-  }
-
   const hasActiveFilters = timeframe !== "all" || statusFilter !== "all" || clientFilter !== "all";
-
-  const mobileTitle = searchOpen ? (
-    <input
-      ref={searchInputRef}
-      className="text-lg font-semibold bg-transparent border-none outline-none w-full text-foreground placeholder:font-normal placeholder:text-muted-foreground/60"
-      placeholder="Search invoices..."
-      value={searchValue}
-      onChange={(e) => setSearchValue(e.target.value)}
-      onKeyDown={(e) => e.key === "Escape" && closeSearch()}
-    />
-  ) : (
-    <span className="text-lg font-semibold">Invoices</span>
-  );
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Invoices" mobileTitle={mobileTitle}>
-        {!searchOpen && (
-          <Button size="icon" variant="ghost" className="relative size-8 md:hidden" onClick={() => setFilterOpen((o) => !o)} disabled={loading}>
-            <SlidersHorizontal className="size-4" />
-            {hasActiveFilters && (
-              <span className="absolute top-1 right-1 size-1.5 rounded-full bg-primary" />
+      <ViewHeader
+        title="Invoices"
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
+        searchOpen={searchOpen}
+        onSearchOpenChange={(open) => {
+          if (!open) setSearchValue("");
+          setSearchOpen(open);
+        }}
+        filterOpen={filterOpen}
+        filterActive={hasActiveFilters}
+        onFilterToggle={() => setFilterOpen((o) => !o)}
+        loading={loading}
+        actions={
+          <Button
+            size="sm"
+            className="relative hidden md:flex"
+            disabled={loading}
+            onClick={() => uninvoicedCount > 0 ? setGenerateOpen(true) : setNewInvoiceOpen(true)}
+          >
+            {uninvoicedCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
+                {uninvoicedCount}
+              </span>
             )}
+            <Plus className="size-4" />
+            New invoice
           </Button>
-        )}
-        <Button size="icon" variant="ghost" className="size-8 md:hidden" onClick={() => searchOpen ? closeSearch() : openSearch()} disabled={loading}>
-          {searchOpen ? <X className="size-4" /> : <Search className="size-4" />}
-        </Button>
-        <Button
-          size="sm"
-          className="relative hidden md:flex"
-          disabled={loading}
-          onClick={() => uninvoicedCount > 0 ? setGenerateOpen(true) : setNewInvoiceOpen(true)}
-        >
-          {uninvoicedCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
-              {uninvoicedCount}
-            </span>
-          )}
-          <Plus className="size-4" />
-          New invoice
-        </Button>
-      </PageHeader>
+        }
+      />
 
       {/* Desktop table */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto" onScroll={handleScroll}>
