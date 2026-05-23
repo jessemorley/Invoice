@@ -12,10 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { EntrySheet } from "@/components/entry-sheet";
-import { Plus, RefreshCw } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
+import { Plus, RefreshCw, Search } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 
 type ViewMode = "invoice" | "week" | "none";
@@ -171,7 +172,7 @@ function SkeletonCard({ rows = 3 }: { rows?: number }) {
 
 function ContentSkeleton() {
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <SkeletonCard rows={2} />
       <SkeletonCard rows={3} />
       <SkeletonCard rows={1} />
@@ -389,7 +390,7 @@ function InvoiceView({
   const hasMore = displayCount < groups.length;
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
       {visible.map((group) => (
         <div key={group.key} className="flex flex-col">
           <ClientWeekGroupHeader group={group} />
@@ -430,7 +431,7 @@ function WeekView({
   const hasMore = displayCount < groups.length;
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
       {visible.map((group) => (
         <div key={group.key} className="flex flex-col">
           <WeekGroupHeader group={group} />
@@ -471,7 +472,7 @@ function ListView({
   const hasMore = visible.length < sorted.length;
 
   return (
-    <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl">
+    <div>
       <Card className="overflow-hidden py-0 gap-0">
         <CardContent className="p-0">
           {visible.map((entry, i) => (
@@ -501,6 +502,7 @@ export function EntriesView({
   loading?: boolean;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
+  const [searchValue, setSearchValue] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const handlePullRefresh = useCallback(async () => {
@@ -518,10 +520,28 @@ export function EntriesView({
   const [isPending, startTransition] = useTransition();
 
   const entries = [...(initialEntries ?? []), ...additionalEntries];
+  const isSearching = searchValue.trim().length > 0;
+  const filteredEntries = isSearching
+    ? entries.filter((e) => {
+        const q = searchValue.toLowerCase();
+        return (
+          e.description?.toLowerCase().includes(q) ||
+          e.client.name.toLowerCase().includes(q) ||
+          e.shoot_client?.toLowerCase().includes(q)
+        );
+      })
+    : entries;
+  const activeViewMode = isSearching ? "none" : viewMode;
 
   const [prevViewMode, setPrevViewMode] = useState(viewMode);
   if (prevViewMode !== viewMode) {
     setPrevViewMode(viewMode);
+    setDisplayCount(PAGE_SIZE);
+  }
+
+  const [prevSearchValue, setPrevSearchValue] = useState(searchValue);
+  if (prevSearchValue !== searchValue) {
+    setPrevSearchValue(searchValue);
     setDisplayCount(PAGE_SIZE);
   }
 
@@ -560,22 +580,7 @@ export function EntriesView({
 
   return (
     <div className="flex flex-col h-full">
-      <header className="flex h-14 items-center gap-2 border-b px-4">
-        <SidebarTrigger className="hidden md:flex" />
-        <h1 className="text-lg font-semibold">Entries</h1>
-        <div className="flex-1" />
-        <ToggleGroup
-          type="single"
-          value={viewMode}
-          onValueChange={(value) => value && setViewMode(value as ViewMode)}
-          variant="outline"
-          size="sm"
-          disabled={loading}
-        >
-          <ToggleGroupItem value="week">Week</ToggleGroupItem>
-          <ToggleGroupItem value="invoice">Invoice</ToggleGroupItem>
-          <ToggleGroupItem value="none">None</ToggleGroupItem>
-        </ToggleGroup>
+      <PageHeader title="Entries">
         <Button
           size="sm"
           className="hidden md:flex"
@@ -585,8 +590,7 @@ export function EntriesView({
           <Plus className="size-4" />
           New entry
         </Button>
-      </header>
-
+      </PageHeader>
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto pb-28 md:pb-0"
@@ -612,39 +616,66 @@ export function EntriesView({
             }}
           />
         </div>
-        {loading ? (
-          <ContentSkeleton />
-        ) : (
-          <>
-            {viewMode === "invoice" && (
-              <InvoiceView
-                entries={entries}
-                displayCount={displayCount}
-                onEdit={openEdit}
-                onLoadEarlier={handleLoadEarlier}
-                isPending={isPending}
+        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 min-w-48">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                placeholder="Search entries..."
+                className="pl-8"
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
               />
-            )}
-            {viewMode === "week" && (
-              <WeekView
-                entries={entries}
-                displayCount={displayCount}
-                onEdit={openEdit}
-                onLoadEarlier={handleLoadEarlier}
-                isPending={isPending}
-              />
-            )}
-            {viewMode === "none" && (
-              <ListView
-                entries={entries}
-                displayCount={displayCount}
-                onEdit={openEdit}
-                onLoadEarlier={handleLoadEarlier}
-                isPending={isPending}
-              />
-            )}
-          </>
-        )}
+            </div>
+            <Select
+              value={viewMode}
+              onValueChange={(value) => setViewMode(value as ViewMode)}
+              disabled={loading || isSearching}
+            >
+              <SelectTrigger className="w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="week">Group by week</SelectItem>
+                <SelectItem value="invoice">Group by invoice</SelectItem>
+                <SelectItem value="none">No grouping</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {loading ? (
+            <ContentSkeleton />
+          ) : (
+            <>
+              {activeViewMode === "invoice" && (
+                <InvoiceView
+                  entries={filteredEntries}
+                  displayCount={displayCount}
+                  onEdit={openEdit}
+                  onLoadEarlier={handleLoadEarlier}
+                  isPending={isPending}
+                />
+              )}
+              {activeViewMode === "week" && (
+                <WeekView
+                  entries={filteredEntries}
+                  displayCount={displayCount}
+                  onEdit={openEdit}
+                  onLoadEarlier={handleLoadEarlier}
+                  isPending={isPending}
+                />
+              )}
+              {activeViewMode === "none" && (
+                <ListView
+                  entries={filteredEntries}
+                  displayCount={displayCount}
+                  onEdit={openEdit}
+                  onLoadEarlier={handleLoadEarlier}
+                  isPending={isPending}
+                />
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       <EntrySheet
