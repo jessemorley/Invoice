@@ -147,6 +147,8 @@ function buildRows(entries: Entry[], lineItems: LineItem[], clientRateHourly: nu
 
   for (const entry of sorted) {
     rows.push({ type: "entry", entry, clientRateHourly });
+    // skus != null guard also suppresses the bonus breakdown row for Own Brand entries,
+    // whose markup is folded into the rate/amount columns instead.
     if (entry.bonus_amount > 0 && entry.skus != null) {
       rows.push({ type: "sku_bonus", entry });
     }
@@ -183,12 +185,16 @@ function EntryRow({ entry, clientRateHourly, showHours }: { entry: Entry; client
   const hours = entry.billing_type === "hourly" && entry.hours_worked != null
     ? String(entry.hours_worked)
     : "";
+  // Own Brand entries show the line total (base + markup) in both rate and amount columns,
+  // hiding the internal base/markup split from the client.
+  const isOwnBrand = entry.workflow_type === "Own Brand";
+  const lineTotal = entry.base_amount + entry.bonus_amount;
   const rate = entry.billing_type === "hourly"
     ? fmtRate(clientRateHourly)
     : entry.billing_type === "day_rate"
-    ? fmtAmount(entry.base_amount)
+    ? fmtAmount(isOwnBrand ? lineTotal : entry.base_amount)
     : "";
-  const amount = fmtAmount(entry.skus == null ? entry.base_amount + entry.bonus_amount : entry.base_amount);
+  const amount = fmtAmount(isOwnBrand ? lineTotal : entry.skus == null ? lineTotal : entry.base_amount);
 
   return (
     <View style={s.tableRow}>
