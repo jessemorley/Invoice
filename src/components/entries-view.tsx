@@ -502,6 +502,7 @@ export function EntriesView({
   loading?: boolean;
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
+  const [searchValue, setSearchValue] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const handlePullRefresh = useCallback(async () => {
@@ -519,6 +520,18 @@ export function EntriesView({
   const [isPending, startTransition] = useTransition();
 
   const entries = [...(initialEntries ?? []), ...additionalEntries];
+  const isSearching = searchValue.trim().length > 0;
+  const filteredEntries = isSearching
+    ? entries.filter((e) => {
+        const q = searchValue.toLowerCase();
+        return (
+          e.description?.toLowerCase().includes(q) ||
+          e.client.name.toLowerCase().includes(q) ||
+          e.shoot_client?.toLowerCase().includes(q)
+        );
+      })
+    : entries;
+  const activeViewMode = isSearching ? "none" : viewMode;
 
   const [prevViewMode, setPrevViewMode] = useState(viewMode);
   if (prevViewMode !== viewMode) {
@@ -600,12 +613,17 @@ export function EntriesView({
         <div className="px-4 md:px-6 pt-6 pb-3 mx-auto w-full max-w-6xl flex items-center gap-3">
           <div className="relative flex-1 min-w-48">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input placeholder="Search entries..." className="pl-8" disabled />
+            <Input
+              placeholder="Search entries..."
+              className="pl-8"
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+            />
           </div>
           <Select
             value={viewMode}
             onValueChange={(value) => setViewMode(value as ViewMode)}
-            disabled={loading}
+            disabled={loading || isSearching}
           >
             <SelectTrigger className="w-44">
               <SelectValue />
@@ -621,27 +639,27 @@ export function EntriesView({
           <ContentSkeleton />
         ) : (
           <>
-            {viewMode === "invoice" && (
+            {activeViewMode === "invoice" && (
               <InvoiceView
-                entries={entries}
+                entries={filteredEntries}
                 displayCount={displayCount}
                 onEdit={openEdit}
                 onLoadEarlier={handleLoadEarlier}
                 isPending={isPending}
               />
             )}
-            {viewMode === "week" && (
+            {activeViewMode === "week" && (
               <WeekView
-                entries={entries}
+                entries={filteredEntries}
                 displayCount={displayCount}
                 onEdit={openEdit}
                 onLoadEarlier={handleLoadEarlier}
                 isPending={isPending}
               />
             )}
-            {viewMode === "none" && (
+            {activeViewMode === "none" && (
               <ListView
-                entries={entries}
+                entries={filteredEntries}
                 displayCount={displayCount}
                 onEdit={openEdit}
                 onLoadEarlier={handleLoadEarlier}
