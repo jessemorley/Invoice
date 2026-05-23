@@ -90,6 +90,8 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
                   )}
                 </Button>
               </PopoverTrigger>
+              {/* onClick closes the popover when any option inside is clicked. Callers must not call
+                  e.stopPropagation() in their option handlers or the popover will stay open. */}
               <PopoverContent align="end" className="w-44 p-1" onClick={() => setPopoverOpen(false)}>
                 {filterPopover}
               </PopoverContent>

@@ -287,24 +287,8 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const entrySheetMeta = useState<{ clients: Client[]; workflowRates: WorkflowRate[] } | null>(null);
   const [entrySheetData, setEntrySheetData] = entrySheetMeta;
-  const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
-  const headerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = () => {
-      if (!searchOpen) {
-        setFilterOpen(false);
-        setSearchOpen(true);
-      } else {
-        headerRef.current?.querySelector<HTMLInputElement>("input[placeholder]")?.focus();
-      }
-    };
-    window.addEventListener("dock:focus-search", handler);
-    return () => window.removeEventListener("dock:focus-search", handler);
-  }, [searchOpen]);
-
   useEffect(() => {
     const handler = (e: Event) => {
       if ((e as CustomEvent<string>).detail !== "invoices") return;
@@ -445,16 +429,11 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const hasActiveFilters = timeframe !== "all" || statusFilter !== "all" || clientFilter !== "all";
 
   return (
-    <div className="flex flex-col h-full" ref={headerRef}>
+    <div className="flex flex-col h-full">
       <ViewHeader
         title="Invoices"
         searchValue={searchValue}
         onSearchChange={setSearchValue}
-        searchOpen={searchOpen}
-        onSearchOpenChange={(open) => {
-          if (!open) setSearchValue("");
-          setSearchOpen(open);
-        }}
         filterOpen={filterOpen}
         filterActive={hasActiveFilters}
         onFilterToggle={() => setFilterOpen((o) => !o)}
