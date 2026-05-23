@@ -8,8 +8,8 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, mobileTitle, children }: PageHeaderProps) {
   return (
-    <header className="flex h-14 items-center border-b px-4 md:px-6">
-      <div className="flex items-center justify-between gap-2 w-full max-w-6xl mx-auto">
+    <header className="flex h-14 items-center border-b">
+      <div className="flex items-center justify-between gap-2 w-full max-w-6xl mx-auto px-4 md:px-6">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <SidebarTrigger className="hidden md:flex" />
           {mobileTitle ? (
