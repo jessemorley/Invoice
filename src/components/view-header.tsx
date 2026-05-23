@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from "react";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface ViewHeaderProps {
   title: string;
@@ -13,12 +14,13 @@ interface ViewHeaderProps {
   filterOpen?: boolean;
   filterActive?: boolean;
   onFilterToggle?: () => void;
+  filterPopover?: React.ReactNode;
   searchOpen?: boolean;
   onSearchOpenChange?: (open: boolean) => void;
   loading?: boolean;
 }
 
-export function ViewHeader({ title, searchValue, onSearchChange, actions, filterOpen, filterActive, onFilterToggle, searchOpen: searchOpenProp, onSearchOpenChange, loading }: ViewHeaderProps) {
+export function ViewHeader({ title, searchValue, onSearchChange, actions, filterOpen, filterActive, onFilterToggle, filterPopover, searchOpen: searchOpenProp, onSearchOpenChange, loading }: ViewHeaderProps) {
   const [searchOpenInternal, setSearchOpenInternal] = useState(false);
   const searchOpen = searchOpenProp !== undefined ? searchOpenProp : searchOpenInternal;
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -71,7 +73,27 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
           >
             {searchOpen ? <X className="size-4" /> : <Search className="size-4" />}
           </Button>
-          {onFilterToggle && (
+          {filterPopover ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="relative size-8 md:hidden"
+                  aria-label="Filter"
+                  disabled={loading}
+                >
+                  <SlidersHorizontal className="size-4" />
+                  {filterActive && (
+                    <span className="absolute top-1 right-1 size-1.5 rounded-full bg-primary" />
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-44 p-1">
+                {filterPopover}
+              </PopoverContent>
+            </Popover>
+          ) : onFilterToggle ? (
             <Button
               size="icon"
               variant={filterOpen ? "secondary" : "ghost"}
@@ -85,7 +107,7 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
                 <span className="absolute top-1 right-1 size-1.5 rounded-full bg-primary" />
               )}
             </Button>
-          )}
+          ) : null}
           {actions}
         </div>
       </div>

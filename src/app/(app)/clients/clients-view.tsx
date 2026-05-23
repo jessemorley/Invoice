@@ -28,7 +28,7 @@ import {
 import { SortableTableHead } from "@/components/sortable-table-head";
 import { ViewHeader } from "@/components/view-header";
 import { ClientSheet } from "@/components/client-sheet";
-import { Plus, Search, Users } from "lucide-react";
+import { Check, Plus, Search, Users } from "lucide-react";
 import {
   Empty,
   EmptyHeader,
@@ -146,7 +146,7 @@ export function ClientsView({ clients: allClients, loading = false }: { clients:
   const [sheetView, setSheetView] = useState<"detail" | "create">("detail");
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("active");
-  const [filterOpen, setFilterOpen] = useState(false);
+
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
@@ -203,9 +203,21 @@ if (statusFilter === "active" && !c.is_active) return false;
         title="Clients"
         searchValue={searchValue}
         onSearchChange={setSearchValue}
-        filterOpen={filterOpen}
         filterActive={hasActiveFilters}
-        onFilterToggle={() => setFilterOpen((o) => !o)}
+        filterPopover={
+          <div className="flex flex-col">
+            {(["all", "active", "inactive"] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`flex items-center justify-between px-2 py-2 text-sm rounded-sm transition-colors hover:bg-accent ${statusFilter === s ? "text-foreground font-medium" : "text-muted-foreground"}`}
+              >
+                {{ all: "All", active: "Active", inactive: "Inactive" }[s]}
+                {statusFilter === s && <Check className="size-3.5" />}
+              </button>
+            ))}
+          </div>
+        }
         actions={
           <Button size="sm" className="hidden md:flex" onClick={openNew}>
             <Plus className="size-4" />
@@ -213,23 +225,7 @@ if (statusFilter === "active" && !c.is_active) return false;
           </Button>
         }
       />
-      {/* Mobile filter bar */}
-      <div className={`md:hidden grid transition-[grid-template-rows] duration-200 ease-out ${filterOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
-        <div className="overflow-hidden">
-          <div className="border-b px-4 py-2 flex gap-2">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
+
 
       {/* Desktop table */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
