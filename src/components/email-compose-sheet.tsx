@@ -194,11 +194,18 @@ function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, ini
     setError(null);
     startTransition(async () => {
       try {
+        const resolvedSendAt = sendAt ?? new Date();
+        const localDate = [
+          resolvedSendAt.getFullYear(),
+          String(resolvedSendAt.getMonth() + 1).padStart(2, "0"),
+          String(resolvedSendAt.getDate()).padStart(2, "0"),
+        ].join("-");
         const data: EmailFormData = {
           to: validRecipients.join(", "),
           subject,
           body_text: body,
-          scheduled_for: sendAt?.toISOString() ?? new Date().toISOString(),
+          scheduled_for: resolvedSendAt.toISOString(),
+          scheduled_date: localDate,
         };
         const result = await scheduleInvoiceEmail(invoice.id, data);
         invalidate("invoices", "emails");

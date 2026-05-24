@@ -185,6 +185,7 @@ export type EmailFormData = {
   subject: string;
   body_text: string;
   scheduled_for: string;
+  scheduled_date: string; // YYYY-MM-DD in user's local timezone
 };
 
 export async function loadEntrySheetData(entryId: string) {
@@ -248,7 +249,7 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
   const scheduledTs = new Date(data.scheduled_for).getTime();
 
   if (markIssued) {
-    const issuedDate = new Date(data.scheduled_for).toISOString().split("T")[0];
+    const issuedDate = data.scheduled_date;
     await supabase
       .from("invoices")
       .update({ issued_date: issuedDate })

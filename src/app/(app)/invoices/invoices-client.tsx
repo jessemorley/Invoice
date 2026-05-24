@@ -143,10 +143,18 @@ const EMAIL_VARIANT: Record<InvoiceEmail["status"], "default" | "secondary" | "d
 };
 
 function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate?: boolean }) {
+  const toLocalDateStr = (iso: string) => {
+    const d = new Date(iso);
+    return [
+      d.getFullYear(),
+      String(d.getMonth() + 1).padStart(2, "0"),
+      String(d.getDate()).padStart(2, "0"),
+    ].join("-");
+  };
   const date = email.status === "sent" && email.sent_at
     ? formatDateShort(email.sent_at.slice(0, 10))
     : email.status === "pending"
-    ? formatDateShort(email.scheduled_for.slice(0, 10))
+    ? formatDateShort(toLocalDateStr(email.scheduled_for))
     : null;
 
   return (
