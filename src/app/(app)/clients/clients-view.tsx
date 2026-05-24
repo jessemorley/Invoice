@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ClientSquircle } from "@/components/client-squircle";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Client } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +41,7 @@ import {
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
+
 const STATUS_LABELS = { all: "All", active: "Active", inactive: "Inactive" } as const;
 
 const BILLING_LABEL: Record<string, string> = {
@@ -56,10 +58,7 @@ function ClientCard({ client, onClick }: { client: Client; onClick: () => void }
       className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer"
       onClick={onClick}
     >
-      <div
-        className="size-2.5 rounded-full shrink-0"
-        style={{ backgroundColor: client.color ?? CLIENT_COLOR_FALLBACK }}
-      />
+      <ClientSquircle name={client.name} color={client.color ?? CLIENT_COLOR_FALLBACK} />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{client.name}</p>
         <p className="text-xs text-muted-foreground">{client.email || client.contact_name || BILLING_LABEL[client.billing_type]}</p>
@@ -85,22 +84,23 @@ function ClientsSkeleton() {
             <Skeleton className="h-9 flex-1" />
             <Skeleton className="h-9 w-32" />
           </div>
-          <Table className="border-separate border-spacing-0">
-              <TableHeader className="[&_tr]:border-0">
+          <div className="rounded-lg border overflow-hidden">
+          <Table>
+              <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className={cn(tableHeadCellBase, "w-64 border-l rounded-l-lg")}>Name</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-64")}>Name</TableHead>
                   <TableHead className={cn(tableHeadCellBase)}>Contact</TableHead>
                   <TableHead className={cn(tableHeadCellBase, "w-28")}>Billing</TableHead>
                   <TableHead className={cn(tableHeadCellBase, "w-24 text-right")}>Invoices</TableHead>
-                  <TableHead className={cn(tableHeadCellBase, "w-24 border-r rounded-r-lg text-right")}>Status</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-24 text-right")}>Status</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody className="[&_td]:border-b [&_td]:border-border/70 [&_tr:last-child_td]:border-0">
+              <TableBody>
                 {[...Array(6)].map((_, i) => (
                   <TableRow key={i}>
                     <TableCell className="py-4 px-6">
-                      <div className="flex items-center gap-2">
-                        <Skeleton className="size-2 rounded-full shrink-0" />
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="size-7 shrink-0" style={{ borderRadius: "30%" }} />
                         <Skeleton className="h-3 w-28" />
                       </div>
                     </TableCell>
@@ -112,6 +112,7 @@ function ClientsSkeleton() {
                 ))}
               </TableBody>
             </Table>
+          </div>
         </div>
       </div>
       {/* Mobile */}
@@ -125,7 +126,7 @@ function ClientsSkeleton() {
             <Card key={i} className="py-0">
               <CardContent className="p-0">
                 <div className="flex items-center gap-3 px-4 py-3">
-                  <Skeleton className="size-2.5 rounded-full shrink-0" />
+                  <Skeleton className="size-7 shrink-0" style={{ borderRadius: "30%" }} />
                   <div className="flex-1 min-w-0 flex flex-col gap-1.5">
                     <Skeleton className="h-3 w-28" />
                     <Skeleton className="h-3 w-20" />
@@ -253,17 +254,18 @@ if (statusFilter === "active" && !c.is_active) return false;
             </Select>
           </div>
 
-          <Table className="border-separate border-spacing-0">
-              <TableHeader className="[&_tr]:border-0">
+          <div className="rounded-lg border overflow-hidden">
+          <Table>
+              <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <SortableTableHead className={cn(tableHeadCellBase, "w-64 border-l rounded-l-lg hover:text-foreground")} {...sh("name")}>Name</SortableTableHead>
+                  <SortableTableHead className={cn(tableHeadCellBase, "w-64")} {...sh("name")}>Name</SortableTableHead>
                   <TableHead className={cn(tableHeadCellBase)}>Contact</TableHead>
-                  <SortableTableHead className={cn(tableHeadCellBase, "w-28 hover:text-foreground")} {...sh("billing_type")}>Billing</SortableTableHead>
+                  <SortableTableHead className={cn(tableHeadCellBase, "w-28")} {...sh("billing_type")}>Billing</SortableTableHead>
                   <TableHead className={cn(tableHeadCellBase, "w-24 text-right")}>Invoices</TableHead>
-                  <TableHead className={cn(tableHeadCellBase, "w-24 border-r rounded-r-lg text-right")}>Status</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-24 text-right")}>Status</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody className="[&_td]:border-b [&_td]:border-border/70 [&_tr:last-child_td]:border-0">
+              <TableBody>
                 {clients.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
@@ -275,11 +277,8 @@ if (statusFilter === "active" && !c.is_active) return false;
                   clients.map((client) => (
                     <TableRow key={client.id} className="cursor-pointer" onClick={() => openClient(client)}>
                       <TableCell className="py-4 px-6">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="size-2 rounded-full shrink-0"
-                            style={{ backgroundColor: client.color ?? CLIENT_COLOR_FALLBACK }}
-                          />
+                        <div className="flex items-center gap-3">
+                          <ClientSquircle name={client.name} color={client.color ?? CLIENT_COLOR_FALLBACK} />
                           <span className="text-sm font-medium">{client.name}</span>
                         </div>
                       </TableCell>
@@ -304,6 +303,7 @@ if (statusFilter === "active" && !c.is_active) return false;
                 )}
               </TableBody>
             </Table>
+          </div>
         </div>
       </div>
 

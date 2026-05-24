@@ -6,6 +6,8 @@ import { formatAUD, formatRelativeTime } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { InvoiceStatusBadge } from "@/components/invoice-status-badge";
+import { ClientSquircle } from "@/components/client-squircle";
 import {
   Card,
   CardContent,
@@ -191,16 +193,14 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                     className="flex items-center justify-between py-2 px-3 rounded-md border border-border hover:bg-accent/50 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div
-                        className="size-2 rounded-full shrink-0"
-                        style={{ backgroundColor: invoice.client.color }}
-                      />
-                      <span className="text-sm font-medium shrink-0">{invoice.number}</span>
-                      <span className="text-sm text-muted-foreground truncate">{invoice.client.name}</span>
+                      <InvoiceStatusBadge number={invoice.number} status={invoice.status} />
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-[22px] shrink-0" />
+                        <span className="text-sm text-muted-foreground truncate">{invoice.client.name}</span>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0 ml-2">
                       <span className="text-sm tabular-nums">{formatAUD(invoice.total)}</span>
-                      <Badge variant="outline">{invoice.status}</Badge>
                     </div>
                   </div>
                 ))}
@@ -229,7 +229,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                     className="flex items-center justify-between py-2 px-3 rounded-md border border-border hover:bg-accent/50 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="text-sm font-medium shrink-0">{email.invoice_number}</span>
+                      <InvoiceStatusBadge number={email.invoice_number} status="issued" />
                       <span className="text-sm text-muted-foreground truncate">{email.to_address}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0 ml-2">

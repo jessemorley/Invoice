@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
+import { ClientSquircle } from "@/components/client-squircle";
+import { InvoiceStatusBadge } from "@/components/invoice-status-badge";
 import { revalidateInvoices, loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow, loadEntrySheetData } from "./actions";
 import { invalidate } from "@/lib/invalidate";
 import type { Invoice, InvoiceEmail, InvoiceStatus, InvoiceDetail, Entry, Client, WorkflowRate } from "@/lib/types";
@@ -96,23 +98,6 @@ const STATUS_VARIANT: Record<InvoiceStatus, "outline" | "secondary" | "default">
   paid:   "default",
 };
 
-const STATUS_COLOR: Record<InvoiceStatus, string> = {
-  draft:  "#94a3b8",
-  issued: "#f97316",
-  paid:   "#10b981",
-};
-
-function InvoiceNumberBadge({ number, status }: { number: string; status: InvoiceStatus }) {
-  const color = STATUS_COLOR[status];
-  return (
-    <span
-      className="inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium shrink-0"
-      style={{ color, backgroundColor: `${color}22` }}
-    >
-      {number}
-    </span>
-  );
-}
 
 const STATUS_LABEL: Record<InvoiceStatus, string> = {
   draft:  "Draft",
@@ -176,33 +161,11 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
 
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
-      <div className="flex items-center gap-4 flex-1 min-w-0">
-        <InvoiceNumberBadge number={invoice.number} status={invoice.status} />
-        <div className="min-w-0">
-          <span className="text-sm text-foreground truncate block">
-            {invoice.client.name}
-          </span>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-xs text-muted-foreground">
-              {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
-            </span>
-            {invoice.email?.status === "sent" && <Send className="size-3.5 text-muted-foreground shrink-0 my-[3px]" />}
-            {invoice.email?.status === "pending" && <Clock className="size-3.5 text-muted-foreground shrink-0 my-[3px]" />}
-            {invoice.email?.status === "failed" && <MailWarning className="size-3.5 text-destructive shrink-0 my-[3px]" />}
-          </div>
-        </div>
-      </div>
-      <div className="flex flex-col items-end gap-1 shrink-0">
-        <span className="text-sm tabular-nums text-foreground">
-          {formatAUD(invoice.subtotal)}
-        </span>
-        {invoice.super_amount > 0 && (
-          <span className="text-xs tabular-nums text-muted-foreground">
-            Super {formatAUD(invoice.super_amount)}
-          </span>
-        )}
-      </div>
+    <div className="flex items-center gap-2.5 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
+      <InvoiceStatusBadge number={invoice.number} status={invoice.status} />
+      <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-6 shrink-0 ml-1" />
+      <span className="text-sm truncate flex-1 min-w-0">{invoice.client.name}</span>
+      <span className="text-sm tabular-nums shrink-0">{formatAUD(invoice.subtotal)}</span>
     </div>
   );
 }
@@ -228,20 +191,13 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
   return (
     <div className="px-4 py-4 flex flex-col gap-3">
       {Array.from({ length: count }).map((_, i) => (
-        <Card key={i} className="py-0">
+        <Card key={i} className="py-0 rounded-lg">
           <CardContent className="p-0">
-            <div className="flex items-center gap-3 px-4 py-3">
-              <div className="flex-1 min-w-0 space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-5 w-14 rounded-full shrink-0" />
-                  <Skeleton className="h-3 w-24" />
-                </div>
-                <Skeleton className="h-3 w-20" />
-              </div>
-              <div className="flex flex-col items-end gap-1 shrink-0">
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="h-3 w-12" />
-              </div>
+            <div className="flex items-center gap-2.5 px-4 py-3">
+              <Skeleton className="h-5 w-14 rounded-full shrink-0" />
+              <Skeleton className="size-6 rounded-[30%] shrink-0" />
+              <Skeleton className="h-3 flex-1" />
+              <Skeleton className="h-3 w-16 shrink-0" />
             </div>
           </CardContent>
         </Card>
@@ -506,18 +462,19 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             </Select>
           </div>
 
-          <Table className="border-separate border-spacing-0">
-            <TableHeader className="[&_tr]:border-0">
+          <div className="rounded-lg border overflow-hidden">
+          <Table>
+            <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <SortableTableHead className={cn(tableHeadCellBase, "w-24 border-l rounded-l-lg hover:text-foreground")} {...sh("number")}>Number</SortableTableHead>
-                <SortableTableHead className={cn(tableHeadCellBase, "w-28 hover:text-foreground")} {...sh("issued_date")}>Issued</SortableTableHead>
-                <SortableTableHead className={cn(tableHeadCellBase, "hover:text-foreground")} {...sh("client")}>Client</SortableTableHead>
+                <SortableTableHead className={cn(tableHeadCellBase, "w-24")} {...sh("number")}>Number</SortableTableHead>
+                <SortableTableHead className={cn(tableHeadCellBase, "w-28")} {...sh("issued_date")}>Issued</SortableTableHead>
+                <SortableTableHead className={cn(tableHeadCellBase)} {...sh("client")}>Client</SortableTableHead>
                 <TableHead className={cn(tableHeadCellBase, "w-36")}>Email</TableHead>
-                <SortableTableHead className={cn(tableHeadCellBase, "w-28 hover:text-foreground")} align="right" {...sh("total")}>Total</SortableTableHead>
-                <SortableTableHead className={cn(tableHeadCellBase, "w-24 border-r rounded-r-lg hover:text-foreground")} align="right" {...sh("status")}>Status</SortableTableHead>
+                <SortableTableHead className={cn(tableHeadCellBase, "w-28")} align="right" {...sh("total")}>Total</SortableTableHead>
+                <SortableTableHead className={cn(tableHeadCellBase, "w-24")} align="right" {...sh("status")}>Status</SortableTableHead>
               </TableRow>
             </TableHeader>
-            <TableBody className="[&_td]:border-b [&_td]:border-border/70 [&_tr:last-child_td]:border-0">
+            <TableBody>
               {loading ? (
                 <SkeletonTableRows />
               ) : filteredInvoices.length === 0 ? (
@@ -530,13 +487,16 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                 visibleInvoices.map((inv) => (
                   <TableRow key={inv.id} className="cursor-pointer" onClick={() => openInvoice(inv)}>
                     <TableCell className="py-4 px-6">
-                      <InvoiceNumberBadge number={inv.number} status={inv.status} />
+                      <InvoiceStatusBadge number={inv.number} status={inv.status} />
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground py-4 px-6">
                       {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
                     </TableCell>
                     <TableCell className="py-4 px-6">
-                      <span className="text-sm">{inv.client.name}</span>
+                      <div className="flex items-center gap-3">
+                        <ClientSquircle name={inv.client.name} color={inv.client.color} />
+                        <span className="text-sm">{inv.client.name}</span>
+                      </div>
                     </TableCell>
                     <TableCell className="py-4 px-6">
                       {inv.email && <EmailBadge email={inv.email} showDate />}
@@ -555,6 +515,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
               )}
             </TableBody>
           </Table>
+          </div>
         </div>
       </div>
 
@@ -627,7 +588,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         ) : (
           <div className="px-4 py-4 pb-28 flex flex-col gap-3">
             {visibleInvoices.map((inv) => (
-              <Card key={inv.id} className="py-0" onClick={() => openInvoice(inv)}>
+              <Card key={inv.id} className="py-0 rounded-lg" onClick={() => openInvoice(inv)}>
                 <CardContent className="p-0">
                   <InvoiceCard invoice={inv} />
                 </CardContent>
