@@ -506,18 +506,19 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             </Select>
           </div>
 
-          <Table className="border-separate border-spacing-0">
-            <TableHeader className="[&_tr]:border-0">
+          <div className="rounded-md border overflow-hidden">
+          <Table>
+            <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <SortableTableHead className={cn(tableHeadCellBase, "w-24 border-l rounded-l-lg hover:text-foreground")} {...sh("number")}>Number</SortableTableHead>
-                <SortableTableHead className={cn(tableHeadCellBase, "w-28 hover:text-foreground")} {...sh("issued_date")}>Issued</SortableTableHead>
-                <SortableTableHead className={cn(tableHeadCellBase, "hover:text-foreground")} {...sh("client")}>Client</SortableTableHead>
+                <SortableTableHead className={cn(tableHeadCellBase, "w-24")} {...sh("number")}>Number</SortableTableHead>
+                <SortableTableHead className={cn(tableHeadCellBase, "w-28")} {...sh("issued_date")}>Issued</SortableTableHead>
+                <SortableTableHead className={cn(tableHeadCellBase)} {...sh("client")}>Client</SortableTableHead>
                 <TableHead className={cn(tableHeadCellBase, "w-36")}>Email</TableHead>
-                <SortableTableHead className={cn(tableHeadCellBase, "w-28 hover:text-foreground")} align="right" {...sh("total")}>Total</SortableTableHead>
-                <SortableTableHead className={cn(tableHeadCellBase, "w-24 border-r rounded-r-lg hover:text-foreground")} align="right" {...sh("status")}>Status</SortableTableHead>
+                <SortableTableHead className={cn(tableHeadCellBase, "w-28")} align="right" {...sh("total")}>Total</SortableTableHead>
+                <SortableTableHead className={cn(tableHeadCellBase, "w-24")} align="right" {...sh("status")}>Status</SortableTableHead>
               </TableRow>
             </TableHeader>
-            <TableBody className="[&_td]:border-b [&_td]:border-border/70 [&_tr:last-child_td]:border-0">
+            <TableBody>
               {loading ? (
                 <SkeletonTableRows />
               ) : filteredInvoices.length === 0 ? (
@@ -555,6 +556,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
               )}
             </TableBody>
           </Table>
+          </div>
         </div>
       </div>
 
