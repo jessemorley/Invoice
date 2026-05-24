@@ -190,7 +190,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                 {outstanding.map((invoice) => (
                   <div
                     key={invoice.id}
-                    className="flex items-center justify-between py-2 px-3 rounded-md border border-border hover:bg-accent/50 transition-colors cursor-pointer"
+                    className="flex items-center justify-between py-2 px-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <InvoiceStatusBadge number={invoice.number} status={invoice.status} />
@@ -226,7 +226,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                   <div
                     key={email.id}
                     onClick={() => handleEmailRowClick(email)}
-                    className="flex items-center justify-between py-2 px-3 rounded-md border border-border hover:bg-accent/50 transition-colors cursor-pointer"
+                    className="flex items-center justify-between py-2 px-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <InvoiceStatusBadge number={email.invoice_number} status="issued" />
