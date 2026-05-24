@@ -152,17 +152,18 @@ function ExpensesSkeleton() {
             <Skeleton className="h-9 w-36" />
             <Skeleton className="h-9 w-36" />
           </div>
-          <Table className="border-separate border-spacing-0">
-              <TableHeader className="[&_tr]:border-0">
+          <div className="rounded-lg border overflow-hidden">
+          <Table>
+              <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className={cn(tableHeadCellBase, "w-28 border-l rounded-l-lg")}>Date</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-28")}>Date</TableHead>
                   <TableHead className={cn(tableHeadCellBase, "w-24")}>Category</TableHead>
                   <TableHead className={cn(tableHeadCellBase)}>Description</TableHead>
                   <TableHead className={cn(tableHeadCellBase)}>Receipt</TableHead>
-                  <TableHead className={cn(tableHeadCellBase, "w-28 border-r rounded-r-lg text-right")}>Amount</TableHead>
+                  <TableHead className={cn(tableHeadCellBase, "w-28 text-right")}>Amount</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody className="[&_td]:border-b [&_td]:border-border/70 [&_tr:last-child_td]:border-0">
+              <TableBody>
                 {[...Array(7)].map((_, i) => (
                   <TableRow key={i}>
                     <TableCell className="py-4 px-6"><Skeleton className="h-3 w-16" /></TableCell>
@@ -174,6 +175,7 @@ function ExpensesSkeleton() {
                 ))}
               </TableBody>
             </Table>
+          </div>
         </div>
       </div>
       {/* Mobile */}
@@ -355,17 +357,18 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
             </Select>
           </div>
 
-          <Table className="border-separate border-spacing-0">
-              <TableHeader className="[&_tr]:border-0">
+          <div className="rounded-lg border overflow-hidden">
+          <Table>
+              <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <SortableTableHead className={cn(tableHeadCellBase, "w-28 border-l rounded-l-lg hover:text-foreground")} {...sh("date")}>Date</SortableTableHead>
-                  <SortableTableHead className={cn(tableHeadCellBase, "w-24 hover:text-foreground")} {...sh("category")}>Category</SortableTableHead>
+                  <SortableTableHead className={cn(tableHeadCellBase, "w-28")} {...sh("date")}>Date</SortableTableHead>
+                  <SortableTableHead className={cn(tableHeadCellBase, "w-24")} {...sh("category")}>Category</SortableTableHead>
                   <TableHead className={cn(tableHeadCellBase)}>Description</TableHead>
                   <TableHead className={cn(tableHeadCellBase)}>Receipt</TableHead>
-                  <SortableTableHead className={cn(tableHeadCellBase, "w-28 border-r rounded-r-lg hover:text-foreground")} align="right" {...sh("amount")}>Amount</SortableTableHead>
+                  <SortableTableHead className={cn(tableHeadCellBase, "w-28")} align="right" {...sh("amount")}>Amount</SortableTableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody className="[&_td]:border-b [&_td]:border-border/70 [&_tr:last-child_td]:border-0">
+              <TableBody>
                 {sorted.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground py-12 text-sm">
@@ -406,6 +409,7 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
                 ))}
               </TableBody>
             </Table>
+          </div>
         </div>
       </div>
 
