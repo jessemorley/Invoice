@@ -556,7 +556,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                       {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
                     </TableCell>
                     <TableCell className="py-4 px-6">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <ClientSquircle name={inv.client.name} color={inv.client.color} />
                         <span className="text-sm">{inv.client.name}</span>
                       </div>

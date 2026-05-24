@@ -266,7 +266,7 @@ function EntryRow({
           {formatDate(entry.date)}
         </span>
         {showClient && (
-          <div className="w-52 shrink-0 pl-2 flex items-center gap-2">
+          <div className="w-52 shrink-0 pl-2 flex items-center gap-3">
             <ClientSquircle name={entry.client.name} color={entry.client.color} />
             <span className="text-sm font-medium text-foreground truncate">
               {entry.client.name}
