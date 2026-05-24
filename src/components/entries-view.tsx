@@ -40,10 +40,10 @@ function clientInitials(name: string): string {
     .join("");
 }
 
-function ClientSquircle({ name, color }: { name: string; color: string }) {
+function ClientSquircle({ name, color, className }: { name: string; color: string; className?: string }) {
   return (
     <span
-      className="inline-flex items-center justify-center size-7 shrink-0 text-[10px] font-semibold"
+      className={`inline-flex items-center justify-center shrink-0 text-[10px] font-semibold ${className ?? "size-7"}`}
       style={{
         backgroundColor: `${color}33`,
         color,
@@ -227,15 +227,13 @@ function EntryRow({
     >
       {/* Mobile */}
       <div className="md:hidden flex items-center gap-3 px-4 py-3">
+        <ClientSquircle name={entry.client.name} color={entry.client.color} className="size-8" />
         <div className="flex-1 min-w-0">
           {showClient ? (
             <>
-              <div className="flex items-center gap-2">
-                <ClientSquircle name={entry.client.name} color={entry.client.color} />
-                <span className="text-sm font-medium text-foreground truncate">
-                  {entry.client.name}
-                </span>
-              </div>
+              <span className="text-sm font-medium text-foreground truncate block">
+                {entry.client.name}
+              </span>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-xs text-muted-foreground tabular-nums shrink-0">
                   {formatDate(entry.date)}
