@@ -646,60 +646,54 @@ export function InvoiceSheet({
               <div className="flex flex-col gap-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</p>
                 {scheduledEmail.status === "pending" ? (
-                  <div className="flex justify-between items-center gap-4 text-sm">
-                    <span className="text-muted-foreground shrink-0">Scheduled</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-right">{formatScheduledFor(scheduledEmail.scheduled_for)}</span>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-7 shrink-0">
-                            <MoreHorizontal className="size-4" />
-                            <span className="sr-only">Email actions</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={onReschedule}>
-                            <CalendarClock className="size-4" />
-                            Edit schedule
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onSendNow?.(scheduledEmail.id)}>
-                            <Send className="size-4" />
-                            Send now
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => onCancelEmail?.(scheduledEmail.id)}
-                          >
-                            Cancel send
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+                  <div className="flex items-center justify-between py-2 px-3 rounded-md border border-border text-sm">
+                    <span className="text-muted-foreground shrink-0">Scheduled for {formatScheduledFor(scheduledEmail.scheduled_for)}</span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="size-7 shrink-0 -mr-1">
+                          <MoreHorizontal className="size-4" />
+                          <span className="sr-only">Email actions</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={onReschedule}>
+                          <CalendarClock className="size-4" />
+                          Edit schedule
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onSendNow?.(scheduledEmail.id)}>
+                          <Send className="size-4" />
+                          Send now
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => onCancelEmail?.(scheduledEmail.id)}
+                        >
+                          Cancel send
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 ) : (
-                  <div className="flex justify-between items-center gap-4 text-sm">
-                    <span className="text-muted-foreground shrink-0">Sent</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-right">{scheduledEmail.sent_at ? formatRelativeTime(scheduledEmail.sent_at) : "—"}</span>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-7 shrink-0">
-                            <MoreHorizontal className="size-4" />
-                            <span className="sr-only">Email actions</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={onViewEmail}>
-                            View email
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={onSendClick}>
-                            <Mail className="size-4" />
-                            Send again
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+                  <div className="flex items-center justify-between py-2 px-3 rounded-md border border-border text-sm">
+                    <span className="text-muted-foreground shrink-0">Sent {scheduledEmail.sent_at ? formatRelativeTime(scheduledEmail.sent_at) : ""}</span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="size-7 shrink-0 -mr-1">
+                          <MoreHorizontal className="size-4" />
+                          <span className="sr-only">Email actions</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={onViewEmail}>
+                          View email
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={onSendClick}>
+                          <Mail className="size-4" />
+                          Send again
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 )}
               </div>
