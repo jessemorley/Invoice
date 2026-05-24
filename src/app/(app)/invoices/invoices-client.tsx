@@ -506,7 +506,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             </Select>
           </div>
 
-          <div className="rounded-md border overflow-hidden">
+          <div className="rounded-lg border overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">

@@ -161,7 +161,7 @@ function SkeletonCard({ rows = 3 }: { rows?: number }) {
   return (
     <div className="flex flex-col">
       <SkeletonGroupHeader />
-      <div className="rounded-md border overflow-hidden">
+      <div className="rounded-lg border overflow-hidden">
           {Array.from({ length: rows }).map((_, i) => (
             <div key={i}>
               {i > 0 && <Separator />}
@@ -397,7 +397,7 @@ function InvoiceView({
       {visible.map((group) => (
         <div key={group.key} className="flex flex-col">
           <ClientWeekGroupHeader group={group} />
-          <div className="rounded-md border overflow-hidden">
+          <div className="rounded-lg border overflow-hidden">
               {group.entries.map((entry, i) => (
                 <div key={entry.id}>
                   {i > 0 && <Separator />}
@@ -436,7 +436,7 @@ function WeekView({
       {visible.map((group) => (
         <div key={group.key} className="flex flex-col">
           <WeekGroupHeader group={group} />
-          <div className="rounded-md border overflow-hidden">
+          <div className="rounded-lg border overflow-hidden">
               {group.entries.map((entry, i) => (
                 <div key={entry.id}>
                   {i > 0 && <Separator />}
@@ -474,7 +474,7 @@ function ListView({
 
   return (
     <div>
-      <div className="rounded-md border overflow-hidden">
+      <div className="rounded-lg border overflow-hidden">
           {visible.map((entry, i) => (
             <div key={entry.id}>
               {i > 0 && <Separator />}
