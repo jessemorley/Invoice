@@ -249,9 +249,11 @@ function EntryRow({
           {formatDate(entry.date)}
         </span>
         {showClient && (
-          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0" style={{ color: entry.client.color, backgroundColor: `${entry.client.color}22` }}>
-            {entry.client.name}
-          </span>
+          <div className="w-36 shrink-0 pl-2">
+            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style={{ color: entry.client.color, backgroundColor: `${entry.client.color}22` }}>
+              {entry.client.name}
+            </span>
+          </div>
         )}
         <div className="flex flex-1 min-w-0 items-center gap-2">
           <span className="text-sm text-foreground truncate">

@@ -180,7 +180,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
       <div className="flex items-center gap-4 flex-1 min-w-0">
         <InvoiceNumberBadge number={invoice.number} status={invoice.status} />
         <div className="min-w-0">
-          <span className="text-sm text-foreground truncate block">
+          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style={{ color: invoice.client.color, backgroundColor: `${invoice.client.color}22` }}>
             {invoice.client.name}
           </span>
           <div className="flex items-center gap-1.5 mt-0.5">
@@ -537,7 +537,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                       {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
                     </TableCell>
                     <TableCell className="py-4 px-6">
-                      <span className="text-sm">{inv.client.name}</span>
+                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style={{ color: inv.client.color, backgroundColor: `${inv.client.color}22` }}>{inv.client.name}</span>
                     </TableCell>
                     <TableCell className="py-4 px-6">
                       {inv.email && <EmailBadge email={inv.email} showDate />}
