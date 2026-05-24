@@ -208,10 +208,6 @@ function EntryRow({
           {showClient ? (
             <>
               <div className="flex items-center gap-1.5">
-                <div
-                  className="size-2 rounded-full shrink-0"
-                  style={{ backgroundColor: entry.client.color }}
-                />
                 <span className="text-sm font-medium text-foreground truncate">
                   {entry.client.name}
                 </span>
@@ -256,10 +252,6 @@ function EntryRow({
         </span>
         {showClient && (
           <div className="flex items-center gap-2 w-40 shrink-0">
-            <div
-              className="size-2 rounded-full shrink-0"
-              style={{ backgroundColor: entry.client.color }}
-            />
             <span className="text-sm font-medium truncate">
               {entry.client.name}
             </span>
