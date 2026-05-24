@@ -683,23 +683,27 @@ export function InvoiceSheet({
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-3">
-                    <div className="flex justify-between gap-4 text-sm">
-                      <span className="text-muted-foreground shrink-0">Sent</span>
+                  <div className="flex justify-between items-center gap-4 text-sm">
+                    <span className="text-muted-foreground shrink-0">Sent</span>
+                    <div className="flex items-center gap-2">
                       <span className="text-right">{scheduledEmail.sent_at ? formatRelativeTime(scheduledEmail.sent_at) : "—"}</span>
-                    </div>
-                    <div className="flex justify-between gap-4 text-sm">
-                      <span className="text-muted-foreground shrink-0">To</span>
-                      <span className="text-right">{scheduledEmail.to_address}</span>
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      <Button variant="outline" size="sm" className="gap-1.5" onClick={onViewEmail}>
-                        View email
-                      </Button>
-                      <Button variant="outline" size="sm" className="gap-1.5" onClick={onSendClick}>
-                        <Mail className="size-3.5" />
-                        Send again
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="size-7 shrink-0">
+                            <MoreHorizontal className="size-4" />
+                            <span className="sr-only">Email actions</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={onViewEmail}>
+                            View email
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={onSendClick}>
+                            <Mail className="size-4" />
+                            Send again
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 )}
