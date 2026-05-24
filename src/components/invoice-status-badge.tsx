@@ -1,10 +1,12 @@
 import type { InvoiceStatus } from "@/lib/types";
 
 export const INVOICE_STATUS_COLOR: Record<string, string> = {
-  draft: "#94a3b8",
+  draft: "#9ca3af",
   issued: "#f97316",
-  paid: "#10b981",
+  paid: "#22c55e",
 };
+
+const NEUTRAL = "#9ca3af";
 
 export function InvoiceStatusBadge({
   number,
@@ -15,12 +17,13 @@ export function InvoiceStatusBadge({
   status: InvoiceStatus | "draft";
   className?: string;
 }) {
-  const color = INVOICE_STATUS_COLOR[status] ?? INVOICE_STATUS_COLOR.draft;
+  const dotColor = INVOICE_STATUS_COLOR[status] ?? NEUTRAL;
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium shrink-0${className ? ` ${className}` : ""}`}
-      style={{ color, backgroundColor: `${color}15`, borderColor: `${color}55` }}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium shrink-0${className ? ` ${className}` : ""}`}
+      style={{ color: NEUTRAL, backgroundColor: `${NEUTRAL}15`, borderColor: `${NEUTRAL}30` }}
     >
+      <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
       {number}
     </span>
   );
