@@ -227,13 +227,15 @@ function EntryRow({
     >
       {/* Mobile */}
       <div className="md:hidden flex items-center gap-3 px-4 py-3">
-        <ClientSquircle name={entry.client.name} color={entry.client.color} />
         <div className="flex-1 min-w-0">
           {showClient ? (
             <>
-              <span className="text-sm font-medium text-foreground truncate block">
-                {entry.client.name}
-              </span>
+              <div className="flex items-center gap-2">
+                <ClientSquircle name={entry.client.name} color={entry.client.color} />
+                <span className="text-sm font-medium text-foreground truncate">
+                  {entry.client.name}
+                </span>
+              </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-xs text-muted-foreground tabular-nums shrink-0">
                   {formatDate(entry.date)}
@@ -269,12 +271,12 @@ function EntryRow({
 
       {/* Desktop */}
       <div className="hidden md:flex items-center gap-3 px-4 py-3.5">
-        <ClientSquircle name={entry.client.name} color={entry.client.color} />
         <span className="text-xs text-muted-foreground tabular-nums w-20 shrink-0">
           {formatDate(entry.date)}
         </span>
         {showClient && (
-          <div className="w-36 shrink-0 pl-2">
+          <div className="w-52 shrink-0 pl-2 flex items-center gap-2">
+            <ClientSquircle name={entry.client.name} color={entry.client.color} />
             <span className="text-sm font-medium text-foreground truncate">
               {entry.client.name}
             </span>
@@ -333,9 +335,6 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
         }}
       >
         {group.invoiceNumber ?? "Draft"}
-      </span>
-      <span className="text-sm font-medium text-foreground">
-        {group.clientName}
       </span>
       <div className="flex-1" />
       <span className="text-xs tabular-nums font-medium text-muted-foreground text-right w-20 shrink-0">
@@ -416,7 +415,7 @@ function InvoiceView({
               {group.entries.map((entry, i) => (
                 <div key={entry.id}>
                   {i > 0 && <Separator />}
-                  <EntryRow entry={entry} onEdit={onEdit} />
+                  <EntryRow entry={entry} showClient onEdit={onEdit} />
                 </div>
               ))}
           </div>
