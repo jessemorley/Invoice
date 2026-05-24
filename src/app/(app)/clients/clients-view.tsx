@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ClientSquircle } from "@/components/client-squircle";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Client } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
@@ -40,25 +41,6 @@ import {
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
-function clientInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter((w) => /^[A-Z]/i.test(w))
-    .map((w) => w[0].toUpperCase())
-    .slice(0, 3)
-    .join("");
-}
-
-function ClientSquircle({ name, color }: { name: string; color: string }) {
-  return (
-    <span
-      className="inline-flex items-center justify-center shrink-0 size-7 text-[10px] font-semibold"
-      style={{ backgroundColor: `${color}33`, color, borderRadius: "30%" }}
-    >
-      {clientInitials(name)}
-    </span>
-  );
-}
 
 const STATUS_LABELS = { all: "All", active: "Active", inactive: "Inactive" } as const;
 

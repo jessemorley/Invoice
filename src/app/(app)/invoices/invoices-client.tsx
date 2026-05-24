@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
+import { ClientSquircle } from "@/components/client-squircle";
 import { revalidateInvoices, loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow, loadEntrySheetData } from "./actions";
 import { invalidate } from "@/lib/invalidate";
 import type { Invoice, InvoiceEmail, InvoiceStatus, InvoiceDetail, Entry, Client, WorkflowRate } from "@/lib/types";
@@ -102,25 +103,6 @@ const STATUS_COLOR: Record<InvoiceStatus, string> = {
   paid:   "#10b981",
 };
 
-function clientInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter((w) => /^[A-Z]/i.test(w))
-    .map((w) => w[0].toUpperCase())
-    .slice(0, 3)
-    .join("");
-}
-
-function ClientSquircle({ name, color }: { name: string; color: string }) {
-  return (
-    <span
-      className="inline-flex items-center justify-center shrink-0 size-7 text-[10px] font-semibold"
-      style={{ backgroundColor: `${color}33`, color, borderRadius: "30%" }}
-    >
-      {clientInitials(name)}
-    </span>
-  );
-}
 
 function InvoiceNumberBadge({ number, status }: { number: string; status: InvoiceStatus }) {
   const color = STATUS_COLOR[status];

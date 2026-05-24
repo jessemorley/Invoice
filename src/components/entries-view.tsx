@@ -17,6 +17,7 @@ import { EntrySheet } from "@/components/entry-sheet";
 import { ViewHeader } from "@/components/view-header";
 import { Check, Plus, RefreshCw, Search } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
+import { ClientSquircle } from "@/components/client-squircle";
 
 type ViewMode = "invoice" | "week" | "none";
 
@@ -31,30 +32,6 @@ const INVOICE_STATUS_COLOR: Record<string, string> = {
   issued: "#f97316",
   paid: "#10b981",
 };
-
-function clientInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter((w) => /^[A-Z]/i.test(w))
-    .map((w) => w[0].toUpperCase())
-    .slice(0, 3)
-    .join("");
-}
-
-function ClientSquircle({ name, color, className }: { name: string; color: string; className?: string }) {
-  return (
-    <span
-      className={`inline-flex items-center justify-center shrink-0 text-[10px] font-semibold ${className ?? "size-7"}`}
-      style={{
-        backgroundColor: `${color}33`,
-        color,
-        borderRadius: "30%",
-      }}
-    >
-      {clientInitials(name)}
-    </span>
-  );
-}
 
 function EntryInvoiceBadge({ invoice }: { invoice: InvoiceRef | null | undefined }) {
   const status = invoice?.status ?? "draft";
