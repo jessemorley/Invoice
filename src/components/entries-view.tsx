@@ -6,7 +6,7 @@ import {
   loadEarlierEntries,
 } from "@/app/(app)/entries/actions";
 import { invalidate } from "@/lib/invalidate";
-import type { Entry, Client, WorkflowRate, InvoiceRef } from "@/lib/types";
+import type { Entry, Client, WorkflowRate, InvoiceRef, InvoiceStatus } from "@/lib/types";
 import { formatAUD, formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -18,6 +18,7 @@ import { ViewHeader } from "@/components/view-header";
 import { Check, Plus, RefreshCw, Search } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { ClientSquircle } from "@/components/client-squircle";
+import { InvoiceStatusBadge } from "@/components/invoice-status-badge";
 
 type ViewMode = "invoice" | "week" | "none";
 
@@ -27,22 +28,12 @@ const VIEW_MODE_LABELS: Record<ViewMode, string> = {
   none: "No grouping",
 };
 
-const INVOICE_STATUS_COLOR: Record<string, string> = {
-  draft: "#94a3b8",
-  issued: "#f97316",
-  paid: "#10b981",
-};
-
 function EntryInvoiceBadge({ invoice }: { invoice: InvoiceRef | null | undefined }) {
-  const status = invoice?.status ?? "draft";
-  const color = INVOICE_STATUS_COLOR[status];
   return (
-    <span
-      className="inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium"
-      style={{ color, backgroundColor: `${color}22` }}
-    >
-      {invoice?.number ?? "Draft"}
-    </span>
+    <InvoiceStatusBadge
+      number={invoice?.number ?? "Draft"}
+      status={invoice?.status ?? "draft"}
+    />
   );
 }
 
@@ -293,18 +284,12 @@ function EntryRow({
 }
 
 function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
-  const status = group.invoiceStatus ?? "draft";
   return (
     <div className="flex items-center gap-3 px-4 py-2.5">
-      <span
-        className="inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium shrink-0"
-        style={{
-          color: INVOICE_STATUS_COLOR[status],
-          backgroundColor: `${INVOICE_STATUS_COLOR[status]}22`,
-        }}
-      >
-        {group.invoiceNumber ?? "Draft"}
-      </span>
+      <InvoiceStatusBadge
+        number={group.invoiceNumber ?? "Draft"}
+        status={(group.invoiceStatus ?? "draft") as InvoiceStatus}
+      />
       <div className="flex-1" />
       <span className="text-xs tabular-nums font-medium text-muted-foreground text-right w-20 shrink-0">
         {formatAUD(group.subtotal)}

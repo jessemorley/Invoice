@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { ClientSquircle } from "@/components/client-squircle";
+import { InvoiceStatusBadge } from "@/components/invoice-status-badge";
 import { revalidateInvoices, loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow, loadEntrySheetData } from "./actions";
 import { invalidate } from "@/lib/invalidate";
 import type { Invoice, InvoiceEmail, InvoiceStatus, InvoiceDetail, Entry, Client, WorkflowRate } from "@/lib/types";
@@ -97,24 +98,6 @@ const STATUS_VARIANT: Record<InvoiceStatus, "outline" | "secondary" | "default">
   paid:   "default",
 };
 
-const STATUS_COLOR: Record<InvoiceStatus, string> = {
-  draft:  "#94a3b8",
-  issued: "#f97316",
-  paid:   "#10b981",
-};
-
-
-function InvoiceNumberBadge({ number, status }: { number: string; status: InvoiceStatus }) {
-  const color = STATUS_COLOR[status];
-  return (
-    <span
-      className="inline-flex items-center rounded-full border border-transparent px-2 py-0.5 text-xs font-medium shrink-0"
-      style={{ color, backgroundColor: `${color}22` }}
-    >
-      {number}
-    </span>
-  );
-}
 
 const STATUS_LABEL: Record<InvoiceStatus, string> = {
   draft:  "Draft",
@@ -180,7 +163,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
       <div className="flex items-center gap-4 flex-1 min-w-0">
-        <InvoiceNumberBadge number={invoice.number} status={invoice.status} />
+        <InvoiceStatusBadge number={invoice.number} status={invoice.status} />
         <div className="min-w-0">
           <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style={{ color: invoice.client.color, backgroundColor: `${invoice.client.color}22` }}>
             {invoice.client.name}
@@ -533,7 +516,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                 visibleInvoices.map((inv) => (
                   <TableRow key={inv.id} className="cursor-pointer" onClick={() => openInvoice(inv)}>
                     <TableCell className="py-4 px-6">
-                      <InvoiceNumberBadge number={inv.number} status={inv.status} />
+                      <InvoiceStatusBadge number={inv.number} status={inv.status} />
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground py-4 px-6">
                       {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
