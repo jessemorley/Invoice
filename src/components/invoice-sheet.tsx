@@ -12,9 +12,16 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import type { ScheduledEmail } from "@/lib/queries";
-import { Download, Mail, Plus, Trash2, CalendarClock, Clock, Send, X } from "lucide-react";
+import { Download, Mail, Plus, Trash2, CalendarClock, Send, X, MoreHorizontal } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
-import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { InvoiceStatusBadge } from "@/components/invoice-status-badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,9 +37,11 @@ import {
   Sheet,
   SheetContent,
   SheetTitle,
+  SheetDescription,
   SheetFooter,
   SheetClose,
 } from "@/components/ui/sheet";
+import { ClientSquircle } from "@/components/client-squircle";
 
 type InvoiceEntry = InvoiceDetail["entries"][0];
 
@@ -440,34 +449,43 @@ export function InvoiceSheet({
         <>
         <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
           <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-            {editingNumber ? (
-              <input
-                autoFocus
-                className="font-semibold text-base bg-transparent outline-none w-full"
-                value={numberDraft}
-                disabled={isSavingNumber}
-                onChange={(e) => setNumberDraft(e.target.value)}
-                onBlur={handleNumberSave}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") { e.currentTarget.blur(); }
-                  if (e.key === "Escape") { setEditingNumber(false); setNumberError(null); }
-                }}
-              />
-            ) : (
-              <SheetTitle
-                className="cursor-pointer hover:opacity-70 transition-opacity w-fit"
-                onClick={() => { setNumberDraft(localNumber ?? activeInvoice!.number); setEditingNumber(true); setNumberError(null); }}
-              >
-                {isSavingNumber ? "Saving…" : (localNumber ?? activeInvoice!.number)}
-              </SheetTitle>
-            )}
+            <div className="flex items-center gap-2">
+              {editingNumber ? (
+                <>
+                  <SheetTitle className="sr-only">{localNumber ?? activeInvoice!.number}</SheetTitle>
+                  <input
+                    autoFocus
+                    className="font-semibold text-base bg-transparent outline-none w-full"
+                    value={numberDraft}
+                    disabled={isSavingNumber}
+                    onChange={(e) => setNumberDraft(e.target.value)}
+                    onBlur={handleNumberSave}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") { e.currentTarget.blur(); }
+                      if (e.key === "Escape") { setEditingNumber(false); setNumberError(null); }
+                    }}
+                  />
+                </>
+              ) : (
+                <SheetTitle className="sr-only">{localNumber ?? activeInvoice!.number}</SheetTitle>
+              )}
+              {!editingNumber && (
+                <button
+                  className="hover:opacity-70 transition-opacity"
+                  onClick={() => { setNumberDraft(localNumber ?? activeInvoice!.number); setEditingNumber(true); setNumberError(null); }}
+                  aria-label="Edit invoice number"
+                >
+                  <InvoiceStatusBadge
+                    number={isSavingNumber ? "Saving…" : (localNumber ?? activeInvoice!.number)}
+                    status={form!.status}
+                  />
+                </button>
+              )}
+            </div>
             {numberError && <p className="text-xs text-destructive">{numberError}</p>}
             <div className="flex items-center gap-2">
-              <div
-                className="size-2.5 rounded-full shrink-0"
-                style={{ backgroundColor: activeInvoice!.client.color }}
-              />
-              <p className="text-sm text-muted-foreground">{activeInvoice!.client.name}</p>
+              <ClientSquircle name={activeInvoice!.client.name} color={activeInvoice!.client.color} className="size-[18px] shrink-0" />
+              <SheetDescription>{activeInvoice!.client.name}</SheetDescription>
             </div>
           </div>
           <SheetClose asChild>
@@ -532,7 +550,7 @@ export function InvoiceSheet({
                 Add
               </Button>
             </div>
-          <div className="rounded-lg bg-muted/40 px-4 py-3 flex flex-col gap-3 text-sm">
+          <div className="rounded-lg border overflow-hidden flex flex-col text-sm">
             {effectiveInvoiceDetail ? (
               <>
                 {effectiveInvoiceDetail.entries.map((entry) => (
@@ -540,7 +558,7 @@ export function InvoiceSheet({
                     key={entry.id}
                     type="button"
                     onClick={() => onEntryClick?.(entry.id)}
-                    className="flex items-center gap-4 -mx-2 px-2 py-1 rounded-md hover:bg-muted/60 transition-colors text-left w-[calc(100%+1rem)]"
+                    className="flex items-center gap-4 px-4 py-3 hover:bg-muted/50 transition-colors text-left border-b"
                   >
                     <div className="flex flex-col gap-0.5 flex-1">
                       <span className="font-medium">{entryDescription(entry)}</span>
@@ -559,7 +577,7 @@ export function InvoiceSheet({
                     key={item.id}
                     type="button"
                     onClick={() => setView({ mode: "edit-line-item", item })}
-                    className="flex items-center gap-4 -mx-2 px-2 py-1 rounded-md hover:bg-muted/60 transition-colors text-left w-[calc(100%+1rem)]"
+                    className="flex items-center gap-4 px-4 py-3 hover:bg-muted/50 transition-colors text-left border-b"
                   >
                     <div className="flex flex-col gap-0.5 flex-1">
                       <span className="font-medium">{item.description}</span>
@@ -571,20 +589,23 @@ export function InvoiceSheet({
               </>
             ) : (
               <>
-                <div className="flex justify-between gap-4">
+                <div className="flex justify-between gap-4 px-4 py-3 border-b">
                   <div className="h-4 w-32 rounded bg-muted animate-pulse" />
                   <div className="h-4 w-16 rounded bg-muted animate-pulse" />
                 </div>
-                <div className="flex justify-between gap-4">
+                <div className="flex justify-between gap-4 px-4 py-3 border-b">
                   <div className="h-4 w-24 rounded bg-muted animate-pulse" />
                   <div className="h-4 w-16 rounded bg-muted animate-pulse" />
                 </div>
               </>
             )}
-            {effectiveInvoiceDetail && (effectiveInvoiceDetail.entries.length > 0 || effectiveInvoiceDetail.line_items.length > 0) && (
-              <Separator />
+            {activeInvoice!.super_amount > 0 && (
+              <div className="flex justify-between text-muted-foreground px-4 py-3 border-b">
+                <span>Super</span>
+                <span className="tabular-nums">{formatAUD(activeInvoice!.super_amount)}</span>
+              </div>
             )}
-            <div className="flex justify-between font-medium">
+            <div className="flex justify-between font-medium px-4 py-3">
               <span>Total</span>
               <span className="tabular-nums">
                 {effectiveInvoiceDetail
@@ -595,30 +616,21 @@ export function InvoiceSheet({
                   : formatAUD(activeInvoice!.subtotal)}
               </span>
             </div>
-            {activeInvoice!.super_amount > 0 && (
-              <div className="flex justify-between text-muted-foreground">
-                <span>Super</span>
-                <span className="tabular-nums">{formatAUD(activeInvoice!.super_amount)}</span>
-              </div>
-            )}
           </div>
           </div>
 
           <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" size="sm" className="gap-1.5" disabled>
-              <Plus className="size-3.5" />
-              Add note
-            </Button>
             <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownload} disabled={isDownloading}>
               {isDownloading ? <Spinner data-icon="inline-start" /> : <Download className="size-3.5" />}
               {isDownloading ? "Generating…" : "Download PDF"}
             </Button>
-            {(!scheduledEmail || scheduledEmail.status === "cancelled" || scheduledEmail.status === "sent") ? (
+            {(!scheduledEmail || scheduledEmail.status === "cancelled") && (
               <Button variant="outline" size="sm" className="gap-1.5" onClick={onSendClick}>
                 <Mail className="size-3.5" />
                 Email
               </Button>
-            ) : scheduledEmail.status === "failed" ? (
+            )}
+            {scheduledEmail?.status === "failed" && (
               <Button
                 variant="outline"
                 size="sm"
@@ -628,48 +640,73 @@ export function InvoiceSheet({
                 <Mail className="size-3.5" />
                 Failed — Retry
               </Button>
-            ) : null}
+            )}
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
+
+          {(scheduledEmail?.status === "pending" || scheduledEmail?.status === "sent") && (
+            <>
+              <Separator />
+              <div className="flex flex-col gap-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</p>
+                {scheduledEmail.status === "pending" ? (
+                  <div className="flex justify-between items-center gap-4 text-sm">
+                    <span className="text-muted-foreground shrink-0">Scheduled</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-right">{formatScheduledFor(scheduledEmail.scheduled_for)}</span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="size-7 shrink-0">
+                            <MoreHorizontal className="size-4" />
+                            <span className="sr-only">Email actions</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={onReschedule}>
+                            <CalendarClock className="size-4" />
+                            Edit schedule
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onSendNow?.(scheduledEmail.id)}>
+                            <Send className="size-4" />
+                            Send now
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => onCancelEmail?.(scheduledEmail.id)}
+                          >
+                            Cancel send
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex justify-between gap-4 text-sm">
+                      <span className="text-muted-foreground shrink-0">Sent</span>
+                      <span className="text-right">{scheduledEmail.sent_at ? formatRelativeTime(scheduledEmail.sent_at) : "—"}</span>
+                    </div>
+                    <div className="flex justify-between gap-4 text-sm">
+                      <span className="text-muted-foreground shrink-0">To</span>
+                      <span className="text-right">{scheduledEmail.to_address}</span>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button variant="outline" size="sm" className="gap-1.5" onClick={onViewEmail}>
+                        View email
+                      </Button>
+                      <Button variant="outline" size="sm" className="gap-1.5" onClick={onSendClick}>
+                        <Mail className="size-3.5" />
+                        Send again
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
-
-        {scheduledEmail?.status === "sent" && (
-          <div className="px-6 pb-4">
-            <Alert>
-              <Mail className="size-4" />
-              <AlertTitle>Email sent {scheduledEmail.sent_at ? formatRelativeTime(scheduledEmail.sent_at) : ""}</AlertTitle>
-              <AlertDescription>To {scheduledEmail.to_address}</AlertDescription>
-              <AlertAction>
-                <Button variant="outline" size="xs" onClick={onViewEmail}>View</Button>
-              </AlertAction>
-            </Alert>
-          </div>
-        )}
-
-        {scheduledEmail?.status === "pending" && (
-          <div className="px-6 pb-4">
-            <Alert className="border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-50">
-              <Clock className="size-4" />
-              <AlertTitle>Email scheduled for {formatScheduledFor(scheduledEmail.scheduled_for)}</AlertTitle>
-              <AlertDescription className="text-amber-800 dark:text-amber-200">
-                <div className="flex gap-2 flex-wrap mt-2">
-                  <Button variant="outline" size="xs" onClick={onReschedule}>
-                    <CalendarClock />
-                    Edit
-                  </Button>
-                  <Button variant="outline" size="xs" onClick={() => onSendNow?.(scheduledEmail.id)}>
-                    <Send />
-                    Send now
-                  </Button>
-                  <Button variant="destructive" size="xs" onClick={() => onCancelEmail?.(scheduledEmail.id)}>
-                    Cancel
-                  </Button>
-                </div>
-              </AlertDescription>
-            </Alert>
-          </div>
-        )}
 
         <SheetFooter className="px-6 py-4 border-t flex-row gap-2">
           <AlertDialog>
