@@ -9,7 +9,7 @@ import { invalidate } from "@/lib/invalidate";
 import type { Invoice, InvoiceEmail, InvoiceStatus, InvoiceDetail, Entry, Client, WorkflowRate } from "@/lib/types";
 import type { ScheduledEmail } from "@/lib/queries";
 import type { InvoiceFilters } from "@/lib/queries";
-import { formatAUD, formatDateShort } from "@/lib/format";
+import { formatAUD, formatDateShort, toLocalDateStr } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -146,7 +146,7 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
   const date = email.status === "sent" && email.sent_at
     ? formatDateShort(email.sent_at.slice(0, 10))
     : email.status === "pending"
-    ? formatDateShort(email.scheduled_for.slice(0, 10))
+    ? formatDateShort(toLocalDateStr(new Date(email.scheduled_for)))
     : null;
 
   return (

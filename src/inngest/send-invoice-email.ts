@@ -134,10 +134,9 @@ export const sendInvoiceEmail = inngest.createFunction(
       .eq("id", scheduled_email_id);
 
     if (mark_issued && invoice_id) {
-      const issuedDate = new Date(scheduled_for).toISOString().split("T")[0];
       await supabase
         .from("invoices")
-        .update({ status: "issued", issued_date: issuedDate })
+        .update({ status: "issued" })
         .eq("id", invoice_id)
         .eq("status", "draft");
     }

@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef, useCallback } from "react";
 import type { InvoiceDetail } from "@/lib/types";
-import { formatAUD, formatDateShort } from "@/lib/format";
+import { formatAUD, formatDateShort, toLocalDateStr } from "@/lib/format";
 import { scheduleInvoiceEmail, cancelScheduledEmail } from "@/app/(app)/invoices/actions";
 import type { EmailFormData } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
@@ -194,11 +194,13 @@ function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, ini
     setError(null);
     startTransition(async () => {
       try {
+        const resolvedSendAt = sendAt ?? new Date();
         const data: EmailFormData = {
           to: validRecipients.join(", "),
           subject,
           body_text: body,
-          scheduled_for: sendAt?.toISOString() ?? new Date().toISOString(),
+          scheduled_for: resolvedSendAt.toISOString(),
+          scheduled_date: toLocalDateStr(resolvedSendAt),
         };
         const result = await scheduleInvoiceEmail(invoice.id, data);
         invalidate("invoices", "emails");
