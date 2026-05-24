@@ -249,12 +249,12 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
   const scheduledTs = new Date(data.scheduled_for).getTime();
 
   if (markIssued) {
-    const issuedDate = data.scheduled_date;
     await supabase
       .from("invoices")
-      .update({ issued_date: issuedDate })
+      .update({ issued_date: data.scheduled_date })
       .eq("id", invoiceId)
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .eq("status", "draft");
     updateTag(CACHE_TAGS.invoices);
     updateTag(CACHE_TAGS.entries);
   }
@@ -293,6 +293,7 @@ export async function cancelScheduledEmail(scheduledEmailId: string): Promise<vo
     .single();
 
   if (error) throw new Error(`cancelScheduledEmail: ${error.message}`);
+  if (!row) return;
 
   if (row.mark_issued && row.invoice_id) {
     await supabase

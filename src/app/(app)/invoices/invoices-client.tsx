@@ -9,7 +9,7 @@ import { invalidate } from "@/lib/invalidate";
 import type { Invoice, InvoiceEmail, InvoiceStatus, InvoiceDetail, Entry, Client, WorkflowRate } from "@/lib/types";
 import type { ScheduledEmail } from "@/lib/queries";
 import type { InvoiceFilters } from "@/lib/queries";
-import { formatAUD, formatDateShort } from "@/lib/format";
+import { formatAUD, formatDateShort, toLocalDateStr } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,18 +143,10 @@ const EMAIL_VARIANT: Record<InvoiceEmail["status"], "default" | "secondary" | "d
 };
 
 function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate?: boolean }) {
-  const toLocalDateStr = (iso: string) => {
-    const d = new Date(iso);
-    return [
-      d.getFullYear(),
-      String(d.getMonth() + 1).padStart(2, "0"),
-      String(d.getDate()).padStart(2, "0"),
-    ].join("-");
-  };
   const date = email.status === "sent" && email.sent_at
     ? formatDateShort(email.sent_at.slice(0, 10))
     : email.status === "pending"
-    ? formatDateShort(toLocalDateStr(email.scheduled_for))
+    ? formatDateShort(toLocalDateStr(new Date(email.scheduled_for)))
     : null;
 
   return (
