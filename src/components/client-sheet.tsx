@@ -48,6 +48,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Pencil, X } from "lucide-react";
+import { ClientSquircle } from "@/components/client-squircle";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -63,9 +64,9 @@ const BILLING_LABEL: Record<string, string> = {
   manual: "Manual",
 };
 
-// ── Color dot (detail view only) ─────────────────────────────────────────────
+// ── Color squircle (detail view only) ────────────────────────────────────────
 
-function ColorDot({ clientId, current }: { clientId: string; current: string | null }) {
+function ColorSquircle({ clientId, name, current }: { clientId: string; name: string; current: string | null }) {
   const [isPending, startTransition] = useTransition();
   const active = current ?? CLIENT_COLOR_FALLBACK;
 
@@ -77,13 +78,14 @@ function ColorDot({ clientId, current }: { clientId: string; current: string | n
     <Popover>
       <PopoverTrigger asChild>
         <button
-          className="size-3 rounded-full shrink-0 ring-offset-background transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          style={{ backgroundColor: active }}
+          className="hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-[30%]"
           aria-label="Change client colour"
-        />
+        >
+          <ClientSquircle name={name} color={active} className="size-9" />
+        </button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-2.5" align="start">
-        <div className={`flex gap-1.5 flex-wrap w-40${isPending ? " opacity-60 pointer-events-none" : ""}`}>
+      <PopoverContent className="w-52 p-3" align="start">
+        <div className={`flex gap-1.5 flex-wrap${isPending ? " opacity-60 pointer-events-none" : ""}`}>
           {PALETTE.map((color) => (
             <button
               key={color}
@@ -97,6 +99,10 @@ function ColorDot({ clientId, current }: { clientId: string; current: string | n
               aria-label={color}
             />
           ))}
+        </div>
+        <div className="mt-3 pt-3 border-t flex flex-col gap-1.5">
+          <label className="text-xs text-muted-foreground font-medium">Initials</label>
+          <Input className="h-7 text-xs" placeholder="Auto" maxLength={3} disabled />
         </div>
       </PopoverContent>
     </Popover>
@@ -619,7 +625,7 @@ function ClientDetail({
       <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
         <div className="flex flex-col gap-1.5 flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <ColorDot clientId={client.id} current={client.color} />
+            <ColorSquircle clientId={client.id} name={client.name} current={client.color} />
             <SheetTitle className="truncate">{client.name}</SheetTitle>
             {!client.is_active && (
               <span className="shrink-0 text-xs text-muted-foreground border rounded-full px-2 py-0.5">Inactive</span>
