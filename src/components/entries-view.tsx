@@ -207,11 +207,9 @@ function EntryRow({
         <div className="flex-1 min-w-0">
           {showClient ? (
             <>
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm font-medium text-foreground truncate">
-                  {entry.client.name}
-                </span>
-              </div>
+              <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style={{ color: entry.client.color, backgroundColor: `${entry.client.color}22` }}>
+                {entry.client.name}
+              </span>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-xs text-muted-foreground tabular-nums shrink-0">
                   {formatDate(entry.date)}
@@ -251,11 +249,9 @@ function EntryRow({
           {formatDate(entry.date)}
         </span>
         {showClient && (
-          <div className="flex items-center gap-2 w-40 shrink-0">
-            <span className="text-sm font-medium truncate">
-              {entry.client.name}
-            </span>
-          </div>
+          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0" style={{ color: entry.client.color, backgroundColor: `${entry.client.color}22` }}>
+            {entry.client.name}
+          </span>
         )}
         <div className="flex flex-1 min-w-0 items-center gap-2">
           <span className="text-sm text-foreground truncate">
@@ -311,7 +307,7 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
       >
         {group.invoiceNumber ?? "Draft"}
       </span>
-      <span className="text-sm font-medium text-muted-foreground">
+      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0" style={{ color: group.clientColor, backgroundColor: `${group.clientColor}22` }}>
         {group.clientName}
       </span>
       <div className="flex-1" />
