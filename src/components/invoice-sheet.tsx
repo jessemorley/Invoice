@@ -647,7 +647,7 @@ export function InvoiceSheet({
               <div className="flex flex-col gap-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</p>
                 {scheduledEmail.status === "pending" ? (
-                  <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border text-sm">
+                  <div className="flex items-center justify-between h-9 px-3 rounded-lg border border-border text-sm">
                     <div className="flex items-center gap-2 min-w-0">
                       <Badge variant="outline">scheduled</Badge>
                       <span className="text-muted-foreground truncate">{formatScheduledFor(scheduledEmail.scheduled_for)}</span>
@@ -679,7 +679,7 @@ export function InvoiceSheet({
                     </DropdownMenu>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border text-sm">
+                  <div className="flex items-center justify-between h-9 px-3 rounded-lg border border-border text-sm">
                     <div className="flex items-center gap-2 min-w-0">
                       <Badge variant="secondary">sent</Badge>
                       <span className="text-muted-foreground truncate">{scheduledEmail.sent_at ? formatRelativeTime(scheduledEmail.sent_at) : ""}</span>
