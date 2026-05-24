@@ -558,14 +558,12 @@ export function InvoiceSheet({
                     key={entry.id}
                     type="button"
                     onClick={() => onEntryClick?.(entry.id)}
-                    className="flex items-center gap-4 px-4 py-3 hover:bg-muted/50 transition-colors text-left border-b"
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left border-b"
                   >
-                    <div className="flex flex-col gap-0.5 flex-1">
-                      <span className="font-medium">{entryDescription(entry)}</span>
-                      <span className="text-muted-foreground">
-                        {new Date(entry.date + "T00:00:00").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}
-                      </span>
-                    </div>
+                    <span className="text-muted-foreground shrink-0 tabular-nums">
+                      {new Date(entry.date + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short" })}
+                    </span>
+                    <span className="flex-1 truncate">{entryDescription(entry)}</span>
                     {entry.hours_worked != null && (
                       <span className="tabular-nums text-muted-foreground shrink-0">{entry.hours_worked}h</span>
                     )}
@@ -577,12 +575,9 @@ export function InvoiceSheet({
                     key={item.id}
                     type="button"
                     onClick={() => setView({ mode: "edit-line-item", item })}
-                    className="flex items-center gap-4 px-4 py-3 hover:bg-muted/50 transition-colors text-left border-b"
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left border-b"
                   >
-                    <div className="flex flex-col gap-0.5 flex-1">
-                      <span className="font-medium">{item.description}</span>
-                      {item.details && <span className="text-muted-foreground">{item.details}</span>}
-                    </div>
+                    <span className="flex-1 truncate">{item.description}</span>
                     <span className="tabular-nums shrink-0">{formatAUD(item.amount)}</span>
                   </button>
                 ))}
