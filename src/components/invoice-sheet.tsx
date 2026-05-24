@@ -22,6 +22,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { InvoiceStatusBadge } from "@/components/invoice-status-badge";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -646,8 +647,11 @@ export function InvoiceSheet({
               <div className="flex flex-col gap-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</p>
                 {scheduledEmail.status === "pending" ? (
-                  <div className="flex items-center justify-between py-2 px-3 rounded-md border border-border text-sm">
-                    <span className="text-muted-foreground shrink-0">Scheduled for {formatScheduledFor(scheduledEmail.scheduled_for)}</span>
+                  <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border text-sm">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Badge variant="outline">scheduled</Badge>
+                      <span className="text-muted-foreground truncate">{formatScheduledFor(scheduledEmail.scheduled_for)}</span>
+                    </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="size-7 shrink-0 -mr-1">
@@ -675,8 +679,11 @@ export function InvoiceSheet({
                     </DropdownMenu>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between py-2 px-3 rounded-md border border-border text-sm">
-                    <span className="text-muted-foreground shrink-0">Sent {scheduledEmail.sent_at ? formatRelativeTime(scheduledEmail.sent_at) : ""}</span>
+                  <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border text-sm">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Badge variant="secondary">sent</Badge>
+                      <span className="text-muted-foreground truncate">{scheduledEmail.sent_at ? formatRelativeTime(scheduledEmail.sent_at) : ""}</span>
+                    </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="size-7 shrink-0 -mr-1">
