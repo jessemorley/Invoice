@@ -9,7 +9,6 @@ import { invalidate } from "@/lib/invalidate";
 import type { Entry, Client, WorkflowRate, InvoiceRef } from "@/lib/types";
 import { formatAUD, formatDate } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -162,16 +161,14 @@ function SkeletonCard({ rows = 3 }: { rows?: number }) {
   return (
     <div className="flex flex-col">
       <SkeletonGroupHeader />
-      <Card className="overflow-hidden py-0 gap-0">
-        <CardContent className="p-0">
+      <div className="rounded-md border overflow-hidden">
           {Array.from({ length: rows }).map((_, i) => (
             <div key={i}>
               {i > 0 && <Separator />}
               <SkeletonRow />
             </div>
           ))}
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }
@@ -400,16 +397,14 @@ function InvoiceView({
       {visible.map((group) => (
         <div key={group.key} className="flex flex-col">
           <ClientWeekGroupHeader group={group} />
-          <Card className="overflow-hidden py-0 gap-0">
-            <CardContent className="p-0">
+          <div className="rounded-md border overflow-hidden">
               {group.entries.map((entry, i) => (
                 <div key={entry.id}>
                   {i > 0 && <Separator />}
                   <EntryRow entry={entry} onEdit={onEdit} />
                 </div>
               ))}
-            </CardContent>
-          </Card>
+          </div>
         </div>
       ))}
       {hasMore && (
@@ -441,16 +436,14 @@ function WeekView({
       {visible.map((group) => (
         <div key={group.key} className="flex flex-col">
           <WeekGroupHeader group={group} />
-          <Card className="overflow-hidden py-0 gap-0">
-            <CardContent className="p-0">
+          <div className="rounded-md border overflow-hidden">
               {group.entries.map((entry, i) => (
                 <div key={entry.id}>
                   {i > 0 && <Separator />}
                   <EntryRow entry={entry} showClient onEdit={onEdit} />
                 </div>
               ))}
-            </CardContent>
-          </Card>
+          </div>
         </div>
       ))}
       {hasMore && (
@@ -481,16 +474,14 @@ function ListView({
 
   return (
     <div>
-      <Card className="overflow-hidden py-0 gap-0">
-        <CardContent className="p-0">
+      <div className="rounded-md border overflow-hidden">
           {visible.map((entry, i) => (
             <div key={entry.id}>
               {i > 0 && <Separator />}
               <EntryRow entry={entry} showClient onEdit={onEdit} />
             </div>
           ))}
-        </CardContent>
-      </Card>
+      </div>
       {hasMore && (
         <LoadEarlierButton onLoad={onLoadEarlier} isPending={isPending} />
       )}
