@@ -246,16 +246,14 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
   if (error) throw new Error(`scheduleInvoiceEmail: ${error.message}`);
 
   const scheduledTs = new Date(data.scheduled_for).getTime();
-  const isSendingNow = scheduledTs <= Date.now();
 
-  if (markIssued && isSendingNow) {
+  if (markIssued) {
     const issuedDate = new Date(data.scheduled_for).toISOString().split("T")[0];
     await supabase
       .from("invoices")
-      .update({ status: "issued", issued_date: issuedDate })
+      .update({ issued_date: issuedDate })
       .eq("id", invoiceId)
-      .eq("user_id", userId)
-      .eq("status", "draft");
+      .eq("user_id", userId);
     updateTag(CACHE_TAGS.invoices);
     updateTag(CACHE_TAGS.entries);
   }
@@ -285,13 +283,26 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
 
 export async function cancelScheduledEmail(scheduledEmailId: string): Promise<void> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
-  const { error } = await supabase
+  const { data: row, error } = await supabase
     .from("scheduled_emails")
     .update({ status: "cancelled" })
     .eq("id", scheduledEmailId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("invoice_id, mark_issued")
+    .single();
 
   if (error) throw new Error(`cancelScheduledEmail: ${error.message}`);
+
+  if (row.mark_issued && row.invoice_id) {
+    await supabase
+      .from("invoices")
+      .update({ issued_date: null })
+      .eq("id", row.invoice_id)
+      .eq("user_id", userId)
+      .eq("status", "draft");
+    updateTag(CACHE_TAGS.invoices);
+    updateTag(CACHE_TAGS.entries);
+  }
 
   await inngest.send({
     name: "invoice/email.cancelled",
@@ -328,9 +339,9 @@ export async function sendScheduledEmailNow(scheduledEmailId: string): Promise<v
     const issuedDate = new Date().toISOString().split("T")[0];
     await supabase
       .from("invoices")
-      .update({ status: "issued", issued_date: issuedDate })
+      .update({ issued_date: issuedDate })
       .eq("id", row.invoice_id)
-      .eq("status", "draft");
+      .eq("user_id", userId);
     updateTag(CACHE_TAGS.invoices);
     updateTag(CACHE_TAGS.entries);
   }
