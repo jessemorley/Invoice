@@ -648,59 +648,61 @@ export function InvoiceSheet({
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</p>
                 {scheduledEmail.status === "pending" ? (
                   <div className="flex items-center justify-between h-9 px-3 rounded-lg border border-border text-sm">
-                    <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-muted-foreground truncate min-w-0">{scheduledEmail.to_address}</span>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="text-xs text-muted-foreground">{formatScheduledFor(scheduledEmail.scheduled_for)}</span>
                       <Badge variant="outline">scheduled</Badge>
-                      <span className="text-muted-foreground truncate">{formatScheduledFor(scheduledEmail.scheduled_for)}</span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="size-7 shrink-0 -mr-1">
+                            <MoreHorizontal className="size-4" />
+                            <span className="sr-only">Email actions</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={onReschedule}>
+                            <CalendarClock className="size-4" />
+                            Edit schedule
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onSendNow?.(scheduledEmail.id)}>
+                            <Send className="size-4" />
+                            Send now
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => onCancelEmail?.(scheduledEmail.id)}
+                          >
+                            Cancel send
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="size-7 shrink-0 -mr-1">
-                          <MoreHorizontal className="size-4" />
-                          <span className="sr-only">Email actions</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={onReschedule}>
-                          <CalendarClock className="size-4" />
-                          Edit schedule
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onSendNow?.(scheduledEmail.id)}>
-                          <Send className="size-4" />
-                          Send now
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => onCancelEmail?.(scheduledEmail.id)}
-                        >
-                          Cancel send
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   </div>
                 ) : (
                   <div className="flex items-center justify-between h-9 px-3 rounded-lg border border-border text-sm">
-                    <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-muted-foreground truncate min-w-0">{scheduledEmail.to_address}</span>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="text-xs text-muted-foreground">{scheduledEmail.sent_at ? formatRelativeTime(scheduledEmail.sent_at) : ""}</span>
                       <Badge variant="secondary">sent</Badge>
-                      <span className="text-muted-foreground truncate">{scheduledEmail.sent_at ? formatRelativeTime(scheduledEmail.sent_at) : ""}</span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="size-7 shrink-0 -mr-1">
+                            <MoreHorizontal className="size-4" />
+                            <span className="sr-only">Email actions</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={onViewEmail}>
+                            View email
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={onSendClick}>
+                            <Mail className="size-4" />
+                            Send again
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="size-7 shrink-0 -mr-1">
-                          <MoreHorizontal className="size-4" />
-                          <span className="sr-only">Email actions</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={onViewEmail}>
-                          View email
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={onSendClick}>
-                          <Mail className="size-4" />
-                          Send again
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   </div>
                 )}
               </div>
