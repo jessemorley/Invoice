@@ -107,6 +107,7 @@ function clientInitials(name: string): string {
     .split(/\s+/)
     .filter((w) => /^[A-Z]/i.test(w))
     .map((w) => w[0].toUpperCase())
+    .slice(0, 3)
     .join("");
 }
 
