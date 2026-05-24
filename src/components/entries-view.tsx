@@ -32,6 +32,29 @@ const INVOICE_STATUS_COLOR: Record<string, string> = {
   paid: "#10b981",
 };
 
+function clientInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter((w) => /^[A-Z]/i.test(w))
+    .map((w) => w[0].toUpperCase())
+    .join("");
+}
+
+function ClientSquircle({ name, color }: { name: string; color: string }) {
+  return (
+    <span
+      className="inline-flex items-center justify-center size-7 shrink-0 text-[10px] font-semibold"
+      style={{
+        backgroundColor: `${color}33`,
+        color,
+        borderRadius: "30%",
+      }}
+    >
+      {clientInitials(name)}
+    </span>
+  );
+}
+
 function EntryInvoiceBadge({ invoice }: { invoice: InvoiceRef | null | undefined }) {
   const status = invoice?.status ?? "draft";
   const color = INVOICE_STATUS_COLOR[status];
@@ -204,10 +227,11 @@ function EntryRow({
     >
       {/* Mobile */}
       <div className="md:hidden flex items-center gap-3 px-4 py-3">
+        <ClientSquircle name={entry.client.name} color={entry.client.color} />
         <div className="flex-1 min-w-0">
           {showClient ? (
             <>
-              <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style={{ color: entry.client.color, backgroundColor: `${entry.client.color}22` }}>
+              <span className="text-sm font-medium text-foreground truncate block">
                 {entry.client.name}
               </span>
               <div className="flex items-center gap-2 mt-0.5">
@@ -245,12 +269,13 @@ function EntryRow({
 
       {/* Desktop */}
       <div className="hidden md:flex items-center gap-3 px-4 py-3.5">
+        <ClientSquircle name={entry.client.name} color={entry.client.color} />
         <span className="text-xs text-muted-foreground tabular-nums w-20 shrink-0">
           {formatDate(entry.date)}
         </span>
         {showClient && (
           <div className="w-36 shrink-0 pl-2">
-            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style={{ color: entry.client.color, backgroundColor: `${entry.client.color}22` }}>
+            <span className="text-sm font-medium text-foreground truncate">
               {entry.client.name}
             </span>
           </div>
@@ -309,7 +334,7 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
       >
         {group.invoiceNumber ?? "Draft"}
       </span>
-      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0" style={{ color: group.clientColor, backgroundColor: `${group.clientColor}22` }}>
+      <span className="text-sm font-medium text-foreground">
         {group.clientName}
       </span>
       <div className="flex-1" />
