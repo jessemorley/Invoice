@@ -255,16 +255,9 @@ function EntryRow({
             </>
           )}
         </div>
-        <div className="flex flex-col items-end gap-0.5 shrink-0">
-          <span className="text-sm tabular-nums text-foreground">
-            {formatAUD(total)}
-          </span>
-          <span className="text-xs tabular-nums text-muted-foreground">
-            {entry.billing_type === "day_rate" &&
-              (entry.day_type === "full" ? "Full day" : "Half day")}
-            {entry.billing_type === "hourly" && entry.hours && `${entry.hours}h`}
-          </span>
-        </div>
+        <span className="text-sm tabular-nums text-foreground shrink-0">
+          {formatAUD(total)}
+        </span>
       </div>
 
       {/* Desktop */}
