@@ -102,6 +102,25 @@ const STATUS_COLOR: Record<InvoiceStatus, string> = {
   paid:   "#10b981",
 };
 
+function clientInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter((w) => /^[A-Z]/i.test(w))
+    .map((w) => w[0].toUpperCase())
+    .join("");
+}
+
+function ClientSquircle({ name, color }: { name: string; color: string }) {
+  return (
+    <span
+      className="inline-flex items-center justify-center shrink-0 size-7 text-[10px] font-semibold"
+      style={{ backgroundColor: `${color}33`, color, borderRadius: "30%" }}
+    >
+      {clientInitials(name)}
+    </span>
+  );
+}
+
 function InvoiceNumberBadge({ number, status }: { number: string; status: InvoiceStatus }) {
   const color = STATUS_COLOR[status];
   return (
@@ -537,7 +556,10 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                       {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
                     </TableCell>
                     <TableCell className="py-4 px-6">
-                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium" style={{ color: inv.client.color, backgroundColor: `${inv.client.color}22` }}>{inv.client.name}</span>
+                      <div className="flex items-center gap-2">
+                        <ClientSquircle name={inv.client.name} color={inv.client.color} />
+                        <span className="text-sm">{inv.client.name}</span>
+                      </div>
                     </TableCell>
                     <TableCell className="py-4 px-6">
                       {inv.email && <EmailBadge email={inv.email} showDate />}
