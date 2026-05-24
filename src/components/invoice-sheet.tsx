@@ -10,7 +10,6 @@ import { ClientPicker, ClientSearchInput } from "@/components/client-picker";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import type { ScheduledEmail } from "@/lib/queries";
 import { Download, Mail, Plus, Trash2, CalendarClock, Send, X, MoreHorizontal } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
@@ -642,10 +641,8 @@ export function InvoiceSheet({
           {error && <p className="text-sm text-destructive">{error}</p>}
 
           {(scheduledEmail?.status === "pending" || scheduledEmail?.status === "sent") && (
-            <>
-              <Separator />
-              <div className="flex flex-col gap-3">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</p>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Email</label>
                 {scheduledEmail.status === "pending" ? (
                   <div className="flex items-center justify-between h-9 px-3 rounded-lg border border-border text-sm">
                     <span className="text-muted-foreground truncate min-w-0">{scheduledEmail.to_address}</span>
@@ -705,8 +702,7 @@ export function InvoiceSheet({
                     </div>
                   </div>
                 )}
-              </div>
-            </>
+            </div>
           )}
         </div>
 
