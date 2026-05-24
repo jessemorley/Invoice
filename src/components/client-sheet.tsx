@@ -100,10 +100,6 @@ function ColorSquircle({ clientId, name, current }: { clientId: string; name: st
             />
           ))}
         </div>
-        <div className="mt-3 pt-3 border-t flex flex-col gap-1.5">
-          <label className="text-xs text-muted-foreground font-medium">Initials</label>
-          <Input className="h-7 text-xs" placeholder="Auto" maxLength={3} disabled />
-        </div>
       </PopoverContent>
     </Popover>
   );
