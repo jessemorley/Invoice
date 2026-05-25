@@ -41,25 +41,6 @@ export function SentEmailSheet({ open, onOpenChangeAction, email }: SentEmailShe
         return;
       }
 
-      const isTouch = typeof navigator !== "undefined" && navigator.maxTouchPoints > 0;
-      const filename = email.filename ?? "invoice.pdf";
-
-      if (isTouch && typeof navigator.canShare === "function") {
-        const probe = new File([], filename, { type: "application/pdf" });
-        if (navigator.canShare({ files: [probe] })) {
-          const res = await fetch(signedUrl);
-          const blob = await res.blob();
-          const file = new File([blob], filename, { type: "application/pdf" });
-          try {
-            await navigator.share({ files: [file] });
-            return;
-          } catch (e) {
-            if ((e as { name?: string })?.name !== "AbortError") throw e;
-            return;
-          }
-        }
-      }
-
       window.open(signedUrl, "_blank", "noopener,noreferrer");
     } finally {
       setIsOpening(false);
