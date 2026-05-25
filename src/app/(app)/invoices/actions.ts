@@ -315,6 +315,115 @@ export async function cancelScheduledEmail(scheduledEmailId: string): Promise<vo
   refresh();
 }
 
+export async function updateScheduledEmail(scheduledEmailId: string, data: EmailFormData): Promise<void> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+
+  await inngest.send({
+    name: "invoice/email.cancelled",
+    data: { scheduled_email_id: scheduledEmailId },
+  });
+
+  const { data: row, error } = await supabase
+    .from("scheduled_emails")
+    .update({
+      to_address: data.to,
+      subject: data.subject,
+      body_text: data.body_text,
+      scheduled_for: data.scheduled_for,
+    })
+    .eq("id", scheduledEmailId)
+    .eq("user_id", userId)
+    .eq("status", "pending")
+    .select("user_id, invoice_id, cc_address, bcc_address, filename, mark_issued, scheduled_for")
+    .single();
+
+  if (error) throw new Error(`updateScheduledEmail: ${error.message}`);
+
+  if (row.mark_issued && row.invoice_id) {
+    await supabase
+      .from("invoices")
+      .update({ issued_date: data.scheduled_date })
+      .eq("id", row.invoice_id)
+      .eq("user_id", userId)
+      .eq("status", "draft");
+    updateTag(CACHE_TAGS.invoices);
+    updateTag(CACHE_TAGS.entries);
+  }
+
+  await inngest.send({
+    name: "invoice/email.scheduled",
+    data: {
+      scheduled_email_id: scheduledEmailId,
+      user_id: row.user_id,
+      invoice_id: row.invoice_id,
+      to_address: data.to,
+      cc_address: row.cc_address,
+      bcc_address: row.bcc_address,
+      subject: data.subject,
+      body_text: data.body_text,
+      filename: row.filename,
+      mark_issued: row.mark_issued,
+      scheduled_for: data.scheduled_for,
+    },
+    ts: new Date(data.scheduled_for).getTime(),
+  });
+
+  updateTag(CACHE_TAGS.scheduledEmails);
+  refresh();
+}
+
+export async function rescheduleScheduledEmail(scheduledEmailId: string, scheduledFor: string, scheduledDate: string): Promise<void> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+
+  await inngest.send({
+    name: "invoice/email.cancelled",
+    data: { scheduled_email_id: scheduledEmailId },
+  });
+
+  const { data: row, error } = await supabase
+    .from("scheduled_emails")
+    .update({ scheduled_for: scheduledFor })
+    .eq("id", scheduledEmailId)
+    .eq("user_id", userId)
+    .eq("status", "pending")
+    .select("user_id, invoice_id, to_address, cc_address, bcc_address, subject, body_text, filename, mark_issued")
+    .single();
+
+  if (error) throw new Error(`rescheduleScheduledEmail: ${error.message}`);
+
+  if (row.mark_issued && row.invoice_id) {
+    await supabase
+      .from("invoices")
+      .update({ issued_date: scheduledDate })
+      .eq("id", row.invoice_id)
+      .eq("user_id", userId)
+      .eq("status", "draft");
+    updateTag(CACHE_TAGS.invoices);
+    updateTag(CACHE_TAGS.entries);
+  }
+
+  await inngest.send({
+    name: "invoice/email.scheduled",
+    data: {
+      scheduled_email_id: scheduledEmailId,
+      user_id: row.user_id,
+      invoice_id: row.invoice_id,
+      to_address: row.to_address,
+      cc_address: row.cc_address,
+      bcc_address: row.bcc_address,
+      subject: row.subject,
+      body_text: row.body_text,
+      filename: row.filename,
+      mark_issued: row.mark_issued,
+      scheduled_for: scheduledFor,
+    },
+    ts: new Date(scheduledFor).getTime(),
+  });
+
+  updateTag(CACHE_TAGS.scheduledEmails);
+  refresh();
+}
+
 export async function sendScheduledEmailNow(scheduledEmailId: string): Promise<void> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
 

@@ -53,6 +53,7 @@ import { InvoiceSheet } from "@/components/invoice-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
+import { RescheduleDialog } from "@/components/reschedule-dialog";
 import { EntrySheet } from "@/components/entry-sheet";
 import { ChevronDown, Clock, FileText, MailWarning, Plus, RefreshCw, Search, Send } from "lucide-react";
 
@@ -237,6 +238,8 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [businessName, setBusinessName] = useState("");
   const [sentEmailOpen, setSentEmailOpen] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [composePrefill, setComposePrefill] = useState<{ to: string[]; subject: string; body: string; scheduledFor: Date | null; editingId: string } | null>(null);
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const composeSentRef = useRef(false);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
@@ -349,6 +352,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
 
   function handleSendClick() {
     setSheetOpen(false);
+    setComposePrefill(null);
     setComposeOpen(true);
   }
 
@@ -358,9 +362,23 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     setScheduledEmail(null);
   }
 
-  function handleReschedule() {
+  function handleEditEmail() {
+    if (!scheduledEmail) return;
+    setComposePrefill({
+      to: scheduledEmail.to_address.split(",").map((s) => s.trim()).filter(Boolean),
+      subject: scheduledEmail.subject,
+      body: scheduledEmail.body_text,
+      scheduledFor: new Date(scheduledEmail.scheduled_for),
+      editingId: scheduledEmail.id,
+    });
     setSheetOpen(false);
     setComposeOpen(true);
+  }
+
+  function handleReschedule() {
+    if (!scheduledEmail) return;
+    setSheetOpen(false);
+    setRescheduleOpen(true);
   }
 
   async function handleSendNow(id: string) {
@@ -607,6 +625,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         scheduledEmail={scheduledEmail}
         onSendClick={handleSendClick}
         onCancelEmail={handleCancelEmail}
+        onEditEmail={handleEditEmail}
         onReschedule={handleReschedule}
         onSendNow={handleSendNow}
         onViewEmail={() => setSentEmailOpen(true)}
@@ -645,11 +664,28 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         onOpenChangeAction={(open) => {
           setComposeOpen(open);
           if (!open && !composeSentRef.current) setSheetOpen(true);
-          if (!open) composeSentRef.current = false;
+          if (!open) { composeSentRef.current = false; setComposePrefill(null); }
         }}
         invoice={invoiceDetail}
         businessName={businessName}
         onSent={() => { composeSentRef.current = true; invalidate("invoices"); }}
+        initialTo={composePrefill?.to}
+        initialSubject={composePrefill?.subject}
+        initialBody={composePrefill?.body}
+        initialScheduledFor={composePrefill?.scheduledFor ?? null}
+        editingId={composePrefill?.editingId}
+      />
+      <RescheduleDialog
+        open={rescheduleOpen}
+        onOpenChangeAction={(open) => {
+          setRescheduleOpen(open);
+          if (!open) setSheetOpen(true);
+        }}
+        scheduledEmailId={scheduledEmail?.id ?? null}
+        currentScheduledFor={scheduledEmail?.scheduled_for ?? null}
+        onRescheduled={(iso) => {
+          setScheduledEmail((prev) => prev ? { ...prev, scheduled_for: iso } : prev);
+        }}
       />
       <GenerateSheet
         open={generateOpen}

@@ -211,6 +211,7 @@ export function InvoiceSheet({
   scheduledEmail,
   onSendClick,
   onCancelEmail,
+  onEditEmail,
   onReschedule,
   onSendNow,
   onViewEmail,
@@ -225,6 +226,7 @@ export function InvoiceSheet({
   scheduledEmail?: ScheduledEmail | null;
   onSendClick?: () => void;
   onCancelEmail?: (id: string) => void;
+  onEditEmail?: () => void;
   onReschedule?: () => void;
   onSendNow?: (id: string) => void;
   onViewEmail?: () => void;
@@ -657,9 +659,13 @@ export function InvoiceSheet({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={onEditEmail}>
+                            <Mail className="size-4" />
+                            Edit email
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={onReschedule}>
                             <CalendarClock className="size-4" />
-                            Edit schedule
+                            Reschedule
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => onSendNow?.(scheduledEmail.id)}>
                             <Send className="size-4" />

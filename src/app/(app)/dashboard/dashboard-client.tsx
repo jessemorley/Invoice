@@ -101,7 +101,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const [sentSheetOpen, setSentSheetOpen] = useState(false);
   const [composeInvoice, setComposeInvoice] = useState<InvoiceDetail | null>(null);
   const [composeBusinessName, setComposeBusinessName] = useState("");
-  const [composePrefill, setComposePrefill] = useState<{ to: string[]; subject: string; body: string } | null>(null);
+  const [composePrefill, setComposePrefill] = useState<{ to: string[]; subject: string; body: string; scheduledFor: Date | null; editingId: string } | null>(null);
   const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
 
   if (!data) return <DashboardSkeleton />;
@@ -137,6 +137,8 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
         to: email.to_address.split(",").map((s) => s.trim()).filter(Boolean),
         subject: email.subject,
         body: email.body_text,
+        scheduledFor: new Date(email.scheduled_for),
+        editingId: email.id,
       });
       setComposeOpen(true);
     }
@@ -337,13 +339,18 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
 
       <EmailComposeSheet
         open={composeOpen}
-        onOpenChangeAction={setComposeOpen}
+        onOpenChangeAction={(open) => {
+          setComposeOpen(open);
+          if (!open) { setComposeInvoice(null); setComposePrefill(null); }
+        }}
         invoice={composeInvoice}
         businessName={composeBusinessName}
         onSent={() => { setComposeInvoice(null); setComposePrefill(null); }}
         initialTo={composePrefill?.to}
         initialSubject={composePrefill?.subject}
         initialBody={composePrefill?.body}
+        initialScheduledFor={composePrefill?.scheduledFor ?? null}
+        editingId={composePrefill?.editingId}
       />
       <SentEmailSheet
         open={sentSheetOpen}
