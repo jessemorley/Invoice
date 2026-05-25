@@ -318,11 +318,6 @@ export async function cancelScheduledEmail(scheduledEmailId: string): Promise<vo
 export async function updateScheduledEmail(scheduledEmailId: string, data: EmailFormData): Promise<void> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
 
-  await inngest.send({
-    name: "invoice/email.cancelled",
-    data: { scheduled_email_id: scheduledEmailId },
-  });
-
   const { data: row, error } = await supabase
     .from("scheduled_emails")
     .update({
@@ -350,23 +345,26 @@ export async function updateScheduledEmail(scheduledEmailId: string, data: Email
     updateTag(CACHE_TAGS.entries);
   }
 
-  await inngest.send({
-    name: "invoice/email.scheduled",
-    data: {
-      scheduled_email_id: scheduledEmailId,
-      user_id: row.user_id,
-      invoice_id: row.invoice_id,
-      to_address: data.to,
-      cc_address: row.cc_address,
-      bcc_address: row.bcc_address,
-      subject: data.subject,
-      body_text: data.body_text,
-      filename: row.filename,
-      mark_issued: row.mark_issued,
-      scheduled_for: data.scheduled_for,
+  await inngest.send([
+    { name: "invoice/email.cancelled", data: { scheduled_email_id: scheduledEmailId } },
+    {
+      name: "invoice/email.scheduled",
+      data: {
+        scheduled_email_id: scheduledEmailId,
+        user_id: row.user_id,
+        invoice_id: row.invoice_id,
+        to_address: data.to,
+        cc_address: row.cc_address,
+        bcc_address: row.bcc_address,
+        subject: data.subject,
+        body_text: data.body_text,
+        filename: row.filename,
+        mark_issued: row.mark_issued,
+        scheduled_for: data.scheduled_for,
+      },
+      ts: new Date(data.scheduled_for).getTime(),
     },
-    ts: new Date(data.scheduled_for).getTime(),
-  });
+  ]);
 
   updateTag(CACHE_TAGS.scheduledEmails);
   refresh();
@@ -374,11 +372,6 @@ export async function updateScheduledEmail(scheduledEmailId: string, data: Email
 
 export async function rescheduleScheduledEmail(scheduledEmailId: string, scheduledFor: string, scheduledDate: string): Promise<void> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
-
-  await inngest.send({
-    name: "invoice/email.cancelled",
-    data: { scheduled_email_id: scheduledEmailId },
-  });
 
   const { data: row, error } = await supabase
     .from("scheduled_emails")
@@ -402,23 +395,26 @@ export async function rescheduleScheduledEmail(scheduledEmailId: string, schedul
     updateTag(CACHE_TAGS.entries);
   }
 
-  await inngest.send({
-    name: "invoice/email.scheduled",
-    data: {
-      scheduled_email_id: scheduledEmailId,
-      user_id: row.user_id,
-      invoice_id: row.invoice_id,
-      to_address: row.to_address,
-      cc_address: row.cc_address,
-      bcc_address: row.bcc_address,
-      subject: row.subject,
-      body_text: row.body_text,
-      filename: row.filename,
-      mark_issued: row.mark_issued,
-      scheduled_for: scheduledFor,
+  await inngest.send([
+    { name: "invoice/email.cancelled", data: { scheduled_email_id: scheduledEmailId } },
+    {
+      name: "invoice/email.scheduled",
+      data: {
+        scheduled_email_id: scheduledEmailId,
+        user_id: row.user_id,
+        invoice_id: row.invoice_id,
+        to_address: row.to_address,
+        cc_address: row.cc_address,
+        bcc_address: row.bcc_address,
+        subject: row.subject,
+        body_text: row.body_text,
+        filename: row.filename,
+        mark_issued: row.mark_issued,
+        scheduled_for: scheduledFor,
+      },
+      ts: new Date(scheduledFor).getTime(),
     },
-    ts: new Date(scheduledFor).getTime(),
-  });
+  ]);
 
   updateTag(CACHE_TAGS.scheduledEmails);
   refresh();

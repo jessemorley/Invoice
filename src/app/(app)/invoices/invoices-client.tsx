@@ -6,7 +6,7 @@ import { ClientSquircle } from "@/components/client-squircle";
 import { InvoiceStatusBadge } from "@/components/invoice-status-badge";
 import { revalidateInvoices, loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow, loadEntrySheetData } from "./actions";
 import { invalidate } from "@/lib/invalidate";
-import type { Invoice, InvoiceEmail, InvoiceStatus, InvoiceDetail, Entry, Client, WorkflowRate } from "@/lib/types";
+import type { ComposePrefill, Invoice, InvoiceEmail, InvoiceStatus, InvoiceDetail, Entry, Client, WorkflowRate } from "@/lib/types";
 import type { ScheduledEmail } from "@/lib/queries";
 import type { InvoiceFilters } from "@/lib/queries";
 import { formatAUD, formatDateShort, toLocalDateStr } from "@/lib/format";
@@ -238,7 +238,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [businessName, setBusinessName] = useState("");
   const [sentEmailOpen, setSentEmailOpen] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
-  const [composePrefill, setComposePrefill] = useState<{ to: string[]; subject: string; body: string; scheduledFor: Date | null; editingId: string } | null>(null);
+  const [composePrefill, setComposePrefill] = useState<ComposePrefill | null>(null);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const composeSentRef = useRef(false);
   const [generateOpen, setGenerateOpen] = useState(false);
