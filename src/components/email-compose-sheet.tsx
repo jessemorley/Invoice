@@ -335,7 +335,9 @@ function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, ini
               disabled={isPending || !hasValidRecipient}
             >
               {isPending && <Spinner />}
-              {isPending ? (editingId ? "Saving…" : "Sending…") : (editingId ? "Save" : "Send")}
+              {isPending
+                ? (editingId ? "Saving…" : scheduledFor ? "Scheduling…" : "Sending…")
+                : (editingId ? "Save" : scheduledFor ? "Schedule" : "Send")}
             </Button>
           </ButtonGroup>
         </div>
