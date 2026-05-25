@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useMemo, useTransition } from "react";
 import { toLocalDateStr } from "@/lib/format";
 import { rescheduleScheduledEmail } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
@@ -65,7 +65,7 @@ export function RescheduleDialog({ open, onOpenChangeAction, scheduledEmailId, c
   const [selected, setSelected] = useState<Date | null>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [presets] = useState(getPresets);
+  const presets = useMemo(() => (open ? getPresets() : []), [open]);
 
   function handleSave() {
     if (!scheduledEmailId || !selected) return;

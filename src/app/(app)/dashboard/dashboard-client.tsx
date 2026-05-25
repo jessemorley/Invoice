@@ -349,7 +349,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
         initialTo={composePrefill?.to}
         initialSubject={composePrefill?.subject}
         initialBody={composePrefill?.body}
-        initialScheduledFor={composePrefill?.scheduledFor ?? null}
+        initialScheduledFor={composePrefill?.scheduledFor}
         editingId={composePrefill?.editingId}
       />
       <SentEmailSheet
