@@ -672,7 +672,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         initialTo={composePrefill?.to}
         initialSubject={composePrefill?.subject}
         initialBody={composePrefill?.body}
-        initialScheduledFor={composePrefill?.scheduledFor ?? null}
+        initialScheduledFor={composePrefill?.scheduledFor}
         editingId={composePrefill?.editingId}
       />
       <RescheduleDialog
