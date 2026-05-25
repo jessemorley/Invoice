@@ -49,6 +49,14 @@ export type InvoiceEmail = {
   sent_at: string | null;
 };
 
+export type ComposePrefill = {
+  to: string[];
+  subject: string;
+  body: string;
+  scheduledFor: Date | null;
+  editingId: string;
+};
+
 export type Invoice = {
   id: string;
   number: string;

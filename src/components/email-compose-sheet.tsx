@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef, useCallback } from "react";
 import type { InvoiceDetail } from "@/lib/types";
 import { formatAUD, formatDateShort, toLocalDateStr } from "@/lib/format";
-import { scheduleInvoiceEmail, cancelScheduledEmail } from "@/app/(app)/invoices/actions";
+import { scheduleInvoiceEmail, cancelScheduledEmail, updateScheduledEmail } from "@/app/(app)/invoices/actions";
 import type { EmailFormData } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
 import { toast } from "sonner";
@@ -156,16 +156,18 @@ interface ComposeContentProps {
   initialTo?: string[];
   initialSubject?: string;
   initialBody?: string;
+  initialScheduledFor?: Date | null;
+  editingId?: string;
 }
 
-function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, initialSubject, initialBody }: ComposeContentProps) {
+function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId }: ComposeContentProps) {
   const [chips, setChips] = useState<string[]>(() =>
     initialTo ?? (invoice.client.email ? [invoice.client.email] : [])
   );
   const [chipInput, setChipInput] = useState("");
   const [subject, setSubject] = useState(initialSubject ?? `Invoice ${invoice.number}`);
   const [body, setBody] = useState(() => initialBody ?? defaultBody(invoice, businessName));
-  const [scheduledFor, setScheduledFor] = useState<Date | null>(null);
+  const [scheduledFor, setScheduledFor] = useState<Date | null>(initialScheduledFor ?? null);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -202,6 +204,20 @@ function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, ini
           scheduled_for: resolvedSendAt.toISOString(),
           scheduled_date: toLocalDateStr(resolvedSendAt),
         };
+
+        if (editingId) {
+          await updateScheduledEmail(editingId, data);
+          invalidate("invoices", "emails");
+          onSent();
+          onClose();
+          if (sendAt === null) {
+            toast.success("Email sent");
+          } else {
+            toast(`Email updated — sending ${toastDescription(sendAt)}`);
+          }
+          return;
+        }
+
         const result = await scheduleInvoiceEmail(invoice.id, data);
         invalidate("invoices", "emails");
         onSent();
@@ -232,7 +248,7 @@ function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, ini
     <>
       {/* Header */}
       <div className="px-6 py-5 border-b flex items-center justify-between">
-        <h2 className="text-base font-semibold">Send Invoice {invoice.number}</h2>
+        <h2 className="text-base font-semibold">{editingId ? `Edit email — Invoice ${invoice.number}` : `Send Invoice ${invoice.number}`}</h2>
         <button
           type="button"
           onClick={onClose}
@@ -319,7 +335,9 @@ function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, ini
               disabled={isPending || !hasValidRecipient}
             >
               {isPending && <Spinner />}
-              {isPending ? "Sending…" : "Send"}
+              {isPending
+                ? (editingId ? "Saving…" : scheduledFor ? "Scheduling…" : "Sending…")
+                : (editingId ? "Save" : scheduledFor ? "Schedule" : "Send")}
             </Button>
           </ButtonGroup>
         </div>
@@ -337,16 +355,18 @@ interface EmailComposeSheetProps {
   initialTo?: string[];
   initialSubject?: string;
   initialBody?: string;
+  initialScheduledFor?: Date | null;
+  editingId?: string;
 }
 
-export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessName, onSent, initialTo, initialSubject, initialBody }: EmailComposeSheetProps) {
+export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessName, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId }: EmailComposeSheetProps) {
   if (!invoice) return null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChangeAction}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
         <SheetHeader className="sr-only" showCloseButton={false}>
-          <SheetTitle>Send Invoice {invoice.number}</SheetTitle>
+          <SheetTitle>{editingId ? `Edit email — Invoice ${invoice.number}` : `Send Invoice ${invoice.number}`}</SheetTitle>
         </SheetHeader>
         <ComposeContent
           invoice={invoice}
@@ -356,6 +376,8 @@ export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessN
           initialTo={initialTo}
           initialSubject={initialSubject}
           initialBody={initialBody}
+          initialScheduledFor={initialScheduledFor}
+          editingId={editingId}
         />
       </SheetContent>
     </Sheet>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { DashboardEmail } from "@/lib/types";
 import { getSentEmailPdfUrl } from "@/app/(app)/invoices/actions";
 import { formatRelativeTime } from "@/lib/format";
@@ -21,40 +21,35 @@ interface SentEmailSheetProps {
 }
 
 export function SentEmailSheet({ open, onOpenChangeAction, email }: SentEmailSheetProps) {
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [isOpening, setIsOpening] = useState(false);
+  const [archiveLost, setArchiveLost] = useState(false);
 
-  async function handleDownload() {
-    if (!email) return;
-    setIsDownloading(true);
+  useEffect(() => {
+    setArchiveLost(false);
+  }, [email?.id]);
+
+  const archivePresent = Boolean(email?.sent_pdf_path) && !archiveLost;
+
+  async function handleOpenArchive() {
+    if (!email || !email.sent_pdf_path) return;
+    setIsOpening(true);
     try {
-      const filename = email.filename ?? "invoice.pdf";
-      let url: string;
-      if (email.sent_pdf_path) {
-        const signedUrl = await getSentEmailPdfUrl(email.id);
-        if (!signedUrl) {
-          toast.warning("Couldn't retrieve archived copy — downloading current version instead");
-        }
-        url = signedUrl ?? `/api/invoices/${email.invoice_id}/pdf`;
-      } else {
-        url = `/api/invoices/${email.invoice_id}/pdf`;
+      const signedUrl = await getSentEmailPdfUrl(email.id);
+      if (!signedUrl) {
+        toast.warning("Archived copy is no longer available");
+        setArchiveLost(true);
+        return;
       }
-      const res = await fetch(url);
-      const blob = await res.blob();
-      if (navigator.maxTouchPoints > 0 && navigator.canShare?.({ files: [new File([blob], filename, { type: "application/pdf" })] })) {
-        await navigator.share({ files: [new File([blob], filename, { type: "application/pdf" })] }).catch((e) => {
-          if (e?.name !== "AbortError") throw e;
-        });
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
-      }
+
+      window.open(signedUrl, "_blank", "noopener,noreferrer");
     } finally {
-      setIsDownloading(false);
+      setIsOpening(false);
     }
+  }
+
+  function handleOpenCurrent() {
+    if (!email) return;
+    window.open(`/api/invoices/${email.invoice_id}/pdf`, "_blank", "noopener,noreferrer");
   }
 
   return (
@@ -103,16 +98,39 @@ export function SentEmailSheet({ open, onOpenChangeAction, email }: SentEmailShe
                 <p className="text-sm whitespace-pre-wrap text-muted-foreground">{email.body_text}</p>
               </div>
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1.5">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Attachment</span>
-                <button
-                  onClick={handleDownload}
-                  disabled={isDownloading}
-                  className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-accent transition-colors w-fit disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isDownloading ? <Spinner data-icon="inline-start" className="size-3 shrink-0" /> : <Paperclip className="size-3 shrink-0" />}
-                  <span className="truncate max-w-56">{isDownloading ? (email.sent_pdf_path ? "Downloading…" : "Generating…") : email.filename}</span>
-                </button>
+                {archivePresent ? (
+                  <button
+                    onClick={handleOpenArchive}
+                    disabled={isOpening}
+                    className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-accent transition-colors w-fit disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isOpening ? <Spinner data-icon="inline-start" className="size-3 shrink-0" /> : <Paperclip className="size-3 shrink-0" />}
+                    <span className="truncate max-w-56">{isOpening ? "Opening…" : email.filename}</span>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      disabled
+                      className="inline-flex items-center gap-1.5 rounded-md border border-dashed px-2.5 py-1.5 text-xs text-muted-foreground/70 w-fit cursor-not-allowed"
+                    >
+                      <Paperclip className="size-3 shrink-0" />
+                      <span className="truncate max-w-56">Archived copy unavailable</span>
+                    </button>
+                    <p className="text-xs text-muted-foreground/70">
+                      No archived copy of the sent PDF is stored for this email.{" "}
+                      <button
+                        type="button"
+                        onClick={handleOpenCurrent}
+                        className="underline underline-offset-2 hover:text-foreground transition-colors"
+                      >
+                        View current invoice PDF
+                      </button>
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </>

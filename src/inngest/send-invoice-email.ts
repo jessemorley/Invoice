@@ -70,7 +70,6 @@ export const sendInvoiceEmail = inngest.createFunction(
       body_text,
       filename,
       mark_issued,
-      scheduled_for,
     } = event.data;
 
     const supabase = createClient(
@@ -115,7 +114,19 @@ export const sendInvoiceEmail = inngest.createFunction(
       .from("invoices")
       .upload(storagePath, pdfBytes, { contentType: "application/pdf", upsert: true })
       .catch((err: unknown) => ({ error: err }));
-    if (uploadResult.error) console.error("PDF storage upload failed:", uploadResult.error);
+    if (uploadResult.error) {
+      const err = uploadResult.error as { message?: string };
+      console.error(
+        JSON.stringify({
+          event: "sent_pdf_archive_failed",
+          scheduled_email_id,
+          invoice_id,
+          user_id,
+          storage_path: storagePath,
+          error: err?.message ?? String(uploadResult.error),
+        })
+      );
+    }
     const sentPdfPath = uploadResult.error ? null : storagePath;
 
     await resend.emails.send({

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { DashboardData, DashboardEmail, InvoiceDetail } from "@/lib/types";
+import type { ComposePrefill, DashboardData, DashboardEmail, InvoiceDetail } from "@/lib/types";
 import { formatAUD, formatRelativeTime } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -101,7 +101,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const [sentSheetOpen, setSentSheetOpen] = useState(false);
   const [composeInvoice, setComposeInvoice] = useState<InvoiceDetail | null>(null);
   const [composeBusinessName, setComposeBusinessName] = useState("");
-  const [composePrefill, setComposePrefill] = useState<{ to: string[]; subject: string; body: string } | null>(null);
+  const [composePrefill, setComposePrefill] = useState<ComposePrefill | null>(null);
   const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
 
   if (!data) return <DashboardSkeleton />;
@@ -137,6 +137,8 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
         to: email.to_address.split(",").map((s) => s.trim()).filter(Boolean),
         subject: email.subject,
         body: email.body_text,
+        scheduledFor: new Date(email.scheduled_for),
+        editingId: email.id,
       });
       setComposeOpen(true);
     }
@@ -190,7 +192,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                 {outstanding.map((invoice) => (
                   <div
                     key={invoice.id}
-                    className="flex items-center justify-between py-2 px-3 rounded-md border border-border hover:bg-accent/50 transition-colors cursor-pointer"
+                    className="flex items-center justify-between py-2 px-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <InvoiceStatusBadge number={invoice.number} status={invoice.status} />
@@ -226,7 +228,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                   <div
                     key={email.id}
                     onClick={() => handleEmailRowClick(email)}
-                    className="flex items-center justify-between py-2 px-3 rounded-md border border-border hover:bg-accent/50 transition-colors cursor-pointer"
+                    className="flex items-center justify-between py-2 px-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <InvoiceStatusBadge number={email.invoice_number} status="issued" />
@@ -337,13 +339,18 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
 
       <EmailComposeSheet
         open={composeOpen}
-        onOpenChangeAction={setComposeOpen}
+        onOpenChangeAction={(open) => {
+          setComposeOpen(open);
+          if (!open) { setComposeInvoice(null); setComposePrefill(null); }
+        }}
         invoice={composeInvoice}
         businessName={composeBusinessName}
         onSent={() => { setComposeInvoice(null); setComposePrefill(null); }}
         initialTo={composePrefill?.to}
         initialSubject={composePrefill?.subject}
         initialBody={composePrefill?.body}
+        initialScheduledFor={composePrefill?.scheduledFor}
+        editingId={composePrefill?.editingId}
       />
       <SentEmailSheet
         open={sentSheetOpen}
