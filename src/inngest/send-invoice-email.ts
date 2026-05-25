@@ -70,7 +70,6 @@ export const sendInvoiceEmail = inngest.createFunction(
       body_text,
       filename,
       mark_issued,
-      scheduled_for,
     } = event.data;
 
     const supabase = createClient(
