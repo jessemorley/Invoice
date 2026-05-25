@@ -45,10 +45,11 @@ export function SentEmailSheet({ open, onOpenChangeAction, email }: SentEmailShe
       const filename = email.filename ?? "invoice.pdf";
 
       if (isTouch && typeof navigator.canShare === "function") {
-        const res = await fetch(signedUrl);
-        const blob = await res.blob();
-        const file = new File([blob], filename, { type: "application/pdf" });
-        if (navigator.canShare({ files: [file] })) {
+        const probe = new File([], filename, { type: "application/pdf" });
+        if (navigator.canShare({ files: [probe] })) {
+          const res = await fetch(signedUrl);
+          const blob = await res.blob();
+          const file = new File([blob], filename, { type: "application/pdf" });
           try {
             await navigator.share({ files: [file] });
             return;

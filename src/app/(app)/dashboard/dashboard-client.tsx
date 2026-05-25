@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { DashboardData, DashboardEmail, InvoiceDetail } from "@/lib/types";
+import type { ComposePrefill, DashboardData, DashboardEmail, InvoiceDetail } from "@/lib/types";
 import { formatAUD, formatRelativeTime } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -101,7 +101,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const [sentSheetOpen, setSentSheetOpen] = useState(false);
   const [composeInvoice, setComposeInvoice] = useState<InvoiceDetail | null>(null);
   const [composeBusinessName, setComposeBusinessName] = useState("");
-  const [composePrefill, setComposePrefill] = useState<{ to: string[]; subject: string; body: string; scheduledFor: Date | null; editingId: string } | null>(null);
+  const [composePrefill, setComposePrefill] = useState<ComposePrefill | null>(null);
   const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
 
   if (!data) return <DashboardSkeleton />;

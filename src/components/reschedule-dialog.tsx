@@ -65,7 +65,7 @@ export function RescheduleDialog({ open, onOpenChangeAction, scheduledEmailId, c
   const [selected, setSelected] = useState<Date | null>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const presets = getPresets();
+  const [presets] = useState(getPresets);
 
   function handleSave() {
     if (!scheduledEmailId || !selected) return;
