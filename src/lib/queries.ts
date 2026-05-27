@@ -1,7 +1,7 @@
 import { cacheTag } from "next/cache";
 import { createTokenClient } from "./supabase";
 import { isoWeek } from "./format";
-import type { Entry, Invoice, InvoiceDetail, Expense, DashboardData, DashboardEmail, ClientRef, MonthlyEarning, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
+import type { Entry, Invoice, InvoiceDetail, Expense, DashboardData, DashboardEmail, ClientRef, MonthlyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -521,7 +521,25 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
     monthlyEarnings.push({ month: label, current, prior });
   }
 
-  return { mtdEarnings, mtdPriorMonth, outstanding, monthlyEarnings, emails };
+  // Build day-by-day cumulative series for current month, days 1 → today
+  const todayDay = now.getDate();
+  const mtdEntries = entries.filter((e) => {
+    const d = new Date(e.date + "T00:00:00");
+    return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+  });
+  const dailyTotals = new Map<number, number>();
+  for (const e of mtdEntries) {
+    const day = new Date(e.date + "T00:00:00").getDate();
+    dailyTotals.set(day, (dailyTotals.get(day) ?? 0) + e.base_amount + e.bonus_amount);
+  }
+  const mtdDailyCumulative: MtdDailyPoint[] = [];
+  let running = 0;
+  for (let d = 1; d <= todayDay; d++) {
+    running += dailyTotals.get(d) ?? 0;
+    mtdDailyCumulative.push({ day: d, cumulative: running });
+  }
+
+  return { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, outstanding, monthlyEarnings, emails };
 }
 
 export type BusinessDetails = {

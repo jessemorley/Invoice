@@ -203,9 +203,15 @@ export type DashboardEmail = {
   status: "pending" | "sent" | "failed";
 };
 
+export type MtdDailyPoint = {
+  day: number;
+  cumulative: number;
+};
+
 export type DashboardData = {
   mtdEarnings: number;
   mtdPriorMonth: number;
+  mtdDailyCumulative: MtdDailyPoint[];
   outstanding: Invoice[];
   monthlyEarnings: MonthlyEarning[];
   emails: DashboardEmail[];

@@ -105,7 +105,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
 
   if (!data) return <DashboardSkeleton />;
-  const { mtdEarnings, mtdPriorMonth, outstanding, monthlyEarnings, emails } = data;
+  const { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, outstanding, monthlyEarnings, emails } = data;
   const chartData = timeframe === 6 ? monthlyEarnings.slice(6) : monthlyEarnings;
   const delta = mtdEarnings - mtdPriorMonth;
   const deltaPercent = mtdPriorMonth > 0 ? ((delta / mtdPriorMonth) * 100).toFixed(0) : "0";
@@ -118,6 +118,9 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const chartConfig = {
     current: { label: currentFY, color: "var(--color-primary)" },
     prior: { label: priorFY, color: "var(--color-muted-foreground)" },
+  };
+  const sparklineConfig = {
+    cumulative: { label: "Earnings", color: "var(--color-primary)" },
   };
   const priorMonthName = lastMonth.toLocaleDateString("en-AU", { month: "short" });
 
@@ -159,9 +162,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
               <CardTitle className="text-3xl tabular-nums">
                 {formatAUD(mtdEarnings)}
               </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 pt-0.5">
                 {isUp ? (
                   <TrendingUp className="size-3.5 text-success" />
                 ) : (
@@ -174,6 +175,29 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                   ({priorMonthName} MTD: {formatAUD(mtdPriorMonth)})
                 </span>
               </div>
+            </CardHeader>
+            <CardContent className="pb-4">
+              <ChartContainer config={sparklineConfig} className="h-20 w-full">
+                <AreaChart data={mtdDailyCumulative} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+                  <defs>
+                    <linearGradient id="gradMtd" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="day" hide />
+                  <YAxis hide />
+                  <Area
+                    dataKey="cumulative"
+                    type="monotone"
+                    stroke="var(--color-primary)"
+                    strokeWidth={2}
+                    fill="url(#gradMtd)"
+                    dot={false}
+                    isAnimationActive={false}
+                  />
+                </AreaChart>
+              </ChartContainer>
             </CardContent>
           </Card>
 
