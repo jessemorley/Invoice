@@ -213,7 +213,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                   <ChartTooltip
                     content={
                       <ChartTooltipContent
-                        labelFormatter={(label) => `Day ${label}`}
+                        labelFormatter={(_label, payload) => `Day ${payload?.[0]?.payload?.day ?? ""}`}
                         formatter={(value, name) => (
                           <>
                             <span className="text-muted-foreground">{sparklineConfig[name as keyof typeof sparklineConfig]?.label ?? name}</span>
