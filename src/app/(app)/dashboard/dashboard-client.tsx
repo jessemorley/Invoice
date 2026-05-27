@@ -113,10 +113,12 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
     cumPrior += w.prior;
     return { idx: i, week: w.week, current: cumCurrent, prior: cumPrior };
   });
-  // Tick indices where the month label changes — unique because idx is numeric
-  const monthChangeTicks = chartData
+  const allMonthTicks = chartData
     .filter((d, i) => i === 0 || chartData[i - 1].week !== d.week)
     .map((d) => d.idx);
+  const monthChangeTicks = timeframe === 52
+    ? allMonthTicks.filter((_, i) => i % 2 === 0)
+    : allMonthTicks;
   const delta = mtdEarnings - mtdPriorMonth;
   const deltaPercent = mtdPriorMonth > 0 ? ((delta / mtdPriorMonth) * 100).toFixed(0) : "0";
   const isUp = delta >= 0;
