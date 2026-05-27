@@ -108,14 +108,15 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, emails } = data;
   const weekSlice = timeframe === 26 ? weeklyEarnings.slice(26) : weeklyEarnings;
   let cumCurrent = 0, cumPrior = 0;
-  const chartData = weekSlice.map((w) => {
+  const chartData = weekSlice.map((w, i) => {
     cumCurrent += w.current;
     cumPrior += w.prior;
-    return { week: w.week, current: cumCurrent, prior: cumPrior };
+    return { idx: i, week: w.week, current: cumCurrent, prior: cumPrior };
   });
+  // Tick indices where the month label changes — unique because idx is numeric
   const monthChangeTicks = chartData
-    .map((d, i) => (i === 0 || chartData[i - 1].week !== d.week ? d.week : null))
-    .filter((v): v is string => v !== null);
+    .filter((d, i) => i === 0 || chartData[i - 1].week !== d.week)
+    .map((d) => d.idx);
   const delta = mtdEarnings - mtdPriorMonth;
   const deltaPercent = mtdPriorMonth > 0 ? ((delta / mtdPriorMonth) * 100).toFixed(0) : "0";
   const isUp = delta >= 0;
@@ -369,11 +370,12 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                     </linearGradient>
                   </defs>
                   <XAxis
-                    dataKey="week"
+                    dataKey="idx"
                     tickLine={false}
                     axisLine={false}
                     tick={{ fontSize: 11 }}
                     ticks={monthChangeTicks}
+                    tickFormatter={(idx: number) => chartData[idx]?.week ?? ""}
                   />
                   <YAxis
                     tickLine={false}
