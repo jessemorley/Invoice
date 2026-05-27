@@ -184,7 +184,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
             </CardHeader>
             <CardContent>
               <ChartContainer config={sparklineConfig} className="h-48 w-full">
-                <AreaChart data={sparklineData} margin={{ top: 4, right: 5, bottom: 0, left: 0 }}>
+                <AreaChart data={sparklineData}>
                   <defs>
                     <linearGradient id="gradMtd" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.3} />
@@ -203,8 +203,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                     axisLine={false}
                     tick={{ fontSize: 11 }}
                     tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-                    width={0}
-                    mirror={true}
+                    width={40}
                   />
                   <ChartTooltip
                     content={
