@@ -185,6 +185,7 @@ export type InvoiceDetail = {
 
 export type WeeklyEarning = {
   week: string;
+  yearMonth: string; // "YYYY-MM" — used as unique bucketing key in monthly chart mode
   current: number;
   prior: number;
 };

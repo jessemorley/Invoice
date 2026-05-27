@@ -41,6 +41,9 @@ function fyLabel(year: number, month: number): string {
   return `FY ${String(startYear).slice(2)}–${String(startYear + 1).slice(2)}`;
 }
 
+const audFormatter = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 });
+function formatChartAUD(value: number) { return audFormatter.format(value); }
+
 
 function DashboardSkeleton() {
   return (
@@ -111,12 +114,14 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const weekSlice = timeframe === 26 ? weeklyEarnings.slice(26) : weeklyEarnings;
 
   // Cumulative mode: running total across weeks
-  let cumCurrent = 0, cumPrior = 0;
-  const cumulativeData = weekSlice.map((w, i) => {
-    cumCurrent += w.current;
-    cumPrior += w.prior;
-    return { idx: i, week: w.week, current: cumCurrent, prior: cumPrior };
-  });
+  const cumulativeData = weekSlice.reduce<{ idx: number; week: string; current: number; prior: number }[]>(
+    (acc, w, i) => {
+      const prev = acc[i - 1];
+      acc.push({ idx: i, week: w.week, current: (prev?.current ?? 0) + w.current, prior: (prev?.prior ?? 0) + w.prior });
+      return acc;
+    },
+    []
+  );
   const allMonthTicks = cumulativeData
     .filter((d, i) => i === 0 || cumulativeData[i - 1].week !== d.week)
     .map((d) => d.idx);
@@ -124,13 +129,14 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
     ? allMonthTicks.filter((_, i) => i % 2 === 0)
     : allMonthTicks;
 
-  // Monthly mode: re-bucket weekly slice into calendar months
-  const monthlyMap = new Map<string, { current: number; prior: number }>();
+  // Monthly mode: re-bucket weekly slice into calendar months keyed by yearMonth ("YYYY-MM")
+  // to avoid collisions when the same month name appears twice in a 12-month window (e.g. two "Jan"s).
+  const monthlyMap = new Map<string, { label: string; current: number; prior: number }>();
   for (const w of weekSlice) {
-    const existing = monthlyMap.get(w.week) ?? { current: 0, prior: 0 };
-    monthlyMap.set(w.week, { current: existing.current + w.current, prior: existing.prior + w.prior });
+    const existing = monthlyMap.get(w.yearMonth) ?? { label: w.week, current: 0, prior: 0 };
+    monthlyMap.set(w.yearMonth, { label: w.week, current: existing.current + w.current, prior: existing.prior + w.prior });
   }
-  const monthlyData = Array.from(monthlyMap.entries()).map(([month, vals]) => ({ month, ...vals }));
+  const monthlyData = Array.from(monthlyMap.values()).map(({ label, current, prior }) => ({ month: label, current, prior }));
   const delta = mtdEarnings - mtdPriorMonth;
   const deltaPercent = mtdPriorMonth > 0 ? ((delta / mtdPriorMonth) * 100).toFixed(0) : "0";
   const isUp = delta >= 0;
@@ -242,7 +248,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                           <>
                             <span className="text-muted-foreground">{sparklineConfig[name as keyof typeof sparklineConfig]?.label ?? name}</span>
                             <span className="font-mono font-medium tabular-nums ml-auto pl-4">
-                              {new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(Number(value))}
+                              {formatChartAUD(Number(value))}
                             </span>
                           </>
                         )}
@@ -363,6 +369,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                   <Button
                     variant="ghost"
                     size="icon"
+                    aria-label="Cumulative view"
                     className={cn("h-7 w-7 rounded-none", chartMode === "cumulative" && "bg-muted")}
                     onClick={() => setChartMode("cumulative")}
                   >
@@ -371,6 +378,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                   <Button
                     variant="ghost"
                     size="icon"
+                    aria-label="Monthly view"
                     className={cn("h-7 w-7 rounded-none border-l", chartMode === "monthly" && "bg-muted")}
                     onClick={() => setChartMode("monthly")}
                   >
@@ -424,7 +432,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                             <>
                               <span className="text-muted-foreground">{chartConfig[name as keyof typeof chartConfig]?.label ?? name}</span>
                               <span className="font-mono font-medium tabular-nums ml-auto pl-4">
-                                {new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(Number(value))}
+                                {formatChartAUD(Number(value))}
                               </span>
                             </>
                           )}
@@ -451,7 +459,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                             <>
                               <span className="text-muted-foreground">{chartConfig[name as keyof typeof chartConfig]?.label ?? name}</span>
                               <span className="font-mono font-medium tabular-nums ml-auto pl-4">
-                                {new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(Number(value))}
+                                {formatChartAUD(Number(value))}
                               </span>
                             </>
                           )}

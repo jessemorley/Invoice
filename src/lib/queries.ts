@@ -522,9 +522,12 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
     const priorKey = isoWeek(priorStart.toISOString().slice(0, 10));
 
     const label = weekStart.toLocaleDateString("en-AU", { month: "short" });
+    const yr = weekStart.getFullYear();
+    const mo = String(weekStart.getMonth() + 1).padStart(2, "0");
 
     weeklyEarnings.push({
       week: label,
+      yearMonth: `${yr}-${mo}`,
       current: weekTotals.get(key) ?? 0,
       prior: weekTotals.get(priorKey) ?? 0,
     });
