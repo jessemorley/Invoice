@@ -242,7 +242,6 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                     strokeWidth={2}
                     fill="url(#gradMtd)"
                     dot={false}
-                    isAnimationActive={false}
                   />
                   <Area
                     dataKey="prior"
@@ -252,7 +251,6 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                     strokeOpacity={0.4}
                     fill="none"
                     dot={false}
-                    isAnimationActive={false}
                   />
                 </AreaChart>
               </ChartContainer>
