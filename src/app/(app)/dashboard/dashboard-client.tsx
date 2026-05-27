@@ -196,6 +196,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                     tickLine={false}
                     axisLine={false}
                     tick={{ fontSize: 11 }}
+                    ticks={[1, 5, 10, 15, 20, 25, 30]}
                   />
                   <YAxis
                     tickLine={false}
