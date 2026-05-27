@@ -120,8 +120,9 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
     prior: { label: priorFY, color: "var(--color-muted-foreground)" },
   };
   const priorMonthName = lastMonth.toLocaleDateString("en-AU", { month: "short" });
+  const currentMonthName = now.toLocaleDateString("en-AU", { month: "short" });
   const sparklineConfig = {
-    cumulative: { label: "Earnings", color: "var(--color-primary)" },
+    cumulative: { label: currentMonthName, color: "var(--color-primary)" },
     prior: { label: priorMonthName, color: "var(--color-muted-foreground)" },
   };
   const sparklineData = mtdDailyCumulative.map((pt, i) => ({
@@ -212,7 +213,6 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                   <ChartTooltip
                     content={
                       <ChartTooltipContent
-                        labelKey="day"
                         labelFormatter={(label) => `Day ${label}`}
                         formatter={(value, name) => (
                           <>
@@ -226,21 +226,21 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                     }
                   />
                   <Area
+                    dataKey="cumulative"
+                    type="monotone"
+                    stroke="var(--color-primary)"
+                    strokeWidth={2}
+                    fill="url(#gradMtd)"
+                    dot={false}
+                    isAnimationActive={false}
+                  />
+                  <Area
                     dataKey="prior"
                     type="monotone"
                     stroke="var(--color-muted-foreground)"
                     strokeWidth={1.5}
                     strokeOpacity={0.4}
                     fill="none"
-                    dot={false}
-                    isAnimationActive={false}
-                  />
-                  <Area
-                    dataKey="cumulative"
-                    type="monotone"
-                    stroke="var(--color-primary)"
-                    strokeWidth={2}
-                    fill="url(#gradMtd)"
                     dot={false}
                     isAnimationActive={false}
                   />
