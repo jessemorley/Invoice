@@ -129,6 +129,10 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
     cumulative: pt.cumulative,
     prior: mtdPriorCumulative[i]?.cumulative ?? 0,
   }));
+  const todayDay = sparklineData.length;
+  const xTicks = todayDay <= 10
+    ? sparklineData.map((pt) => pt.day)
+    : [1, 5, 10, 15, 20, 25, 30].filter((d) => d <= todayDay);
 
   const scheduledEmails = emails.filter((e) => e.status === "pending" || e.status === "failed");
 
@@ -196,7 +200,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                     tickLine={false}
                     axisLine={false}
                     tick={{ fontSize: 11 }}
-                    ticks={[1, 5, 10, 15, 20, 25, 30]}
+                    ticks={xTicks}
                   />
                   <YAxis
                     tickLine={false}
