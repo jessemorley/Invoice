@@ -539,7 +539,23 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
     mtdDailyCumulative.push({ day: d, cumulative: running });
   }
 
-  return { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, outstanding, monthlyEarnings, emails };
+  const priorEntries = entries.filter((e) => {
+    const d = new Date(e.date + "T00:00:00");
+    return d.getFullYear() === priorMonthYear && d.getMonth() === priorMonth && d.getDate() <= todayDay;
+  });
+  const priorDailyTotals = new Map<number, number>();
+  for (const e of priorEntries) {
+    const day = new Date(e.date + "T00:00:00").getDate();
+    priorDailyTotals.set(day, (priorDailyTotals.get(day) ?? 0) + e.base_amount + e.bonus_amount);
+  }
+  const mtdPriorCumulative: MtdDailyPoint[] = [];
+  let priorRunning = 0;
+  for (let d = 1; d <= todayDay; d++) {
+    priorRunning += priorDailyTotals.get(d) ?? 0;
+    mtdPriorCumulative.push({ day: d, cumulative: priorRunning });
+  }
+
+  return { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, monthlyEarnings, emails };
 }
 
 export type BusinessDetails = {

@@ -212,6 +212,7 @@ export type DashboardData = {
   mtdEarnings: number;
   mtdPriorMonth: number;
   mtdDailyCumulative: MtdDailyPoint[];
+  mtdPriorCumulative: MtdDailyPoint[];
   outstanding: Invoice[];
   monthlyEarnings: MonthlyEarning[];
   emails: DashboardEmail[];

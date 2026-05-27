@@ -105,7 +105,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
 
   if (!data) return <DashboardSkeleton />;
-  const { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, outstanding, monthlyEarnings, emails } = data;
+  const { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, monthlyEarnings, emails } = data;
   const chartData = timeframe === 6 ? monthlyEarnings.slice(6) : monthlyEarnings;
   const delta = mtdEarnings - mtdPriorMonth;
   const deltaPercent = mtdPriorMonth > 0 ? ((delta / mtdPriorMonth) * 100).toFixed(0) : "0";
@@ -119,10 +119,16 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
     current: { label: currentFY, color: "var(--color-primary)" },
     prior: { label: priorFY, color: "var(--color-muted-foreground)" },
   };
+  const priorMonthName = lastMonth.toLocaleDateString("en-AU", { month: "short" });
   const sparklineConfig = {
     cumulative: { label: "Earnings", color: "var(--color-primary)" },
+    prior: { label: priorMonthName, color: "var(--color-muted-foreground)" },
   };
-  const priorMonthName = lastMonth.toLocaleDateString("en-AU", { month: "short" });
+  const sparklineData = mtdDailyCumulative.map((pt, i) => ({
+    day: pt.day,
+    cumulative: pt.cumulative,
+    prior: mtdPriorCumulative[i]?.cumulative ?? 0,
+  }));
 
   const scheduledEmails = emails.filter((e) => e.status === "pending" || e.status === "failed");
 
@@ -178,7 +184,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
             </CardHeader>
             <CardContent className="pb-4">
               <ChartContainer config={sparklineConfig} className="h-20 w-full">
-                <AreaChart data={mtdDailyCumulative} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+                <AreaChart data={sparklineData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
                   <defs>
                     <linearGradient id="gradMtd" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.3} />
@@ -187,6 +193,16 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                   </defs>
                   <XAxis dataKey="day" hide />
                   <YAxis hide />
+                  <Area
+                    dataKey="prior"
+                    type="monotone"
+                    stroke="var(--color-muted-foreground)"
+                    strokeWidth={1.5}
+                    strokeOpacity={0.4}
+                    fill="none"
+                    dot={false}
+                    isAnimationActive={false}
+                  />
                   <Area
                     dataKey="cumulative"
                     type="monotone"
