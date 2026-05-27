@@ -188,6 +188,11 @@ export type EmailFormData = {
   scheduled_date: string; // YYYY-MM-DD in user's local timezone
 };
 
+export type RescheduleData = {
+  scheduled_for: string; // ISO datetime
+  scheduled_date: string; // YYYY-MM-DD in user's local timezone
+};
+
 export async function loadEntrySheetData(entryId: string) {
   const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
   const [entry, clients, workflowRates] = await Promise.all([
@@ -345,6 +350,10 @@ export async function updateScheduledEmail(scheduledEmailId: string, data: Email
     updateTag(CACHE_TAGS.entries);
   }
 
+  // Cancel + resend are two separate events. Inngest processes them in order in
+  // practice, but there is no hard guarantee — if the worker picks up the new
+  // scheduled event before the cancel lands, both could fire. Acceptable at
+  // current volume; fix by adding a version column if this ever becomes an issue.
   await inngest.send([
     { name: "invoice/email.cancelled", data: { scheduled_email_id: scheduledEmailId } },
     {
@@ -370,7 +379,8 @@ export async function updateScheduledEmail(scheduledEmailId: string, data: Email
   refresh();
 }
 
-export async function rescheduleScheduledEmail(scheduledEmailId: string, scheduledFor: string, scheduledDate: string): Promise<void> {
+export async function rescheduleScheduledEmail(scheduledEmailId: string, data: RescheduleData): Promise<void> {
+  const { scheduled_for: scheduledFor, scheduled_date: scheduledDate } = data;
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
 
   const { data: row, error } = await supabase
@@ -395,6 +405,7 @@ export async function rescheduleScheduledEmail(scheduledEmailId: string, schedul
     updateTag(CACHE_TAGS.entries);
   }
 
+  // Same ordering caveat as updateScheduledEmail — see comment there.
   await inngest.send([
     { name: "invoice/email.cancelled", data: { scheduled_email_id: scheduledEmailId } },
     {

@@ -73,7 +73,7 @@ export function RescheduleDialog({ open, onOpenChangeAction, scheduledEmailId, c
     startTransition(async () => {
       try {
         const iso = selected.toISOString();
-        await rescheduleScheduledEmail(scheduledEmailId, iso, toLocalDateStr(selected));
+        await rescheduleScheduledEmail(scheduledEmailId, { scheduled_for: iso, scheduled_date: toLocalDateStr(selected) });
         invalidate("invoices", "emails");
         onRescheduled?.(iso);
         onOpenChangeAction(false);
