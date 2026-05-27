@@ -182,17 +182,42 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                 </span>
               </div>
             </CardHeader>
-            <CardContent className="pb-4">
-              <ChartContainer config={sparklineConfig} className="h-20 w-full">
-                <AreaChart data={sparklineData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+            <CardContent>
+              <ChartContainer config={sparklineConfig} className="h-48 w-full">
+                <AreaChart data={sparklineData}>
                   <defs>
                     <linearGradient id="gradMtd" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.3} />
                       <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="day" hide />
-                  <YAxis hide />
+                  <XAxis
+                    dataKey="day"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 11 }}
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 11 }}
+                    tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                    width={40}
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        formatter={(value, name) => (
+                          <>
+                            <span className="text-muted-foreground">{sparklineConfig[name as keyof typeof sparklineConfig]?.label ?? name}</span>
+                            <span className="font-mono font-medium tabular-nums ml-auto pl-4">
+                              {new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(Number(value))}
+                            </span>
+                          </>
+                        )}
+                      />
+                    }
+                  />
                   <Area
                     dataKey="prior"
                     type="monotone"
