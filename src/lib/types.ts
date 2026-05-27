@@ -183,8 +183,8 @@ export type InvoiceDetail = {
   line_items: InvoiceLineItem[];
 };
 
-export type MonthlyEarning = {
-  month: string;
+export type WeeklyEarning = {
+  week: string;
   current: number;
   prior: number;
 };
@@ -214,6 +214,6 @@ export type DashboardData = {
   mtdDailyCumulative: MtdDailyPoint[];
   mtdPriorCumulative: MtdDailyPoint[];
   outstanding: Invoice[];
-  monthlyEarnings: MonthlyEarning[];
+  weeklyEarnings: WeeklyEarning[];
   emails: DashboardEmail[];
 };

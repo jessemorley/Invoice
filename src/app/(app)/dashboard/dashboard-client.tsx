@@ -96,7 +96,7 @@ function emailStatusLabel(email: DashboardEmail): string {
 }
 
 export function DashboardClient({ data }: { data?: DashboardData }) {
-  const [timeframe, setTimeframe] = useState<6 | 12>(6);
+  const [timeframe, setTimeframe] = useState<26 | 52>(26);
   const [composeOpen, setComposeOpen] = useState(false);
   const [sentSheetOpen, setSentSheetOpen] = useState(false);
   const [composeInvoice, setComposeInvoice] = useState<InvoiceDetail | null>(null);
@@ -105,8 +105,17 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
 
   if (!data) return <DashboardSkeleton />;
-  const { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, monthlyEarnings, emails } = data;
-  const chartData = timeframe === 6 ? monthlyEarnings.slice(6) : monthlyEarnings;
+  const { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, emails } = data;
+  const weekSlice = timeframe === 26 ? weeklyEarnings.slice(26) : weeklyEarnings;
+  let cumCurrent = 0, cumPrior = 0;
+  const chartData = weekSlice.map((w) => {
+    cumCurrent += w.current;
+    cumPrior += w.prior;
+    return { week: w.week, current: cumCurrent, prior: cumPrior };
+  });
+  const monthChangeTicks = chartData
+    .map((d, i) => (i === 0 || chartData[i - 1].week !== d.week ? d.week : null))
+    .filter((v): v is string => v !== null);
   const delta = mtdEarnings - mtdPriorMonth;
   const deltaPercent = mtdPriorMonth > 0 ? ((delta / mtdPriorMonth) * 100).toFixed(0) : "0";
   const isUp = delta >= 0;
@@ -322,7 +331,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
           <Card>
             <CardHeader className="flex flex-row items-start justify-between gap-2">
               <div>
-                <CardTitle className="text-sm font-medium">{timeframe}-month earnings</CardTitle>
+                <CardTitle className="text-sm font-medium">{timeframe === 26 ? 6 : 12}-month earnings</CardTitle>
                 <CardDescription>
                   <div className="flex items-center gap-4 text-xs">
                     <div className="flex items-center gap-1.5">
@@ -336,13 +345,13 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                   </div>
                 </CardDescription>
               </div>
-              <Select value={String(timeframe)} onValueChange={(v) => setTimeframe(v === "12" ? 12 : 6)}>
+              <Select value={String(timeframe)} onValueChange={(v) => setTimeframe(v === "52" ? 52 : 26)}>
                 <SelectTrigger className="w-28 h-7 text-xs shrink-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="6">6 months</SelectItem>
-                  <SelectItem value="12">12 months</SelectItem>
+                  <SelectItem value="26">6 months</SelectItem>
+                  <SelectItem value="52">12 months</SelectItem>
                 </SelectContent>
               </Select>
             </CardHeader>
@@ -360,10 +369,11 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                     </linearGradient>
                   </defs>
                   <XAxis
-                    dataKey="month"
+                    dataKey="week"
                     tickLine={false}
                     axisLine={false}
                     tick={{ fontSize: 11 }}
+                    ticks={monthChangeTicks}
                   />
                   <YAxis
                     tickLine={false}
@@ -387,19 +397,19 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                     }
                   />
                   <Area
+                    dataKey="current"
+                    type="monotone"
+                    stroke="var(--color-primary)"
+                    strokeWidth={2}
+                    fill="url(#gradCurrent)"
+                  />
+                  <Area
                     dataKey="prior"
                     type="monotone"
                     stroke="var(--color-muted-foreground)"
                     strokeWidth={1.5}
                     strokeOpacity={0.4}
                     fill="url(#gradPrior)"
-                  />
-                  <Area
-                    dataKey="current"
-                    type="monotone"
-                    stroke="var(--color-primary)"
-                    strokeWidth={2}
-                    fill="url(#gradCurrent)"
                   />
                 </AreaChart>
               </ChartContainer>

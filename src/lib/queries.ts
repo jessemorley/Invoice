@@ -1,7 +1,7 @@
 import { cacheTag } from "next/cache";
 import { createTokenClient } from "./supabase";
 import { isoWeek } from "./format";
-import type { Entry, Invoice, InvoiceDetail, Expense, DashboardData, DashboardEmail, ClientRef, MonthlyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
+import type { Entry, Invoice, InvoiceDetail, Expense, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -496,29 +496,38 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
     (inv) => inv.status === "draft" || inv.status === "issued"
   );
 
-  // Build 12-month earnings chart: previous 12 complete months vs same months prior year
-  const monthlyEarnings: MonthlyEarning[] = [];
-  for (let i = 12; i >= 1; i--) {
-    const monthDate = new Date(currentYear, currentMonth - i, 1);
-    const yr = monthDate.getFullYear();
-    const mo = monthDate.getMonth();
-    const label = monthDate.toLocaleDateString("en-AU", { month: "short" });
+  // Build 52-week earnings chart: previous 52 complete ISO weeks vs same weeks prior year.
+  // Prior-year equivalent = shift back exactly 52 weeks (same ISO week number, one year prior).
+  const weeklyEarnings: WeeklyEarning[] = [];
 
-    const current = entries
-      .filter((e) => {
-        const d = new Date(e.date + "T00:00:00");
-        return d.getFullYear() === yr && d.getMonth() === mo;
-      })
-      .reduce((sum, e) => sum + e.base_amount + e.bonus_amount, 0);
+  const weekTotals = new Map<string, number>();
+  for (const e of entries) {
+    const key = isoWeek(e.date);
+    weekTotals.set(key, (weekTotals.get(key) ?? 0) + e.base_amount + e.bonus_amount);
+  }
 
-    const prior = entries
-      .filter((e) => {
-        const d = new Date(e.date + "T00:00:00");
-        return d.getFullYear() === yr - 1 && d.getMonth() === mo;
-      })
-      .reduce((sum, e) => sum + e.base_amount + e.bonus_amount, 0);
+  // Walk back 52 complete weeks from the start of the current (possibly incomplete) ISO week.
+  const todayDow = now.getDay() || 7;
+  const thisWeekMonday = new Date(now);
+  thisWeekMonday.setDate(now.getDate() - (todayDow - 1));
+  thisWeekMonday.setHours(0, 0, 0, 0);
 
-    monthlyEarnings.push({ month: label, current, prior });
+  for (let i = 52; i >= 1; i--) {
+    const weekStart = new Date(thisWeekMonday);
+    weekStart.setDate(thisWeekMonday.getDate() - i * 7);
+    const key = isoWeek(weekStart.toISOString().slice(0, 10));
+
+    const priorStart = new Date(weekStart);
+    priorStart.setDate(weekStart.getDate() - 52 * 7);
+    const priorKey = isoWeek(priorStart.toISOString().slice(0, 10));
+
+    const label = weekStart.toLocaleDateString("en-AU", { month: "short" });
+
+    weeklyEarnings.push({
+      week: label,
+      current: weekTotals.get(key) ?? 0,
+      prior: weekTotals.get(priorKey) ?? 0,
+    });
   }
 
   // Build day-by-day cumulative series for current month, days 1 → today
@@ -555,7 +564,7 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
     mtdPriorCumulative.push({ day: d, cumulative: priorRunning });
   }
 
-  return { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, monthlyEarnings, emails };
+  return { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, emails };
 }
 
 export type BusinessDetails = {
