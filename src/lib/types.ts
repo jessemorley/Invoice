@@ -54,7 +54,7 @@ export type ComposePrefill = {
   subject: string;
   body: string;
   scheduledFor: Date | null;
-  editingId: string;
+  editingId?: string;
 };
 
 export type Invoice = {

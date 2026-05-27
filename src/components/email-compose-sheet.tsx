@@ -211,7 +211,7 @@ function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, ini
           onSent();
           onClose();
           if (sendAt === null) {
-            toast.success("Email sent");
+            toast.success("Email queued — sending now");
           } else {
             toast(`Email updated — sending ${toastDescription(sendAt)}`);
           }
