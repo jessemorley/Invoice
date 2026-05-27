@@ -15,14 +15,15 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { TrendingDown, TrendingUp } from "lucide-react";
+import { TrendingDown, TrendingUp, BarChart2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Area, AreaChart, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, Bar, BarChart, XAxis, YAxis } from "recharts";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { loadScheduledEmail } from "@/app/(app)/invoices/actions";
@@ -97,6 +98,7 @@ function emailStatusLabel(email: DashboardEmail): string {
 
 export function DashboardClient({ data }: { data?: DashboardData }) {
   const [timeframe, setTimeframe] = useState<26 | 52>(26);
+  const [chartMode, setChartMode] = useState<"cumulative" | "monthly">("cumulative");
   const [composeOpen, setComposeOpen] = useState(false);
   const [sentSheetOpen, setSentSheetOpen] = useState(false);
   const [composeInvoice, setComposeInvoice] = useState<InvoiceDetail | null>(null);
@@ -107,18 +109,28 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   if (!data) return <DashboardSkeleton />;
   const { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, emails } = data;
   const weekSlice = timeframe === 26 ? weeklyEarnings.slice(26) : weeklyEarnings;
+
+  // Cumulative mode: running total across weeks
   let cumCurrent = 0, cumPrior = 0;
-  const chartData = weekSlice.map((w, i) => {
+  const cumulativeData = weekSlice.map((w, i) => {
     cumCurrent += w.current;
     cumPrior += w.prior;
     return { idx: i, week: w.week, current: cumCurrent, prior: cumPrior };
   });
-  const allMonthTicks = chartData
-    .filter((d, i) => i === 0 || chartData[i - 1].week !== d.week)
+  const allMonthTicks = cumulativeData
+    .filter((d, i) => i === 0 || cumulativeData[i - 1].week !== d.week)
     .map((d) => d.idx);
   const monthChangeTicks = timeframe === 52
     ? allMonthTicks.filter((_, i) => i % 2 === 0)
     : allMonthTicks;
+
+  // Monthly mode: re-bucket weekly slice into calendar months
+  const monthlyMap = new Map<string, { current: number; prior: number }>();
+  for (const w of weekSlice) {
+    const existing = monthlyMap.get(w.week) ?? { current: 0, prior: 0 };
+    monthlyMap.set(w.week, { current: existing.current + w.current, prior: existing.prior + w.prior });
+  }
+  const monthlyData = Array.from(monthlyMap.entries()).map(([month, vals]) => ({ month, ...vals }));
   const delta = mtdEarnings - mtdPriorMonth;
   const deltaPercent = mtdPriorMonth > 0 ? ((delta / mtdPriorMonth) * 100).toFixed(0) : "0";
   const isUp = delta >= 0;
@@ -346,74 +358,110 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                   </div>
                 </CardDescription>
               </div>
-              <Select value={String(timeframe)} onValueChange={(v) => setTimeframe(v === "52" ? 52 : 26)}>
-                <SelectTrigger className="w-28 h-7 text-xs shrink-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="26">6 months</SelectItem>
-                  <SelectItem value="52">12 months</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex rounded-md border overflow-hidden">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn("h-7 w-7 rounded-none", chartMode === "cumulative" && "bg-muted")}
+                    onClick={() => setChartMode("cumulative")}
+                  >
+                    <TrendingUp className="size-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn("h-7 w-7 rounded-none border-l", chartMode === "monthly" && "bg-muted")}
+                    onClick={() => setChartMode("monthly")}
+                  >
+                    <BarChart2 className="size-3.5" />
+                  </Button>
+                </div>
+                <Select value={String(timeframe)} onValueChange={(v) => setTimeframe(v === "52" ? 52 : 26)}>
+                  <SelectTrigger className="w-28 h-7 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="26">6 months</SelectItem>
+                    <SelectItem value="52">12 months</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </CardHeader>
             <CardContent>
               <ChartContainer config={chartConfig} className="h-48 w-full">
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="gradCurrent" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.3} />
-                      <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.02} />
-                    </linearGradient>
-                    <linearGradient id="gradPrior" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--color-muted-foreground)" stopOpacity={0.15} />
-                      <stop offset="100%" stopColor="var(--color-muted-foreground)" stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis
-                    dataKey="idx"
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fontSize: 11 }}
-                    ticks={monthChangeTicks}
-                    tickFormatter={(idx: number) => chartData[idx]?.week ?? ""}
-                  />
-                  <YAxis
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fontSize: 11 }}
-                    tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-                    width={40}
-                  />
-                  <ChartTooltip
-                    content={
-                      <ChartTooltipContent
-                        formatter={(value, name) => (
-                          <>
-                            <span className="text-muted-foreground">{chartConfig[name as keyof typeof chartConfig]?.label ?? name}</span>
-                            <span className="font-mono font-medium tabular-nums ml-auto pl-4">
-                              {new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(Number(value))}
-                            </span>
-                          </>
-                        )}
-                      />
-                    }
-                  />
-                  <Area
-                    dataKey="current"
-                    type="monotone"
-                    stroke="var(--color-primary)"
-                    strokeWidth={2}
-                    fill="url(#gradCurrent)"
-                  />
-                  <Area
-                    dataKey="prior"
-                    type="monotone"
-                    stroke="var(--color-muted-foreground)"
-                    strokeWidth={1.5}
-                    strokeOpacity={0.4}
-                    fill="url(#gradPrior)"
-                  />
-                </AreaChart>
+                {chartMode === "cumulative" ? (
+                  <AreaChart data={cumulativeData}>
+                    <defs>
+                      <linearGradient id="gradCurrent" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.02} />
+                      </linearGradient>
+                      <linearGradient id="gradPrior" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--color-muted-foreground)" stopOpacity={0.15} />
+                        <stop offset="100%" stopColor="var(--color-muted-foreground)" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis
+                      dataKey="idx"
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 11 }}
+                      ticks={monthChangeTicks}
+                      tickFormatter={(idx: number) => cumulativeData[idx]?.week ?? ""}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 11 }}
+                      tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                      width={40}
+                    />
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          formatter={(value, name) => (
+                            <>
+                              <span className="text-muted-foreground">{chartConfig[name as keyof typeof chartConfig]?.label ?? name}</span>
+                              <span className="font-mono font-medium tabular-nums ml-auto pl-4">
+                                {new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(Number(value))}
+                              </span>
+                            </>
+                          )}
+                        />
+                      }
+                    />
+                    <Area dataKey="current" type="monotone" stroke="var(--color-primary)" strokeWidth={2} fill="url(#gradCurrent)" />
+                    <Area dataKey="prior" type="monotone" stroke="var(--color-muted-foreground)" strokeWidth={1.5} strokeOpacity={0.4} fill="url(#gradPrior)" />
+                  </AreaChart>
+                ) : (
+                  <BarChart data={monthlyData} barCategoryGap="20%">
+                    <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 11 }}
+                      tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                      width={40}
+                    />
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          formatter={(value, name) => (
+                            <>
+                              <span className="text-muted-foreground">{chartConfig[name as keyof typeof chartConfig]?.label ?? name}</span>
+                              <span className="font-mono font-medium tabular-nums ml-auto pl-4">
+                                {new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(Number(value))}
+                              </span>
+                            </>
+                          )}
+                        />
+                      }
+                    />
+                    <Bar dataKey="current" fill="var(--color-primary)" radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="prior" fill="var(--color-muted-foreground)" fillOpacity={0.4} radius={[2, 2, 0, 0]} />
+                  </BarChart>
+                )}
               </ChartContainer>
             </CardContent>
           </Card>
