@@ -183,8 +183,9 @@ export type InvoiceDetail = {
   line_items: InvoiceLineItem[];
 };
 
-export type MonthlyEarning = {
-  month: string;
+export type WeeklyEarning = {
+  week: string;
+  yearMonth: string; // "YYYY-MM" — used as unique bucketing key in monthly chart mode
   current: number;
   prior: number;
 };
@@ -203,10 +204,17 @@ export type DashboardEmail = {
   status: "pending" | "sent" | "failed";
 };
 
+export type MtdDailyPoint = {
+  day: number;
+  cumulative: number;
+};
+
 export type DashboardData = {
   mtdEarnings: number;
   mtdPriorMonth: number;
+  mtdDailyCumulative: MtdDailyPoint[];
+  mtdPriorCumulative: MtdDailyPoint[];
   outstanding: Invoice[];
-  monthlyEarnings: MonthlyEarning[];
+  weeklyEarnings: WeeklyEarning[];
   emails: DashboardEmail[];
 };
