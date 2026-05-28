@@ -152,7 +152,7 @@ function ExpensesSkeleton() {
             <Skeleton className="h-9 w-36" />
             <Skeleton className="h-9 w-36" />
           </div>
-          <div className="rounded-lg border overflow-hidden">
+          <div className="rounded-lg border overflow-hidden bg-card">
           <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
@@ -357,7 +357,7 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
             </Select>
           </div>
 
-          <div className="rounded-lg border overflow-hidden">
+          <div className="rounded-lg border overflow-hidden bg-card">
           <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">

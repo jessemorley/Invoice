@@ -84,7 +84,7 @@ function ClientsSkeleton() {
             <Skeleton className="h-9 flex-1" />
             <Skeleton className="h-9 w-32" />
           </div>
-          <div className="rounded-lg border overflow-hidden">
+          <div className="rounded-lg border overflow-hidden bg-card">
           <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
@@ -254,7 +254,7 @@ if (statusFilter === "active" && !c.is_active) return false;
             </Select>
           </div>
 
-          <div className="rounded-lg border overflow-hidden">
+          <div className="rounded-lg border overflow-hidden bg-card">
           <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
