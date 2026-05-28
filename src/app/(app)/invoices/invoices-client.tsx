@@ -231,6 +231,13 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   });
 
   const [statusOverrides, setStatusOverrides] = useState<Record<string, InvoiceStatus>>({});
+  const [prevInitialInvoices, setPrevInitialInvoices] = useState(initialInvoices);
+
+  if (prevInitialInvoices !== initialInvoices) {
+    setPrevInitialInvoices(initialInvoices);
+    setStatusOverrides({});
+  }
+
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [scheduledEmail, setScheduledEmail] = useState<ScheduledEmail | null>(null);
