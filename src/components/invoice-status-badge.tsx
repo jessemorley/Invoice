@@ -20,8 +20,8 @@ export function InvoiceStatusBadge({
   const dotColor = INVOICE_STATUS_COLOR[status] ?? NEUTRAL;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium shrink-0${className ? ` ${className}` : ""}`}
-      style={{ color: NEUTRAL, backgroundColor: `${NEUTRAL}15`, borderColor: `${NEUTRAL}30` }}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-medium shrink-0${className ? ` ${className}` : ""}`}
+      style={{ color: NEUTRAL, backgroundColor: "#000000", borderColor: `${NEUTRAL}30` }}
     >
       <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
       {number}
