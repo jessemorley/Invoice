@@ -130,7 +130,7 @@ function groupByWeek(entries: Entry[]): WeekGroup[] {
 
 function SkeletonRow() {
   return (
-    <div className="flex items-center gap-3 px-4 py-3.5">
+    <div className="flex items-center gap-3 px-4 py-3">
       <Skeleton className="h-3 w-20 shrink-0" />
       <Skeleton className="h-3 flex-1" />
       <Skeleton className="h-3 w-16 shrink-0" />
@@ -195,7 +195,7 @@ function EntryRow({
       onClick={() => onEdit(entry)}
     >
       {/* Mobile */}
-      <div className="md:hidden flex items-center gap-3 px-4 py-3">
+      <div className="md:hidden flex items-center gap-3 px-4 py-2.5">
         <ClientSquircle name={entry.client.name} color={entry.client.color} className="size-8" />
         <div className="flex-1 min-w-0">
           {showClient ? (
@@ -230,7 +230,7 @@ function EntryRow({
       </div>
 
       {/* Desktop */}
-      <div className="hidden md:flex items-center gap-3 px-4 py-3.5">
+      <div className="hidden md:flex items-center gap-3 px-4 py-3">
         <span className="text-xs text-muted-foreground tabular-nums w-20 shrink-0">
           {formatDate(entry.date)}
         </span>
