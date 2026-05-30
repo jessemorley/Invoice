@@ -6,12 +6,12 @@ import { cn } from "@/lib/utils";
 import { useActiveView, type ViewId } from "@/components/active-view-context";
 
 const PRIMARY_TABS: { view: ViewId; icon: React.ComponentType<{ className?: string; strokeWidth?: number }>; label: string }[] = [
+  { view: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { view: "entries", icon: FileText, label: "Entries" },
   { view: "invoices", icon: Receipt, label: "Invoices" },
 ];
 
 const SECONDARY_TABS: { view: ViewId; icon: React.ComponentType<{ className?: string; strokeWidth?: number }>; label: string }[] = [
-  { view: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { view: "clients", icon: Users, label: "Clients" },
   { view: "expenses", icon: Wallet, label: "Expenses" },
   { view: "settings", icon: Settings, label: "Settings" },
@@ -109,7 +109,7 @@ export function FloatingDock() {
           </div>
         )}
 
-        <nav className="bg-background/95 backdrop-blur-md border border-border/50 rounded-full px-2 py-2 shadow-xl shadow-black/10">
+        <nav className="bg-card backdrop-blur-md border border-border/50 rounded-full px-2 py-2 shadow-xl shadow-black/10">
           {/* Inner wrapper — pill is positioned relative to this */}
           <div ref={innerRef} className="relative flex items-center gap-1">
 
