@@ -98,16 +98,16 @@ function ClientsSkeleton() {
               <TableBody>
                 {[...Array(6)].map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell className="py-4 px-6">
+                    <TableCell className="py-3 px-6">
                       <div className="flex items-center gap-3">
                         <Skeleton className="size-7 shrink-0" style={{ borderRadius: "30%" }} />
                         <Skeleton className="h-3 w-28" />
                       </div>
                     </TableCell>
-                    <TableCell className="py-4 px-6"><Skeleton className="h-3 w-36" /></TableCell>
-                    <TableCell className="py-4 px-6"><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
-                    <TableCell className="py-4 px-6 text-right"><Skeleton className="h-3 w-6 ml-auto" /></TableCell>
-                    <TableCell className="py-4 px-6 text-right"><Skeleton className="h-5 w-14 rounded-full ml-auto" /></TableCell>
+                    <TableCell className="py-3 px-6"><Skeleton className="h-3 w-36" /></TableCell>
+                    <TableCell className="py-3 px-6"><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                    <TableCell className="py-3 px-6 text-right"><Skeleton className="h-3 w-6 ml-auto" /></TableCell>
+                    <TableCell className="py-3 px-6 text-right"><Skeleton className="h-5 w-14 rounded-full ml-auto" /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -276,24 +276,24 @@ if (statusFilter === "active" && !c.is_active) return false;
                 ) : (
                   clients.map((client) => (
                     <TableRow key={client.id} className="cursor-pointer" onClick={() => openClient(client)}>
-                      <TableCell className="py-4 px-6">
+                      <TableCell className="py-3 px-6">
                         <div className="flex items-center gap-3">
                           <ClientSquircle name={client.name} color={client.color ?? CLIENT_COLOR_FALLBACK} />
                           <span className="text-sm font-medium">{client.name}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="py-4 px-6 text-sm text-muted-foreground truncate max-w-0">
+                      <TableCell className="py-3 px-6 text-sm text-muted-foreground truncate max-w-0">
                         {client.email || client.contact_name || "—"}
                       </TableCell>
-                      <TableCell className="py-4 px-6">
+                      <TableCell className="py-3 px-6">
                         <Badge variant="outline" className="text-xs font-normal">
                           {BILLING_LABEL[client.billing_type]}
                         </Badge>
                       </TableCell>
-                      <TableCell className="py-4 px-6 text-sm text-right tabular-nums text-muted-foreground">
+                      <TableCell className="py-3 px-6 text-sm text-right tabular-nums text-muted-foreground">
                         {client.invoice_count}
                       </TableCell>
-                      <TableCell className="py-4 px-6 text-right">
+                      <TableCell className="py-3 px-6 text-right">
                         <Badge variant={client.is_active ? "default" : "secondary"}>
                           {client.is_active ? "Active" : "Inactive"}
                         </Badge>

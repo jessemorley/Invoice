@@ -176,12 +176,12 @@ function SkeletonTableRows({ count = 8 }: { count?: number }) {
     <>
       {Array.from({ length: count }).map((_, i) => (
         <TableRow key={i}>
-          <TableCell className="py-4 px-6"><Skeleton className="h-3 w-24" /></TableCell>
-          <TableCell className="py-4 px-6"><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
-          <TableCell className="py-4 px-6"><Skeleton className="h-3 w-28" /></TableCell>
-          <TableCell className="py-4 px-6"><Skeleton className="h-3 w-20" /></TableCell>
-          <TableCell className="py-4 px-6 text-right"><Skeleton className="h-3 w-16 ml-auto" /></TableCell>
-          <TableCell className="py-4 px-6 text-right"><Skeleton className="h-5 w-14 ml-auto rounded-full" /></TableCell>
+          <TableCell className="py-3 px-6"><Skeleton className="h-3 w-24" /></TableCell>
+          <TableCell className="py-3 px-6"><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+          <TableCell className="py-3 px-6"><Skeleton className="h-3 w-28" /></TableCell>
+          <TableCell className="py-3 px-6"><Skeleton className="h-3 w-20" /></TableCell>
+          <TableCell className="py-3 px-6 text-right"><Skeleton className="h-3 w-16 ml-auto" /></TableCell>
+          <TableCell className="py-3 px-6 text-right"><Skeleton className="h-5 w-14 ml-auto rounded-full" /></TableCell>
         </TableRow>
       ))}
     </>
@@ -511,25 +511,25 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
               ) : (
                 visibleInvoices.map((inv) => (
                   <TableRow key={inv.id} className="cursor-pointer" onClick={() => openInvoice(inv)}>
-                    <TableCell className="py-4 px-6">
+                    <TableCell className="py-3 px-6">
                       <InvoiceStatusBadge number={inv.number} status={inv.status} />
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground py-4 px-6">
+                    <TableCell className="text-sm text-muted-foreground py-3 px-6">
                       {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
                     </TableCell>
-                    <TableCell className="py-4 px-6">
+                    <TableCell className="py-3 px-6">
                       <div className="flex items-center gap-3">
                         <ClientSquircle name={inv.client.name} color={inv.client.color} />
                         <span className="text-sm">{inv.client.name}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="py-4 px-6">
+                    <TableCell className="py-3 px-6">
                       {inv.email && <EmailBadge email={inv.email} showDate />}
                     </TableCell>
-                    <TableCell className="text-sm text-right tabular-nums py-4 px-6">
+                    <TableCell className="text-sm text-right tabular-nums py-3 px-6">
                       {formatAUD(inv.subtotal)}
                     </TableCell>
-                    <TableCell className="py-4 px-6 text-right">
+                    <TableCell className="py-3 px-6 text-right">
                       <StatusBadge
                         status={inv.status}
                         onStatusChange={(s) => handleStatusChange(inv.id, s)}
