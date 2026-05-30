@@ -166,11 +166,11 @@ function ExpensesSkeleton() {
               <TableBody>
                 {[...Array(7)].map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell className="py-3 px-6"><Skeleton className="h-3 w-16" /></TableCell>
-                    <TableCell className="py-3 px-6"><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
-                    <TableCell className="py-3 px-6"><Skeleton className="h-3 w-48" /></TableCell>
-                    <TableCell className="py-3 px-6"><Skeleton className="h-3 w-10" /></TableCell>
-                    <TableCell className="py-3 px-6 text-right"><Skeleton className="h-3 w-16 ml-auto" /></TableCell>
+                    <TableCell className="py-3.5 px-6"><Skeleton className="h-3 w-16" /></TableCell>
+                    <TableCell className="py-3.5 px-6"><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+                    <TableCell className="py-3.5 px-6"><Skeleton className="h-3 w-48" /></TableCell>
+                    <TableCell className="py-3.5 px-6"><Skeleton className="h-3 w-10" /></TableCell>
+                    <TableCell className="py-3.5 px-6 text-right"><Skeleton className="h-3 w-16 ml-auto" /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -377,10 +377,10 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
                   </TableRow>
                 ) : sorted.map((exp) => (
                   <TableRow key={exp.id} className="cursor-pointer" onClick={() => openEdit(exp)}>
-                    <TableCell className="text-sm text-muted-foreground py-3 px-6">
+                    <TableCell className="text-sm text-muted-foreground py-3.5 px-6">
                       {formatDateShort(exp.date)}
                     </TableCell>
-                    <TableCell className="py-3 px-6">
+                    <TableCell className="py-3.5 px-6">
                       <span
                         className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
                         style={{
@@ -391,7 +391,7 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
                         {EXPENSE_CATEGORY_LABELS[exp.category]}
                       </span>
                     </TableCell>
-                    <TableCell className="text-sm py-3 px-6">
+                    <TableCell className="text-sm py-3.5 px-6">
                       <div>
                         <span>{exp.description}</span>
                         {exp.notes && (
@@ -399,10 +399,10 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="py-3 px-6">
+                    <TableCell className="py-3.5 px-6">
                       {exp.receipt_path && <ReceiptChip path={exp.receipt_path} />}
                     </TableCell>
-                    <TableCell className="text-sm text-right tabular-nums py-3 px-6">
+                    <TableCell className="text-sm text-right tabular-nums py-3.5 px-6">
                       {formatAUD(exp.amount)}
                     </TableCell>
                   </TableRow>
