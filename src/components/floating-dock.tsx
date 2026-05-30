@@ -109,7 +109,7 @@ export function FloatingDock() {
           </div>
         )}
 
-        <nav className="bg-card backdrop-blur-md border border-border/50 rounded-full px-2 py-2 shadow-xl shadow-black/10">
+        <nav className="bg-card backdrop-blur-md border border-border rounded-full px-2 py-2 shadow-xl shadow-black/10">
           {/* Inner wrapper — pill is positioned relative to this */}
           <div ref={innerRef} className="relative flex items-center gap-1">
 
