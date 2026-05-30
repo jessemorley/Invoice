@@ -176,11 +176,16 @@ function SkeletonTableRows({ count = 8 }: { count?: number }) {
     <>
       {Array.from({ length: count }).map((_, i) => (
         <TableRow key={i}>
-          <TableCell className="py-3 px-6"><Skeleton className="h-3 w-24" /></TableCell>
-          <TableCell className="py-3 px-6"><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
-          <TableCell className="py-3 px-6"><Skeleton className="h-3 w-28" /></TableCell>
-          <TableCell className="py-3 px-6"><Skeleton className="h-3 w-20" /></TableCell>
-          <TableCell className="py-3 px-6 text-right"><Skeleton className="h-3 w-16 ml-auto" /></TableCell>
+          <TableCell className="py-3 px-6"><Skeleton className="h-5 w-24 rounded-full" /></TableCell>
+          <TableCell className="py-3 px-6"><Skeleton className="h-4 w-16" /></TableCell>
+          <TableCell className="py-3 px-6">
+            <div className="flex items-center gap-3">
+              <Skeleton className="size-7 shrink-0" style={{ borderRadius: "30%" }} />
+              <Skeleton className="h-4 w-28" />
+            </div>
+          </TableCell>
+          <TableCell className="py-3 px-6"><Skeleton className="h-5 w-12 rounded-full" /></TableCell>
+          <TableCell className="py-3 px-6 text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
           <TableCell className="py-3 px-6 text-right"><Skeleton className="h-5 w-14 ml-auto rounded-full" /></TableCell>
         </TableRow>
       ))}
