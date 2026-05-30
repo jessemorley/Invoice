@@ -38,7 +38,7 @@ import {
 function fyLabel(year: number, month: number): string {
   // AU financial year: July (6) – June. If month >= 6, FY is year/year+1, else year-1/year.
   const startYear = month >= 6 ? year : year - 1;
-  return `FY ${String(startYear).slice(2)}–${String(startYear + 1).slice(2)}`;
+  return `FY${String(startYear + 1).slice(2)}`;
 }
 
 const audFormatter = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 });
@@ -428,6 +428,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                     <ChartTooltip
                       content={
                         <ChartTooltipContent
+                          labelFormatter={(_value, payload) => payload[0]?.payload?.week ?? ""}
                           formatter={(value, name) => (
                             <>
                               <span className="text-muted-foreground">{chartConfig[name as keyof typeof chartConfig]?.label ?? name}</span>
