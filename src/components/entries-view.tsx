@@ -128,14 +128,33 @@ function groupByWeek(entries: Entry[]): WeekGroup[] {
   return groups.sort((a, b) => b.latestDate.localeCompare(a.latestDate));
 }
 
-function SkeletonRow() {
+function SkeletonRow({ showClient = false }: { showClient?: boolean }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
-      <Skeleton className="h-3 w-20 shrink-0" />
-      <Skeleton className="h-3 flex-1" />
-      <Skeleton className="h-3 w-16 shrink-0" />
-      <Skeleton className="h-3 w-20 shrink-0" />
-    </div>
+    <>
+      {/* Mobile */}
+      <div className="md:hidden flex items-center gap-3 px-4 py-2.5">
+        <Skeleton className="size-8 rounded-lg shrink-0" />
+        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+          <Skeleton className="h-3 w-32" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+        <Skeleton className="h-3 w-16 shrink-0" />
+      </div>
+      {/* Desktop */}
+      <div className="hidden md:flex items-center gap-3 px-4 py-3">
+        <Skeleton className="h-3 w-20 shrink-0" />
+        {showClient && (
+          <div className="w-52 shrink-0 pl-2 flex items-center gap-3">
+            <Skeleton className="size-5 rounded-md shrink-0" />
+            <Skeleton className="h-3 flex-1" />
+          </div>
+        )}
+        <Skeleton className="h-3 flex-1" />
+        <Skeleton className="h-3 w-20 shrink-0" />
+        {showClient && <Skeleton className="h-5 w-20 rounded-full shrink-0" />}
+        <Skeleton className="h-3 w-20 shrink-0" />
+      </div>
+    </>
   );
 }
 
@@ -144,12 +163,12 @@ function SkeletonGroupHeader() {
     <div className="flex items-center gap-3 px-4 py-2.5 min-h-[40px]">
       <Skeleton className="h-3 w-28" />
       <div className="flex-1" />
-      <Skeleton className="h-3 w-16" />
+      <Skeleton className="h-3 w-20" />
     </div>
   );
 }
 
-function SkeletonCard({ rows = 3 }: { rows?: number }) {
+function SkeletonCard({ rows = 3, showClient = false }: { rows?: number; showClient?: boolean }) {
   return (
     <div className="flex flex-col">
       <SkeletonGroupHeader />
@@ -157,7 +176,7 @@ function SkeletonCard({ rows = 3 }: { rows?: number }) {
           {Array.from({ length: rows }).map((_, i) => (
             <div key={i}>
               {i > 0 && <Separator />}
-              <SkeletonRow />
+              <SkeletonRow showClient={showClient} />
             </div>
           ))}
       </div>
@@ -168,11 +187,11 @@ function SkeletonCard({ rows = 3 }: { rows?: number }) {
 function ContentSkeleton() {
   return (
     <div className="flex flex-col gap-4">
-      <SkeletonCard rows={2} />
-      <SkeletonCard rows={3} />
-      <SkeletonCard rows={1} />
-      <SkeletonCard rows={4} />
-      <SkeletonCard rows={2} />
+      <SkeletonCard rows={2} showClient />
+      <SkeletonCard rows={3} showClient />
+      <SkeletonCard rows={1} showClient />
+      <SkeletonCard rows={4} showClient />
+      <SkeletonCard rows={2} showClient />
     </div>
   );
 }
@@ -324,8 +343,8 @@ function LoadEarlierButton({
   if (isPending) {
     return (
       <>
-        <SkeletonCard rows={2} />
-        <SkeletonCard rows={3} />
+        <SkeletonCard rows={2} showClient />
+        <SkeletonCard rows={3} showClient />
       </>
     );
   }
