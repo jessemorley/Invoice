@@ -428,7 +428,7 @@ export async function fetchDashboardEmails(userId: string, token: string): Promi
   const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("scheduled_emails")
-    .select("id, invoice_id, to_address, subject, body_text, filename, scheduled_for, sent_at, sent_pdf_path, status, invoices(invoice_number)")
+    .select("id, invoice_id, to_address, subject, body_text, filename, scheduled_for, sent_at, sent_pdf_path, status, invoices(invoice_number, status)")
     .eq("user_id", userId)
     .in("status", ["pending", "failed", "sent"])
     .order("status", { ascending: true })
@@ -446,6 +446,7 @@ export async function fetchDashboardEmails(userId: string, token: string): Promi
       id: row.id,
       invoice_id: row.invoice_id ?? "",
       invoice_number: inv?.invoice_number ?? "",
+      invoice_status: (inv?.status ?? "draft") as DashboardEmail["invoice_status"],
       to_address: row.to_address,
       subject: row.subject,
       body_text: row.body_text,
