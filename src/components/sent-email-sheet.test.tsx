@@ -17,6 +17,7 @@ function makeEmail(overrides: Partial<DashboardEmail> = {}): DashboardEmail {
     id: "email-1",
     invoice_id: "invoice-1",
     invoice_number: "INV-001",
+    invoice_status: "issued",
     to_address: "customer@example.com",
     subject: "Invoice INV-001",
     body_text: "Hi, please find your invoice attached.",
