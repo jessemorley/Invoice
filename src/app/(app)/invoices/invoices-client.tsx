@@ -659,6 +659,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
           status: scheduledEmail.status as "pending" | "sent" | "failed",
           invoice_id: selectedInvoice.id,
           invoice_number: selectedInvoice.number,
+          invoice_status: selectedInvoice.status,
         } : null}
       />
       <EntrySheet
