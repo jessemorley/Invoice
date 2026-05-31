@@ -194,6 +194,7 @@ export type DashboardEmail = {
   id: string;
   invoice_id: string;
   invoice_number: string;
+  invoice_status: InvoiceStatus;
   to_address: string;
   subject: string;
   body_text: string;

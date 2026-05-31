@@ -331,7 +331,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                     className="flex items-center justify-between py-2 px-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <InvoiceStatusBadge number={email.invoice_number} status="issued" />
+                      <InvoiceStatusBadge number={email.invoice_number} status={email.invoice_status} />
                       <span className="text-sm text-muted-foreground truncate">{email.to_address}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0 ml-2">
