@@ -37,11 +37,11 @@ export function FloatingDock() {
   // Measure active primary tab position for the sliding pill
   useEffect(() => {
     const activeIndex = PRIMARY_TABS.findIndex((t) => t.view === view);
-    if (activeIndex === -1) {
-      setPillVisible(false);
-      return;
-    }
     const id = requestAnimationFrame(() => {
+      if (activeIndex === -1) {
+        setPillVisible(false);
+        return;
+      }
       const inner = innerRef.current;
       const container = tabsRef.current;
       if (!inner || !container) return;
