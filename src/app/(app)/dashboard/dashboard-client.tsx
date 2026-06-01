@@ -158,19 +158,19 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   };
   const priorByDay = new Map(mtdPriorCumulative.map((pt) => [pt.day, pt.cumulative]));
   const currentByDay = new Map(mtdDailyCumulative.map((pt) => [pt.day, pt.cumulative]));
-  const daysInMonth = Math.max(
+  const chartDays = Math.max(
     mtdPriorCumulative.at(-1)?.day ?? 0,
     mtdDailyCumulative.at(-1)?.day ?? 0
   );
   const todayDayOfMonth = mtdDailyCumulative.at(-1)?.day ?? 0;
-  const sparklineData = Array.from({ length: daysInMonth }, (_, i) => ({
+  const sparklineData = Array.from({ length: chartDays }, (_, i) => ({
     day: i + 1,
     cumulative: currentByDay.get(i + 1) ?? null,
     prior: priorByDay.get(i + 1) ?? null,
     // Flat dotted projection line from today → end of month
     projection: i + 1 >= todayDayOfMonth ? mtdEarnings : null,
   }));
-  const xTicks = [1, 5, 10, 15, 20, 25, daysInMonth].filter(
+  const xTicks = [1, 5, 10, 15, 20, 25, chartDays].filter(
     (d, i, arr) => arr.indexOf(d) === i
   );
 
