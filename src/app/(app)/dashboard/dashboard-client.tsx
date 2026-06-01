@@ -154,16 +154,25 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const sparklineConfig = {
     cumulative: { label: currentMonthName, color: "var(--color-primary)" },
     prior: { label: priorMonthName, color: "var(--color-muted-foreground)" },
+    projection: { label: "", color: "var(--color-primary)" },
   };
-  const sparklineData = mtdDailyCumulative.map((pt, i) => ({
-    day: pt.day,
-    cumulative: pt.cumulative,
-    prior: mtdPriorCumulative[i]?.cumulative ?? 0,
+  const priorByDay = new Map(mtdPriorCumulative.map((pt) => [pt.day, pt.cumulative]));
+  const currentByDay = new Map(mtdDailyCumulative.map((pt) => [pt.day, pt.cumulative]));
+  const chartDays = Math.max(
+    mtdPriorCumulative.at(-1)?.day ?? 0,
+    mtdDailyCumulative.at(-1)?.day ?? 0
+  );
+  const todayDayOfMonth = mtdDailyCumulative.at(-1)?.day ?? 0;
+  const sparklineData = Array.from({ length: chartDays }, (_, i) => ({
+    day: i + 1,
+    cumulative: currentByDay.get(i + 1) ?? null,
+    prior: priorByDay.get(i + 1) ?? null,
+    // Flat dotted projection line from today → end of month
+    projection: i + 1 >= todayDayOfMonth ? mtdEarnings : null,
   }));
-  const todayDay = sparklineData.length;
-  const xTicks = todayDay <= 10
-    ? sparklineData.map((pt) => pt.day)
-    : [1, 5, 10, 15, 20, 25, 30].filter((d) => d <= todayDay);
+  const xTicks = [1, 5, 10, 15, 20, 25, chartDays].filter(
+    (d, i, arr) => arr.indexOf(d) === i
+  );
 
   const scheduledEmails = emails.filter((e) => e.status === "pending" || e.status === "failed");
 
@@ -262,6 +271,17 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                     strokeWidth={2}
                     fill="url(#gradMtd)"
                     dot={false}
+                  />
+                  <Area
+                    dataKey="projection"
+                    type="monotone"
+                    stroke="var(--color-primary)"
+                    strokeWidth={1.5}
+                    strokeOpacity={0.35}
+                    strokeDasharray="4 4"
+                    fill="none"
+                    dot={false}
+                    legendType="none"
                   />
                   <Area
                     dataKey="prior"

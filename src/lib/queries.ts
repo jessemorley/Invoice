@@ -1,6 +1,6 @@
 import { cacheTag } from "next/cache";
 import { createTokenClient } from "./supabase";
-import { isoWeek } from "./format";
+import { isoWeek, todayInSydney } from "./format";
 import type { Entry, Invoice, InvoiceDetail, Expense, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
@@ -467,20 +467,18 @@ export async function fetchDashboardEmails(userId: string, token: string): Promi
 }
 
 export async function fetchDashboardData(userId: string, entries: DashboardEntry[], invoices: Invoice[], emails: DashboardEmail[]): Promise<DashboardData> {
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth();
+  const todayStr = todayInSydney(); // YYYY-MM-DD in Sydney time
+  const [currentYear, currentMonth0, todayDay] = todayStr.split("-").map(Number);
+  const currentMonth = currentMonth0 - 1; // 0-indexed to match Date.getMonth()
 
+  const currentMonthPrefix = `${currentYear}-${String(currentMonth0).padStart(2, "0")}`;
   const mtdEarnings = entries
-    .filter((e) => {
-      const d = new Date(e.date + "T00:00:00");
-      return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
-    })
+    .filter((e) => e.date <= todayStr && e.date.startsWith(currentMonthPrefix))
     .reduce((sum, e) => sum + e.base_amount + e.bonus_amount, 0);
 
   const priorMonth = currentMonth === 0 ? 11 : currentMonth - 1;
   const priorMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-  const priorMonthDayOfMonth = now.getDate();
+  const priorMonthDayOfMonth = todayDay;
 
   const mtdPriorMonth = entries
     .filter((e) => {
@@ -508,6 +506,7 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
   }
 
   // Walk back 52 complete weeks from the start of the current (possibly incomplete) ISO week.
+  const now = new Date(todayStr + "T00:00:00");
   const todayDow = now.getDay() || 7;
   const thisWeekMonday = new Date(now);
   thisWeekMonday.setDate(now.getDate() - (todayDow - 1));
@@ -534,11 +533,13 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
     });
   }
 
-  // Build day-by-day cumulative series for current month, days 1 → today
-  const todayDay = now.getDate();
+  // Build day-by-day cumulative series.
+  // Current month: days 1 → today (future-dated entries excluded via todayStr comparison).
+  // Prior month: full month (days 1 → end of prior month) so the chart always has
+  // a complete reference line regardless of how early in the current month it is.
   const mtdEntries = entries.filter((e) => {
     const d = new Date(e.date + "T00:00:00");
-    return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+    return e.date <= todayStr && d.getFullYear() === currentYear && d.getMonth() === currentMonth;
   });
   const dailyTotals = new Map<number, number>();
   for (const e of mtdEntries) {
@@ -552,9 +553,10 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
     mtdDailyCumulative.push({ day: d, cumulative: running });
   }
 
+  const daysInPriorMonth = new Date(priorMonthYear, priorMonth + 1, 0).getDate();
   const priorEntries = entries.filter((e) => {
     const d = new Date(e.date + "T00:00:00");
-    return d.getFullYear() === priorMonthYear && d.getMonth() === priorMonth && d.getDate() <= todayDay;
+    return d.getFullYear() === priorMonthYear && d.getMonth() === priorMonth;
   });
   const priorDailyTotals = new Map<number, number>();
   for (const e of priorEntries) {
@@ -563,7 +565,7 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
   }
   const mtdPriorCumulative: MtdDailyPoint[] = [];
   let priorRunning = 0;
-  for (let d = 1; d <= todayDay; d++) {
+  for (let d = 1; d <= daysInPriorMonth; d++) {
     priorRunning += priorDailyTotals.get(d) ?? 0;
     mtdPriorCumulative.push({ day: d, cumulative: priorRunning });
   }

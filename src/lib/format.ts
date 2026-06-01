@@ -54,6 +54,12 @@ export function isoWeek(dateStr: string): string {
   return `${year}-W${String(weekNo).padStart(2, "0")}`;
 }
 
+// Returns today's date as a YYYY-MM-DD string in Australia/Sydney time.
+// Use this on the server instead of new Date().toISOString().slice(0,10) (which is UTC).
+export function todayInSydney(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney" }).format(new Date());
+}
+
 // Returns the UTC instant corresponding to a Sydney wall-clock cutoff within a given ISO week.
 // type "friday_5pm" → Friday 17:00 AEST/AEDT; "sunday_midnight" → Monday 00:00 AEST/AEDT
 // (i.e. the very end of Sunday night). Handles AEST↔AEDT automatically via Intl.
