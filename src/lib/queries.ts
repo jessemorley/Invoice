@@ -622,7 +622,8 @@ export async function fetchBusinessDetails(userId: string, token: string): Promi
 
 export async function fetchFYMonthlySummary(userId: string, token: string): Promise<FYSummary> {
   "use cache";
-  cacheTag(CACHE_TAGS.entries);
+  // entries: per-entry amounts; invoices: manual line items keyed off issued_date
+  cacheTag(CACHE_TAGS.entries, CACHE_TAGS.invoices);
   const supabase = createTokenClient(token);
 
   const fyYear = currentFYYear();
@@ -636,6 +637,18 @@ export async function fetchFYMonthlySummary(userId: string, token: string): Prom
     .lte("date", end);
   if (error) throw new Error(`fetchFYMonthlySummary: ${error.message}`);
 
+  // Manual line items have no date of their own; attribute each to its parent
+  // invoice's issued_date. Filtering issued_date within the FY range naturally
+  // excludes draft invoices (issued_date null) — unissued lines aren't earnings
+  // yet. Line items carry no super, so they add to earnings + total only.
+  const { data: lineData, error: lineError } = await supabase
+    .from("invoice_line_items")
+    .select("amount, invoices!inner(issued_date)")
+    .eq("user_id", userId)
+    .gte("invoices.issued_date", start)
+    .lte("invoices.issued_date", end);
+  if (lineError) throw new Error(`fetchFYMonthlySummary (line items): ${lineError.message}`);
+
   // Sum into a Map keyed by "YYYY-MM"
   const byMonth = new Map<string, { earnings: number; super: number; total: number }>();
   for (const e of data ?? []) {
@@ -644,6 +657,17 @@ export async function fetchFYMonthlySummary(userId: string, token: string): Prom
     acc.earnings += e.base_amount + e.bonus_amount;
     acc.super += e.super_amount;
     acc.total += e.total_amount;
+    byMonth.set(key, acc);
+  }
+
+  for (const li of lineData ?? []) {
+    // Supabase types the embedded relation as an array; issued_date is non-null
+    // here because of the !inner join + the gte/lte filters above.
+    const issued = (li.invoices as unknown as { issued_date: string }).issued_date;
+    const key = issued.slice(0, 7);
+    const acc = byMonth.get(key) ?? { earnings: 0, super: 0, total: 0 };
+    acc.earnings += li.amount;
+    acc.total += li.amount;
     byMonth.set(key, acc);
   }
 
