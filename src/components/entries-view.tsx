@@ -140,12 +140,12 @@ function SkeletonRow({ showClient = false }: { showClient?: boolean }) {
         </div>
         <Skeleton className="h-3 w-16 shrink-0" />
       </div>
-      {/* Desktop */}
+      {/* Desktop — size-7 squircle drives row height to match the real row */}
       <div className="hidden md:flex items-center gap-3 px-4 py-3">
         <Skeleton className="h-3 w-20 shrink-0" />
         {showClient && (
           <div className="w-52 shrink-0 pl-2 flex items-center gap-3">
-            <Skeleton className="size-5 rounded-md shrink-0" />
+            <Skeleton className="size-7 shrink-0" style={{ borderRadius: "30%" }} />
             <Skeleton className="h-3 flex-1" />
           </div>
         )}
