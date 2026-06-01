@@ -534,7 +534,10 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
     });
   }
 
-  // Build day-by-day cumulative series for current month, days 1 → today
+  // Build day-by-day cumulative series.
+  // Current month: days 1 → today.
+  // Prior month: full month (days 1 → end of prior month) so the chart always has
+  // a complete reference line regardless of how early in the current month it is.
   const todayDay = now.getDate();
   const mtdEntries = entries.filter((e) => {
     const d = new Date(e.date + "T00:00:00");
@@ -552,9 +555,10 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
     mtdDailyCumulative.push({ day: d, cumulative: running });
   }
 
+  const daysInPriorMonth = new Date(priorMonthYear, priorMonth + 1, 0).getDate();
   const priorEntries = entries.filter((e) => {
     const d = new Date(e.date + "T00:00:00");
-    return d.getFullYear() === priorMonthYear && d.getMonth() === priorMonth && d.getDate() <= todayDay;
+    return d.getFullYear() === priorMonthYear && d.getMonth() === priorMonth;
   });
   const priorDailyTotals = new Map<number, number>();
   for (const e of priorEntries) {
@@ -563,7 +567,7 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
   }
   const mtdPriorCumulative: MtdDailyPoint[] = [];
   let priorRunning = 0;
-  for (let d = 1; d <= todayDay; d++) {
+  for (let d = 1; d <= daysInPriorMonth; d++) {
     priorRunning += priorDailyTotals.get(d) ?? 0;
     mtdPriorCumulative.push({ day: d, cumulative: priorRunning });
   }
