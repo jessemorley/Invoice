@@ -471,11 +471,9 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
   const [currentYear, currentMonth0, todayDay] = todayStr.split("-").map(Number);
   const currentMonth = currentMonth0 - 1; // 0-indexed to match Date.getMonth()
 
+  const currentMonthPrefix = `${currentYear}-${String(currentMonth0).padStart(2, "0")}`;
   const mtdEarnings = entries
-    .filter((e) => e.date <= todayStr && (() => {
-      const d = new Date(e.date + "T00:00:00");
-      return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
-    })())
+    .filter((e) => e.date <= todayStr && e.date.startsWith(currentMonthPrefix))
     .reduce((sum, e) => sum + e.base_amount + e.bonus_amount, 0);
 
   const priorMonth = currentMonth === 0 ? 11 : currentMonth - 1;
