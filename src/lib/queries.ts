@@ -1,7 +1,7 @@
 import { cacheTag } from "next/cache";
 import { createTokenClient } from "./supabase";
-import { isoWeek, todayInSydney } from "./format";
-import type { Entry, Invoice, InvoiceDetail, Expense, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
+import { isoWeek, todayInSydney, currentFYYear, fyDateRange } from "./format";
+import type { Entry, Invoice, InvoiceDetail, Expense, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate, FYSummary, FYMonthlyRow } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -35,6 +35,14 @@ function computeDateRange(dates: string[]): string {
   if (sorted[0] === sorted[sorted.length - 1]) return `${firstDay} ${firstMonth}`;
   if (first.getMonth() === last.getMonth()) return `${firstDay}–${lastDay} ${firstMonth}`;
   return `${firstDay} ${firstMonth} – ${lastDay} ${lastMonth}`;
+}
+
+// "2024-07" → "Jul 2024"
+function monthLabel(yyyymm: string): string {
+  return new Date(yyyymm + "-01T00:00:00").toLocaleDateString("en-AU", {
+    month: "short",
+    year: "numeric",
+  });
 }
 
 export async function fetchEntryById(userId: string, entryId: string, token: string): Promise<Entry | null> {
@@ -610,6 +618,64 @@ export async function fetchBusinessDetails(userId: string, token: string): Promi
     .maybeSingle();
   if (error) throw new Error(`fetchBusinessDetails: ${error.message}`);
   return data as BusinessDetails | null;
+}
+
+export async function fetchFYMonthlySummary(userId: string, token: string): Promise<FYSummary> {
+  "use cache";
+  cacheTag(CACHE_TAGS.entries);
+  const supabase = createTokenClient(token);
+
+  const fyYear = currentFYYear();
+  const { start, end } = fyDateRange(fyYear);
+
+  const { data, error } = await supabase
+    .from("entries")
+    .select("date, base_amount, bonus_amount, super_amount, total_amount")
+    .eq("user_id", userId)
+    .gte("date", start)
+    .lte("date", end);
+  if (error) throw new Error(`fetchFYMonthlySummary: ${error.message}`);
+
+  // Sum into a Map keyed by "YYYY-MM"
+  const byMonth = new Map<string, { earnings: number; super: number; total: number }>();
+  for (const e of data ?? []) {
+    const key = e.date.slice(0, 7);
+    const acc = byMonth.get(key) ?? { earnings: 0, super: 0, total: 0 };
+    acc.earnings += e.base_amount + e.bonus_amount;
+    acc.super += e.super_amount;
+    acc.total += e.total_amount;
+    byMonth.set(key, acc);
+  }
+
+  // Build a fixed 12-month grid Jul(fyYear-1) → Jun(fyYear); months with no
+  // entries render as zero rows so the PDF always has 12 rows.
+  const rows: FYMonthlyRow[] = [];
+  let totalEarnings = 0, totalSuper = 0, grandTotal = 0;
+  for (let i = 0; i < 12; i++) {
+    const m = ((6 + i) % 12) + 1;           // 7,8,...,12,1,...,6
+    const y = i < 6 ? fyYear - 1 : fyYear;
+    const key = `${y}-${String(m).padStart(2, "0")}`;
+    const acc = byMonth.get(key) ?? { earnings: 0, super: 0, total: 0 };
+    rows.push({
+      month: key,
+      label: monthLabel(key),
+      earnings: acc.earnings,
+      super: acc.super,
+      total: acc.total,
+    });
+    totalEarnings += acc.earnings;
+    totalSuper += acc.super;
+    grandTotal += acc.total;
+  }
+
+  return {
+    fyLabel: `FY${String(fyYear).slice(-2)}`,
+    rangeLabel: `1 July ${fyYear - 1} – 30 June ${fyYear}`,
+    rows,
+    totalEarnings,
+    totalSuper,
+    grandTotal,
+  };
 }
 
 export async function fetchInvoiceDetail(invoiceId: string, userId: string, token: string): Promise<InvoiceDetail | null> {

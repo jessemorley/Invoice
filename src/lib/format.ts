@@ -60,6 +60,22 @@ export function todayInSydney(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney" }).format(new Date());
 }
 
+// Returns the AU financial year end-year (e.g. 2025 for FY25: Jul 2024–Jun 2025)
+export function currentFYYear(): number {
+  const today = todayInSydney(); // "YYYY-MM-DD" in Australia/Sydney
+  const month = parseInt(today.slice(5, 7), 10);
+  const year = parseInt(today.slice(0, 4), 10);
+  return month >= 7 ? year + 1 : year;
+}
+
+// Returns ISO date strings for a given FY year (e.g. 2025 → Jul 2024–Jun 2025)
+export function fyDateRange(fyYear: number): { start: string; end: string } {
+  return {
+    start: `${fyYear - 1}-07-01`,
+    end: `${fyYear}-06-30`,
+  };
+}
+
 // Returns the UTC instant corresponding to a Sydney wall-clock cutoff within a given ISO week.
 // type "friday_5pm" → Friday 17:00 AEST/AEDT; "sunday_midnight" → Monday 00:00 AEST/AEDT
 // (i.e. the very end of Sunday night). Handles AEST↔AEDT automatically via Intl.

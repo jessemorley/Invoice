@@ -219,3 +219,20 @@ export type DashboardData = {
   weeklyEarnings: WeeklyEarning[];
   emails: DashboardEmail[];
 };
+
+export type FYMonthlyRow = {
+  month: string;    // "2024-07"
+  label: string;    // "Jul 2024"
+  earnings: number; // base_amount + bonus_amount
+  super: number;    // super_amount
+  total: number;    // total_amount (stored as base + bonus + super)
+};
+
+export type FYSummary = {
+  fyLabel: string;       // "FY25"
+  rangeLabel: string;    // "1 July 2024 – 30 June 2025"
+  rows: FYMonthlyRow[];  // 12 months Jul–Jun, always present (zeros included)
+  totalEarnings: number;
+  totalSuper: number;
+  grandTotal: number;
+};

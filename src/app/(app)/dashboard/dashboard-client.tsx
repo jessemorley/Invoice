@@ -15,7 +15,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { TrendingDown, TrendingUp, BarChart2 } from "lucide-react";
+import { TrendingDown, TrendingUp, BarChart2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import {
@@ -199,7 +199,14 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Dashboard" />
+      <PageHeader title="Dashboard">
+        <a href="/api/reports/earnings-summary" download>
+          <Button variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-1.5" />
+            FY Summary
+          </Button>
+        </a>
+      </PageHeader>
 
       <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
         <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl grid grid-cols-1 xl:grid-cols-2 gap-4">
