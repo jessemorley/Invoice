@@ -231,7 +231,7 @@ export type FYMonthlyRow = {
 export type FYSummary = {
   fyLabel: string;       // "FY25"
   rangeLabel: string;    // "1 July 2024 – 30 June 2025"
-  rows: FYMonthlyRow[];  // 12 months Jul–Jun, always present (zeros included)
+  rows: FYMonthlyRow[];  // fully-elapsed FY months Jul→Jun (zeros included); excludes current/future months
   totalEarnings: number;
   totalSuper: number;
   grandTotal: number;

@@ -647,14 +647,19 @@ export async function fetchFYMonthlySummary(userId: string, token: string): Prom
     byMonth.set(key, acc);
   }
 
-  // Build a fixed 12-month grid Jul(fyYear-1) → Jun(fyYear); months with no
-  // entries render as zero rows so the PDF always has 12 rows.
+  // Build the month grid Jul(fyYear-1) → Jun(fyYear), but only for months that
+  // have *fully elapsed* — exclude the in-progress current month and anything
+  // later (lexicographic "YYYY-MM" compare). Months with no entries render as
+  // zero rows. For a past FY all 12 months are complete; for the current FY the
+  // grid stops at the last finished month.
+  const currentMonth = todayInSydney().slice(0, 7);
   const rows: FYMonthlyRow[] = [];
   let totalEarnings = 0, totalSuper = 0, grandTotal = 0;
   for (let i = 0; i < 12; i++) {
     const m = ((6 + i) % 12) + 1;           // 7,8,...,12,1,...,6
     const y = i < 6 ? fyYear - 1 : fyYear;
     const key = `${y}-${String(m).padStart(2, "0")}`;
+    if (key >= currentMonth) break;         // current + future months not yet elapsed
     const acc = byMonth.get(key) ?? { earnings: 0, super: 0, total: 0 };
     rows.push({
       month: key,

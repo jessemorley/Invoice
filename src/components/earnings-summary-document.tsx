@@ -33,7 +33,8 @@ const s = StyleSheet.create({
   title: {
     fontFamily: SANS,
     fontSize: 39,
-    marginBottom: 6,
+    lineHeight: 1,
+    marginBottom: 10,
     letterSpacing: -0.5,
   },
   rangeLabel: {
