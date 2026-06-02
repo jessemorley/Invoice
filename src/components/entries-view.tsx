@@ -128,7 +128,7 @@ function groupByWeek(entries: Entry[]): WeekGroup[] {
   return groups.sort((a, b) => b.latestDate.localeCompare(a.latestDate));
 }
 
-function SkeletonRow({ showClient = false }: { showClient?: boolean }) {
+function SkeletonRow() {
   return (
     <>
       {/* Mobile */}
@@ -143,15 +143,13 @@ function SkeletonRow({ showClient = false }: { showClient?: boolean }) {
       {/* Desktop — size-7 squircle drives row height to match the real row */}
       <div className="hidden md:flex items-center gap-3 px-4 py-3">
         <Skeleton className="h-3 w-20 shrink-0" />
-        {showClient && (
-          <div className="w-52 shrink-0 pl-2 flex items-center gap-3">
-            <Skeleton className="size-7 shrink-0" style={{ borderRadius: "30%" }} />
-            <Skeleton className="h-3 flex-1" />
-          </div>
-        )}
+        <div className="w-52 shrink-0 pl-2 flex items-center gap-3">
+          <Skeleton className="size-7 shrink-0" style={{ borderRadius: "30%" }} />
+          <Skeleton className="h-3 flex-1" />
+        </div>
         <Skeleton className="h-3 flex-1" />
         <Skeleton className="h-3 w-20 shrink-0" />
-        {showClient && <Skeleton className="h-5 w-20 rounded-full shrink-0" />}
+        <Skeleton className="h-5 w-20 rounded-full shrink-0" />
         <Skeleton className="h-3 w-20 shrink-0" />
       </div>
     </>
@@ -168,7 +166,7 @@ function SkeletonGroupHeader() {
   );
 }
 
-function SkeletonCard({ rows = 3, showClient = false }: { rows?: number; showClient?: boolean }) {
+function SkeletonCard({ rows = 3 }: { rows?: number }) {
   return (
     <div className="flex flex-col">
       <SkeletonGroupHeader />
@@ -176,7 +174,7 @@ function SkeletonCard({ rows = 3, showClient = false }: { rows?: number; showCli
           {Array.from({ length: rows }).map((_, i) => (
             <div key={i}>
               {i > 0 && <Separator />}
-              <SkeletonRow showClient={showClient} />
+              <SkeletonRow />
             </div>
           ))}
       </div>
@@ -187,11 +185,11 @@ function SkeletonCard({ rows = 3, showClient = false }: { rows?: number; showCli
 function ContentSkeleton() {
   return (
     <div className="flex flex-col gap-4">
-      <SkeletonCard rows={2} showClient />
-      <SkeletonCard rows={3} showClient />
-      <SkeletonCard rows={1} showClient />
-      <SkeletonCard rows={4} showClient />
-      <SkeletonCard rows={2} showClient />
+      <SkeletonCard rows={2} />
+      <SkeletonCard rows={3} />
+      <SkeletonCard rows={1} />
+      <SkeletonCard rows={4} />
+      <SkeletonCard rows={2} />
     </div>
   );
 }
@@ -343,8 +341,8 @@ function LoadEarlierButton({
   if (isPending) {
     return (
       <>
-        <SkeletonCard rows={2} showClient />
-        <SkeletonCard rows={3} showClient />
+        <SkeletonCard rows={2} />
+        <SkeletonCard rows={3} />
       </>
     );
   }
