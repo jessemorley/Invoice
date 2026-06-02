@@ -130,12 +130,29 @@ function groupByWeek(entries: Entry[]): WeekGroup[] {
 
 function SkeletonRow() {
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
-      <Skeleton className="h-3 w-20 shrink-0" />
-      <Skeleton className="h-3 flex-1" />
-      <Skeleton className="h-3 w-16 shrink-0" />
-      <Skeleton className="h-3 w-20 shrink-0" />
-    </div>
+    <>
+      {/* Mobile */}
+      <div className="md:hidden flex items-center gap-3 px-4 py-2.5">
+        <Skeleton className="size-8 rounded-lg shrink-0" />
+        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+          <Skeleton className="h-3 w-32" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+        <Skeleton className="h-3 w-16 shrink-0" />
+      </div>
+      {/* Desktop — size-7 squircle drives row height to match the real row */}
+      <div className="hidden md:flex items-center gap-3 px-4 py-3">
+        <Skeleton className="h-3 w-20 shrink-0" />
+        <div className="w-52 shrink-0 pl-2 flex items-center gap-3">
+          <Skeleton className="size-7 shrink-0" style={{ borderRadius: "30%" }} />
+          <Skeleton className="h-3 flex-1" />
+        </div>
+        <Skeleton className="h-3 flex-1" />
+        <Skeleton className="h-3 w-20 shrink-0" />
+        <Skeleton className="h-5 w-20 rounded-full shrink-0" />
+        <Skeleton className="h-3 w-20 shrink-0" />
+      </div>
+    </>
   );
 }
 
@@ -144,7 +161,7 @@ function SkeletonGroupHeader() {
     <div className="flex items-center gap-3 px-4 py-2.5 min-h-[40px]">
       <Skeleton className="h-3 w-28" />
       <div className="flex-1" />
-      <Skeleton className="h-3 w-16" />
+      <Skeleton className="h-3 w-20" />
     </div>
   );
 }
