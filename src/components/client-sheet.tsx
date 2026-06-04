@@ -445,26 +445,24 @@ function ClientForm({
             <Field label="Billing Type">
               <ToggleGroup
                 type="single"
-                variant="outline"
                 value={form.billing_type}
                 onValueChange={(v) => v && set("billing_type", v as BillingType)}
-                className="w-full"
+                className="w-full rounded-lg border border-input p-1 dark:bg-input/30"
               >
-                <ToggleGroupItem value="manual" className="flex-1">Manual</ToggleGroupItem>
-                <ToggleGroupItem value="day_rate" className="flex-1">Day Rate</ToggleGroupItem>
-                <ToggleGroupItem value="hourly" className="flex-1">Hourly</ToggleGroupItem>
+                <ToggleGroupItem value="manual" className="flex-1 rounded-md">Manual</ToggleGroupItem>
+                <ToggleGroupItem value="day_rate" className="flex-1 rounded-md">Day Rate</ToggleGroupItem>
+                <ToggleGroupItem value="hourly" className="flex-1 rounded-md">Hourly</ToggleGroupItem>
               </ToggleGroup>
             </Field>
             <Field label="Invoice Frequency">
               <ToggleGroup
                 type="single"
-                variant="outline"
                 value={form.invoice_frequency}
                 onValueChange={(v) => v && set("invoice_frequency", v as "weekly" | "per_job")}
-                className="w-full"
+                className="w-full rounded-lg border border-input p-1 dark:bg-input/30"
               >
-                <ToggleGroupItem value="weekly" className="flex-1">Weekly</ToggleGroupItem>
-                <ToggleGroupItem value="per_job" className="flex-1">Per Job</ToggleGroupItem>
+                <ToggleGroupItem value="weekly" className="flex-1 rounded-md">Weekly</ToggleGroupItem>
+                <ToggleGroupItem value="per_job" className="flex-1 rounded-md">Per Job</ToggleGroupItem>
               </ToggleGroup>
             </Field>
 
