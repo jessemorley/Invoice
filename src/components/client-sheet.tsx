@@ -448,11 +448,11 @@ function ClientForm({
                 variant="outline"
                 value={form.billing_type}
                 onValueChange={(v) => v && set("billing_type", v as BillingType)}
-                className="w-full"
+                className="w-full p-1"
               >
-                <ToggleGroupItem value="manual" className="flex-1">Manual</ToggleGroupItem>
-                <ToggleGroupItem value="day_rate" className="flex-1">Day Rate</ToggleGroupItem>
-                <ToggleGroupItem value="hourly" className="flex-1">Hourly</ToggleGroupItem>
+                <ToggleGroupItem value="manual" className="flex-1 border-none! shadow-none text-muted-foreground data-[state=on]:text-accent-foreground">Manual</ToggleGroupItem>
+                <ToggleGroupItem value="day_rate" className="flex-1 border-none! shadow-none text-muted-foreground data-[state=on]:text-accent-foreground">Day Rate</ToggleGroupItem>
+                <ToggleGroupItem value="hourly" className="flex-1 border-none! shadow-none text-muted-foreground data-[state=on]:text-accent-foreground">Hourly</ToggleGroupItem>
               </ToggleGroup>
             </Field>
             <Field label="Invoice Frequency">
@@ -461,10 +461,10 @@ function ClientForm({
                 variant="outline"
                 value={form.invoice_frequency}
                 onValueChange={(v) => v && set("invoice_frequency", v as "weekly" | "per_job")}
-                className="w-full"
+                className="w-full p-1"
               >
-                <ToggleGroupItem value="weekly" className="flex-1">Weekly</ToggleGroupItem>
-                <ToggleGroupItem value="per_job" className="flex-1">Per Job</ToggleGroupItem>
+                <ToggleGroupItem value="weekly" className="flex-1 border-none! shadow-none text-muted-foreground data-[state=on]:text-accent-foreground">Weekly</ToggleGroupItem>
+                <ToggleGroupItem value="per_job" className="flex-1 border-none! shadow-none text-muted-foreground data-[state=on]:text-accent-foreground">Per Job</ToggleGroupItem>
               </ToggleGroup>
             </Field>
 
