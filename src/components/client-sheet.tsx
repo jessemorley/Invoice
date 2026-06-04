@@ -485,9 +485,9 @@ function ClientForm({
                             </div>
                             <Button
                               type="button"
-                              variant="secondary"
+                              variant="outline"
                               size="icon"
-                              className="shrink-0"
+                              className="shrink-0 dark:bg-background dark:hover:bg-accent/50"
                               onClick={() => {
                                 if (rolesWithEntries.has(role.name.trim())) {
                                   setLockedRoleError(i);
@@ -509,7 +509,8 @@ function ClientForm({
                       <Button
                         type="button"
                         variant="outline"
-                        className="w-full dark:bg-background dark:hover:bg-accent/50"
+                        size="sm"
+                        className="w-full"
                         onClick={() => set("roles", [...form.roles, { name: "", rate: "" }])}
                       >
                         + Add role
