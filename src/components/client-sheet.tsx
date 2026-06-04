@@ -52,7 +52,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ChevronRight, Pencil, X } from "lucide-react";
+import { ChevronRight, Pencil, Trash2, X } from "lucide-react";
 import { ClientSquircle } from "@/components/client-squircle";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
@@ -542,7 +542,7 @@ function ClientForm({
                                 }
                               }}
                             >
-                              <X className="size-4" />
+                              <Trash2 className="size-4 text-muted-foreground" />
                             </Button>
                           </div>
                           {lockedRoleError === i && (
