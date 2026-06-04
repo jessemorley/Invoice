@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, useEffect, useState } from "react";
+import React, { useTransition, useEffect, useState } from "react";
 import { useActiveView } from "@/components/active-view-context";
 import type { Client, BillingType } from "@/lib/types";
 import { formatAUD } from "@/lib/format";
@@ -174,10 +174,13 @@ function SuperOnInvoiceToggle({ clientId, value }: { clientId: string; value: bo
 // ── Form field helpers ────────────────────────────────────────────────────────
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const id = React.useId();
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium text-foreground">{label}</label>
-      {children}
+      <label htmlFor={id} className="text-sm font-medium text-foreground">{label}</label>
+      {React.isValidElement(children)
+        ? React.cloneElement(children as React.ReactElement<{ id?: string }>, { id })
+        : children}
     </div>
   );
 }
