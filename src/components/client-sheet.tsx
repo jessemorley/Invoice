@@ -330,6 +330,7 @@ function ClientForm({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   useEffect(() => {
     if (!clientId) return;
@@ -396,30 +397,42 @@ function ClientForm({
 
       <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
 
-        {/* Contact */}
+        {/* Details */}
         <Card>
           <CardHeader>
-            <CardTitle>Contact</CardTitle>
+            <CardTitle>Details</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <Field label="Name">
               <Input className="text-sm" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Client name" />
             </Field>
-            <Field label="Contact Name">
-              <Input className="text-sm" value={form.contact_name} onChange={(e) => set("contact_name", e.target.value)} />
-            </Field>
-            <Field label="Email">
-              <Input className="text-sm" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
-            </Field>
-            <Field label="Address">
-              <Input className="text-sm" value={form.address} onChange={(e) => set("address", e.target.value)} />
-            </Field>
-            <Field label="Suburb">
-              <Input className="text-sm" value={form.suburb} onChange={(e) => set("suburb", e.target.value)} />
-            </Field>
-            <Field label="ABN">
-              <Input className="text-sm" value={form.abn} onChange={(e) => set("abn", e.target.value)} />
-            </Field>
+            {detailsOpen && (
+              <>
+                <Field label="Contact Name">
+                  <Input className="text-sm" value={form.contact_name} onChange={(e) => set("contact_name", e.target.value)} />
+                </Field>
+                <Field label="Email">
+                  <Input className="text-sm" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
+                </Field>
+                <Field label="Address">
+                  <Input className="text-sm" value={form.address} onChange={(e) => set("address", e.target.value)} />
+                </Field>
+                <Field label="Suburb">
+                  <Input className="text-sm" value={form.suburb} onChange={(e) => set("suburb", e.target.value)} />
+                </Field>
+                <Field label="ABN">
+                  <Input className="text-sm" value={form.abn} onChange={(e) => set("abn", e.target.value)} />
+                </Field>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={() => setDetailsOpen((v) => !v)}
+              className="text-sm text-muted-foreground flex items-center gap-1 hover:text-foreground transition-colors"
+            >
+              <ChevronRight className={`size-4 transition-transform ${detailsOpen ? "rotate-90" : ""}`} />
+              {detailsOpen ? "Less" : "More details"}
+            </button>
           </CardContent>
         </Card>
 
