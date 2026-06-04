@@ -512,12 +512,26 @@ function ClientForm({
               );
             })()}
 
-            <div className="flex gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <Field label="Default Start">
-                <Input type="time" value={form.default_start_time} onChange={(e) => set("default_start_time", e.target.value)} />
+                <div className="h-9 rounded-lg border border-input bg-transparent px-3 flex items-center">
+                  <input
+                    type="time"
+                    className="w-full bg-transparent outline-none text-sm text-foreground"
+                    value={form.default_start_time}
+                    onChange={(e) => set("default_start_time", e.target.value)}
+                  />
+                </div>
               </Field>
               <Field label="Default Finish">
-                <Input type="time" value={form.default_finish_time} onChange={(e) => set("default_finish_time", e.target.value)} />
+                <div className="h-9 rounded-lg border border-input bg-transparent px-3 flex items-center">
+                  <input
+                    type="time"
+                    className="w-full bg-transparent outline-none text-sm text-foreground"
+                    value={form.default_finish_time}
+                    onChange={(e) => set("default_finish_time", e.target.value)}
+                  />
+                </div>
               </Field>
             </div>
             <Field label="Entry Label">
