@@ -93,6 +93,35 @@ export type Database = {
         }
         Relationships: []
       }
+      client_roles: {
+        Row: {
+          client_id: string
+          id: string
+          name: string
+          rate: number
+        }
+        Insert: {
+          client_id: string
+          id?: string
+          name: string
+          rate: number
+        }
+        Update: {
+          client_id?: string
+          id?: string
+          name?: string
+          rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_roles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_workflow_rates: {
         Row: {
           client_id: string
@@ -155,9 +184,6 @@ export type Database = {
           rate_full_day: number | null
           rate_half_day: number | null
           rate_hourly: number | null
-          rate_hourly_operator: number | null
-          rate_hourly_photographer: number | null
-          show_role: boolean
           show_super_on_invoice: boolean
           suburb: string
           super_rate: number
@@ -183,9 +209,6 @@ export type Database = {
           rate_full_day?: number | null
           rate_half_day?: number | null
           rate_hourly?: number | null
-          rate_hourly_operator?: number | null
-          rate_hourly_photographer?: number | null
-          show_role?: boolean
           show_super_on_invoice?: boolean
           suburb?: string
           super_rate?: number
@@ -211,9 +234,6 @@ export type Database = {
           rate_full_day?: number | null
           rate_half_day?: number | null
           rate_hourly?: number | null
-          rate_hourly_operator?: number | null
-          rate_hourly_photographer?: number | null
-          show_role?: boolean
           show_super_on_invoice?: boolean
           suburb?: string
           super_rate?: number
@@ -488,30 +508,6 @@ export type Database = {
           },
         ]
       }
-      user_preferences: {
-        Row: {
-          bcc_self: boolean
-          mark_as_issued_on_send: boolean
-          user_id: string
-          weekly_invoice_reminder: boolean
-          weekly_invoice_reminder_cutoff: string
-        }
-        Insert: {
-          bcc_self?: boolean
-          mark_as_issued_on_send?: boolean
-          user_id: string
-          weekly_invoice_reminder?: boolean
-          weekly_invoice_reminder_cutoff?: string
-        }
-        Update: {
-          bcc_self?: boolean
-          mark_as_issued_on_send?: boolean
-          user_id?: string
-          weekly_invoice_reminder?: boolean
-          weekly_invoice_reminder_cutoff?: string
-        }
-        Relationships: []
-      }
       scheduled_emails: {
         Row: {
           bcc_address: string | null
@@ -576,6 +572,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_preferences: {
+        Row: {
+          bcc_self: boolean
+          mark_as_issued_on_send: boolean
+          user_id: string
+          weekly_invoice_reminder: boolean
+          weekly_invoice_reminder_cutoff: string
+        }
+        Insert: {
+          bcc_self?: boolean
+          mark_as_issued_on_send?: boolean
+          user_id: string
+          weekly_invoice_reminder?: boolean
+          weekly_invoice_reminder_cutoff?: string
+        }
+        Update: {
+          bcc_self?: boolean
+          mark_as_issued_on_send?: boolean
+          user_id?: string
+          weekly_invoice_reminder?: boolean
+          weekly_invoice_reminder_cutoff?: string
+        }
+        Relationships: []
       }
     }
     Views: {

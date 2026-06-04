@@ -6,18 +6,21 @@ import { getAuthUserId } from "@/lib/auth";
 import { CACHE_TAGS } from "@/lib/queries";
 import type { BillingType, InvoiceStatus } from "@/lib/types";
 
+export type ClientRolePayload = {
+  id?: string;
+  name: string;
+  rate: number;
+};
+
 export type ClientFormData = {
   name: string;
   billing_type: BillingType;
   rate_full_day: number | null;
   rate_half_day: number | null;
   rate_hourly: number | null;
-  rate_hourly_photographer: number | null;
-  rate_hourly_operator: number | null;
   default_start_time: string | null;
   default_finish_time: string | null;
   entry_label: string | null;
-  show_role: boolean;
   pays_super: boolean;
   super_rate: number;
   show_super_on_invoice: boolean;
@@ -28,17 +31,27 @@ export type ClientFormData = {
   suburb: string;
   abn: string | null;
   is_active: boolean;
+  roles: ClientRolePayload[];
 };
 
 export async function createClientAction(data: ClientFormData): Promise<{ id: string }> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { roles, ...clientData } = data;
   const { data: row, error } = await supabase
     .from("clients")
-    .insert({ ...data, user_id: userId })
+    .insert({ ...clientData, user_id: userId })
     .select("id")
     .single();
 
   if (error) throw new Error(`createClientAction: ${error.message}`);
+
+  if (roles.length > 0) {
+    const { error: rolesError } = await supabase
+      .from("client_roles")
+      .insert(roles.map((r) => ({ client_id: row.id, name: r.name, rate: r.rate })));
+    if (rolesError) throw new Error(`createClientAction (roles): ${rolesError.message}`);
+  }
+
   updateTag(CACHE_TAGS.clients);
   updateTag(CACHE_TAGS.entries);
   refresh();
@@ -47,13 +60,74 @@ export async function createClientAction(data: ClientFormData): Promise<{ id: st
 
 export async function updateClientAction(clientId: string, data: ClientFormData): Promise<void> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { roles, ...clientData } = data;
+
   const { error } = await supabase
     .from("clients")
-    .update(data)
+    .update(clientData)
     .eq("id", clientId)
     .eq("user_id", userId);
 
   if (error) throw new Error(`updateClientAction: ${error.message}`);
+
+  // Fetch existing roles to diff
+  const { data: existingRoles, error: fetchError } = await supabase
+    .from("client_roles")
+    .select("id")
+    .eq("client_id", clientId);
+  if (fetchError) throw new Error(`updateClientAction (fetch roles): ${fetchError.message}`);
+
+  const incomingIds = new Set(roles.filter((r) => r.id).map((r) => r.id!));
+  const toDelete = (existingRoles ?? []).filter((r) => !incomingIds.has(r.id));
+
+  // Block deletion of roles that have entries referencing them
+  if (toDelete.length > 0) {
+    const { data: existingRoleNames } = await supabase
+      .from("client_roles")
+      .select("id, name")
+      .in("id", toDelete.map((r) => r.id));
+
+    const namesToDelete = (existingRoleNames ?? []).map((r) => r.name);
+    if (namesToDelete.length > 0) {
+      const { data: usedEntries } = await supabase
+        .from("entries")
+        .select("role")
+        .eq("client_id", clientId)
+        .in("role", namesToDelete)
+        .limit(1);
+
+      if ((usedEntries?.length ?? 0) > 0) {
+        const usedName = usedEntries![0].role;
+        throw new Error(`Cannot remove role "${usedName}" — it has entries attached. Reassign or delete those entries first.`);
+      }
+    }
+
+    const { error: deleteError } = await supabase
+      .from("client_roles")
+      .delete()
+      .in("id", toDelete.map((r) => r.id));
+    if (deleteError) throw new Error(`updateClientAction (delete roles): ${deleteError.message}`);
+  }
+
+  // Update existing roles and insert new ones separately
+  const existingRolesToUpdate = roles.filter((r) => r.id);
+  const newRolesToInsert = roles.filter((r) => !r.id);
+
+  for (const r of existingRolesToUpdate) {
+    const { error } = await supabase
+      .from("client_roles")
+      .update({ name: r.name, rate: r.rate })
+      .eq("id", r.id!);
+    if (error) throw new Error(`updateClientAction (update role): ${error.message}`);
+  }
+
+  if (newRolesToInsert.length > 0) {
+    const { error } = await supabase
+      .from("client_roles")
+      .insert(newRolesToInsert.map((r) => ({ client_id: clientId, name: r.name, rate: r.rate })));
+    if (error) throw new Error(`updateClientAction (insert roles): ${error.message}`);
+  }
+
   updateTag(CACHE_TAGS.clients);
   updateTag(CACHE_TAGS.entries);
   updateTag(CACHE_TAGS.invoices);
@@ -139,6 +213,134 @@ export async function updateShowSuperOnInvoice(clientId: string, show: boolean) 
     .eq("user_id", userId);
 
   if (error) throw new Error(`updateShowSuperOnInvoice: ${error.message}`);
+  updateTag(CACHE_TAGS.clients);
+  refresh();
+}
+
+export async function fetchRolesWithEntries(clientId: string): Promise<Set<string>> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { data: client } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("id", clientId)
+    .eq("user_id", userId)
+    .single();
+  if (!client) throw new Error("fetchRolesWithEntries: client not found");
+
+  const { data: roles } = await supabase
+    .from("client_roles")
+    .select("name")
+    .eq("client_id", clientId);
+
+  const roleNames = (roles ?? []).map((r) => r.name);
+  if (roleNames.length === 0) return new Set<string>();
+
+  const { data: usedEntries } = await supabase
+    .from("entries")
+    .select("role")
+    .eq("client_id", clientId)
+    .in("role", roleNames);
+
+  return new Set((usedEntries ?? []).map((e) => e.role).filter(Boolean) as string[]);
+}
+
+// ── Workflow rates ────────────────────────────────────────────────────────────
+
+export type WorkflowRate = {
+  id: string;
+  client_id: string;
+  workflow: string;
+  kpi: number;
+  upper_limit_skus: number;
+  incentive_rate_per_sku: number;
+  max_bonus: number;
+  is_flat_bonus: boolean;
+};
+
+export async function fetchWorkflowRates(clientId: string): Promise<WorkflowRate[]> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  // Verify client belongs to user
+  const { data: client } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("id", clientId)
+    .eq("user_id", userId)
+    .single();
+  if (!client) throw new Error("fetchWorkflowRates: client not found");
+
+  const { data, error } = await supabase
+    .from("client_workflow_rates")
+    .select("*")
+    .eq("client_id", clientId)
+    .order("workflow");
+  if (error) throw new Error(`fetchWorkflowRates: ${error.message}`);
+  return data ?? [];
+}
+
+export type WorkflowRatePayload = {
+  workflow: string;
+  kpi: number;
+  upper_limit_skus: number;
+  incentive_rate_per_sku: number;
+  max_bonus: number;
+  is_flat_bonus: boolean;
+};
+
+export async function createWorkflowRate(clientId: string, payload: WorkflowRatePayload): Promise<WorkflowRate> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { data: client } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("id", clientId)
+    .eq("user_id", userId)
+    .single();
+  if (!client) throw new Error("createWorkflowRate: client not found");
+
+  const { data, error } = await supabase
+    .from("client_workflow_rates")
+    .insert({ ...payload, client_id: clientId })
+    .select()
+    .single();
+  if (error) throw new Error(`createWorkflowRate: ${error.message}`);
+  return data;
+}
+
+export async function updateWorkflowRate(rateId: string, clientId: string, payload: WorkflowRatePayload): Promise<void> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { data: client } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("id", clientId)
+    .eq("user_id", userId)
+    .single();
+  if (!client) throw new Error("updateWorkflowRate: client not found");
+
+  const { error } = await supabase
+    .from("client_workflow_rates")
+    .update(payload)
+    .eq("id", rateId)
+    .eq("client_id", clientId);
+  if (error) throw new Error(`updateWorkflowRate: ${error.message}`);
+  updateTag(CACHE_TAGS.clients);
+  refresh();
+}
+
+export async function deleteWorkflowRate(rateId: string, clientId: string): Promise<void> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { data: client } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("id", clientId)
+    .eq("user_id", userId)
+    .single();
+  if (!client) throw new Error("deleteWorkflowRate: client not found");
+
+  const { error } = await supabase
+    .from("client_workflow_rates")
+    .delete()
+    .eq("id", rateId)
+    .eq("client_id", clientId);
+  if (error) throw new Error(`deleteWorkflowRate: ${error.message}`);
   updateTag(CACHE_TAGS.clients);
   refresh();
 }

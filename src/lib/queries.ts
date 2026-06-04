@@ -367,7 +367,7 @@ export async function fetchFullClients(userId: string, token: string): Promise<C
   const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("clients")
-    .select("id, name, color, billing_type, rate_full_day, rate_half_day, rate_hourly, rate_hourly_photographer, rate_hourly_operator, pays_super, super_rate, show_super_on_invoice, invoice_frequency, address, suburb, email, abn, contact_name, notes, entry_label, show_role, is_active, created_at, default_start_time, default_finish_time, invoices(id)")
+    .select("id, name, color, billing_type, rate_full_day, rate_half_day, rate_hourly, pays_super, super_rate, show_super_on_invoice, invoice_frequency, address, suburb, email, abn, contact_name, notes, entry_label, is_active, created_at, default_start_time, default_finish_time, invoices(id), client_roles(id, client_id, name, rate)")
     .eq("user_id", userId)
     .order("name");
 
@@ -380,8 +380,6 @@ export async function fetchFullClients(userId: string, token: string): Promise<C
     rate_full_day: c.rate_full_day ?? null,
     rate_half_day: c.rate_half_day ?? null,
     rate_hourly: c.rate_hourly ?? null,
-    rate_hourly_photographer: c.rate_hourly_photographer ?? null,
-    rate_hourly_operator: c.rate_hourly_operator ?? null,
     pays_super: c.pays_super,
     super_rate: Number(c.super_rate),
     show_super_on_invoice: c.show_super_on_invoice,
@@ -393,12 +391,17 @@ export async function fetchFullClients(userId: string, token: string): Promise<C
     contact_name: c.contact_name ?? null,
     notes: c.notes ?? null,
     entry_label: c.entry_label ?? null,
-    show_role: c.show_role,
     is_active: c.is_active,
     created_at: c.created_at,
     invoice_count: Array.isArray(c.invoices) ? c.invoices.length : 0,
     default_start_time: c.default_start_time ?? null,
     default_finish_time: c.default_finish_time ?? null,
+    roles: Array.isArray(c.client_roles) ? c.client_roles.map((r) => ({
+      id: r.id,
+      client_id: r.client_id,
+      name: r.name,
+      rate: Number(r.rate),
+    })) : [],
   }));
 }
 
