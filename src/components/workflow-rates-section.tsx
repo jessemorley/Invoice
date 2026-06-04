@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -106,15 +106,21 @@ function RateTabContent({
 }: {
   rate: EditableRate;
   clientId: string;
-  onSaved: (updated: WorkflowRate) => void;
+  onSaved: (updated: WorkflowRate, tempId?: string) => void;
   onDeleted: (id: string) => void;
   onCancelled: (tempId: string) => void;
   onClose: () => void;
 }) {
   const isNew = rate.kind === "new";
+  const savedData = rate.kind === "saved" ? rate.data : null;
   const [form, setForm] = useState<RateFormState>(rate.form);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // Sync form when the saved record is updated externally (e.g. after save roundtrip)
+  useEffect(() => {
+    if (savedData) setForm(rateToForm(savedData));
+  }, [savedData]);
 
   function setField<K extends keyof RateFormState>(key: K, value: RateFormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -136,10 +142,10 @@ function RateTabContent({
         const payload = formToPayload(form);
         if (isNew) {
           const created = await createWorkflowRate(clientId, payload);
-          onSaved(created);
+          onSaved(created, rate.tempId);
         } else {
-          await updateWorkflowRate((rate as { kind: "saved"; data: WorkflowRate }).data.id, clientId, payload);
-          onSaved({ ...(rate as { kind: "saved"; data: WorkflowRate }).data, ...payload });
+          await updateWorkflowRate(savedData!.id, clientId, payload);
+          onSaved({ ...savedData!, ...payload });
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");
@@ -148,8 +154,8 @@ function RateTabContent({
   }
 
   function handleDelete() {
-    if (isNew) return;
-    const id = (rate as { kind: "saved"; data: WorkflowRate }).data.id;
+    if (!savedData) return;
+    const id = savedData.id;
     startTransition(async () => {
       try {
         await deleteWorkflowRate(id, clientId);
@@ -284,12 +290,11 @@ export function WorkflowRatesSection({
     setActiveTab(tempId);
   }
 
-  function handleSaved(updated: WorkflowRate) {
+  function handleSaved(updated: WorkflowRate, tempId?: string) {
     setRates((prev) =>
       prev.map((r) => {
-        const id = rateTabId(r);
-        // new rate just created — replace with saved
-        if (r.kind === "new" && activeTab === id) {
+        // new rate just created — match by tempId, not activeTab snapshot
+        if (r.kind === "new" && r.tempId === tempId) {
           return { kind: "saved", data: updated, form: rateToForm(updated), dirty: false };
         }
         // existing rate updated
@@ -355,7 +360,7 @@ export function WorkflowRatesSection({
       {rates.map((rate) => (
         <TabsContent key={rateTabId(rate)} value={rateTabId(rate)} className="mt-4">
           <RateTabContent
-            key={rate.kind === "saved" ? rate.data.id + JSON.stringify(rate.data) : rate.tempId}
+            key={rateTabId(rate)}
             rate={rate}
             clientId={clientId}
             onSaved={handleSaved}
