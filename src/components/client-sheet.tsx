@@ -450,9 +450,9 @@ function ClientForm({
                 onValueChange={(v) => v && set("billing_type", v as BillingType)}
                 className="w-full"
               >
-                <ToggleGroupItem value="manual" className="flex-1">Manual</ToggleGroupItem>
-                <ToggleGroupItem value="day_rate" className="flex-1">Day Rate</ToggleGroupItem>
-                <ToggleGroupItem value="hourly" className="flex-1">Hourly</ToggleGroupItem>
+                <ToggleGroupItem value="manual" className="flex-1 data-[state=on]:bg-foreground data-[state=on]:text-background">Manual</ToggleGroupItem>
+                <ToggleGroupItem value="day_rate" className="flex-1 data-[state=on]:bg-foreground data-[state=on]:text-background">Day Rate</ToggleGroupItem>
+                <ToggleGroupItem value="hourly" className="flex-1 data-[state=on]:bg-foreground data-[state=on]:text-background">Hourly</ToggleGroupItem>
               </ToggleGroup>
             </Field>
             <Field label="Invoice Frequency">
