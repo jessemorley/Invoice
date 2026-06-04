@@ -370,7 +370,7 @@ export function EntrySheet({
               {/* Date */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-foreground">Date</label>
-                <div className="h-9 rounded-lg border border-input bg-transparent px-3 flex items-center">
+                <div className="h-9 rounded-lg border border-input bg-transparent dark:bg-input/30 px-3 flex items-center">
                   <input
                     type="date"
                     className="w-full bg-transparent outline-none text-sm text-foreground"
@@ -502,7 +502,7 @@ export function EntrySheet({
               {showTimes && (
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Start">
-                    <div className="h-9 rounded-lg border border-input bg-transparent px-3 flex items-center">
+                    <div className="h-9 rounded-lg border border-input bg-transparent dark:bg-input/30 px-3 flex items-center">
                       <input
                         type="time"
                         className="w-full bg-transparent outline-none text-sm text-foreground"
@@ -512,7 +512,7 @@ export function EntrySheet({
                     </div>
                   </Field>
                   <Field label="Finish">
-                    <div className="h-9 rounded-lg border border-input bg-transparent px-3 flex items-center">
+                    <div className="h-9 rounded-lg border border-input bg-transparent dark:bg-input/30 px-3 flex items-center">
                       <input
                         type="time"
                         className="w-full bg-transparent outline-none text-sm text-foreground"
