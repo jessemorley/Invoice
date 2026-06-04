@@ -144,7 +144,8 @@ function ClientsSkeleton() {
 
 export function ClientsView({ clients: allClients, loading = false }: { clients: Client[]; loading?: boolean }) {
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const selectedClient = selectedClientId ? (allClients.find((c) => c.id === selectedClientId) ?? null) : null;
   const [sheetView, setSheetView] = useState<"detail" | "create">("detail");
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("active");
@@ -155,13 +156,13 @@ export function ClientsView({ clients: allClients, loading = false }: { clients:
   if (loading) return <ClientsSkeleton />;
 
   function openClient(client: Client) {
-    setSelectedClient(client);
+    setSelectedClientId(client.id);
     setSheetView("detail");
     setSheetOpen(true);
   }
 
   function openNew() {
-    setSelectedClient(null);
+    setSelectedClientId(null);
     setSheetView("create");
     setSheetOpen(true);
   }
