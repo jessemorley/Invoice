@@ -367,6 +367,8 @@ export function EntrySheet({
             <ClientPicker clients={clients} query={clientQuery} onSelectAction={handleSelectClient} />
           ) : (
             <div className="flex flex-col gap-4 px-4 py-4">
+              <Card>
+              <CardContent className="flex flex-col gap-4 pt-6">
               {/* Date */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-foreground">Date</label>
@@ -577,6 +579,8 @@ export function EntrySheet({
               )}
 
               {error && <p className="text-sm text-destructive">{error}</p>}
+              </CardContent>
+              </Card>
             </div>
           )}
         </div>

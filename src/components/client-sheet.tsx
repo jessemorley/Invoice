@@ -330,11 +330,10 @@ function ClientForm({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
-  const [detailsOpen, setDetailsOpen] = useState(false);
 
   useEffect(() => {
     if (!clientId) return;
-    fetchRolesWithEntries(clientId).then(setRolesWithEntries).catch(() => {});
+    fetchRolesWithEntries(clientId).then((arr) => setRolesWithEntries(new Set(arr))).catch(() => {});
   }, [clientId]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -406,33 +405,12 @@ function ClientForm({
             <Field label="Name">
               <Input className="text-sm" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Client name" />
             </Field>
-            {detailsOpen && (
-              <>
-                <Field label="Contact Name">
-                  <Input className="text-sm" value={form.contact_name} onChange={(e) => set("contact_name", e.target.value)} />
-                </Field>
-                <Field label="Email">
-                  <Input className="text-sm" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
-                </Field>
-                <Field label="Address">
-                  <Input className="text-sm" value={form.address} onChange={(e) => set("address", e.target.value)} />
-                </Field>
-                <Field label="Suburb">
-                  <Input className="text-sm" value={form.suburb} onChange={(e) => set("suburb", e.target.value)} />
-                </Field>
-                <Field label="ABN">
-                  <Input className="text-sm" value={form.abn} onChange={(e) => set("abn", e.target.value)} />
-                </Field>
-              </>
+            {!isNew && (
+              <div className="flex items-center justify-between text-sm">
+                <span>Active</span>
+                <Switch checked={form.is_active} onCheckedChange={(v) => set("is_active", v)} />
+              </div>
             )}
-            <button
-              type="button"
-              onClick={() => setDetailsOpen((v) => !v)}
-              className="text-sm text-muted-foreground flex items-center gap-1 hover:text-foreground transition-colors"
-            >
-              <ChevronRight className={`size-4 transition-transform ${detailsOpen ? "rotate-90" : ""}`} />
-              {detailsOpen ? "Less" : "More details"}
-            </button>
           </CardContent>
         </Card>
 
@@ -635,15 +613,29 @@ function ClientForm({
 
 
 
-        {/* Active (edit only) */}
-        {!isNew && (
-          <Card>
-            <CardContent className="flex items-center justify-between text-sm pt-6">
-              <span>Active</span>
-              <Switch checked={form.is_active} onCheckedChange={(v) => set("is_active", v)} />
-            </CardContent>
-          </Card>
-        )}
+        {/* Contact */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Contact</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <Field label="Contact Name">
+              <Input className="text-sm" value={form.contact_name} onChange={(e) => set("contact_name", e.target.value)} />
+            </Field>
+            <Field label="Email">
+              <Input className="text-sm" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
+            </Field>
+            <Field label="Address">
+              <Input className="text-sm" value={form.address} onChange={(e) => set("address", e.target.value)} />
+            </Field>
+            <Field label="Suburb">
+              <Input className="text-sm" value={form.suburb} onChange={(e) => set("suburb", e.target.value)} />
+            </Field>
+            <Field label="ABN">
+              <Input className="text-sm" value={form.abn} onChange={(e) => set("abn", e.target.value)} />
+            </Field>
+          </CardContent>
+        </Card>
 
         {/* Delete (edit only) */}
         {!isNew && (
