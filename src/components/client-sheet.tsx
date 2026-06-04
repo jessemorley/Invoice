@@ -396,20 +396,39 @@ function ClientForm({
 
       <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
 
+        {/* Contact */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Contact</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <Field label="Name">
+              <Input className="text-sm" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Client name" />
+            </Field>
+            <Field label="Contact Name">
+              <Input className="text-sm" value={form.contact_name} onChange={(e) => set("contact_name", e.target.value)} />
+            </Field>
+            <Field label="Email">
+              <Input className="text-sm" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
+            </Field>
+            <Field label="Address">
+              <Input className="text-sm" value={form.address} onChange={(e) => set("address", e.target.value)} />
+            </Field>
+            <Field label="Suburb">
+              <Input className="text-sm" value={form.suburb} onChange={(e) => set("suburb", e.target.value)} />
+            </Field>
+            <Field label="ABN">
+              <Input className="text-sm" value={form.abn} onChange={(e) => set("abn", e.target.value)} />
+            </Field>
+          </CardContent>
+        </Card>
+
         {/* Billing */}
         <Card>
           <CardHeader>
             <CardTitle>Billing</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <Field label="Name">
-              <Input
-                className="text-sm"
-                value={form.name}
-                onChange={(e) => set("name", e.target.value)}
-                placeholder="Client name"
-              />
-            </Field>
             <Field label="Billing Type">
               <ToggleGroup
                 type="single"
@@ -487,7 +506,7 @@ function ClientForm({
                               type="button"
                               variant="outline"
                               size="icon"
-                              className="shrink-0 dark:bg-background dark:hover:bg-accent/50"
+                              className="shrink-0"
                               onClick={() => {
                                 if (rolesWithEntries.has(role.name.trim())) {
                                   setLockedRoleError(i);
@@ -595,30 +614,6 @@ function ClientForm({
                 <ToggleGroupItem value="weekly" className="flex-1">Weekly</ToggleGroupItem>
                 <ToggleGroupItem value="per_job" className="flex-1">Per Job</ToggleGroupItem>
               </ToggleGroup>
-            </Field>
-          </CardContent>
-        </Card>
-
-        {/* Contact */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Contact</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <Field label="Contact Name">
-              <Input className="text-sm" value={form.contact_name} onChange={(e) => set("contact_name", e.target.value)} />
-            </Field>
-            <Field label="Email">
-              <Input className="text-sm" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
-            </Field>
-            <Field label="Address">
-              <Input className="text-sm" value={form.address} onChange={(e) => set("address", e.target.value)} />
-            </Field>
-            <Field label="Suburb">
-              <Input className="text-sm" value={form.suburb} onChange={(e) => set("suburb", e.target.value)} />
-            </Field>
-            <Field label="ABN">
-              <Input className="text-sm" value={form.abn} onChange={(e) => set("abn", e.target.value)} />
             </Field>
           </CardContent>
         </Card>
