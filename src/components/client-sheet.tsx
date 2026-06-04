@@ -450,9 +450,9 @@ function ClientForm({
                 onValueChange={(v) => v && set("billing_type", v as BillingType)}
                 className="w-full p-1 border border-input rounded-lg dark:bg-input/30"
               >
-                <ToggleGroupItem value="manual" className="flex-1 rounded-md! border-none! shadow-none text-muted-foreground data-[state=on]:text-accent-foreground">Manual</ToggleGroupItem>
-                <ToggleGroupItem value="day_rate" className="flex-1 rounded-md! border-none! shadow-none text-muted-foreground data-[state=on]:text-accent-foreground">Day Rate</ToggleGroupItem>
-                <ToggleGroupItem value="hourly" className="flex-1 rounded-md! border-none! shadow-none text-muted-foreground data-[state=on]:text-accent-foreground">Hourly</ToggleGroupItem>
+                <ToggleGroupItem value="manual" className="flex-1 rounded-md! border-none! shadow-none text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-accent-foreground">Manual</ToggleGroupItem>
+                <ToggleGroupItem value="day_rate" className="flex-1 rounded-md! border-none! shadow-none text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-accent-foreground">Day Rate</ToggleGroupItem>
+                <ToggleGroupItem value="hourly" className="flex-1 rounded-md! border-none! shadow-none text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-accent-foreground">Hourly</ToggleGroupItem>
               </ToggleGroup>
             </Field>
             <Field label="Invoice Frequency">
@@ -463,8 +463,8 @@ function ClientForm({
                 onValueChange={(v) => v && set("invoice_frequency", v as "weekly" | "per_job")}
                 className="w-full p-1 border border-input rounded-lg dark:bg-input/30"
               >
-                <ToggleGroupItem value="weekly" className="flex-1 rounded-md! border-none! shadow-none text-muted-foreground data-[state=on]:text-accent-foreground">Weekly</ToggleGroupItem>
-                <ToggleGroupItem value="per_job" className="flex-1 rounded-md! border-none! shadow-none text-muted-foreground data-[state=on]:text-accent-foreground">Per Job</ToggleGroupItem>
+                <ToggleGroupItem value="weekly" className="flex-1 rounded-md! border-none! shadow-none text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-accent-foreground">Weekly</ToggleGroupItem>
+                <ToggleGroupItem value="per_job" className="flex-1 rounded-md! border-none! shadow-none text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-accent-foreground">Per Job</ToggleGroupItem>
               </ToggleGroup>
             </Field>
 
