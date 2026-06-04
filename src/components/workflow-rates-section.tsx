@@ -223,13 +223,13 @@ function RateTabContent({
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       <div className="flex gap-2 pt-1">
-        <Button variant="outline" size="sm" className="flex-1" onClick={handleCancel} disabled={isPending}>
+        <Button type="button" variant="outline" size="sm" className="flex-1" onClick={handleCancel} disabled={isPending}>
           Cancel
         </Button>
         {!isNew && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="flex-1 text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive" disabled={isPending}>
+              <Button type="button" variant="outline" size="sm" className="flex-1 text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive" disabled={isPending}>
                 Delete
               </Button>
             </AlertDialogTrigger>
@@ -252,7 +252,7 @@ function RateTabContent({
             </AlertDialogContent>
           </AlertDialog>
         )}
-        <Button size="sm" className="flex-1" onClick={handleSave} disabled={isPending || !canSave}>
+        <Button type="button" size="sm" className="flex-1" onClick={handleSave} disabled={isPending || !canSave}>
           {isPending ? <Spinner className="size-4" /> : "Save"}
         </Button>
       </div>
@@ -334,7 +334,7 @@ export function WorkflowRatesSection({
       setActiveTab(v);
     }}>
       <div className="flex items-center gap-1 min-w-0">
-        <TabsList className="flex-1 h-auto overflow-x-auto justify-start gap-1 bg-transparent p-0 flex-nowrap">
+        <TabsList className="flex-1 overflow-x-auto overflow-y-hidden justify-start gap-1 bg-transparent p-0 flex-nowrap">
           {rates.map((rate) => (
             <TabsTrigger
               key={rateTabId(rate)}
@@ -353,6 +353,7 @@ export function WorkflowRatesSection({
       {rates.map((rate) => (
         <TabsContent key={rateTabId(rate)} value={rateTabId(rate)} className="mt-4">
           <RateTabContent
+            key={rate.kind === "saved" ? rate.data.id + JSON.stringify(rate.data) : rate.tempId}
             rate={rate}
             clientId={clientId}
             onSaved={handleSaved}
