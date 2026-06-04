@@ -331,6 +331,12 @@ function ClientForm({
 
   function handleSave() {
     if (!form.name.trim()) return;
+    const roleNames = form.roles.map((r) => r.name.trim()).filter(Boolean);
+    const uniqueNames = new Set(roleNames);
+    if (uniqueNames.size !== roleNames.length) {
+      setSaveError("Role names must be unique");
+      return;
+    }
     setSaveError(null);
     startTransition(async () => {
       try {
