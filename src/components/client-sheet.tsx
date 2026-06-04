@@ -384,7 +384,6 @@ function ClientForm({
       <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
         <div className="flex flex-col gap-1.5 flex-1 min-w-0">
           <SheetTitle>{isNew ? "Add Client" : "Edit Client"}</SheetTitle>
-          <SheetDescription>{isNew ? "Add a new client" : "Update client details"}</SheetDescription>
         </div>
         <SheetClose asChild>
           <Button variant="ghost" size="icon" className="shrink-0 self-center size-8">
@@ -730,7 +729,6 @@ function ClientDetail({
               <span className="shrink-0 text-xs text-muted-foreground border rounded-full px-2 py-0.5">Inactive</span>
             )}
           </div>
-          <SheetDescription>{BILLING_LABEL[client.billing_type]}</SheetDescription>
         </div>
         <Button variant="ghost" size="icon" className="shrink-0 size-8 self-center" onClick={onEdit} aria-label="Edit client">
           <Pencil className="size-4" />
