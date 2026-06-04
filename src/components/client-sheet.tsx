@@ -770,7 +770,7 @@ function WorkflowRatesSheet({ clientId }: { clientId: string }) {
   const [rates, setRates] = useState<WorkflowRate[] | null>(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) { setRates(null); return; }
     fetchWorkflowRates(clientId).then(setRates).catch(() => setRates([]));
   }, [open, clientId]);
 

@@ -105,15 +105,23 @@ export async function updateClientAction(clientId: string, data: ClientFormData)
     if (deleteError) throw new Error(`updateClientAction (delete roles): ${deleteError.message}`);
   }
 
-  // Upsert new and updated roles
-  if (roles.length > 0) {
-    const { error: upsertError } = await supabase
+  // Update existing roles and insert new ones separately
+  const existingRolesToUpdate = roles.filter((r) => r.id);
+  const newRolesToInsert = roles.filter((r) => !r.id);
+
+  for (const r of existingRolesToUpdate) {
+    const { error } = await supabase
       .from("client_roles")
-      .upsert(
-        roles.map((r) => ({ ...(r.id ? { id: r.id } : {}), client_id: clientId, name: r.name, rate: r.rate })),
-        { onConflict: "id" }
-      );
-    if (upsertError) throw new Error(`updateClientAction (upsert roles): ${upsertError.message}`);
+      .update({ name: r.name, rate: r.rate })
+      .eq("id", r.id!);
+    if (error) throw new Error(`updateClientAction (update role): ${error.message}`);
+  }
+
+  if (newRolesToInsert.length > 0) {
+    const { error } = await supabase
+      .from("client_roles")
+      .insert(newRolesToInsert.map((r) => ({ client_id: clientId, name: r.name, rate: r.rate })));
+    if (error) throw new Error(`updateClientAction (insert roles): ${error.message}`);
   }
 
   updateTag(CACHE_TAGS.clients);
