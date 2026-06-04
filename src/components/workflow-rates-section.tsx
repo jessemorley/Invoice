@@ -333,8 +333,8 @@ export function WorkflowRatesSection({
       setRates((prev) => prev.filter((r) => r.kind === "saved" || rateTabId(r) === v));
       setActiveTab(v);
     }}>
-      <div className="flex items-center gap-1">
-        <TabsList className="flex-1 h-auto flex-wrap justify-start gap-1 bg-transparent p-0">
+      <div className="flex items-center gap-1 min-w-0">
+        <TabsList className="flex-1 h-auto overflow-x-auto justify-start gap-1 bg-transparent p-0 flex-nowrap">
           {rates.map((rate) => (
             <TabsTrigger
               key={rateTabId(rate)}
