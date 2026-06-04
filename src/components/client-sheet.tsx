@@ -513,7 +513,7 @@ function ClientForm({
             })()}
 
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Start">
+              <Field label="Default Start">
                 <div className="h-9 rounded-lg border border-input bg-transparent px-3 flex items-center">
                   <input
                     type="time"
@@ -523,7 +523,7 @@ function ClientForm({
                   />
                 </div>
               </Field>
-              <Field label="Finish">
+              <Field label="Default Finish">
                 <div className="h-9 rounded-lg border border-input bg-transparent px-3 flex items-center">
                   <input
                     type="time"
