@@ -507,10 +507,10 @@ export function InvoiceSheet({
               value={form!.status}
               onValueChange={(v) => v && set("status", v as InvoiceStatus)}
               variant="outline"
-              className="w-full"
+              className="w-full p-1 border border-input rounded-lg dark:bg-input/30"
             >
               {(["draft", "issued", "paid"] as InvoiceStatus[]).map((s) => (
-                <ToggleGroupItem key={s} value={s} className="flex-1">
+                <ToggleGroupItem key={s} value={s} className="flex-1 h-7 rounded-md! border-none! shadow-none text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=on]:text-accent-foreground">
                   {STATUS_LABEL[s]}
                 </ToggleGroupItem>
               ))}

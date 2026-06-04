@@ -388,10 +388,10 @@ export function EntrySheet({
                     variant="outline"
                     value={form.day_type}
                     onValueChange={(v) => v && set("day_type", v as "full" | "half")}
-                    className="w-full"
+                    className="w-full p-1 border border-input rounded-lg dark:bg-input/30"
                   >
-                    <ToggleGroupItem value="full" className="flex-1">Full day</ToggleGroupItem>
-                    <ToggleGroupItem value="half" className="flex-1">Half day</ToggleGroupItem>
+                    <ToggleGroupItem value="full" className="flex-1 h-7 rounded-md! border-none! shadow-none text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=on]:text-accent-foreground">Full day</ToggleGroupItem>
+                    <ToggleGroupItem value="half" className="flex-1 h-7 rounded-md! border-none! shadow-none text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=on]:text-accent-foreground">Half day</ToggleGroupItem>
                   </ToggleGroup>
                 </Field>
               )}
@@ -404,11 +404,11 @@ export function EntrySheet({
                     variant="outline"
                     value={topWorkflow}
                     onValueChange={handleTopWorkflow}
-                    className="w-full"
+                    className="w-full p-1 border border-input rounded-lg dark:bg-input/30"
                   >
-                    <ToggleGroupItem value="Apparel" className="flex-1">Apparel</ToggleGroupItem>
-                    <ToggleGroupItem value="Product" className="flex-1">Product</ToggleGroupItem>
-                    <ToggleGroupItem value="Own Brand" className="flex-1">Own Brand</ToggleGroupItem>
+                    <ToggleGroupItem value="Apparel" className="flex-1 h-7 rounded-md! border-none! shadow-none text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=on]:text-accent-foreground">Apparel</ToggleGroupItem>
+                    <ToggleGroupItem value="Product" className="flex-1 h-7 rounded-md! border-none! shadow-none text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=on]:text-accent-foreground">Product</ToggleGroupItem>
+                    <ToggleGroupItem value="Own Brand" className="flex-1 h-7 rounded-md! border-none! shadow-none text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=on]:text-accent-foreground">Own Brand</ToggleGroupItem>
                   </ToggleGroup>
                   {topWorkflow === "Product" && productSubOptions.length > 0 && (
                     <ToggleGroup
@@ -416,10 +416,10 @@ export function EntrySheet({
                       variant="outline"
                       value={form.workflow_type}
                       onValueChange={(v) => v && set("workflow_type", v)}
-                      className="w-full mt-1"
+                      className="w-full mt-1 p-1 border border-input rounded-lg dark:bg-input/30"
                     >
                       {productSubOptions.map((opt) => (
-                        <ToggleGroupItem key={opt} value={opt} className="flex-1 text-xs">
+                        <ToggleGroupItem key={opt} value={opt} className="flex-1 h-7 rounded-md! border-none! shadow-none text-xs text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=on]:text-accent-foreground">
                           {opt}
                         </ToggleGroupItem>
                       ))}
@@ -489,10 +489,10 @@ export function EntrySheet({
                     variant="outline"
                     value={form.role}
                     onValueChange={(v) => v && set("role", v)}
-                    className="w-full"
+                    className="w-full p-1 border border-input rounded-lg dark:bg-input/30"
                   >
                     {selectedClient!.roles.map((r) => (
-                      <ToggleGroupItem key={r.id} value={r.name} className="flex-1">{r.name}</ToggleGroupItem>
+                      <ToggleGroupItem key={r.id} value={r.name} className="flex-1 h-7 rounded-md! border-none! shadow-none text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=on]:text-accent-foreground">{r.name}</ToggleGroupItem>
                     ))}
                   </ToggleGroup>
                 </Field>
