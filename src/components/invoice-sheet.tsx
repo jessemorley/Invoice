@@ -8,7 +8,6 @@ import { invalidate } from "@/lib/invalidate";
 import type { InvoiceFormData } from "@/app/(app)/invoices/actions";
 import { ClientPicker, ClientSearchInput } from "@/components/client-picker";
 import { Button } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Input } from "@/components/ui/input";
 import type { ScheduledEmail } from "@/lib/queries";
 import { Download, Mail, Plus, Trash2, CalendarClock, Send, X, MoreHorizontal } from "lucide-react";
@@ -42,6 +41,8 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import { ClientSquircle } from "@/components/client-squircle";
+import { DateTimeInput } from "@/components/ui/date-time-input";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 
 type InvoiceEntry = InvoiceDetail["entries"][0];
 
@@ -502,44 +503,22 @@ export function InvoiceSheet({
           {/* Status */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">Status</label>
-            <ToggleGroup
-              type="single"
+            <SegmentedControl
               value={form!.status}
-              onValueChange={(v) => v && set("status", v as InvoiceStatus)}
-              variant="outline"
-              className="w-full"
-            >
-              {(["draft", "issued", "paid"] as InvoiceStatus[]).map((s) => (
-                <ToggleGroupItem key={s} value={s} className="flex-1">
-                  {STATUS_LABEL[s]}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
+              onValueChange={(v) => set("status", v)}
+              options={(["draft", "issued", "paid"] as InvoiceStatus[]).map((s) => ({ value: s, label: STATUS_LABEL[s] }))}
+            />
           </div>
 
           {/* Issued / Paid dates */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium">Issued</label>
-              <div className="h-9 rounded-lg border border-input bg-transparent px-3 flex items-center">
-                <input
-                  type="date"
-                  className="w-full bg-transparent outline-none text-sm text-foreground"
-                  value={form!.issued_date}
-                  onChange={(e) => set("issued_date", e.target.value)}
-                />
-              </div>
+              <DateTimeInput type="date" value={form!.issued_date} onChange={(v) => set("issued_date", v)} />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium">Paid</label>
-              <div className="h-9 rounded-lg border border-input bg-transparent px-3 flex items-center">
-                <input
-                  type="date"
-                  className="w-full bg-transparent outline-none text-sm text-foreground"
-                  value={form!.paid_date}
-                  onChange={(e) => set("paid_date", e.target.value)}
-                />
-              </div>
+              <DateTimeInput type="date" value={form!.paid_date} onChange={(v) => set("paid_date", v)} />
             </div>
           </div>
 

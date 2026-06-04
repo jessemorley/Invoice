@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, useEffect, useState } from "react";
+import React, { useTransition, useEffect, useState } from "react";
 import { useActiveView } from "@/components/active-view-context";
 import type { Client, BillingType } from "@/lib/types";
 import { formatAUD } from "@/lib/format";
@@ -20,13 +20,14 @@ import {
 import { WorkflowRatesSection } from "@/components/workflow-rates-section";
 import { invalidate } from "@/lib/invalidate";
 import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Spinner } from "@/components/ui/spinner";
 import {
   AlertDialog,
@@ -51,8 +52,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ChevronRight, Pencil, X } from "lucide-react";
+import { ChevronRight, Pencil, Trash2, X } from "lucide-react";
 import { ClientSquircle } from "@/components/client-squircle";
+import { DateTimeInput } from "@/components/ui/date-time-input";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -172,10 +174,13 @@ function SuperOnInvoiceToggle({ clientId, value }: { clientId: string; value: bo
 // ── Form field helpers ────────────────────────────────────────────────────────
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const id = React.useId();
   return (
     <div className="flex flex-col gap-1.5">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
-      {children}
+      <label htmlFor={id} className="text-sm font-medium text-foreground">{label}</label>
+      {React.isValidElement(children)
+        ? React.cloneElement(children as React.ReactElement<{ id?: string }>, { id })
+        : children}
     </div>
   );
 }
@@ -186,6 +191,7 @@ function NumericInput({ value, onChange, placeholder }: { value: string; onChang
       type="number"
       inputMode="decimal"
       step="0.01"
+      className="text-sm"
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder ?? "0.00"}
@@ -231,7 +237,7 @@ function blankForm(): FormState {
     entry_label: "",
     roles: [],
     pays_super: false,
-    super_rate: "0.12",
+    super_rate: "12",
     show_super_on_invoice: true,
     invoice_frequency: "weekly",
     contact_name: "",
@@ -255,7 +261,7 @@ function clientToForm(client: Client): FormState {
     entry_label: client.entry_label ?? "",
     roles: client.roles.map((r) => ({ id: r.id, name: r.name, rate: String(r.rate) })),
     pays_super: client.pays_super,
-    super_rate: String(client.super_rate),
+    super_rate: String(client.super_rate * 100),
     show_super_on_invoice: client.show_super_on_invoice,
     invoice_frequency: client.invoice_frequency,
     contact_name: client.contact_name ?? "",
@@ -281,7 +287,7 @@ function formToPayload(f: FormState): ClientFormData {
       .filter((r) => r.name.trim())
       .map((r) => ({ ...(r.id ? { id: r.id } : {}), name: r.name.trim(), rate: r.rate !== "" ? parseFloat(r.rate) : 0 })),
     pays_super: f.pays_super,
-    super_rate: f.super_rate !== "" ? parseFloat(f.super_rate) : 0.12,
+    super_rate: f.super_rate !== "" ? parseFloat(f.super_rate) / 100 : 0.12,
     show_super_on_invoice: f.show_super_on_invoice,
     invoice_frequency: f.invoice_frequency,
     contact_name: f.contact_name.trim() || null,
@@ -331,7 +337,7 @@ function ClientForm({
 
   useEffect(() => {
     if (!clientId) return;
-    fetchRolesWithEntries(clientId).then(setRolesWithEntries).catch(() => {});
+    fetchRolesWithEntries(clientId).then((arr) => setRolesWithEntries(new Set(arr))).catch(() => {});
   }, [clientId]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -382,7 +388,6 @@ function ClientForm({
       <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
         <div className="flex flex-col gap-1.5 flex-1 min-w-0">
           <SheetTitle>{isNew ? "Add Client" : "Edit Client"}</SheetTitle>
-          <SheetDescription>{isNew ? "Add a new client" : "Update client details"}</SheetDescription>
         </div>
         <SheetClose asChild>
           <Button variant="ghost" size="icon" className="shrink-0 self-center size-8">
@@ -392,215 +397,234 @@ function ClientForm({
         </SheetClose>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
-        {/* Name */}
-        <Field label="Name">
-          <Input
-            value={form.name}
-            onChange={(e) => set("name", e.target.value)}
-            placeholder="Client name"
-          />
-        </Field>
+      <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
 
-        {/* Billing type */}
-        <Field label="Billing Type">
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            value={form.billing_type}
-            onValueChange={(v) => v && set("billing_type", v as BillingType)}
-            className="w-full"
-          >
-            <ToggleGroupItem value="manual" className="flex-1">Manual</ToggleGroupItem>
-            <ToggleGroupItem value="day_rate" className="flex-1">Day Rate</ToggleGroupItem>
-            <ToggleGroupItem value="hourly" className="flex-1">Hourly</ToggleGroupItem>
-          </ToggleGroup>
-        </Field>
-
-        {/* Day rate fields */}
-        {form.billing_type === "day_rate" && (
-          <div className="flex gap-3">
-            <Field label="Full Day ($)">
-              <NumericInput value={form.rate_full_day} onChange={(v) => set("rate_full_day", v)} />
+        {/* Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Details</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <Field label="Name">
+              <Input className="text-sm" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="Client name" />
             </Field>
-            <Field label="Half Day ($)">
-              <NumericInput value={form.rate_half_day} onChange={(v) => set("rate_half_day", v)} />
-            </Field>
-          </div>
-        )}
+            {!isNew && (
+              <div className="flex items-center justify-between text-sm">
+                <span>Active</span>
+                <Switch checked={form.is_active} onCheckedChange={(v) => set("is_active", v)} />
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        {/* Hourly fields */}
-        {form.billing_type === "hourly" && (
-          <>
-            {form.roles.length === 0 && (
-              <Field label="Hourly Rate ($)">
-                <NumericInput value={form.rate_hourly} onChange={(v) => set("rate_hourly", v)} />
-              </Field>
+        {/* Billing */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Billing</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <Field label="Billing Type">
+              <SegmentedControl<BillingType>
+                value={form.billing_type}
+                onValueChange={(v) => set("billing_type", v)}
+                options={[
+                  { value: "manual", label: "Manual" },
+                  { value: "day_rate", label: "Day Rate" },
+                  { value: "hourly", label: "Hourly" },
+                ]}
+              />
+            </Field>
+            <Field label="Invoice Frequency">
+              <SegmentedControl<"weekly" | "per_job">
+                value={form.invoice_frequency}
+                onValueChange={(v) => set("invoice_frequency", v)}
+                options={[
+                  { value: "weekly", label: "Weekly" },
+                  { value: "per_job", label: "Per Job" },
+                ]}
+              />
+            </Field>
+
+            {/* Day rate fields */}
+            {form.billing_type === "day_rate" && (
+              <div className="flex gap-3">
+                <Field label="Full Day ($)">
+                  <NumericInput value={form.rate_full_day} onChange={(v) => set("rate_full_day", v)} />
+                </Field>
+                <Field label="Half Day ($)">
+                  <NumericInput value={form.rate_half_day} onChange={(v) => set("rate_half_day", v)} />
+                </Field>
+              </div>
             )}
 
-            {/* Roles */}
-            {(() => {
-              const nameCounts = form.roles.reduce<Record<string, number>>((acc, r) => {
-                const n = r.name.trim();
-                if (n) acc[n] = (acc[n] ?? 0) + 1;
-                return acc;
-              }, {});
-              return (
-              <div className="flex flex-col gap-2">
-              <Label className="text-xs text-muted-foreground">Roles</Label>
-              {form.roles.map((role, i) => (
-                <div key={role.id ?? `new-${i}`} className="flex flex-col gap-1">
-                <div className="flex gap-2 items-center">
+            {/* Hourly fields */}
+            {form.billing_type === "hourly" && (
+              <>
+                {form.roles.length === 0 && (
+                  <Field label="Hourly Rate ($)">
+                    <NumericInput value={form.rate_hourly} onChange={(v) => set("rate_hourly", v)} />
+                  </Field>
+                )}
+
+                {/* Roles */}
+                {(() => {
+                  const nameCounts = form.roles.reduce<Record<string, number>>((acc, r) => {
+                    const n = r.name.trim();
+                    if (n) acc[n] = (acc[n] ?? 0) + 1;
+                    return acc;
+                  }, {});
+                  return (
+                    <div className="flex flex-col gap-2">
+                      <label className="text-sm font-medium text-foreground">Roles</label>
+                      {form.roles.map((role, i) => (
+                        <div key={role.id ?? `new-${i}`} className="flex flex-col gap-1">
+                          <div className="flex gap-2 items-center">
+                            <Input
+                              className={`flex-1 min-w-0 text-sm${touchedRoles.has(i) && (nameCounts[role.name.trim()] ?? 0) > 1 ? " border-destructive focus-visible:ring-destructive" : ""}`}
+                              placeholder="Role name"
+                              value={role.name}
+                              onChange={(e) => {
+                                const updated = form.roles.map((r, idx) => idx === i ? { ...r, name: e.target.value } : r);
+                                set("roles", updated);
+                              }}
+                              onBlur={() => setTouchedRoles((prev) => new Set(prev).add(i))}
+                            />
+                            <div className="w-24 shrink-0 relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">$</span>
+                              <Input
+                                type="number"
+                                inputMode="decimal"
+                                step="0.01"
+                                placeholder="0.00"
+                                className="pl-6 text-sm"
+                                value={role.rate}
+                                onChange={(e) => {
+                                  const updated = form.roles.map((r, idx) => idx === i ? { ...r, rate: e.target.value } : r);
+                                  set("roles", updated);
+                                }}
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="shrink-0"
+                              onClick={() => {
+                                if (rolesWithEntries.has(role.name.trim())) {
+                                  setLockedRoleError(i);
+                                } else {
+                                  setLockedRoleError(null);
+                                  set("roles", form.roles.filter((_, idx) => idx !== i));
+                                  setTouchedRoles(new Set());
+                                }
+                              }}
+                            >
+                              <Trash2 className="size-4 text-muted-foreground" />
+                            </Button>
+                          </div>
+                          {lockedRoleError === i && (
+                            <p className="text-xs text-destructive pl-1">Has entries attached — reassign or delete them first</p>
+                          )}
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => set("roles", [...form.roles, { name: "", rate: "" }])}
+                      >
+                        + Add role
+                      </Button>
+                    </div>
+                  );
+                })()}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Default Start">
+                    <DateTimeInput type="time" value={form.default_start_time} onChange={(v) => set("default_start_time", v)} />
+                  </Field>
+                  <Field label="Default Finish">
+                    <DateTimeInput type="time" value={form.default_finish_time} onChange={(v) => set("default_finish_time", v)} />
+                  </Field>
+                </div>
+                <Field label="Entry Label">
                   <Input
-                    className={`flex-1 min-w-0${touchedRoles.has(i) && (nameCounts[role.name.trim()] ?? 0) > 1 ? " border-destructive focus-visible:ring-destructive" : ""}`}
-                    placeholder="Role name"
-                    value={role.name}
-                    onChange={(e) => {
-                      const updated = form.roles.map((r, idx) => idx === i ? { ...r, name: e.target.value } : r);
-                      set("roles", updated);
-                    }}
-                    onBlur={() => setTouchedRoles((prev) => new Set(prev).add(i))}
+                    className="text-sm"
+                    value={form.entry_label}
+                    onChange={(e) => set("entry_label", e.target.value)}
+                    placeholder="e.g. Shoot Client"
                   />
-                  <div className="w-24 shrink-0 relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">$</span>
+                </Field>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Super */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Superannuation</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex items-center justify-between text-sm">
+              <span>Pays Super</span>
+              <Switch checked={form.pays_super} onCheckedChange={(v) => set("pays_super", v)} />
+            </div>
+            {form.pays_super && (
+              <>
+                <Field label="Super Rate">
+                  <div className="relative">
                     <Input
                       type="number"
                       inputMode="decimal"
-                      step="0.01"
-                      placeholder="0.00"
-                      className="pl-6"
-                      value={role.rate}
-                      onChange={(e) => {
-                        const updated = form.roles.map((r, idx) => idx === i ? { ...r, rate: e.target.value } : r);
-                        set("roles", updated);
-                      }}
+                      step="0.1"
+                      className="text-sm pr-7"
+                      value={form.super_rate}
+                      onChange={(e) => set("super_rate", e.target.value)}
+                      placeholder="11.5"
                     />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">%</span>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0 text-muted-foreground"
-                    onClick={() => {
-                      if (rolesWithEntries.has(role.name.trim())) {
-                        setLockedRoleError(i);
-                      } else {
-                        setLockedRoleError(null);
-                        set("roles", form.roles.filter((_, idx) => idx !== i));
-                        setTouchedRoles(new Set());
-                      }
-                    }}
-                  >
-                    <X className="size-4" />
-                  </Button>
+                </Field>
+                <div className="flex items-center justify-between text-sm">
+                  <span>Show Super on Invoice</span>
+                  <Switch checked={form.show_super_on_invoice} onCheckedChange={(v) => set("show_super_on_invoice", v)} />
                 </div>
-                {lockedRoleError === i && (
-                  <p className="text-xs text-destructive pl-1">Has entries attached — reassign or delete them first</p>
-                )}
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="self-start"
-                onClick={() => set("roles", [...form.roles, { name: "", rate: "" }])}
-              >
-                  + Add role
-              </Button>
-            </div>
-              );
-            })()}
+              </>
+            )}
+          </CardContent>
+        </Card>
 
-            <div className="flex gap-3">
-              <Field label="Default Start">
-                <Input type="time" value={form.default_start_time} onChange={(e) => set("default_start_time", e.target.value)} />
-              </Field>
-              <Field label="Default Finish">
-                <Input type="time" value={form.default_finish_time} onChange={(e) => set("default_finish_time", e.target.value)} />
-              </Field>
-            </div>
-            <Field label="Entry Label">
-              <Input
-                value={form.entry_label}
-                onChange={(e) => set("entry_label", e.target.value)}
-                placeholder="e.g. Shoot Client"
-              />
-            </Field>
-          </>
-        )}
 
-        <Separator />
-
-        {/* Super */}
-        <div className="flex items-center justify-between text-sm">
-          <span>Pays Super</span>
-          <Switch checked={form.pays_super} onCheckedChange={(v) => set("pays_super", v)} />
-        </div>
-        {form.pays_super && (
-          <>
-            <Field label="Super Rate (e.g. 0.12)">
-              <NumericInput value={form.super_rate} onChange={(v) => set("super_rate", v)} placeholder="0.12" />
-            </Field>
-            <div className="flex items-center justify-between text-sm">
-              <span>Show Super on Invoice</span>
-              <Switch checked={form.show_super_on_invoice} onCheckedChange={(v) => set("show_super_on_invoice", v)} />
-            </div>
-          </>
-        )}
-
-        <Separator />
-
-        {/* Invoice frequency */}
-        <Field label="Invoice Frequency">
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            value={form.invoice_frequency}
-            onValueChange={(v) => v && set("invoice_frequency", v as "weekly" | "per_job")}
-            className="w-full"
-          >
-            <ToggleGroupItem value="weekly" className="flex-1">Weekly</ToggleGroupItem>
-            <ToggleGroupItem value="per_job" className="flex-1">Per Job</ToggleGroupItem>
-          </ToggleGroup>
-        </Field>
-
-        <Separator />
 
         {/* Contact */}
-        <Section title="Contact">
-          <Field label="Contact Name">
-            <Input value={form.contact_name} onChange={(e) => set("contact_name", e.target.value)} />
-          </Field>
-          <Field label="Email">
-            <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
-          </Field>
-          <Field label="Address">
-            <Input value={form.address} onChange={(e) => set("address", e.target.value)} />
-          </Field>
-          <Field label="Suburb">
-            <Input value={form.suburb} onChange={(e) => set("suburb", e.target.value)} />
-          </Field>
-          <Field label="ABN">
-            <Input value={form.abn} onChange={(e) => set("abn", e.target.value)} />
-          </Field>
-        </Section>
-
-        {/* Active (edit only) */}
-        {!isNew && (
-          <>
-            <Separator />
-            <div className="flex items-center justify-between text-sm">
-              <span>Active</span>
-              <Switch checked={form.is_active} onCheckedChange={(v) => set("is_active", v)} />
-            </div>
-          </>
-        )}
+        <Card>
+          <CardHeader>
+            <CardTitle>Contact</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <Field label="Contact Name">
+              <Input className="text-sm" value={form.contact_name} onChange={(e) => set("contact_name", e.target.value)} />
+            </Field>
+            <Field label="Email">
+              <Input className="text-sm" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
+            </Field>
+            <Field label="Address">
+              <Input className="text-sm" value={form.address} onChange={(e) => set("address", e.target.value)} />
+            </Field>
+            <Field label="Suburb">
+              <Input className="text-sm" value={form.suburb} onChange={(e) => set("suburb", e.target.value)} />
+            </Field>
+            <Field label="ABN">
+              <Input className="text-sm" value={form.abn} onChange={(e) => set("abn", e.target.value)} />
+            </Field>
+          </CardContent>
+        </Card>
 
         {/* Delete (edit only) */}
         {!isNew && (
           <>
-            <Separator />
             {deleteError ? (
               <p className="text-sm text-destructive">{deleteError}</p>
             ) : (
@@ -691,7 +715,6 @@ function ClientDetail({
               <span className="shrink-0 text-xs text-muted-foreground border rounded-full px-2 py-0.5">Inactive</span>
             )}
           </div>
-          <SheetDescription>{BILLING_LABEL[client.billing_type]}</SheetDescription>
         </div>
         <Button variant="ghost" size="icon" className="shrink-0 size-8 self-center" onClick={onEdit} aria-label="Edit client">
           <Pencil className="size-4" />

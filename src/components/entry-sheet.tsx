@@ -11,7 +11,6 @@ import { formatAUD } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Sheet,
   SheetClose,
@@ -22,6 +21,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ChevronLeft, Minus, Plus, Trash2, X } from "lucide-react";
 import { ClientPicker, ClientSearchInput } from "@/components/client-picker";
+import { DateTimeInput } from "@/components/ui/date-time-input";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -370,60 +371,43 @@ export function EntrySheet({
               {/* Date */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-foreground">Date</label>
-                <div className="h-9 rounded-lg border border-input bg-transparent px-3 flex items-center">
-                  <input
-                    type="date"
-                    className="w-full bg-transparent outline-none text-sm text-foreground"
-                    value={form.date}
-                    onChange={(e) => set("date", e.target.value)}
-                  />
-                </div>
+                <DateTimeInput type="date" value={form.date} onChange={(v) => set("date", v)} />
               </div>
 
               {/* Day type */}
               {showDayType && (
                 <Field label="Day type">
-                  <ToggleGroup
-                    type="single"
-                    variant="outline"
+                  <SegmentedControl
                     value={form.day_type}
-                    onValueChange={(v) => v && set("day_type", v as "full" | "half")}
-                    className="w-full"
-                  >
-                    <ToggleGroupItem value="full" className="flex-1">Full day</ToggleGroupItem>
-                    <ToggleGroupItem value="half" className="flex-1">Half day</ToggleGroupItem>
-                  </ToggleGroup>
+                    onValueChange={(v) => set("day_type", v)}
+                    options={[
+                      { value: "full", label: "Full day" },
+                      { value: "half", label: "Half day" },
+                    ]}
+                  />
                 </Field>
               )}
 
               {/* Workflow */}
               {showWorkflow && (
                 <Field label="Workflow">
-                  <ToggleGroup
-                    type="single"
-                    variant="outline"
+                  <SegmentedControl
                     value={topWorkflow}
                     onValueChange={handleTopWorkflow}
-                    className="w-full"
-                  >
-                    <ToggleGroupItem value="Apparel" className="flex-1">Apparel</ToggleGroupItem>
-                    <ToggleGroupItem value="Product" className="flex-1">Product</ToggleGroupItem>
-                    <ToggleGroupItem value="Own Brand" className="flex-1">Own Brand</ToggleGroupItem>
-                  </ToggleGroup>
+                    options={[
+                      { value: "Apparel", label: "Apparel" },
+                      { value: "Product", label: "Product" },
+                      { value: "Own Brand", label: "Own Brand" },
+                    ]}
+                  />
                   {topWorkflow === "Product" && productSubOptions.length > 0 && (
-                    <ToggleGroup
-                      type="single"
-                      variant="outline"
+                    <SegmentedControl
                       value={form.workflow_type}
-                      onValueChange={(v) => v && set("workflow_type", v)}
-                      className="w-full mt-1"
-                    >
-                      {productSubOptions.map((opt) => (
-                        <ToggleGroupItem key={opt} value={opt} className="flex-1 text-xs">
-                          {opt}
-                        </ToggleGroupItem>
-                      ))}
-                    </ToggleGroup>
+                      onValueChange={(v) => set("workflow_type", v)}
+                      options={productSubOptions.map((opt) => ({ value: opt, label: opt }))}
+                      className="mt-1"
+                      itemClassName="text-xs"
+                    />
                   )}
                 </Field>
               )}
@@ -484,17 +468,11 @@ export function EntrySheet({
               {/* Role */}
               {showRole && (
                 <Field label="Role">
-                  <ToggleGroup
-                    type="single"
-                    variant="outline"
+                  <SegmentedControl
                     value={form.role}
-                    onValueChange={(v) => v && set("role", v)}
-                    className="w-full"
-                  >
-                    {selectedClient!.roles.map((r) => (
-                      <ToggleGroupItem key={r.id} value={r.name} className="flex-1">{r.name}</ToggleGroupItem>
-                    ))}
-                  </ToggleGroup>
+                    onValueChange={(v) => set("role", v)}
+                    options={selectedClient!.roles.map((r) => ({ value: r.name, label: r.name }))}
+                  />
                 </Field>
               )}
 
@@ -502,24 +480,10 @@ export function EntrySheet({
               {showTimes && (
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Start">
-                    <div className="h-9 rounded-lg border border-input bg-transparent px-3 flex items-center">
-                      <input
-                        type="time"
-                        className="w-full bg-transparent outline-none text-sm text-foreground"
-                        value={form.start_time}
-                        onChange={(e) => set("start_time", e.target.value)}
-                      />
-                    </div>
+                    <DateTimeInput type="time" value={form.start_time} onChange={(v) => set("start_time", v)} />
                   </Field>
                   <Field label="Finish">
-                    <div className="h-9 rounded-lg border border-input bg-transparent px-3 flex items-center">
-                      <input
-                        type="time"
-                        className="w-full bg-transparent outline-none text-sm text-foreground"
-                        value={form.finish_time}
-                        onChange={(e) => set("finish_time", e.target.value)}
-                      />
-                    </div>
+                    <DateTimeInput type="time" value={form.finish_time} onChange={(v) => set("finish_time", v)} />
                   </Field>
                 </div>
               )}
