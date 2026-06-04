@@ -448,7 +448,7 @@ function ClientForm({
                 variant="outline"
                 value={form.billing_type}
                 onValueChange={(v) => v && set("billing_type", v as BillingType)}
-                className="w-full p-1"
+                className="w-full p-1 border border-input rounded-lg dark:bg-input/30"
               >
                 <ToggleGroupItem value="manual" className="flex-1 border-none! shadow-none text-muted-foreground data-[state=on]:text-accent-foreground">Manual</ToggleGroupItem>
                 <ToggleGroupItem value="day_rate" className="flex-1 border-none! shadow-none text-muted-foreground data-[state=on]:text-accent-foreground">Day Rate</ToggleGroupItem>
@@ -461,7 +461,7 @@ function ClientForm({
                 variant="outline"
                 value={form.invoice_frequency}
                 onValueChange={(v) => v && set("invoice_frequency", v as "weekly" | "per_job")}
-                className="w-full p-1"
+                className="w-full p-1 border border-input rounded-lg dark:bg-input/30"
               >
                 <ToggleGroupItem value="weekly" className="flex-1 border-none! shadow-none text-muted-foreground data-[state=on]:text-accent-foreground">Weekly</ToggleGroupItem>
                 <ToggleGroupItem value="per_job" className="flex-1 border-none! shadow-none text-muted-foreground data-[state=on]:text-accent-foreground">Per Job</ToggleGroupItem>
