@@ -6,18 +6,21 @@ import { getAuthUserId } from "@/lib/auth";
 import { CACHE_TAGS } from "@/lib/queries";
 import type { BillingType, InvoiceStatus } from "@/lib/types";
 
+export type ClientRolePayload = {
+  id?: string;
+  name: string;
+  rate: number;
+};
+
 export type ClientFormData = {
   name: string;
   billing_type: BillingType;
   rate_full_day: number | null;
   rate_half_day: number | null;
   rate_hourly: number | null;
-  rate_hourly_photographer: number | null;
-  rate_hourly_operator: number | null;
   default_start_time: string | null;
   default_finish_time: string | null;
   entry_label: string | null;
-  show_role: boolean;
   pays_super: boolean;
   super_rate: number;
   show_super_on_invoice: boolean;
@@ -28,17 +31,27 @@ export type ClientFormData = {
   suburb: string;
   abn: string | null;
   is_active: boolean;
+  roles: ClientRolePayload[];
 };
 
 export async function createClientAction(data: ClientFormData): Promise<{ id: string }> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { roles, ...clientData } = data;
   const { data: row, error } = await supabase
     .from("clients")
-    .insert({ ...data, user_id: userId })
+    .insert({ ...clientData, user_id: userId })
     .select("id")
     .single();
 
   if (error) throw new Error(`createClientAction: ${error.message}`);
+
+  if (roles.length > 0) {
+    const { error: rolesError } = await supabase
+      .from("client_roles")
+      .insert(roles.map((r) => ({ client_id: row.id, name: r.name, rate: r.rate })));
+    if (rolesError) throw new Error(`createClientAction (roles): ${rolesError.message}`);
+  }
+
   updateTag(CACHE_TAGS.clients);
   updateTag(CACHE_TAGS.entries);
   refresh();
@@ -47,13 +60,62 @@ export async function createClientAction(data: ClientFormData): Promise<{ id: st
 
 export async function updateClientAction(clientId: string, data: ClientFormData): Promise<void> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { roles, ...clientData } = data;
+
   const { error } = await supabase
     .from("clients")
-    .update(data)
+    .update(clientData)
     .eq("id", clientId)
     .eq("user_id", userId);
 
   if (error) throw new Error(`updateClientAction: ${error.message}`);
+
+  // Fetch existing roles to diff
+  const { data: existingRoles, error: fetchError } = await supabase
+    .from("client_roles")
+    .select("id")
+    .eq("client_id", clientId);
+  if (fetchError) throw new Error(`updateClientAction (fetch roles): ${fetchError.message}`);
+
+  const incomingIds = new Set(roles.filter((r) => r.id).map((r) => r.id!));
+  const toDelete = (existingRoles ?? []).filter((r) => !incomingIds.has(r.id));
+
+  // Block deletion of roles that have entries referencing them
+  if (toDelete.length > 0) {
+    const { data: existingRoleNames } = await supabase
+      .from("client_roles")
+      .select("id, name")
+      .in("id", toDelete.map((r) => r.id));
+
+    for (const role of existingRoleNames ?? []) {
+      const { count } = await supabase
+        .from("entries")
+        .select("id", { count: "exact", head: true })
+        .eq("client_id", clientId)
+        .eq("role", role.name);
+      if ((count ?? 0) > 0) {
+        throw new Error(`Cannot remove role "${role.name}" — it has entries attached. Reassign or delete those entries first.`);
+      }
+    }
+
+    const { error: deleteError } = await supabase
+      .from("client_roles")
+      .delete()
+      .in("id", toDelete.map((r) => r.id));
+    if (deleteError) throw new Error(`updateClientAction (delete roles): ${deleteError.message}`);
+  }
+
+  // Upsert new and updated roles
+  if (roles.length > 0) {
+    const { error: upsertError } = await supabase
+      .from("client_roles")
+      .upsert(
+        roles.map((r) => ({ ...(r.id ? { id: r.id } : {}), client_id: clientId, name: r.name, rate: r.rate })),
+        { onConflict: "id" }
+      );
+    if (upsertError) throw new Error(`updateClientAction (upsert roles): ${upsertError.message}`);
+  }
+
   updateTag(CACHE_TAGS.clients);
   updateTag(CACHE_TAGS.entries);
   updateTag(CACHE_TAGS.invoices);

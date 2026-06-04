@@ -83,6 +83,13 @@ export type Expense = {
   invoice_id?: string | null;
 };
 
+export type ClientRole = {
+  id: string;
+  client_id: string;
+  name: string;
+  rate: number;
+};
+
 export type Client = {
   id: string;
   name: string;
@@ -91,8 +98,6 @@ export type Client = {
   rate_full_day: number | null;
   rate_half_day: number | null;
   rate_hourly: number | null;
-  rate_hourly_photographer: number | null;
-  rate_hourly_operator: number | null;
   pays_super: boolean;
   super_rate: number;
   show_super_on_invoice: boolean;
@@ -104,12 +109,12 @@ export type Client = {
   contact_name: string | null;
   notes: string | null;
   entry_label: string | null;
-  show_role: boolean;
   is_active: boolean;
   created_at: string;
   invoice_count: number;
   default_start_time: string | null;
   default_finish_time: string | null;
+  roles: ClientRole[];
 };
 
 export type WorkflowRate = {

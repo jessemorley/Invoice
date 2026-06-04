@@ -262,7 +262,7 @@ export function EntrySheet({
       brand: billingType === "day_rate" && needsBrand ? form.brand || null : null,
       shoot_client: billingType === "hourly" && selectedClient?.entry_label ? form.shoot_client || null : null,
       description: billingType !== "day_rate" && !selectedClient?.entry_label ? form.description || null : null,
-      role: billingType === "hourly" && selectedClient?.show_role ? form.role || null : null,
+      role: showRole ? form.role || null : null,
       start_time: billingType === "hourly" ? form.start_time || null : null,
       finish_time: billingType === "hourly" ? form.finish_time || null : null,
       break_minutes: billingType === "hourly" ? form.break_minutes : null,
@@ -276,6 +276,10 @@ export function EntrySheet({
 
   function handleSubmit() {
     if (!selectedClient) return;
+    if (showRole && !form.role) {
+      setError("Please select a role");
+      return;
+    }
     setError(null);
     startTransition(async () => {
       try {
@@ -317,7 +321,7 @@ export function EntrySheet({
   const needsSkus = billingType === "day_rate" && (form.workflow_type === "Apparel" || isProductWorkflow);
   const showEntryLabel = billingType === "hourly" && !!selectedClient?.entry_label;
   const showDescription = (billingType === "hourly" && !selectedClient?.entry_label) || billingType === "manual";
-  const showRole = billingType === "hourly" && !!selectedClient?.show_role;
+  const showRole = billingType === "hourly" && (selectedClient?.roles?.length ?? 0) > 0;
   const showTimes = billingType === "hourly";
   const showBreak = billingType === "hourly";
   const showAmount = billingType === "manual";
@@ -487,8 +491,9 @@ export function EntrySheet({
                     onValueChange={(v) => v && set("role", v)}
                     className="w-full"
                   >
-                    <ToggleGroupItem value="Photographer" className="flex-1">Photographer</ToggleGroupItem>
-                    <ToggleGroupItem value="Operator" className="flex-1">Operator</ToggleGroupItem>
+                    {selectedClient!.roles.map((r) => (
+                      <ToggleGroupItem key={r.id} value={r.name} className="flex-1">{r.name}</ToggleGroupItem>
+                    ))}
                   </ToggleGroup>
                 </Field>
               )}

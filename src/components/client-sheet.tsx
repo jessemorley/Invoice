@@ -194,18 +194,18 @@ function NumericInput({ value, onChange, placeholder }: { value: string; onChang
 
 // ── Form state ────────────────────────────────────────────────────────────────
 
+type RoleRow = { id?: string; name: string; rate: string };
+
 type FormState = {
   name: string;
   billing_type: BillingType;
   rate_full_day: string;
   rate_half_day: string;
   rate_hourly: string;
-  rate_hourly_photographer: string;
-  rate_hourly_operator: string;
   default_start_time: string;
   default_finish_time: string;
   entry_label: string;
-  show_role: boolean;
+  roles: RoleRow[];
   pays_super: boolean;
   super_rate: string;
   show_super_on_invoice: boolean;
@@ -225,12 +225,10 @@ function blankForm(): FormState {
     rate_full_day: "",
     rate_half_day: "",
     rate_hourly: "",
-    rate_hourly_photographer: "",
-    rate_hourly_operator: "",
     default_start_time: "",
     default_finish_time: "",
     entry_label: "",
-    show_role: false,
+    roles: [],
     pays_super: false,
     super_rate: "0.12",
     show_super_on_invoice: true,
@@ -251,12 +249,10 @@ function clientToForm(client: Client): FormState {
     rate_full_day: client.rate_full_day != null ? String(client.rate_full_day) : "",
     rate_half_day: client.rate_half_day != null ? String(client.rate_half_day) : "",
     rate_hourly: client.rate_hourly != null ? String(client.rate_hourly) : "",
-    rate_hourly_photographer: client.rate_hourly_photographer != null ? String(client.rate_hourly_photographer) : "",
-    rate_hourly_operator: client.rate_hourly_operator != null ? String(client.rate_hourly_operator) : "",
     default_start_time: client.default_start_time?.slice(0, 5) ?? "",
     default_finish_time: client.default_finish_time?.slice(0, 5) ?? "",
     entry_label: client.entry_label ?? "",
-    show_role: client.show_role,
+    roles: client.roles.map((r) => ({ id: r.id, name: r.name, rate: String(r.rate) })),
     pays_super: client.pays_super,
     super_rate: String(client.super_rate),
     show_super_on_invoice: client.show_super_on_invoice,
@@ -277,12 +273,12 @@ function formToPayload(f: FormState): ClientFormData {
     rate_full_day: null,
     rate_half_day: null,
     rate_hourly: null,
-    rate_hourly_photographer: null,
-    rate_hourly_operator: null,
     default_start_time: null,
     default_finish_time: null,
     entry_label: null,
-    show_role: false,
+    roles: f.roles
+      .filter((r) => r.name.trim())
+      .map((r) => ({ ...(r.id ? { id: r.id } : {}), name: r.name.trim(), rate: r.rate !== "" ? parseFloat(r.rate) : 0 })),
     pays_super: f.pays_super,
     super_rate: f.super_rate !== "" ? parseFloat(f.super_rate) : 0.12,
     show_super_on_invoice: f.show_super_on_invoice,
@@ -300,12 +296,9 @@ function formToPayload(f: FormState): ClientFormData {
     base.rate_half_day = f.rate_half_day !== "" ? parseFloat(f.rate_half_day) : null;
   } else if (f.billing_type === "hourly") {
     base.rate_hourly = f.rate_hourly !== "" ? parseFloat(f.rate_hourly) : null;
-    base.rate_hourly_photographer = f.rate_hourly_photographer !== "" ? parseFloat(f.rate_hourly_photographer) : null;
-    base.rate_hourly_operator = f.rate_hourly_operator !== "" ? parseFloat(f.rate_hourly_operator) : null;
     base.default_start_time = f.default_start_time || null;
     base.default_finish_time = f.default_finish_time || null;
     base.entry_label = f.entry_label.trim() || null;
-    base.show_role = f.show_role;
   }
 
   return base;
@@ -428,14 +421,53 @@ function ClientForm({
             <Field label="Hourly Rate ($)">
               <NumericInput value={form.rate_hourly} onChange={(v) => set("rate_hourly", v)} />
             </Field>
-            <div className="flex gap-3">
-              <Field label="Photographer ($)">
-                <NumericInput value={form.rate_hourly_photographer} onChange={(v) => set("rate_hourly_photographer", v)} />
-              </Field>
-              <Field label="Operator ($)">
-                <NumericInput value={form.rate_hourly_operator} onChange={(v) => set("rate_hourly_operator", v)} />
-              </Field>
+
+            {/* Roles */}
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium">Roles</span>
+              {form.roles.map((role, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <Input
+                    className="flex-1 min-w-0"
+                    placeholder="Role name"
+                    value={role.name}
+                    onChange={(e) => {
+                      const updated = form.roles.map((r, idx) => idx === i ? { ...r, name: e.target.value } : r);
+                      set("roles", updated);
+                    }}
+                  />
+                  <div className="w-24 shrink-0">
+                    <NumericInput
+                      placeholder="Rate"
+                      value={role.rate}
+                      onChange={(v) => {
+                        const updated = form.roles.map((r, idx) => idx === i ? { ...r, rate: v } : r);
+                        set("roles", updated);
+                      }}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0 text-muted-foreground"
+                    onClick={() => set("roles", form.roles.filter((_, idx) => idx !== i))}
+                  >
+                    ×
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="self-start"
+                onClick={() => set("roles", [...form.roles, { name: "", rate: "" }])}
+              >
+                + Add role
+              </Button>
             </div>
+
             <div className="flex gap-3">
               <Field label="Default Start">
                 <Input type="time" value={form.default_start_time} onChange={(e) => set("default_start_time", e.target.value)} />
@@ -451,10 +483,6 @@ function ClientForm({
                 placeholder="e.g. Shoot Client"
               />
             </Field>
-            <div className="flex items-center justify-between text-sm">
-              <span>Show Role (Photographer / Operator)</span>
-              <Switch checked={form.show_role} onCheckedChange={(v) => set("show_role", v)} />
-            </div>
           </>
         )}
 
@@ -603,12 +631,7 @@ function ClientDetail({
       return parts.join(" / ") || "—";
     }
     if (client.billing_type === "hourly") {
-      const rates = [
-        client.rate_hourly && `${formatAUD(client.rate_hourly)}/hr`,
-        client.rate_hourly_photographer && `${formatAUD(client.rate_hourly_photographer)}/hr photo`,
-        client.rate_hourly_operator && `${formatAUD(client.rate_hourly_operator)}/hr op`,
-      ].filter(Boolean);
-      return rates.join(", ") || "—";
+      return client.rate_hourly ? `${formatAUD(client.rate_hourly)}/hr` : "—";
     }
     return "Manual";
   })();
@@ -651,7 +674,17 @@ function ClientDetail({
 
         <Section title="Billing Rates">
           <Row label="Type" value={BILLING_LABEL[client.billing_type]} />
-          <Row label="Rate" value={primaryRate} />
+          {client.roles.length === 0 && <Row label="Rate" value={primaryRate} />}
+          {client.roles.length > 0 && (
+            <div className="flex flex-col gap-3 pl-3">
+              {client.roles.map((r) => (
+                <div key={r.id} className="flex justify-between gap-4 text-sm">
+                  <span className="text-muted-foreground shrink-0">{r.name}</span>
+                  <span className="text-right">{formatAUD(r.rate)}/hr</span>
+                </div>
+              ))}
+            </div>
+          )}
           <Row label="Invoice frequency" value={client.invoice_frequency === "weekly" ? "Weekly" : "Per job"} />
           {client.pays_super && (
             <Row label="Super" value={`${(client.super_rate * 100).toFixed(1)}%`} />
@@ -661,12 +694,14 @@ function ClientDetail({
           )}
         </Section>
 
-        <Separator />
-
-        <Section title="Settings">
-          {client.entry_label && <Row label="Entry label" value={client.entry_label} />}
-          <Row label="Show role" value={client.show_role ? "Yes" : "No"} />
-        </Section>
+        {client.entry_label && (
+          <>
+            <Separator />
+            <Section title="Settings">
+              <Row label="Entry label" value={client.entry_label} />
+            </Section>
+          </>
+        )}
 
         {client.notes && (
           <>

@@ -72,12 +72,8 @@ export function calcHourly(
   diffMins = Math.max(0, diffMins - (breakMins || 0));
   const roundedHours = Math.round(diffMins / 60 / 0.25) * 0.25;
 
-  let hourlyRate = client.rate_hourly ?? 0;
-  if (client.show_role && role) {
-    hourlyRate = role === "Operator"
-      ? (client.rate_hourly_operator ?? client.rate_hourly ?? 0)
-      : (client.rate_hourly_photographer ?? client.rate_hourly ?? 0);
-  }
+  const matchedRole = role ? client.roles.find((r) => r.name === role) : undefined;
+  const hourlyRate = matchedRole ? matchedRole.rate : (client.rate_hourly ?? 0);
 
   const base = roundedHours * hourlyRate;
   const superAmt = client.pays_super ? base * (client.super_rate || 0.12) : 0;

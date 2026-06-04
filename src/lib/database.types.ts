@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       business_details: {
@@ -92,6 +67,35 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      client_roles: {
+        Row: {
+          client_id: string
+          id: string
+          name: string
+          rate: number
+        }
+        Insert: {
+          client_id: string
+          id?: string
+          name: string
+          rate: number
+        }
+        Update: {
+          client_id?: string
+          id?: string
+          name?: string
+          rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_roles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       client_workflow_rates: {
         Row: {
@@ -488,30 +492,6 @@ export type Database = {
           },
         ]
       }
-      user_preferences: {
-        Row: {
-          bcc_self: boolean
-          mark_as_issued_on_send: boolean
-          user_id: string
-          weekly_invoice_reminder: boolean
-          weekly_invoice_reminder_cutoff: string
-        }
-        Insert: {
-          bcc_self?: boolean
-          mark_as_issued_on_send?: boolean
-          user_id: string
-          weekly_invoice_reminder?: boolean
-          weekly_invoice_reminder_cutoff?: string
-        }
-        Update: {
-          bcc_self?: boolean
-          mark_as_issued_on_send?: boolean
-          user_id?: string
-          weekly_invoice_reminder?: boolean
-          weekly_invoice_reminder_cutoff?: string
-        }
-        Relationships: []
-      }
       scheduled_emails: {
         Row: {
           bcc_address: string | null
@@ -576,6 +556,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_preferences: {
+        Row: {
+          bcc_self: boolean
+          mark_as_issued_on_send: boolean
+          user_id: string
+          weekly_invoice_reminder: boolean
+          weekly_invoice_reminder_cutoff: string
+        }
+        Insert: {
+          bcc_self?: boolean
+          mark_as_issued_on_send?: boolean
+          user_id: string
+          weekly_invoice_reminder?: boolean
+          weekly_invoice_reminder_cutoff?: string
+        }
+        Update: {
+          bcc_self?: boolean
+          mark_as_issued_on_send?: boolean
+          user_id?: string
+          weekly_invoice_reminder?: boolean
+          weekly_invoice_reminder_cutoff?: string
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -729,9 +733,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       billing_type: ["day_rate", "hourly", "manual"],
