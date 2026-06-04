@@ -320,6 +320,7 @@ function ClientForm({
   onSaved: () => void;
 }) {
   const [form, setForm] = useState<FormState>(initial);
+  const [touchedRoles, setTouchedRoles] = useState<Set<number>>(new Set());
   const [isPending, startTransition] = useTransition();
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -329,14 +330,13 @@ function ClientForm({
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
+  const hasDuplicateRoles = (() => {
+    const names = form.roles.map((r) => r.name.trim()).filter(Boolean);
+    return names.length !== new Set(names).size;
+  })();
+
   function handleSave() {
-    if (!form.name.trim()) return;
-    const roleNames = form.roles.map((r) => r.name.trim()).filter(Boolean);
-    const uniqueNames = new Set(roleNames);
-    if (uniqueNames.size !== roleNames.length) {
-      setSaveError("Role names must be unique");
-      return;
-    }
+    if (!form.name.trim() || hasDuplicateRoles) return;
     setSaveError(null);
     startTransition(async () => {
       try {
@@ -429,18 +429,26 @@ function ClientForm({
             </Field>
 
             {/* Roles */}
-            <div className="flex flex-col gap-2">
+            {(() => {
+              const nameCounts = form.roles.reduce<Record<string, number>>((acc, r) => {
+                const n = r.name.trim();
+                if (n) acc[n] = (acc[n] ?? 0) + 1;
+                return acc;
+              }, {});
+              return (
+              <div className="flex flex-col gap-2">
               <span className="text-sm font-medium">Roles</span>
               {form.roles.map((role, i) => (
                 <div key={role.id ?? `new-${i}`} className="flex gap-2 items-center">
                   <Input
-                    className="flex-1 min-w-0"
+                    className={`flex-1 min-w-0${touchedRoles.has(i) && (nameCounts[role.name.trim()] ?? 0) > 1 ? " border-destructive focus-visible:ring-destructive" : ""}`}
                     placeholder="Role name"
                     value={role.name}
                     onChange={(e) => {
                       const updated = form.roles.map((r, idx) => idx === i ? { ...r, name: e.target.value } : r);
                       set("roles", updated);
                     }}
+                    onBlur={() => setTouchedRoles((prev) => new Set(prev).add(i))}
                   />
                   <div className="w-24 shrink-0">
                     <NumericInput
@@ -457,7 +465,7 @@ function ClientForm({
                     variant="ghost"
                     size="icon"
                     className="shrink-0 text-muted-foreground"
-                    onClick={() => set("roles", form.roles.filter((_, idx) => idx !== i))}
+                    onClick={() => { set("roles", form.roles.filter((_, idx) => idx !== i)); setTouchedRoles(new Set()); }}
                   >
                     <X className="size-4" />
                   </Button>
@@ -470,9 +478,11 @@ function ClientForm({
                 className="self-start"
                 onClick={() => set("roles", [...form.roles, { name: "", rate: "" }])}
               >
-                + Add role
+                  + Add role
               </Button>
             </div>
+              );
+            })()}
 
             <div className="flex gap-3">
               <Field label="Default Start">
@@ -598,7 +608,7 @@ function ClientForm({
           <Button variant="outline" className="flex-1" onClick={() => { setForm(initial); onClose(); }} disabled={isPending}>
             Cancel
           </Button>
-          <Button className="flex-1" onClick={handleSave} disabled={isPending || !form.name.trim()}>
+          <Button className="flex-1" onClick={handleSave} disabled={isPending || !form.name.trim() || hasDuplicateRoles}>
             {isPending ? <Spinner className="size-4" /> : isNew ? "Create Client" : "Save Changes"}
           </Button>
         </div>
