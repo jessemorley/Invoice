@@ -186,6 +186,7 @@ function NumericInput({ value, onChange, placeholder }: { value: string; onChang
       type="number"
       inputMode="decimal"
       step="0.01"
+      className="text-sm"
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder ?? "0.00"}
@@ -396,6 +397,7 @@ function ClientForm({
         {/* Name */}
         <Field label="Name">
           <Input
+            className="text-sm"
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
             placeholder="Client name"
@@ -452,7 +454,7 @@ function ClientForm({
                 <div key={role.id ?? `new-${i}`} className="flex flex-col gap-1">
                 <div className="flex gap-2 items-center">
                   <Input
-                    className={`flex-1 min-w-0${touchedRoles.has(i) && (nameCounts[role.name.trim()] ?? 0) > 1 ? " border-destructive focus-visible:ring-destructive" : ""}`}
+                    className={`flex-1 min-w-0 text-sm${touchedRoles.has(i) && (nameCounts[role.name.trim()] ?? 0) > 1 ? " border-destructive focus-visible:ring-destructive" : ""}`}
                     placeholder="Role name"
                     value={role.name}
                     onChange={(e) => {
@@ -468,7 +470,7 @@ function ClientForm({
                       inputMode="decimal"
                       step="0.01"
                       placeholder="0.00"
-                      className="pl-6"
+                      className="pl-6 text-sm"
                       value={role.rate}
                       onChange={(e) => {
                         const updated = form.roles.map((r, idx) => idx === i ? { ...r, rate: e.target.value } : r);
@@ -536,6 +538,7 @@ function ClientForm({
             </div>
             <Field label="Entry Label">
               <Input
+                className="text-sm"
                 value={form.entry_label}
                 onChange={(e) => set("entry_label", e.target.value)}
                 placeholder="e.g. Shoot Client"
@@ -584,19 +587,19 @@ function ClientForm({
         {/* Contact */}
         <Section title="Contact">
           <Field label="Contact Name">
-            <Input value={form.contact_name} onChange={(e) => set("contact_name", e.target.value)} />
+            <Input className="text-sm" value={form.contact_name} onChange={(e) => set("contact_name", e.target.value)} />
           </Field>
           <Field label="Email">
-            <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
+            <Input className="text-sm" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
           </Field>
           <Field label="Address">
-            <Input value={form.address} onChange={(e) => set("address", e.target.value)} />
+            <Input className="text-sm" value={form.address} onChange={(e) => set("address", e.target.value)} />
           </Field>
           <Field label="Suburb">
-            <Input value={form.suburb} onChange={(e) => set("suburb", e.target.value)} />
+            <Input className="text-sm" value={form.suburb} onChange={(e) => set("suburb", e.target.value)} />
           </Field>
           <Field label="ABN">
-            <Input value={form.abn} onChange={(e) => set("abn", e.target.value)} />
+            <Input className="text-sm" value={form.abn} onChange={(e) => set("abn", e.target.value)} />
           </Field>
         </Section>
 
