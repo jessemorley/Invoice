@@ -326,15 +326,15 @@ function ClientForm({
   const [touchedRoles, setTouchedRoles] = useState<Set<number>>(new Set());
   const [rolesWithEntries, setRolesWithEntries] = useState<Set<string>>(new Set());
   const [lockedRoleError, setLockedRoleError] = useState<number | null>(null);
-  const [isPending, setIsPending] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleting, startDeleteTransition] = useTransition();
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   useEffect(() => {
     if (!clientId) return;
-    fetchRolesWithEntries(clientId).then((arr) => setRolesWithEntries(new Set(arr))).catch(() => {});
+    fetchRolesWithEntries(clientId).then(setRolesWithEntries).catch(() => {});
   }, [clientId]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -346,39 +346,38 @@ function ClientForm({
     return names.length !== new Set(names).size;
   })();
 
-  async function handleSave() {
+  function handleSave() {
     if (!form.name.trim() || hasDuplicateRoles) return;
     setSaveError(null);
-    setIsPending(true);
-    try {
-      const payload = formToPayload(form);
-      if (isNew) {
-        await createClientAction(payload);
-      } else {
-        await updateClientAction(clientId!, payload);
+    startTransition(async () => {
+      try {
+        const payload = formToPayload(form);
+        if (isNew) {
+          await createClientAction(payload);
+        } else {
+          await updateClientAction(clientId!, payload);
+        }
+        invalidate("clients", "entries");
+        onSaved();
+      } catch (e) {
+        setSaveError(e instanceof Error ? e.message : "Something went wrong");
       }
-      invalidate("clients", "entries");
-      onSaved();
-    } catch (e) {
-      setSaveError(e instanceof Error ? e.message : "Something went wrong");
-    } finally {
-      setIsPending(false);
-    }
+    });
   }
 
-  async function handleDelete() {
-    setIsDeleting(true);
-    const result = await deleteClientAction(clientId!);
-    if (result.ok) {
-      invalidate("clients");
-      onClose();
-    } else {
-      const parts = [];
-      if (result.entryCount > 0) parts.push(`${result.entryCount} ${result.entryCount === 1 ? "entry" : "entries"}`);
-      if (result.invoiceCount > 0) parts.push(`${result.invoiceCount} ${result.invoiceCount === 1 ? "invoice" : "invoices"}`);
-      setDeleteError(`This client has ${parts.join(" and ")}. Mark as inactive instead.`);
-      setIsDeleting(false);
-    }
+  function handleDelete() {
+    startDeleteTransition(async () => {
+      const result = await deleteClientAction(clientId!);
+      if (result.ok) {
+        invalidate("clients");
+        onClose();
+      } else {
+        const parts = [];
+        if (result.entryCount > 0) parts.push(`${result.entryCount} ${result.entryCount === 1 ? "entry" : "entries"}`);
+        if (result.invoiceCount > 0) parts.push(`${result.invoiceCount} ${result.invoiceCount === 1 ? "invoice" : "invoices"}`);
+        setDeleteError(`This client has ${parts.join(" and ")}. Mark as inactive instead.`);
+      }
+    });
   }
 
   return (
@@ -446,26 +445,26 @@ function ClientForm({
             <Field label="Billing Type">
               <ToggleGroup
                 type="single"
-                size="sm"
+                variant="outline"
                 value={form.billing_type}
                 onValueChange={(v) => v && set("billing_type", v as BillingType)}
                 className="w-full rounded-lg border border-input p-1 dark:bg-input/30"
               >
-                <ToggleGroupItem value="manual" className="flex-1 rounded-md! text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-foreground transition-none">Manual</ToggleGroupItem>
-                <ToggleGroupItem value="day_rate" className="flex-1 rounded-md! text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-foreground transition-none">Day Rate</ToggleGroupItem>
-                <ToggleGroupItem value="hourly" className="flex-1 rounded-md! text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-foreground transition-none">Hourly</ToggleGroupItem>
+                <ToggleGroupItem value="manual" className="flex-1 rounded-md! border-none! shadow-none text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-foreground">Manual</ToggleGroupItem>
+                <ToggleGroupItem value="day_rate" className="flex-1 rounded-md! border-none! shadow-none text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-foreground">Day Rate</ToggleGroupItem>
+                <ToggleGroupItem value="hourly" className="flex-1 rounded-md! border-none! shadow-none text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-foreground">Hourly</ToggleGroupItem>
               </ToggleGroup>
             </Field>
             <Field label="Invoice Frequency">
               <ToggleGroup
                 type="single"
-                size="sm"
+                variant="outline"
                 value={form.invoice_frequency}
                 onValueChange={(v) => v && set("invoice_frequency", v as "weekly" | "per_job")}
                 className="w-full rounded-lg border border-input p-1 dark:bg-input/30"
               >
-                <ToggleGroupItem value="weekly" className="flex-1 rounded-md! text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-foreground transition-none">Weekly</ToggleGroupItem>
-                <ToggleGroupItem value="per_job" className="flex-1 rounded-md! text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-foreground transition-none">Per Job</ToggleGroupItem>
+                <ToggleGroupItem value="weekly" className="flex-1 rounded-md! border-none! shadow-none text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-foreground">Weekly</ToggleGroupItem>
+                <ToggleGroupItem value="per_job" className="flex-1 rounded-md! border-none! shadow-none text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-foreground">Per Job</ToggleGroupItem>
               </ToggleGroup>
             </Field>
 
