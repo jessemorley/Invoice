@@ -509,7 +509,6 @@ function ClientForm({
                       <Button
                         type="button"
                         variant="outline"
-                        size="sm"
                         className="w-full"
                         onClick={() => set("roles", [...form.roles, { name: "", rate: "" }])}
                       >
