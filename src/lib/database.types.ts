@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       business_details: {
@@ -159,9 +184,6 @@ export type Database = {
           rate_full_day: number | null
           rate_half_day: number | null
           rate_hourly: number | null
-          rate_hourly_operator: number | null
-          rate_hourly_photographer: number | null
-          show_role: boolean
           show_super_on_invoice: boolean
           suburb: string
           super_rate: number
@@ -187,9 +209,6 @@ export type Database = {
           rate_full_day?: number | null
           rate_half_day?: number | null
           rate_hourly?: number | null
-          rate_hourly_operator?: number | null
-          rate_hourly_photographer?: number | null
-          show_role?: boolean
           show_super_on_invoice?: boolean
           suburb?: string
           super_rate?: number
@@ -215,9 +234,6 @@ export type Database = {
           rate_full_day?: number | null
           rate_half_day?: number | null
           rate_hourly?: number | null
-          rate_hourly_operator?: number | null
-          rate_hourly_photographer?: number | null
-          show_role?: boolean
           show_super_on_invoice?: boolean
           suburb?: string
           super_rate?: number
@@ -733,6 +749,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       billing_type: ["day_rate", "hourly", "manual"],
