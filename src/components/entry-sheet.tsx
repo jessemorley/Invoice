@@ -22,6 +22,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ChevronLeft, Minus, Plus, Trash2, X } from "lucide-react";
 import { ClientPicker, ClientSearchInput } from "@/components/client-picker";
+import { DateTimeInput } from "@/components/ui/date-time-input";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -370,14 +371,7 @@ export function EntrySheet({
               {/* Date */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-foreground">Date</label>
-                <div className="h-9 rounded-lg border border-input bg-transparent dark:bg-input/30 px-3 flex items-center">
-                  <input
-                    type="date"
-                    className="w-full bg-transparent outline-none text-sm text-foreground"
-                    value={form.date}
-                    onChange={(e) => set("date", e.target.value)}
-                  />
-                </div>
+                <DateTimeInput type="date" value={form.date} onChange={(v) => set("date", v)} />
               </div>
 
               {/* Day type */}
@@ -502,24 +496,10 @@ export function EntrySheet({
               {showTimes && (
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Start">
-                    <div className="h-9 rounded-lg border border-input bg-transparent dark:bg-input/30 px-3 flex items-center">
-                      <input
-                        type="time"
-                        className="w-full bg-transparent outline-none text-sm text-foreground"
-                        value={form.start_time}
-                        onChange={(e) => set("start_time", e.target.value)}
-                      />
-                    </div>
+                    <DateTimeInput type="time" value={form.start_time} onChange={(v) => set("start_time", v)} />
                   </Field>
                   <Field label="Finish">
-                    <div className="h-9 rounded-lg border border-input bg-transparent dark:bg-input/30 px-3 flex items-center">
-                      <input
-                        type="time"
-                        className="w-full bg-transparent outline-none text-sm text-foreground"
-                        value={form.finish_time}
-                        onChange={(e) => set("finish_time", e.target.value)}
-                      />
-                    </div>
+                    <DateTimeInput type="time" value={form.finish_time} onChange={(v) => set("finish_time", v)} />
                   </Field>
                 </div>
               )}

@@ -42,6 +42,7 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import { ClientSquircle } from "@/components/client-squircle";
+import { DateTimeInput } from "@/components/ui/date-time-input";
 
 type InvoiceEntry = InvoiceDetail["entries"][0];
 
@@ -521,25 +522,11 @@ export function InvoiceSheet({
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium">Issued</label>
-              <div className="h-9 rounded-lg border border-input bg-transparent px-3 flex items-center">
-                <input
-                  type="date"
-                  className="w-full bg-transparent outline-none text-sm text-foreground"
-                  value={form!.issued_date}
-                  onChange={(e) => set("issued_date", e.target.value)}
-                />
-              </div>
+              <DateTimeInput type="date" value={form!.issued_date} onChange={(v) => set("issued_date", v)} />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium">Paid</label>
-              <div className="h-9 rounded-lg border border-input bg-transparent px-3 flex items-center">
-                <input
-                  type="date"
-                  className="w-full bg-transparent outline-none text-sm text-foreground"
-                  value={form!.paid_date}
-                  onChange={(e) => set("paid_date", e.target.value)}
-                />
-              </div>
+              <DateTimeInput type="date" value={form!.paid_date} onChange={(v) => set("paid_date", v)} />
             </div>
           </div>
 

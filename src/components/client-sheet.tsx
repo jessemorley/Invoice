@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/popover";
 import { ChevronRight, Pencil, Trash2, X } from "lucide-react";
 import { ClientSquircle } from "@/components/client-squircle";
+import { DateTimeInput } from "@/components/ui/date-time-input";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -542,24 +543,10 @@ function ClientForm({
 
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Default Start">
-                    <div className="h-9 rounded-lg border border-input bg-transparent dark:bg-input/30 px-3 flex items-center">
-                      <input
-                        type="time"
-                        className="w-full bg-transparent outline-none text-sm text-foreground"
-                        value={form.default_start_time}
-                        onChange={(e) => set("default_start_time", e.target.value)}
-                      />
-                    </div>
+                    <DateTimeInput type="time" value={form.default_start_time} onChange={(v) => set("default_start_time", v)} />
                   </Field>
                   <Field label="Default Finish">
-                    <div className="h-9 rounded-lg border border-input bg-transparent dark:bg-input/30 px-3 flex items-center">
-                      <input
-                        type="time"
-                        className="w-full bg-transparent outline-none text-sm text-foreground"
-                        value={form.default_finish_time}
-                        onChange={(e) => set("default_finish_time", e.target.value)}
-                      />
-                    </div>
+                    <DateTimeInput type="time" value={form.default_finish_time} onChange={(v) => set("default_finish_time", v)} />
                   </Field>
                 </div>
                 <Field label="Entry Label">
