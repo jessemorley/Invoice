@@ -432,9 +432,11 @@ function ClientForm({
         {/* Hourly fields */}
         {form.billing_type === "hourly" && (
           <>
-            <Field label="Hourly Rate ($)">
-              <NumericInput value={form.rate_hourly} onChange={(v) => set("rate_hourly", v)} />
-            </Field>
+            {form.roles.length === 0 && (
+              <Field label="Hourly Rate ($)">
+                <NumericInput value={form.rate_hourly} onChange={(v) => set("rate_hourly", v)} />
+              </Field>
+            )}
 
             {/* Roles */}
             {(() => {
@@ -445,7 +447,7 @@ function ClientForm({
               }, {});
               return (
               <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium">Roles</span>
+              <Label className="text-xs text-muted-foreground">Roles</Label>
               {form.roles.map((role, i) => (
                 <div key={role.id ?? `new-${i}`} className="flex flex-col gap-1">
                 <div className="flex gap-2 items-center">
@@ -459,12 +461,17 @@ function ClientForm({
                     }}
                     onBlur={() => setTouchedRoles((prev) => new Set(prev).add(i))}
                   />
-                  <div className="w-24 shrink-0">
-                    <NumericInput
-                      placeholder="Rate"
+                  <div className="w-24 shrink-0 relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">$</span>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      placeholder="0.00"
+                      className="pl-6"
                       value={role.rate}
-                      onChange={(v) => {
-                        const updated = form.roles.map((r, idx) => idx === i ? { ...r, rate: v } : r);
+                      onChange={(e) => {
+                        const updated = form.roles.map((r, idx) => idx === i ? { ...r, rate: e.target.value } : r);
                         set("roles", updated);
                       }}
                     />
