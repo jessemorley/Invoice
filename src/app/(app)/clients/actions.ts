@@ -87,14 +87,18 @@ export async function updateClientAction(clientId: string, data: ClientFormData)
       .select("id, name")
       .in("id", toDelete.map((r) => r.id));
 
-    for (const role of existingRoleNames ?? []) {
-      const { count } = await supabase
+    const namesToDelete = (existingRoleNames ?? []).map((r) => r.name);
+    if (namesToDelete.length > 0) {
+      const { data: usedEntries } = await supabase
         .from("entries")
-        .select("id", { count: "exact", head: true })
+        .select("role")
         .eq("client_id", clientId)
-        .eq("role", role.name);
-      if ((count ?? 0) > 0) {
-        throw new Error(`Cannot remove role "${role.name}" — it has entries attached. Reassign or delete those entries first.`);
+        .in("role", namesToDelete)
+        .limit(1);
+
+      if ((usedEntries?.length ?? 0) > 0) {
+        const usedName = usedEntries![0].role;
+        throw new Error(`Cannot remove role "${usedName}" — it has entries attached. Reassign or delete those entries first.`);
       }
     }
 
@@ -228,16 +232,16 @@ export async function fetchRolesWithEntries(clientId: string): Promise<Set<strin
     .select("name")
     .eq("client_id", clientId);
 
-  const names = new Set<string>();
-  for (const role of roles ?? []) {
-    const { count } = await supabase
-      .from("entries")
-      .select("id", { count: "exact", head: true })
-      .eq("client_id", clientId)
-      .eq("role", role.name);
-    if ((count ?? 0) > 0) names.add(role.name);
-  }
-  return names;
+  const roleNames = (roles ?? []).map((r) => r.name);
+  if (roleNames.length === 0) return new Set<string>();
+
+  const { data: usedEntries } = await supabase
+    .from("entries")
+    .select("role")
+    .eq("client_id", clientId)
+    .in("role", roleNames);
+
+  return new Set((usedEntries ?? []).map((e) => e.role).filter(Boolean) as string[]);
 }
 
 // ── Workflow rates ────────────────────────────────────────────────────────────
