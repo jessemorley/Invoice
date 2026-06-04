@@ -508,8 +508,8 @@ function ClientForm({
                       ))}
                       <Button
                         type="button"
-                        variant="secondary"
-                        className="w-full"
+                        variant="outline"
+                        className="w-full bg-background"
                         onClick={() => set("roles", [...form.roles, { name: "", rate: "" }])}
                       >
                         + Add role
