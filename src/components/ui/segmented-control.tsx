@@ -21,7 +21,7 @@ export function SegmentedControl<T extends string>({
   return (
     <ToggleGroup
       type="single"
-      variant="outline"
+      variant="segmented"
       value={value}
       onValueChange={(v) => v && onValueChange(v as T)}
       className={cn("w-full p-1 border border-input rounded-lg dark:bg-input/30", className)}
@@ -30,10 +30,7 @@ export function SegmentedControl<T extends string>({
         <ToggleGroupItem
           key={opt.value}
           value={opt.value}
-          className={cn(
-            "flex-1 h-7 rounded-md! border-none! shadow-none text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=on]:text-accent-foreground",
-            itemClassName,
-          )}
+          className={cn("flex-1 h-7", itemClassName)}
         >
           {opt.label}
         </ToggleGroupItem>
