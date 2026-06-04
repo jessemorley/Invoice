@@ -326,10 +326,10 @@ function ClientForm({
   const [touchedRoles, setTouchedRoles] = useState<Set<number>>(new Set());
   const [rolesWithEntries, setRolesWithEntries] = useState<Set<string>>(new Set());
   const [lockedRoleError, setLockedRoleError] = useState<number | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [isDeleting, startDeleteTransition] = useTransition();
+  const [isDeleting, setIsDeleting] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   useEffect(() => {
@@ -346,38 +346,39 @@ function ClientForm({
     return names.length !== new Set(names).size;
   })();
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.name.trim() || hasDuplicateRoles) return;
     setSaveError(null);
-    startTransition(async () => {
-      try {
-        const payload = formToPayload(form);
-        if (isNew) {
-          await createClientAction(payload);
-        } else {
-          await updateClientAction(clientId!, payload);
-        }
-        invalidate("clients", "entries");
-        onSaved();
-      } catch (e) {
-        setSaveError(e instanceof Error ? e.message : "Something went wrong");
+    setIsPending(true);
+    try {
+      const payload = formToPayload(form);
+      if (isNew) {
+        await createClientAction(payload);
+      } else {
+        await updateClientAction(clientId!, payload);
       }
-    });
+      invalidate("clients", "entries");
+      onSaved();
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setIsPending(false);
+    }
   }
 
-  function handleDelete() {
-    startDeleteTransition(async () => {
-      const result = await deleteClientAction(clientId!);
-      if (result.ok) {
-        invalidate("clients");
-        onClose();
-      } else {
-        const parts = [];
-        if (result.entryCount > 0) parts.push(`${result.entryCount} ${result.entryCount === 1 ? "entry" : "entries"}`);
-        if (result.invoiceCount > 0) parts.push(`${result.invoiceCount} ${result.invoiceCount === 1 ? "invoice" : "invoices"}`);
-        setDeleteError(`This client has ${parts.join(" and ")}. Mark as inactive instead.`);
-      }
-    });
+  async function handleDelete() {
+    setIsDeleting(true);
+    const result = await deleteClientAction(clientId!);
+    if (result.ok) {
+      invalidate("clients");
+      onClose();
+    } else {
+      const parts = [];
+      if (result.entryCount > 0) parts.push(`${result.entryCount} ${result.entryCount === 1 ? "entry" : "entries"}`);
+      if (result.invoiceCount > 0) parts.push(`${result.invoiceCount} ${result.invoiceCount === 1 ? "invoice" : "invoices"}`);
+      setDeleteError(`This client has ${parts.join(" and ")}. Mark as inactive instead.`);
+      setIsDeleting(false);
+    }
   }
 
   return (
