@@ -764,7 +764,7 @@ function WorkflowRatesSheet({ clientId }: { clientId: string }) {
                 <div className="h-10 bg-muted rounded-md animate-pulse" />
               </div>
             ) : (
-              <WorkflowRatesSection clientId={clientId} initialRates={rates} />
+              <WorkflowRatesSection clientId={clientId} initialRates={rates} onClose={() => setOpen(false)} />
             )}
           </div>
         </SheetContent>

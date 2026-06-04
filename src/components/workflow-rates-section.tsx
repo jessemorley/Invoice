@@ -102,15 +102,16 @@ function RateTabContent({
   onSaved,
   onDeleted,
   onCancelled,
+  onClose,
 }: {
   rate: EditableRate;
   clientId: string;
   onSaved: (updated: WorkflowRate) => void;
   onDeleted: (id: string) => void;
   onCancelled: (tempId: string) => void;
+  onClose: () => void;
 }) {
   const isNew = rate.kind === "new";
-  const savedForm = rate.kind === "saved" ? rate.form : null;
   const [form, setForm] = useState<RateFormState>(rate.form);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -123,8 +124,7 @@ function RateTabContent({
     if (isNew) {
       onCancelled(rate.tempId);
     } else {
-      setForm(savedForm!);
-      setError(null);
+      onClose();
     }
   }
 
@@ -265,9 +265,11 @@ function RateTabContent({
 export function WorkflowRatesSection({
   clientId,
   initialRates,
+  onClose,
 }: {
   clientId: string;
   initialRates: WorkflowRate[];
+  onClose: () => void;
 }) {
   const [rates, setRates] = useState<EditableRate[]>(
     initialRates.map((r) => ({ kind: "saved", data: r, form: rateToForm(r), dirty: false }))
@@ -359,6 +361,7 @@ export function WorkflowRatesSection({
             onSaved={handleSaved}
             onDeleted={handleDeleted}
             onCancelled={handleCancelled}
+            onClose={onClose}
           />
         </TabsContent>
       ))}
