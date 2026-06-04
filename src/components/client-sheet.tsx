@@ -450,9 +450,9 @@ function ClientForm({
                 onValueChange={(v) => v && set("billing_type", v as BillingType)}
                 className="w-full rounded-lg border border-input p-1 dark:bg-input/30"
               >
-                <ToggleGroupItem value="manual" className="flex-1 rounded-md!">Manual</ToggleGroupItem>
-                <ToggleGroupItem value="day_rate" className="flex-1 rounded-md!">Day Rate</ToggleGroupItem>
-                <ToggleGroupItem value="hourly" className="flex-1 rounded-md!">Hourly</ToggleGroupItem>
+                <ToggleGroupItem value="manual" className="flex-1 rounded-md! text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-foreground">Manual</ToggleGroupItem>
+                <ToggleGroupItem value="day_rate" className="flex-1 rounded-md! text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-foreground">Day Rate</ToggleGroupItem>
+                <ToggleGroupItem value="hourly" className="flex-1 rounded-md! text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-foreground">Hourly</ToggleGroupItem>
               </ToggleGroup>
             </Field>
             <Field label="Invoice Frequency">
@@ -463,8 +463,8 @@ function ClientForm({
                 onValueChange={(v) => v && set("invoice_frequency", v as "weekly" | "per_job")}
                 className="w-full rounded-lg border border-input p-1 dark:bg-input/30"
               >
-                <ToggleGroupItem value="weekly" className="flex-1 rounded-md!">Weekly</ToggleGroupItem>
-                <ToggleGroupItem value="per_job" className="flex-1 rounded-md!">Per Job</ToggleGroupItem>
+                <ToggleGroupItem value="weekly" className="flex-1 rounded-md! text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-foreground">Weekly</ToggleGroupItem>
+                <ToggleGroupItem value="per_job" className="flex-1 rounded-md! text-muted-foreground hover:bg-transparent! hover:text-foreground data-[state=on]:text-foreground">Per Job</ToggleGroupItem>
               </ToggleGroup>
             </Field>
 
