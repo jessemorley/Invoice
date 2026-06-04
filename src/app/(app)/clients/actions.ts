@@ -213,6 +213,33 @@ export async function updateShowSuperOnInvoice(clientId: string, show: boolean) 
   refresh();
 }
 
+export async function fetchRolesWithEntries(clientId: string): Promise<Set<string>> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { data: client } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("id", clientId)
+    .eq("user_id", userId)
+    .single();
+  if (!client) throw new Error("fetchRolesWithEntries: client not found");
+
+  const { data: roles } = await supabase
+    .from("client_roles")
+    .select("name")
+    .eq("client_id", clientId);
+
+  const names = new Set<string>();
+  for (const role of roles ?? []) {
+    const { count } = await supabase
+      .from("entries")
+      .select("id", { count: "exact", head: true })
+      .eq("client_id", clientId)
+      .eq("role", role.name);
+    if ((count ?? 0) > 0) names.add(role.name);
+  }
+  return names;
+}
+
 // ── Workflow rates ────────────────────────────────────────────────────────────
 
 export type WorkflowRate = {

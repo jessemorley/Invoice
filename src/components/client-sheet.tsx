@@ -12,6 +12,7 @@ import {
   updateClientAction,
   deleteClientAction,
   fetchWorkflowRates,
+  fetchRolesWithEntries,
   type RecentInvoice,
   type ClientFormData,
   type WorkflowRate,
@@ -321,10 +322,17 @@ function ClientForm({
 }) {
   const [form, setForm] = useState<FormState>(initial);
   const [touchedRoles, setTouchedRoles] = useState<Set<number>>(new Set());
+  const [rolesWithEntries, setRolesWithEntries] = useState<Set<string>>(new Set());
+  const [lockedRoleError, setLockedRoleError] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
+
+  useEffect(() => {
+    if (!clientId) return;
+    fetchRolesWithEntries(clientId).then(setRolesWithEntries).catch(() => {});
+  }, [clientId]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -439,7 +447,8 @@ function ClientForm({
               <div className="flex flex-col gap-2">
               <span className="text-sm font-medium">Roles</span>
               {form.roles.map((role, i) => (
-                <div key={role.id ?? `new-${i}`} className="flex gap-2 items-center">
+                <div key={role.id ?? `new-${i}`} className="flex flex-col gap-1">
+                <div className="flex gap-2 items-center">
                   <Input
                     className={`flex-1 min-w-0${touchedRoles.has(i) && (nameCounts[role.name.trim()] ?? 0) > 1 ? " border-destructive focus-visible:ring-destructive" : ""}`}
                     placeholder="Role name"
@@ -465,10 +474,22 @@ function ClientForm({
                     variant="ghost"
                     size="icon"
                     className="shrink-0 text-muted-foreground"
-                    onClick={() => { set("roles", form.roles.filter((_, idx) => idx !== i)); setTouchedRoles(new Set()); }}
+                    onClick={() => {
+                      if (rolesWithEntries.has(role.name.trim())) {
+                        setLockedRoleError(i);
+                      } else {
+                        setLockedRoleError(null);
+                        set("roles", form.roles.filter((_, idx) => idx !== i));
+                        setTouchedRoles(new Set());
+                      }
+                    }}
                   >
                     <X className="size-4" />
                   </Button>
+                </div>
+                {lockedRoleError === i && (
+                  <p className="text-xs text-destructive pl-1">Has entries attached — reassign or delete them first</p>
+                )}
                 </div>
               ))}
               <Button
