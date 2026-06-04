@@ -334,7 +334,7 @@ function ClientForm({
 
   useEffect(() => {
     if (!clientId) return;
-    fetchRolesWithEntries(clientId).then(setRolesWithEntries).catch(() => {});
+    fetchRolesWithEntries(clientId).then((arr) => setRolesWithEntries(new Set(arr))).catch(() => {});
   }, [clientId]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {

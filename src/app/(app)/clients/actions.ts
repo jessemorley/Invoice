@@ -217,7 +217,7 @@ export async function updateShowSuperOnInvoice(clientId: string, show: boolean) 
   refresh();
 }
 
-export async function fetchRolesWithEntries(clientId: string): Promise<Set<string>> {
+export async function fetchRolesWithEntries(clientId: string): Promise<string[]> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { data: client } = await supabase
     .from("clients")
@@ -233,7 +233,7 @@ export async function fetchRolesWithEntries(clientId: string): Promise<Set<strin
     .eq("client_id", clientId);
 
   const roleNames = (roles ?? []).map((r) => r.name);
-  if (roleNames.length === 0) return new Set<string>();
+  if (roleNames.length === 0) return [];
 
   const { data: usedEntries } = await supabase
     .from("entries")
@@ -241,7 +241,7 @@ export async function fetchRolesWithEntries(clientId: string): Promise<Set<strin
     .eq("client_id", clientId)
     .in("role", roleNames);
 
-  return new Set((usedEntries ?? []).map((e) => e.role).filter(Boolean) as string[]);
+  return (usedEntries ?? []).map((e) => e.role).filter(Boolean) as string[];
 }
 
 // ── Workflow rates ────────────────────────────────────────────────────────────
