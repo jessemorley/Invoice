@@ -455,6 +455,18 @@ function ClientForm({
                 <ToggleGroupItem value="hourly" className="flex-1">Hourly</ToggleGroupItem>
               </ToggleGroup>
             </Field>
+            <Field label="Invoice Frequency">
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                value={form.invoice_frequency}
+                onValueChange={(v) => v && set("invoice_frequency", v as "weekly" | "per_job")}
+                className="w-full"
+              >
+                <ToggleGroupItem value="weekly" className="flex-1">Weekly</ToggleGroupItem>
+                <ToggleGroupItem value="per_job" className="flex-1">Per Job</ToggleGroupItem>
+              </ToggleGroup>
+            </Field>
 
             {/* Day rate fields */}
             {form.billing_type === "day_rate" && (
@@ -610,26 +622,7 @@ function ClientForm({
           </CardContent>
         </Card>
 
-        {/* Invoice frequency */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Invoicing</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Field label="Invoice Frequency">
-              <ToggleGroup
-                type="single"
-                variant="outline"
-                value={form.invoice_frequency}
-                onValueChange={(v) => v && set("invoice_frequency", v as "weekly" | "per_job")}
-                className="w-full"
-              >
-                <ToggleGroupItem value="weekly" className="flex-1">Weekly</ToggleGroupItem>
-                <ToggleGroupItem value="per_job" className="flex-1">Per Job</ToggleGroupItem>
-              </ToggleGroup>
-            </Field>
-          </CardContent>
-        </Card>
+
 
         {/* Active (edit only) */}
         {!isNew && (
