@@ -233,7 +233,7 @@ function blankForm(): FormState {
     entry_label: "",
     roles: [],
     pays_super: false,
-    super_rate: "0.12",
+    super_rate: "12",
     show_super_on_invoice: true,
     invoice_frequency: "weekly",
     contact_name: "",
@@ -257,7 +257,7 @@ function clientToForm(client: Client): FormState {
     entry_label: client.entry_label ?? "",
     roles: client.roles.map((r) => ({ id: r.id, name: r.name, rate: String(r.rate) })),
     pays_super: client.pays_super,
-    super_rate: String(client.super_rate),
+    super_rate: String(client.super_rate * 100),
     show_super_on_invoice: client.show_super_on_invoice,
     invoice_frequency: client.invoice_frequency,
     contact_name: client.contact_name ?? "",
@@ -283,7 +283,7 @@ function formToPayload(f: FormState): ClientFormData {
       .filter((r) => r.name.trim())
       .map((r) => ({ ...(r.id ? { id: r.id } : {}), name: r.name.trim(), rate: r.rate !== "" ? parseFloat(r.rate) : 0 })),
     pays_super: f.pays_super,
-    super_rate: f.super_rate !== "" ? parseFloat(f.super_rate) : 0.12,
+    super_rate: f.super_rate !== "" ? parseFloat(f.super_rate) / 100 : 0.12,
     show_super_on_invoice: f.show_super_on_invoice,
     invoice_frequency: f.invoice_frequency,
     contact_name: f.contact_name.trim() || null,
@@ -610,8 +610,19 @@ function ClientForm({
             </div>
             {form.pays_super && (
               <>
-                <Field label="Super Rate (e.g. 0.12)">
-                  <NumericInput value={form.super_rate} onChange={(v) => set("super_rate", v)} placeholder="0.12" />
+                <Field label="Super Rate">
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.1"
+                      className="text-sm pr-7"
+                      value={form.super_rate}
+                      onChange={(e) => set("super_rate", e.target.value)}
+                      placeholder="11.5"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">%</span>
+                  </div>
                 </Field>
                 <div className="flex items-center justify-between text-sm">
                   <span>Show Super on Invoice</span>
