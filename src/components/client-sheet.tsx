@@ -174,7 +174,7 @@ function SuperOnInvoiceToggle({ clientId, value }: { clientId: string; value: bo
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
+      <label className="text-sm font-medium text-foreground">{label}</label>
       {children}
     </div>
   );
@@ -447,7 +447,7 @@ function ClientForm({
               }, {});
               return (
               <div className="flex flex-col gap-2">
-              <Label className="text-xs text-muted-foreground">Roles</Label>
+              <label className="text-sm font-medium text-foreground">Roles</label>
               {form.roles.map((role, i) => (
                 <div key={role.id ?? `new-${i}`} className="flex flex-col gap-1">
                 <div className="flex gap-2 items-center">
