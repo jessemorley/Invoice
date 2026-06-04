@@ -50,7 +50,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Pencil, X } from "lucide-react";
+import { ChevronRight, Pencil, X } from "lucide-react";
 import { ClientSquircle } from "@/components/client-squircle";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
@@ -331,17 +331,6 @@ function ClientForm({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
-  const [workflowRates, setWorkflowRates] = useState<WorkflowRate[] | null>(null);
-
-  useEffect(() => {
-    if (!isNew && clientId) {
-      fetchWorkflowRates(clientId).then(setWorkflowRates).catch(() => setWorkflowRates([]));
-    } else {
-      // defer to avoid setState-in-effect lint error
-      const id = requestAnimationFrame(() => setWorkflowRates([]));
-      return () => cancelAnimationFrame(id);
-    }
-  }, [clientId, isNew]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -536,22 +525,6 @@ function ClientForm({
           </>
         )}
 
-        {/* Workflow rates */}
-        <Separator />
-        <Section title="Workflow Rates">
-          {workflowRates === null ? (
-            <div className="flex flex-col gap-2">
-              <div className="h-7 bg-muted rounded-md animate-pulse w-3/4" />
-              <div className="h-10 bg-muted rounded-md animate-pulse" />
-            </div>
-          ) : (
-            <WorkflowRatesSection
-              clientId={clientId ?? ""}
-              initialRates={workflowRates}
-            />
-          )}
-        </Section>
-
         {/* Delete (edit only) */}
         {!isNew && (
           <>
@@ -740,7 +713,62 @@ function ClientDetail({
             </div>
           )}
         </Section>
+
+        <Separator />
+
+        <WorkflowRatesSheet clientId={client.id} />
       </div>
+    </>
+  );
+}
+
+// ── Workflow rates sheet ──────────────────────────────────────────────────────
+
+function WorkflowRatesSheet({ clientId }: { clientId: string }) {
+  const [open, setOpen] = useState(false);
+  const [rates, setRates] = useState<WorkflowRate[] | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    fetchWorkflowRates(clientId).then(setRates).catch(() => setRates([]));
+  }, [open, clientId]);
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="flex items-center justify-between w-full text-sm py-0.5 hover:text-foreground text-muted-foreground transition-colors group"
+      >
+        <span className="text-foreground">Workflow Rates</span>
+        <ChevronRight className="size-4 group-hover:translate-x-0.5 transition-transform" />
+      </button>
+
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
+          <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
+            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+              <SheetTitle>Workflow Rates</SheetTitle>
+              <SheetDescription>Per-client KPI bonus structures</SheetDescription>
+            </div>
+            <SheetClose asChild>
+              <Button variant="ghost" size="icon" className="shrink-0 self-center size-8">
+                <X className="size-5" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </SheetClose>
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-5">
+            {rates === null ? (
+              <div className="flex flex-col gap-2">
+                <div className="h-7 bg-muted rounded-md animate-pulse w-3/4" />
+                <div className="h-10 bg-muted rounded-md animate-pulse" />
+              </div>
+            ) : (
+              <WorkflowRatesSection clientId={clientId} initialRates={rates} />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
