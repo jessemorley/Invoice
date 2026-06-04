@@ -142,3 +142,100 @@ export async function updateShowSuperOnInvoice(clientId: string, show: boolean) 
   updateTag(CACHE_TAGS.clients);
   refresh();
 }
+
+// ── Workflow rates ────────────────────────────────────────────────────────────
+
+export type WorkflowRate = {
+  id: string;
+  client_id: string;
+  workflow: string;
+  kpi: number;
+  upper_limit_skus: number;
+  incentive_rate_per_sku: number;
+  max_bonus: number;
+  is_flat_bonus: boolean;
+};
+
+export async function fetchWorkflowRates(clientId: string): Promise<WorkflowRate[]> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  // Verify client belongs to user
+  const { data: client } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("id", clientId)
+    .eq("user_id", userId)
+    .single();
+  if (!client) throw new Error("fetchWorkflowRates: client not found");
+
+  const { data, error } = await supabase
+    .from("client_workflow_rates")
+    .select("*")
+    .eq("client_id", clientId)
+    .order("workflow");
+  if (error) throw new Error(`fetchWorkflowRates: ${error.message}`);
+  return data ?? [];
+}
+
+export type WorkflowRatePayload = {
+  workflow: string;
+  kpi: number;
+  upper_limit_skus: number;
+  incentive_rate_per_sku: number;
+  max_bonus: number;
+  is_flat_bonus: boolean;
+};
+
+export async function createWorkflowRate(clientId: string, payload: WorkflowRatePayload): Promise<WorkflowRate> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { data: client } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("id", clientId)
+    .eq("user_id", userId)
+    .single();
+  if (!client) throw new Error("createWorkflowRate: client not found");
+
+  const { data, error } = await supabase
+    .from("client_workflow_rates")
+    .insert({ ...payload, client_id: clientId })
+    .select()
+    .single();
+  if (error) throw new Error(`createWorkflowRate: ${error.message}`);
+  return data;
+}
+
+export async function updateWorkflowRate(rateId: string, clientId: string, payload: WorkflowRatePayload): Promise<void> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { data: client } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("id", clientId)
+    .eq("user_id", userId)
+    .single();
+  if (!client) throw new Error("updateWorkflowRate: client not found");
+
+  const { error } = await supabase
+    .from("client_workflow_rates")
+    .update(payload)
+    .eq("id", rateId)
+    .eq("client_id", clientId);
+  if (error) throw new Error(`updateWorkflowRate: ${error.message}`);
+}
+
+export async function deleteWorkflowRate(rateId: string, clientId: string): Promise<void> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { data: client } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("id", clientId)
+    .eq("user_id", userId)
+    .single();
+  if (!client) throw new Error("deleteWorkflowRate: client not found");
+
+  const { error } = await supabase
+    .from("client_workflow_rates")
+    .delete()
+    .eq("id", rateId)
+    .eq("client_id", clientId);
+  if (error) throw new Error(`deleteWorkflowRate: ${error.message}`);
+}

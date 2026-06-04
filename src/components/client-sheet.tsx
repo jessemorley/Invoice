@@ -11,9 +11,12 @@ import {
   createClientAction,
   updateClientAction,
   deleteClientAction,
+  fetchWorkflowRates,
   type RecentInvoice,
   type ClientFormData,
+  type WorkflowRate,
 } from "@/app/(app)/clients/actions";
+import { WorkflowRatesSection } from "@/components/workflow-rates-section";
 import { invalidate } from "@/lib/invalidate";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -328,6 +331,17 @@ function ClientForm({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
+  const [workflowRates, setWorkflowRates] = useState<WorkflowRate[] | null>(null);
+
+  useEffect(() => {
+    if (!isNew && clientId) {
+      fetchWorkflowRates(clientId).then(setWorkflowRates).catch(() => setWorkflowRates([]));
+    } else {
+      // defer to avoid setState-in-effect lint error
+      const id = requestAnimationFrame(() => setWorkflowRates([]));
+      return () => cancelAnimationFrame(id);
+    }
+  }, [clientId, isNew]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -522,10 +536,20 @@ function ClientForm({
           </>
         )}
 
-        {/* Workflow rates placeholder */}
+        {/* Workflow rates */}
         <Separator />
         <Section title="Workflow Rates">
-          <p className="text-sm text-muted-foreground">Workflow rate configuration coming soon.</p>
+          {workflowRates === null ? (
+            <div className="flex flex-col gap-2">
+              <div className="h-7 bg-muted rounded-md animate-pulse w-3/4" />
+              <div className="h-10 bg-muted rounded-md animate-pulse" />
+            </div>
+          ) : (
+            <WorkflowRatesSection
+              clientId={clientId ?? ""}
+              initialRates={workflowRates}
+            />
+          )}
         </Section>
 
         {/* Delete (edit only) */}
