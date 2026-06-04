@@ -282,6 +282,8 @@ export async function updateWorkflowRate(rateId: string, clientId: string, paylo
     .eq("id", rateId)
     .eq("client_id", clientId);
   if (error) throw new Error(`updateWorkflowRate: ${error.message}`);
+  updateTag(CACHE_TAGS.clients);
+  refresh();
 }
 
 export async function deleteWorkflowRate(rateId: string, clientId: string): Promise<void> {
@@ -300,4 +302,6 @@ export async function deleteWorkflowRate(rateId: string, clientId: string): Prom
     .eq("id", rateId)
     .eq("client_id", clientId);
   if (error) throw new Error(`deleteWorkflowRate: ${error.message}`);
+  updateTag(CACHE_TAGS.clients);
+  refresh();
 }

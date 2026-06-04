@@ -426,7 +426,7 @@ function ClientForm({
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium">Roles</span>
               {form.roles.map((role, i) => (
-                <div key={i} className="flex gap-2 items-center">
+                <div key={role.id ?? `new-${i}`} className="flex gap-2 items-center">
                   <Input
                     className="flex-1 min-w-0"
                     placeholder="Role name"
@@ -453,7 +453,7 @@ function ClientForm({
                     className="shrink-0 text-muted-foreground"
                     onClick={() => set("roles", form.roles.filter((_, idx) => idx !== i))}
                   >
-                    ×
+                    <X className="size-4" />
                   </Button>
                 </div>
               ))}

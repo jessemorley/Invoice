@@ -56,7 +56,7 @@ function defaultForm(entry: Entry | null, client: Client | null): FormState {
       skus: entry.skus ?? null,
       shoot_client: entry.shoot_client || entry.description || "",
       description: entry.description ?? "",
-      role: entry.role ?? "Photographer",
+      role: entry.role ?? client?.roles[0]?.name ?? "",
       start_time: entry.start_time?.slice(0, 5) ?? client.default_start_time?.slice(0, 5) ?? "09:00",
       finish_time: entry.finish_time?.slice(0, 5) ?? client.default_finish_time?.slice(0, 5) ?? "17:00",
       break_minutes: entry.break_minutes ?? 0,
@@ -72,7 +72,7 @@ function defaultForm(entry: Entry | null, client: Client | null): FormState {
     skus: null,
     shoot_client: "",
     description: "",
-    role: "Photographer",
+    role: "",
     start_time: "09:00",
     finish_time: "17:00",
     break_minutes: 0,
@@ -86,7 +86,7 @@ function applyClientDefaults(client: Client): Partial<FormState> {
       start_time: client.default_start_time?.slice(0, 5) ?? "09:00",
       finish_time: client.default_finish_time?.slice(0, 5) ?? "17:00",
       break_minutes: 0,
-      role: "Photographer",
+      role: client.roles[0]?.name ?? "",
     };
   }
   if (client.billing_type === "day_rate") {
