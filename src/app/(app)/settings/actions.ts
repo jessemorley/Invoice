@@ -115,6 +115,40 @@ export async function saveEmailSettings(data: EmailFormData) {
   refresh();
 }
 
+export type PushSubscriptionData = {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  user_agent?: string;
+};
+
+export async function savePushSubscription(sub: PushSubscriptionData) {
+  const { userId, token } = await getAuth();
+  const supabase = createTokenClient(token);
+  const { error } = await supabase.from("push_subscriptions").upsert(
+    {
+      user_id: userId,
+      endpoint: sub.endpoint,
+      p256dh: sub.p256dh,
+      auth: sub.auth,
+      user_agent: sub.user_agent ?? null,
+    },
+    { onConflict: "endpoint" }
+  );
+  if (error) throw new Error(`savePushSubscription: ${error.message}`);
+}
+
+export async function deletePushSubscription(endpoint: string) {
+  const { userId, token } = await getAuth();
+  const supabase = createTokenClient(token);
+  const { error } = await supabase
+    .from("push_subscriptions")
+    .delete()
+    .eq("endpoint", endpoint)
+    .eq("user_id", userId);
+  if (error) throw new Error(`deletePushSubscription: ${error.message}`);
+}
+
 export async function saveNotificationSettings(data: NotificationFormData) {
   const { userId, token } = await getAuth();
   const supabase = createTokenClient(token);

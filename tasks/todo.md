@@ -32,4 +32,22 @@ Decisions: multi-device subscriptions; triggers = (1) invoice email sent,
 - [ ] Manual: install PWA → enable → send invoice → notification + icon badge; badge clears on open
 
 ## Review
-(to fill in after implementation)
+
+Implemented:
+- `public/sw.js` — push + notificationclick + badge; no fetch caching.
+- `src/components/push-manager.tsx` — SW registration + badge clearing on focus; mounted in (app)/layout.
+- `src/components/push-notification-toggle.tsx` — opt-in Switch in Settings → Notifications; handles unsupported / iOS-needs-install / denied states.
+- `supabase/migrations/20260608000000_create_push_subscriptions.sql` — table + RLS + `weekly_reminder_last_sent_week` dedupe column; mirrored in database.types.ts.
+- `savePushSubscription` / `deletePushSubscription` server actions.
+- `src/lib/push.ts` — `sendPushToUser` (multi-device fan-out, prunes 404/410), best-effort.
+- Trigger 1: invoice-sent push wired into `send-invoice-email.ts` (no badge count — transient).
+- Trigger 2: `src/inngest/weekly-invoice-reminder.ts` hourly cron (Sydney TZ), mirrors the in-app uninvoiced badge logic + per-user cutoff, badge=count, once-per-ISO-week dedupe. Registered in inngest route.
+- README documents VAPID env vars + generation.
+
+Verified: `npm run build` passes (type-check clean). `npm run lint` — only pre-existing
+errors in workflow-rates-section.tsx; new files clean.
+
+Operator steps (cannot be done from here): generate VAPID keys, set the 3 env vars,
+run the new migration.
+
+Not done / future: in-app fallback feed; per-device labels in settings.

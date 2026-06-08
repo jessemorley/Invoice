@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PushNotificationToggle } from "@/components/push-notification-toggle";
 import {
   saveBusinessDetails,
   saveInvoicingSettings,
@@ -356,6 +357,7 @@ function InvoicingTab({
           <CardTitle>Notifications</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          <PushNotificationToggle />
           <div className="flex items-start justify-between gap-4">
             <div className="flex flex-col gap-1">
               <label htmlFor="weekly_invoice_reminder" className="text-sm font-medium">
