@@ -41,7 +41,7 @@ Implemented:
 - `savePushSubscription` / `deletePushSubscription` server actions.
 - `src/lib/push.ts` — `sendPushToUser` (multi-device fan-out, prunes 404/410), best-effort.
 - Trigger 1: invoice-sent push wired into `send-invoice-email.ts` (no badge count — transient).
-- Trigger 2: `src/inngest/weekly-invoice-reminder.ts` hourly cron (Sydney TZ), mirrors the in-app uninvoiced badge logic + per-user cutoff, badge=count, once-per-ISO-week dedupe. Registered in inngest route.
+- Trigger 2: `src/inngest/weekly-invoice-reminder.ts` — event-driven, self-rescheduling future-dated event (NOT a cron), with `cancelOn`. Seeded/cancelled from `saveNotificationSettings`. Only deferred cutoffs (friday_5pm/sunday_midnight) schedule a push; `immediately` is a badge-gate only. Badge=count. (Dropped the dedupe column — one event = one fire.)
 - README documents VAPID env vars + generation.
 
 Verified: `npm run build` passes (type-check clean). `npm run lint` — only pre-existing

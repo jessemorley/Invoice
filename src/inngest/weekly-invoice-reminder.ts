@@ -1,9 +1,10 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { inngest } from "@/lib/inngest";
+import type { WeeklyReminderScheduledEvent } from "@/lib/inngest";
 import { sendPushToUser } from "@/lib/push";
-import { isoWeek, weeklyCutoff } from "@/lib/format";
+import { isoWeek, weeklyCutoff, nextWeeklyCutoff } from "@/lib/format";
 
-type Cutoff = "immediately" | "friday_5pm" | "sunday_midnight";
+type DeferredCutoff = "friday_5pm" | "sunday_midnight";
 
 // Mirrors the in-app "uninvoiced" badge logic in loadInvoicesViewData: group
 // uninvoiced entries by client + ISO week, then count groups that are due —
@@ -11,7 +12,7 @@ type Cutoff = "immediately" | "friday_5pm" | "sunday_midnight";
 async function uninvoicedDueCount(
   supabase: SupabaseClient,
   userId: string,
-  cutoff: Cutoff,
+  cutoff: DeferredCutoff,
   now: Date
 ): Promise<number> {
   const { data: entries, error } = await supabase
@@ -35,7 +36,7 @@ async function uninvoicedDueCount(
   let count = 0;
   for (const g of groups.values()) {
     if (g.weekly) {
-      if (cutoff === "immediately" || now >= weeklyCutoff(g.isoWeek, cutoff)) count++;
+      if (now >= weeklyCutoff(g.isoWeek, cutoff)) count++;
     } else {
       count++;
     }
@@ -43,57 +44,53 @@ async function uninvoicedDueCount(
   return count;
 }
 
+// Event-driven (no cron): triggered by a future-dated event Inngest holds until
+// the cutoff, then re-schedules the following week's event. Cancelled when the
+// matching invoice/weekly-reminder.cancelled event is sent (settings change).
 export const weeklyInvoiceReminder = inngest.createFunction(
   {
     id: "weekly-invoice-reminder",
-    triggers: [{ cron: "TZ=Australia/Sydney 0 * * * *" }],
+    triggers: [{ event: "invoice/weekly-reminder.scheduled" satisfies WeeklyReminderScheduledEvent["name"] }],
+    cancelOn: [{ event: "invoice/weekly-reminder.cancelled", match: "data.user_id" }],
   },
-  async () => {
+  async ({ event }: { event: WeeklyReminderScheduledEvent }) => {
+    const { user_id } = event.data;
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    const { data: prefs, error } = await supabase
+    const { data: pref } = await supabase
       .from("user_preferences")
-      .select("user_id, weekly_invoice_reminder, weekly_invoice_reminder_cutoff, weekly_reminder_last_sent_week")
-      .eq("weekly_invoice_reminder", true);
-    if (error || !prefs?.length) return { sent: 0 };
+      .select("weekly_invoice_reminder, weekly_invoice_reminder_cutoff")
+      .eq("user_id", user_id)
+      .maybeSingle();
 
-    // Current ISO week, computed from the Sydney wall-clock date.
+    // Settings may have changed before this fired — stop the chain if no longer applicable.
+    if (!pref?.weekly_invoice_reminder) return { stopped: "disabled" };
+    const cutoff = pref.weekly_invoice_reminder_cutoff;
+    if (cutoff !== "friday_5pm" && cutoff !== "sunday_midnight") return { stopped: "immediately" };
+
     const now = new Date();
-    const sydneyDate = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Australia/Sydney",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(now);
-    const currentWeek = isoWeek(sydneyDate);
-
-    let sent = 0;
-    for (const pref of prefs) {
-      // Fire at most once per ISO week per user.
-      if (pref.weekly_reminder_last_sent_week === currentWeek) continue;
-
-      const cutoff = (pref.weekly_invoice_reminder_cutoff as Cutoff) ?? "immediately";
-      const count = await uninvoicedDueCount(supabase, pref.user_id, cutoff, now);
-      if (count <= 0) continue;
-
-      await sendPushToUser(pref.user_id, {
+    const count = await uninvoicedDueCount(supabase, user_id, cutoff, now);
+    if (count > 0) {
+      await sendPushToUser(user_id, {
         title: "Time to invoice",
         body: `You have ${count} ${count === 1 ? "client" : "clients"} with uninvoiced work.`,
         url: "/?view=invoices",
         badgeCount: count,
         tag: "weekly-invoice-reminder",
       });
-
-      await supabase
-        .from("user_preferences")
-        .update({ weekly_reminder_last_sent_week: currentWeek })
-        .eq("user_id", pref.user_id);
-      sent++;
     }
 
-    return { sent };
+    // Re-schedule next week's reminder — self-perpetuating, no polling.
+    const next = nextWeeklyCutoff(cutoff, now);
+    await inngest.send({
+      name: "invoice/weekly-reminder.scheduled",
+      data: { user_id, scheduled_for: next.toISOString() },
+      ts: next.getTime(),
+    });
+
+    return { count, next: next.toISOString() };
   }
 );

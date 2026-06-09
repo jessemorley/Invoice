@@ -18,7 +18,3 @@ create policy "Users can manage their own push subscriptions"
   to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
-
--- Dedupe key so the weekly reminder push fires at most once per ISO week per user.
-alter table public.user_preferences
-  add column if not exists weekly_reminder_last_sent_week text;

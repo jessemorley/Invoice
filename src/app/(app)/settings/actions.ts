@@ -4,6 +4,8 @@ import { updateTag, refresh } from "next/cache";
 import { createClient } from "@/lib/supabase-server";
 import { createTokenClient } from "@/lib/supabase";
 import { getAuth, getAuthUserId } from "@/lib/auth";
+import { inngest } from "@/lib/inngest";
+import { nextWeeklyCutoff } from "@/lib/format";
 import {
   fetchBusinessDetails,
   fetchInvoiceSequence,
@@ -163,6 +165,20 @@ export async function saveNotificationSettings(data: NotificationFormData) {
       { onConflict: "user_id" }
     );
   if (error) throw new Error(`saveNotificationSettings: ${error.message}`);
+
+  // (Re)seed the self-rescheduling weekly reminder. Cancel any in-flight chain,
+  // then schedule the next event only for deferred cutoffs — "immediately" needs
+  // no push (the app is open when the work is entered; it's a badge-gate only).
+  await inngest.send({ name: "invoice/weekly-reminder.cancelled", data: { user_id: userId } });
+  if (data.weekly_invoice_reminder && data.weekly_invoice_reminder_cutoff !== "immediately") {
+    const next = nextWeeklyCutoff(data.weekly_invoice_reminder_cutoff, new Date());
+    await inngest.send({
+      name: "invoice/weekly-reminder.scheduled",
+      data: { user_id: userId, scheduled_for: next.toISOString() },
+      ts: next.getTime(),
+    });
+  }
+
   updateTag(CACHE_TAGS.settings);
   refresh();
 }

@@ -610,7 +610,6 @@ export type Database = {
           user_id: string
           weekly_invoice_reminder: boolean
           weekly_invoice_reminder_cutoff: string
-          weekly_reminder_last_sent_week: string | null
         }
         Insert: {
           bcc_self?: boolean
@@ -618,7 +617,6 @@ export type Database = {
           user_id: string
           weekly_invoice_reminder?: boolean
           weekly_invoice_reminder_cutoff?: string
-          weekly_reminder_last_sent_week?: string | null
         }
         Update: {
           bcc_self?: boolean
@@ -626,7 +624,6 @@ export type Database = {
           user_id?: string
           weekly_invoice_reminder?: boolean
           weekly_invoice_reminder_cutoff?: string
-          weekly_reminder_last_sent_week?: string | null
         }
         Relationships: []
       }

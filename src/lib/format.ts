@@ -81,3 +81,17 @@ export function weeklyCutoff(isoWeek: string, type: "friday_5pm" | "sunday_midni
   const diffMs = probe.getTime() - new Date(`${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}Z`).getTime();
   return new Date(probe.getTime() + diffMs);
 }
+
+// Returns the next future Sydney cutoff instant for a deferred weekly reminder.
+// Used to schedule (and re-schedule) the weekly-invoice-reminder Inngest event.
+export function nextWeeklyCutoff(type: "friday_5pm" | "sunday_midnight", from: Date = new Date()): Date {
+  const sydneyDate = (d: Date) =>
+    new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Sydney" }).format(d);
+  let target = weeklyCutoff(isoWeek(sydneyDate(from)), type);
+  if (target.getTime() <= from.getTime()) {
+    // This week's cutoff has passed — jump to next week (7 days always crosses the ISO boundary).
+    const plus7 = new Date(from.getTime() + 7 * 86_400_000);
+    target = weeklyCutoff(isoWeek(sydneyDate(plus7)), type);
+  }
+  return target;
+}
