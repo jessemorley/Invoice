@@ -48,10 +48,8 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-
-  if (self.navigator && self.navigator.clearAppBadge) {
-    self.navigator.clearAppBadge().catch(() => {});
-  }
+  // Note: the app-icon badge tracks the uninvoiced count, not unread
+  // notifications, so it isn't cleared here — the app reconciles it on open.
 
   const targetUrl = (event.notification.data && event.notification.data.url) || "/";
   event.waitUntil(
