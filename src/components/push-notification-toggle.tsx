@@ -68,10 +68,13 @@ export function PushNotificationToggle() {
           applicationServerKey: urlBase64ToUint8Array(key) as BufferSource,
         }));
       const json = sub.toJSON();
+      if (!json.keys?.p256dh || !json.keys?.auth) {
+        throw new Error("Push subscription is missing encryption keys.");
+      }
       await savePushSubscription({
         endpoint: sub.endpoint,
-        p256dh: json.keys?.p256dh ?? "",
-        auth: json.keys?.auth ?? "",
+        p256dh: json.keys.p256dh,
+        auth: json.keys.auth,
         user_agent: navigator.userAgent,
       });
       setStatus("granted");

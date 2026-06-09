@@ -17,6 +17,27 @@ When you hit one of these during a task, do **not** fix it inline — that bloat
 - Symptom: `setPillVisible(false)` called inside an effect body — flagged as causing cascading renders.
 - Risk: low. The effect runs on `view` change and the early-return branch is rare; performance impact is negligible. Fix would refactor the pill-position logic to derive visibility from state instead of an effect.
 
+### lint: `setState` synchronously inside effect — [src/components/client-sheet.tsx:834](src/components/client-sheet.tsx#L834)
+
+- First noted: 2026-06-10
+- Rule: `react-hooks/set-state-in-effect`
+- Symptom: `setRates(null)` called synchronously in the early-return branch of a `useEffect` guarded by `!open`.
+- Risk: low. Runs only when the sheet closes; the cascade is a single render.
+
+### lint: `setState` synchronously inside effect — [src/components/workflow-rates-section.tsx:122](src/components/workflow-rates-section.tsx#L122)
+
+- First noted: 2026-06-10
+- Rule: `react-hooks/set-state-in-effect`
+- Symptom: `setForm(rateToForm(savedData))` called synchronously inside an effect that syncs form state from a saved record after a save roundtrip.
+- Risk: low. Only triggers when `savedData` changes externally; single extra render.
+
+### lint warning: unused `Label` import — [src/components/client-sheet.tsx:29](src/components/client-sheet.tsx#L29)
+
+- First noted: 2026-06-10
+- Rule: `@typescript-eslint/no-unused-vars`
+- Symptom: `Label` is imported but not referenced anywhere in the file.
+- Risk: none. Dead import only.
+
 ## Resolved
 
 ### lint warning: unused `scheduled_for` in Inngest send handler — src/inngest/send-invoice-email.ts

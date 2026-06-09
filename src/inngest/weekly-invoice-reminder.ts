@@ -6,9 +6,10 @@ import { isoWeek, weeklyCutoff, nextWeeklyCutoff } from "@/lib/format";
 
 type DeferredCutoff = "friday_5pm" | "sunday_midnight";
 
-// Mirrors the in-app "uninvoiced" badge logic in loadInvoicesViewData: group
-// uninvoiced entries by client + ISO week, then count groups that are due —
-// weekly clients only once their cutoff has elapsed, everyone else immediately.
+// Mirrors the in-app "uninvoiced" badge logic in loadInvoicesViewData
+// (src/app/(app)/actions.ts): group uninvoiced entries by client + ISO week,
+// then count groups that are due — weekly clients only once their cutoff has
+// elapsed, everyone else immediately.
 async function uninvoicedDueCount(
   supabase: SupabaseClient,
   userId: string,
@@ -83,7 +84,8 @@ export const weeklyInvoiceReminder = inngest.createFunction(
       });
     }
 
-    // Re-schedule next week's reminder — self-perpetuating, no polling.
+    // Always re-schedule, even when count is 0 — the chain must persist so the
+    // user gets reminded the following week without needing a settings change.
     const next = nextWeeklyCutoff(cutoff, now);
     await inngest.send({
       name: "invoice/weekly-reminder.scheduled",
