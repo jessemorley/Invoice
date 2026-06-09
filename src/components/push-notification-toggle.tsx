@@ -89,8 +89,8 @@ export function PushNotificationToggle() {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
       if (sub) {
-        await deletePushSubscription(sub.endpoint);
         await sub.unsubscribe();
+        await deletePushSubscription(sub.endpoint);
       }
       setStatus("default");
     } catch (e) {

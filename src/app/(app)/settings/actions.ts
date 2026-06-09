@@ -154,6 +154,10 @@ export async function deletePushSubscription(endpoint: string) {
 export async function saveNotificationSettings(data: NotificationFormData) {
   const { userId, token } = await getAuth();
   const supabase = createTokenClient(token);
+
+  // Fetch current prefs so we can detect whether the reminder chain needs to change.
+  const current = await fetchUserPreferences(userId, token);
+
   const { error } = await supabase
     .from("user_preferences")
     .upsert(
@@ -166,17 +170,23 @@ export async function saveNotificationSettings(data: NotificationFormData) {
     );
   if (error) throw new Error(`saveNotificationSettings: ${error.message}`);
 
-  // (Re)seed the self-rescheduling weekly reminder. Cancel any in-flight chain,
-  // then schedule the next event only for deferred cutoffs — "immediately" needs
-  // no push (the app is open when the work is entered; it's a badge-gate only).
-  await inngest.send({ name: "invoice/weekly-reminder.cancelled", data: { user_id: userId } });
-  if (data.weekly_invoice_reminder && data.weekly_invoice_reminder_cutoff !== "immediately") {
-    const next = nextWeeklyCutoff(data.weekly_invoice_reminder_cutoff, new Date());
-    await inngest.send({
-      name: "invoice/weekly-reminder.scheduled",
-      data: { user_id: userId, scheduled_for: next.toISOString() },
-      ts: next.getTime(),
-    });
+  // Only touch the Inngest chain when the reminder fields actually change.
+  const reminderChanged =
+    current?.weekly_invoice_reminder !== data.weekly_invoice_reminder ||
+    current?.weekly_invoice_reminder_cutoff !== data.weekly_invoice_reminder_cutoff;
+
+  if (reminderChanged) {
+    // Cancel any in-flight chain, then re-seed for deferred cutoffs only.
+    // "immediately" needs no push — the app is open when work is entered.
+    await inngest.send({ name: "invoice/weekly-reminder.cancelled", data: { user_id: userId } });
+    if (data.weekly_invoice_reminder && data.weekly_invoice_reminder_cutoff !== "immediately") {
+      const next = nextWeeklyCutoff(data.weekly_invoice_reminder_cutoff, new Date());
+      await inngest.send({
+        name: "invoice/weekly-reminder.scheduled",
+        data: { user_id: userId, scheduled_for: next.toISOString() },
+        ts: next.getTime(),
+      });
+    }
   }
 
   updateTag(CACHE_TAGS.settings);
