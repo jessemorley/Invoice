@@ -36,7 +36,7 @@ export async function createInvoice(clientId: string): Promise<Invoice> {
       total: 0,
       status: "draft",
     })
-    .select("id, invoice_number, status, issued_date, paid_date, subtotal, super_amount, total, clients(id, name, color, billing_type)")
+    .select("id, invoice_number, status, issued_date, due_date, paid_date, subtotal, super_amount, total, clients(id, name, color, billing_type)")
     .single();
   if (invError) throw new Error(`createInvoice: ${invError.message}`);
 
@@ -51,6 +51,7 @@ export async function createInvoice(clientId: string): Promise<Invoice> {
     number: inv.invoice_number,
     status: inv.status as InvoiceStatus,
     issued_date: inv.issued_date,
+    due_date: inv.due_date ?? null,
     paid_date: inv.paid_date,
     subtotal: inv.subtotal,
     super_amount: inv.super_amount,

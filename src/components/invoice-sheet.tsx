@@ -89,13 +89,12 @@ function formatScheduledFor(isoString: string): string {
 }
 
 function defaultForm(invoice: Invoice): InvoiceFormData {
-  const inv = invoice as Invoice & { due_date?: string | null; notes?: string | null };
   return {
-    status: inv.status,
-    issued_date: inv.issued_date ?? "",
-    paid_date: inv.paid_date ?? "",
-    due_date: inv.due_date ?? "",
-    notes: inv.notes ?? "",
+    status: invoice.status,
+    issued_date: invoice.issued_date ?? "",
+    paid_date: invoice.paid_date ?? "",
+    due_date: invoice.due_date ?? "",
+    notes: (invoice as Invoice & { notes?: string | null }).notes ?? "",
   };
 }
 
