@@ -4,7 +4,7 @@ import { updateTag, refresh } from "next/cache";
 import { createClient } from "@/lib/supabase-server";
 import { createTokenClient } from "@/lib/supabase";
 import { getAuth, getAuthUserId } from "@/lib/auth";
-import { sendPushToUser } from "@/lib/push";
+import { sendPushToUser, sendTestPush } from "@/lib/push";
 import { inngest } from "@/lib/inngest";
 import { nextWeeklyCutoff } from "@/lib/format";
 import {
@@ -196,7 +196,7 @@ export async function saveNotificationSettings(data: NotificationFormData) {
 
 export async function sendTestPushNotification() {
   const { userId } = await getAuth();
-  await sendPushToUser(userId, {
+  await sendTestPush(userId, {
     title: "Test notification",
     body: "Push notifications are working.",
     url: "/?view=settings",

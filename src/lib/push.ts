@@ -68,3 +68,29 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
     })
   );
 }
+
+/**
+ * Like sendPushToUser but throws on misconfiguration or missing subscriptions.
+ * Used by the test-push action so errors surface in the UI rather than silently no-oping.
+ */
+export async function sendTestPush(userId: string, payload: PushPayload): Promise<void> {
+  if (!configureWebPush()) throw new Error("Push is not configured — check VAPID environment variables.");
+
+  const supabase = adminClient();
+  const { data: subs, error } = await supabase
+    .from("push_subscriptions")
+    .select("endpoint, p256dh, auth")
+    .eq("user_id", userId);
+  if (error) throw new Error(`Failed to load subscriptions: ${error.message}`);
+  if (!subs?.length) throw new Error("No push subscriptions found for this account. Enable push notifications first.");
+
+  const body = JSON.stringify(payload);
+  await Promise.all(
+    subs.map((sub) =>
+      webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        body
+      )
+    )
+  );
+}
