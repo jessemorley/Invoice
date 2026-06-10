@@ -258,7 +258,7 @@ function InfoTab({
 
 function TestPushButton() {
   const [pending, setPending] = useState(false);
-  const [result, setResult] = useState<"sent" | "error" | null>(null);
+  const [result, setResult] = useState<string | null>(null);
 
   async function handleClick() {
     setPending(true);
@@ -266,8 +266,8 @@ function TestPushButton() {
     try {
       await sendTestPushNotification();
       setResult("sent");
-    } catch {
-      setResult("error");
+    } catch (e) {
+      setResult(e instanceof Error ? e.message : "Failed to send.");
     } finally {
       setPending(false);
     }
@@ -279,7 +279,7 @@ function TestPushButton() {
         {pending ? "Sending…" : "Send test notification"}
       </Button>
       {result === "sent" && <p className="text-sm text-muted-foreground">Notification sent — check your device.</p>}
-      {result === "error" && <p className="text-sm text-destructive">Failed to send. Are push notifications enabled?</p>}
+      {result && result !== "sent" && <p className="text-sm text-destructive">{result}</p>}
     </div>
   );
 }
