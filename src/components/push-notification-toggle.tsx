@@ -60,6 +60,7 @@ export function PushNotificationToggle() {
       }
       const reg = await navigator.serviceWorker.ready;
       const key = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      console.log("[push] VAPID key present:", !!key, "value:", key?.slice(0, 8));
       if (!key) throw new Error("Push is not configured (missing VAPID key).");
       const sub =
         (await reg.pushManager.getSubscription()) ??
