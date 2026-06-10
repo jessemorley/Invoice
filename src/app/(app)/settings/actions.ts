@@ -197,7 +197,6 @@ export async function saveNotificationSettings(data: NotificationFormData) {
 export async function sendTestPushNotification() {
   const { userId } = await getAuth();
   await sendTestPush(userId, {
-    title: "Test notification",
     body: "Push notifications are working.",
     url: "/?view=settings",
     tag: "test-push",
