@@ -76,6 +76,7 @@ export const weeklyInvoiceReminder = inngest.createFunction(
     const count = await uninvoicedDueCount(supabase, user_id, cutoff, now);
     if (count > 0) {
       await sendPushToUser(user_id, {
+        title: "⏰ Time to invoice",
         body: `You have ${count} ${count === 1 ? "client" : "clients"} with uninvoiced work.`,
         url: "/?view=invoices",
         badgeCount: count,
