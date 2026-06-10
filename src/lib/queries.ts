@@ -183,10 +183,12 @@ export async function fetchDashboardLineItems(userId: string, token: string): Pr
 
   if (error) throw new Error(`fetchDashboardLineItems: ${error.message}`);
 
-  return (data ?? []).map((row) => {
+  return (data ?? []).flatMap((row) => {
     const inv = Array.isArray(row.invoices) ? row.invoices[0] : row.invoices;
+    // The gte filter above excludes null issued_date, but don't rely on it.
+    if (!inv?.issued_date) return [];
     return {
-      date: inv.issued_date as string,
+      date: inv.issued_date,
       base_amount: row.amount,
       bonus_amount: 0,
     };
