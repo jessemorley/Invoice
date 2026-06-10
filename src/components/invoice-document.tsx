@@ -238,25 +238,25 @@ function TimeRangeRow({ entry }: { entry: Entry }) {
   );
 }
 
-function LineItemDetailRow({ item }: { item: LineItem }) {
+function LineItemDetailRow({ item, showRate }: { item: LineItem; showRate: boolean }) {
   return (
     <View style={s.tableSubRow}>
       <Text style={s.colDate} />
       <Text style={[s.colItem, s.subText]}>{item.details}</Text>
       <Text style={s.colQty} />
-      <Text style={s.colRate} />
+      {showRate ? <Text style={s.colRate} /> : null}
       <Text style={s.colAmount} />
     </View>
   );
 }
 
-function LineItemRow({ item }: { item: LineItem }) {
+function LineItemRow({ item, showRate }: { item: LineItem; showRate: boolean }) {
   return (
     <View style={s.tableRow}>
       <Text style={s.colDate} />
       <Text style={s.colItem}>{item.description}</Text>
       <Text style={s.colQty}>{item.quantity != null ? String(item.quantity) : ""}</Text>
-      <Text style={s.colRate} />
+      {showRate ? <Text style={s.colRate} /> : null}
       <Text style={s.colAmount}>{fmtAmount(item.amount)}</Text>
     </View>
   );
@@ -275,6 +275,7 @@ export function InvoiceDocument({ invoice, business }: Props) {
   const descriptionHeader = client.entry_label ?? "Description";
   const clientRateHourly = client.rate_hourly ?? 0;
   const showHours = invoice.entries.some((e) => e.billing_type === "hourly");
+  const showRate = invoice.entries.length > 0;
 
   const rows = buildRows(invoice.entries, invoice.line_items, clientRateHourly);
 
@@ -324,10 +325,10 @@ export function InvoiceDocument({ invoice, business }: Props) {
         {/* Table */}
         <View style={s.tableWrapper}>
           <View style={s.tableHeader}>
-            <Text style={s.colDate}>Item</Text>
+            <Text style={s.colDate}>Date</Text>
             <Text style={s.colItem}>{descriptionHeader}</Text>
             {showHours ? <Text style={s.colQty}>Hours</Text> : null}
-            <Text style={s.colRate}>Rate</Text>
+            {showRate ? <Text style={s.colRate}>Rate</Text> : null}
             <Text style={s.colAmount}>Amount</Text>
           </View>
 
@@ -342,9 +343,9 @@ export function InvoiceDocument({ invoice, business }: Props) {
               return <TimeRangeRow key={`tr-${row.entry.id}-${i}`} entry={row.entry} />;
             }
             if (row.type === "line_item_detail") {
-              return <LineItemDetailRow key={`lid-${row.item.id}`} item={row.item} />;
+              return <LineItemDetailRow key={`lid-${row.item.id}`} item={row.item} showRate={showRate} />;
             }
-            return <LineItemRow key={`li-${row.item.id}`} item={row.item} />;
+            return <LineItemRow key={`li-${row.item.id}`} item={row.item} showRate={showRate} />;
           })}
         </View>
 
