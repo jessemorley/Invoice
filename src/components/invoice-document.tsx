@@ -288,7 +288,7 @@ export function InvoiceDocument({ invoice, business }: Props) {
           <View style={s.addressBlock}>
             <Text style={s.addressLine}>{business.business_name || business.name}</Text>
             {business.abn ? <Text style={s.addressLine}>ABN {business.abn}</Text> : null}
-            {business.address ? <Text style={s.addressLine}>{[business.address, business.suburb].filter(Boolean).join(", ")}</Text> : null}
+            {business.address ? <Text style={s.addressLine}>{business.address}</Text> : null}
             {business.suburb ? <Text style={s.addressLine}>{business.suburb}</Text> : null}
           </View>
           <View style={s.addressBlock}>
