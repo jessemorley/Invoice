@@ -607,12 +607,26 @@ export async function updateInvoiceNumber(id: string, number: string): Promise<v
 
 export async function updateInvoice(id: string, data: InvoiceFormData) {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+
+  let dueDate: string | null = data.due_date || null;
+  if (data.issued_date && !dueDate) {
+    const { data: seqRaw } = await supabase
+      .from("invoice_sequence")
+      .select("due_date_offset")
+      .eq("user_id", userId)
+      .single();
+    const offset = (seqRaw as unknown as { due_date_offset: number } | null)?.due_date_offset ?? 30;
+    const d = new Date(data.issued_date + "T00:00:00");
+    d.setDate(d.getDate() + offset);
+    dueDate = d.toISOString().slice(0, 10);
+  }
+
   const { error } = await supabase
     .from("invoices")
     .update({
       status: data.status,
       issued_date: data.issued_date || null,
-      due_date: data.due_date || null,
+      due_date: dueDate,
       notes: data.notes || null,
       paid_date: data.paid_date || null,
     })
