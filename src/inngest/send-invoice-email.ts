@@ -1,9 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
+import { revalidateTag } from "next/cache";
 import { Resend } from "resend";
 import { NonRetriableError } from "inngest";
 import { inngest } from "@/lib/inngest";
 import type { SendInvoiceEmailEvent } from "@/lib/inngest";
 import { sendPushToUser } from "@/lib/push";
+import { CACHE_TAGS } from "@/lib/queries";
 
 async function mintUserToken(userEmail: string): Promise<string> {
   const admin = createClient(
@@ -57,6 +59,10 @@ export const sendInvoiceEmail = inngest.createFunction(
         .update({ status: "draft", issued_date: null })
         .eq("id", invoice_id)
         .eq("status", "issued");
+      // Status changed outside a server action, so expire the affected cache
+      // tags here; updateTag is unavailable in this (route handler) context.
+      revalidateTag(CACHE_TAGS.invoices, { expire: 0 });
+      revalidateTag(CACHE_TAGS.entries, { expire: 0 });
     },
   },
   async ({ event }: { event: SendInvoiceEmailEvent }) => {
@@ -144,6 +150,7 @@ export const sendInvoiceEmail = inngest.createFunction(
       .from("scheduled_emails")
       .update({ status: "sent", sent_at: new Date().toISOString(), ...(sentPdfPath ? { sent_pdf_path: sentPdfPath } : {}) })
       .eq("id", scheduled_email_id);
+    revalidateTag(CACHE_TAGS.scheduledEmails, { expire: 0 });
 
     // Best-effort push notification — never fail the job over a notification.
     await sendPushToUser(user_id, {
@@ -161,6 +168,8 @@ export const sendInvoiceEmail = inngest.createFunction(
         .update({ status: "issued" })
         .eq("id", invoice_id)
         .eq("status", "draft");
+      revalidateTag(CACHE_TAGS.invoices, { expire: 0 });
+      revalidateTag(CACHE_TAGS.entries, { expire: 0 });
     }
   }
 );
