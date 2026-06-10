@@ -62,7 +62,10 @@ export async function loadInvoicesViewData() {
     return true;
   }).length;
 
-  return { invoices, uninvoicedCount, clients };
+  // hasUninvoiced is unfiltered — badge settings should not hide the generate sheet
+  const hasUninvoiced = uninvoicedGroups.length > 0;
+
+  return { invoices, uninvoicedCount, hasUninvoiced, clients };
 }
 
 export async function loadClientsViewData() {

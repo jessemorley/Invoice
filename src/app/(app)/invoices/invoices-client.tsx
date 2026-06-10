@@ -215,6 +215,7 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
 type Props = {
   invoices?: Invoice[];
   uninvoicedCount?: number;
+  hasUninvoiced?: boolean;
   clients?: Client[];
   loading?: boolean;
 };
@@ -223,7 +224,7 @@ const EMPTY_INVOICES: Invoice[] = [];
 const EMPTY_CLIENTS: Client[] = [];
 const PAGE_SIZE = 25;
 
-export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uninvoicedCount = 0, clients = EMPTY_CLIENTS, loading = false }: Props) {
+export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uninvoicedCount = 0, hasUninvoiced = uninvoicedCount > 0, clients = EMPTY_CLIENTS, loading = false }: Props) {
   const mobileScrollRef = useRef<HTMLDivElement>(null);
   const handlePullRefresh = useCallback(async () => {
     await revalidateInvoices();
@@ -264,7 +265,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   useEffect(() => {
     const handler = (e: Event) => {
       if ((e as CustomEvent<string>).detail !== "invoices") return;
-      if (uninvoicedCount > 0) {
+      if (hasUninvoiced) {
         setGenerateOpen(true);
       } else {
         setNewInvoiceOpen(true);
@@ -272,7 +273,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     };
     window.addEventListener("dock:new", handler);
     return () => window.removeEventListener("dock:new", handler);
-  }, [uninvoicedCount]);
+  }, [hasUninvoiced]);
 
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -430,7 +431,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             size="sm"
             className="relative hidden md:flex"
             disabled={loading}
-            onClick={() => uninvoicedCount > 0 ? setGenerateOpen(true) : setNewInvoiceOpen(true)}
+            onClick={() => hasUninvoiced ? setGenerateOpen(true) : setNewInvoiceOpen(true)}
           >
             {uninvoicedCount > 0 && (
               <span className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
