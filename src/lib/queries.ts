@@ -140,15 +140,18 @@ export async function fetchEntries(userId: string, token: string, before?: strin
 
 type DashboardEntry = { date: string; base_amount: number; bonus_amount: number };
 
+// Start of the 24-month lookback window shared by the dashboard queries (YYYY-MM-DD).
+function dashboardWindowStart(): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() - 24);
+  return d.toISOString().slice(0, 10);
+}
+
 export async function fetchDashboardEntries(userId: string, token: string): Promise<DashboardEntry[]> {
   "use cache";
   cacheTag(CACHE_TAGS.entries);
   const supabase = createTokenClient(token);
-  const windowStart = (() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - 24);
-    return d.toISOString().slice(0, 10);
-  })();
+  const windowStart = dashboardWindowStart();
 
   const { data, error } = await supabase
     .from("entries")
@@ -169,19 +172,14 @@ export async function fetchDashboardLineItems(userId: string, token: string): Pr
   "use cache";
   cacheTag(CACHE_TAGS.invoices);
   const supabase = createTokenClient(token);
-  const windowStart = (() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - 24);
-    return d.toISOString().slice(0, 10);
-  })();
+  const windowStart = dashboardWindowStart();
 
   const { data, error } = await supabase
     .from("invoice_line_items")
     .select("amount, invoices!inner(issued_date, status)")
     .eq("user_id", userId)
     .in("invoices.status", ["issued", "paid"])
-    .gte("invoices.issued_date", windowStart)
-    .not("invoices.issued_date", "is", null);
+    .gte("invoices.issued_date", windowStart);
 
   if (error) throw new Error(`fetchDashboardLineItems: ${error.message}`);
 
