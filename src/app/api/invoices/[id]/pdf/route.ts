@@ -4,6 +4,7 @@ import React from "react";
 import { fetchInvoiceDetail, fetchBusinessDetails, fetchInvoiceSequence } from "@/lib/queries";
 import { createClient } from "@/lib/supabase-server";
 import { InvoiceDocument } from "@/components/invoice-document";
+import { computeDueDate } from "@/lib/utils";
 
 async function renderPdf(invoiceId: string, userId: string, token: string) {
   const [invoice, business] = await Promise.all([
@@ -17,9 +18,7 @@ async function renderPdf(invoiceId: string, userId: string, token: string) {
   if (!dueDate && invoice.issued_date) {
     const seq = await fetchInvoiceSequence(userId, token);
     const offset = seq?.due_date_offset ?? 30;
-    const d = new Date(invoice.issued_date + "T00:00:00");
-    d.setDate(d.getDate() + offset);
-    dueDate = d.toISOString().slice(0, 10);
+    dueDate = computeDueDate(invoice.issued_date, offset);
   }
 
   const element = React.createElement(InvoiceDocument, {

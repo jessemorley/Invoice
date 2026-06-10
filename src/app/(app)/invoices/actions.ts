@@ -7,6 +7,7 @@ import { getAuth, getAuthUserId, getAuthToken, getAuthUser } from "@/lib/auth";
 import { fetchUninvoicedGroups, fetchScheduledEmailForInvoice, fetchBusinessDetails, fetchInvoiceDetail, fetchFullClients, fetchWorkflowRates, fetchEntryById, fetchUserPreferences, CACHE_TAGS } from "@/lib/queries";
 import { inngest } from "@/lib/inngest";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
+import { computeDueDate } from "@/lib/utils";
 
 export async function createInvoice(clientId: string): Promise<Invoice> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
@@ -614,15 +615,13 @@ export async function updateInvoice(id: string, data: InvoiceFormData) {
     if (data.due_date) {
       dueDate = data.due_date;
     } else {
-      const { data: seqRaw } = await supabase
+      const { data: seq } = await supabase
         .from("invoice_sequence")
         .select("due_date_offset")
         .eq("user_id", userId)
         .single();
-      const offset = (seqRaw as unknown as { due_date_offset: number } | null)?.due_date_offset ?? 30;
-      const d = new Date(data.issued_date + "T00:00:00");
-      d.setDate(d.getDate() + offset);
-      dueDate = d.toISOString().slice(0, 10);
+      const offset = (seq as { due_date_offset: number } | null)?.due_date_offset ?? 30;
+      dueDate = computeDueDate(data.issued_date, offset);
     }
   }
 
