@@ -180,7 +180,7 @@ function entryDescription(entry: Entry): string {
   return entry.description ?? "";
 }
 
-function EntryRow({ entry, clientRateHourly, showHours }: { entry: Entry; clientRateHourly: number; showHours: boolean }) {
+function EntryRow({ entry, clientRateHourly, showHours, showQty }: { entry: Entry; clientRateHourly: number; showHours: boolean; showQty: boolean }) {
   const description = entryDescription(entry);
   const hours = entry.billing_type === "hourly" && entry.hours_worked != null
     ? String(entry.hours_worked)
@@ -200,14 +200,14 @@ function EntryRow({ entry, clientRateHourly, showHours }: { entry: Entry; client
     <View style={s.tableRow}>
       <Text style={s.colDate}>{fmtDateDay(entry.date)}</Text>
       <Text style={s.colItem}>{description}</Text>
-      {showHours ? <Text style={s.colQty}>{hours}</Text> : null}
+      {showQty ? <Text style={s.colQty}>{showHours ? hours : ""}</Text> : null}
       <Text style={s.colRate}>{rate}</Text>
       <Text style={s.colAmount}>{amount}</Text>
     </View>
   );
 }
 
-function SkuBonusRow({ entry }: { entry: Entry }) {
+function SkuBonusRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
   const label = entry.skus != null
     ? `  + SKU bonus (${entry.skus} SKUs)`
     : `  + bonus`;
@@ -215,14 +215,14 @@ function SkuBonusRow({ entry }: { entry: Entry }) {
     <View style={s.tableRow}>
       <Text style={s.colDate} />
       <Text style={[s.colItem, s.subText]}>{label}</Text>
-      <Text style={s.colQty} />
+      {showQty ? <Text style={s.colQty} /> : null}
       <Text style={s.colRate} />
       <Text style={[s.colAmount, s.subText]}>{fmtAmount(entry.bonus_amount)}</Text>
     </View>
   );
 }
 
-function TimeRangeRow({ entry }: { entry: Entry }) {
+function TimeRangeRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
   let label = `${fmtTime(entry.start_time!)} – ${fmtTime(entry.finish_time!)}`;
   if (entry.break_minutes && entry.break_minutes > 0) {
     label += ` (${entry.break_minutes}m)`;
@@ -231,31 +231,31 @@ function TimeRangeRow({ entry }: { entry: Entry }) {
     <View style={s.tableSubRow}>
       <Text style={s.colDate} />
       <Text style={[s.colItem, s.subText]}>{label}</Text>
-      <Text style={s.colQty} />
+      {showQty ? <Text style={s.colQty} /> : null}
       <Text style={s.colRate} />
       <Text style={s.colAmount} />
     </View>
   );
 }
 
-function LineItemDetailRow({ item, showRate }: { item: LineItem; showRate: boolean }) {
+function LineItemDetailRow({ item, showQty, showRate }: { item: LineItem; showQty: boolean; showRate: boolean }) {
   return (
     <View style={s.tableSubRow}>
       <Text style={s.colDate} />
       <Text style={[s.colItem, s.subText]}>{item.details}</Text>
-      <Text style={s.colQty} />
+      {showQty ? <Text style={s.colQty} /> : null}
       {showRate ? <Text style={s.colRate} /> : null}
       <Text style={s.colAmount} />
     </View>
   );
 }
 
-function LineItemRow({ item, showRate }: { item: LineItem; showRate: boolean }) {
+function LineItemRow({ item, showQty, showRate }: { item: LineItem; showQty: boolean; showRate: boolean }) {
   return (
     <View style={s.tableRow}>
       <Text style={s.colDate} />
       <Text style={s.colItem}>{item.description}</Text>
-      <Text style={s.colQty}>{item.quantity != null ? String(item.quantity) : ""}</Text>
+      {showQty ? <Text style={s.colQty}>{item.quantity != null ? String(item.quantity) : ""}</Text> : null}
       {showRate ? <Text style={s.colRate} /> : null}
       <Text style={s.colAmount}>{fmtAmount(item.amount)}</Text>
     </View>
@@ -276,6 +276,7 @@ export function InvoiceDocument({ invoice, business }: Props) {
   const clientRateHourly = client.rate_hourly ?? 0;
   const showHours = invoice.entries.some((e) => e.billing_type === "hourly");
   const showRate = invoice.entries.length > 0;
+  const showQty = showHours || invoice.line_items.length > 0;
 
   const rows = buildRows(invoice.entries, invoice.line_items, clientRateHourly);
 
@@ -327,25 +328,25 @@ export function InvoiceDocument({ invoice, business }: Props) {
           <View style={s.tableHeader}>
             <Text style={s.colDate}>Date</Text>
             <Text style={s.colItem}>{descriptionHeader}</Text>
-            {showHours ? <Text style={s.colQty}>Hours</Text> : null}
+            {showQty ? <Text style={s.colQty}>{showHours ? "Hours" : "Qty"}</Text> : null}
             {showRate ? <Text style={s.colRate}>Rate</Text> : null}
             <Text style={s.colAmount}>Amount</Text>
           </View>
 
           {rows.map((row, i) => {
             if (row.type === "entry") {
-              return <EntryRow key={`e-${row.entry.id}`} entry={row.entry} clientRateHourly={clientRateHourly} showHours={showHours} />;
+              return <EntryRow key={`e-${row.entry.id}`} entry={row.entry} clientRateHourly={clientRateHourly} showHours={showHours} showQty={showQty} />;
             }
             if (row.type === "sku_bonus") {
-              return <SkuBonusRow key={`sku-${row.entry.id}`} entry={row.entry} />;
+              return <SkuBonusRow key={`sku-${row.entry.id}`} entry={row.entry} showQty={showQty} />;
             }
             if (row.type === "time_range") {
-              return <TimeRangeRow key={`tr-${row.entry.id}-${i}`} entry={row.entry} />;
+              return <TimeRangeRow key={`tr-${row.entry.id}-${i}`} entry={row.entry} showQty={showQty} />;
             }
             if (row.type === "line_item_detail") {
-              return <LineItemDetailRow key={`lid-${row.item.id}`} item={row.item} showRate={showRate} />;
+              return <LineItemDetailRow key={`lid-${row.item.id}`} item={row.item} showQty={showQty} showRate={showRate} />;
             }
-            return <LineItemRow key={`li-${row.item.id}`} item={row.item} showRate={showRate} />;
+            return <LineItemRow key={`li-${row.item.id}`} item={row.item} showQty={showQty} showRate={showRate} />;
           })}
         </View>
 

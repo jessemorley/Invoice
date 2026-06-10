@@ -94,7 +94,7 @@ function defaultForm(invoice: Invoice): InvoiceFormData {
     issued_date: invoice.issued_date ?? "",
     paid_date: invoice.paid_date ?? "",
     due_date: invoice.due_date ?? "",
-    notes: (invoice as Invoice & { notes?: string | null }).notes ?? "",
+    notes: invoice.notes ?? "",
   };
 }
 

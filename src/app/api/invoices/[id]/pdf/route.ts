@@ -13,16 +13,17 @@ async function renderPdf(invoiceId: string, userId: string, token: string) {
 
   if (!invoice) return null;
 
-  if (!invoice.due_date && invoice.issued_date) {
+  let dueDate = invoice.due_date;
+  if (!dueDate && invoice.issued_date) {
     const seq = await fetchInvoiceSequence(userId, token);
     const offset = seq?.due_date_offset ?? 30;
     const d = new Date(invoice.issued_date + "T00:00:00");
     d.setDate(d.getDate() + offset);
-    invoice.due_date = d.toISOString().slice(0, 10);
+    dueDate = d.toISOString().slice(0, 10);
   }
 
   const element = React.createElement(InvoiceDocument, {
-    invoice,
+    invoice: { ...invoice, due_date: dueDate },
     business: business ?? ({} as NonNullable<typeof business>),
   });
 

@@ -69,6 +69,7 @@ export type Invoice = {
   total: number;
   status: InvoiceStatus;
   email: InvoiceEmail | null;
+  notes?: string | null;
 };
 
 export type Expense = {
