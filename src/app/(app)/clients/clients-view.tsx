@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ClientSquircle } from "@/components/client-squircle";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Client } from "@/lib/types";
@@ -153,17 +153,25 @@ export function ClientsView({ clients: allClients, loading = false }: { clients:
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
+  const openNew = useCallback(() => {
+    setSelectedClientId(null);
+    setSheetView("create");
+    setSheetOpen(true);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if ((e as CustomEvent<string>).detail === "clients") openNew();
+    };
+    window.addEventListener("dock:new", handler);
+    return () => window.removeEventListener("dock:new", handler);
+  }, [openNew]);
+
   if (loading) return <ClientsSkeleton />;
 
   function openClient(client: Client) {
     setSelectedClientId(client.id);
     setSheetView("detail");
-    setSheetOpen(true);
-  }
-
-  function openNew() {
-    setSelectedClientId(null);
-    setSheetView("create");
     setSheetOpen(true);
   }
 
@@ -329,13 +337,6 @@ if (statusFilter === "active" && !c.is_active) return false;
             ))}
           </div>
         )}
-      </div>
-
-      {/* Mobile FAB */}
-      <div className="md:hidden fixed bottom-18 right-4 z-40">
-        <Button size="icon" className="size-14 rounded-full shadow-lg" onClick={openNew}>
-          <Plus />
-        </Button>
       </div>
 
       <ClientSheet

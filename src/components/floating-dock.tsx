@@ -17,7 +17,7 @@ const SECONDARY_TABS: { view: ViewId; icon: React.ComponentType<{ className?: st
   { view: "settings", icon: Settings, label: "Settings" },
 ];
 
-const DOCK_NEW_VIEWS = new Set<ViewId>(["entries", "invoices", "expenses"]);
+const DOCK_NEW_VIEWS = new Set<ViewId>(["entries", "invoices", "expenses", "clients"]);
 
 export function FloatingDock() {
   const { view, setView } = useActiveView();
