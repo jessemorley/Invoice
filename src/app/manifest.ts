@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Invoicing",
-    short_name: "Invoices",
+    short_name: "Invoice App",
     description: "Freelance invoicing app",
     start_url: "/",
     scope: "/",

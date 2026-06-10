@@ -1,0 +1,71 @@
+// Service worker for Web Push notifications + app-icon badge (Badging API).
+// Intentionally has no fetch/offline caching — this app is an authed SPA and
+// caching responses would serve stale, user-specific data.
+
+const DEFAULT_ICON = "/android-chrome-192x192.png";
+
+self.addEventListener("install", () => {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    // iOS can deliver non-JSON payloads — fall back to plain text.
+    data = { title: "Invoicing", body: event.data ? event.data.text() : "" };
+  }
+
+  const title = data.title || "Invoicing";
+  const options = {
+    body: data.body || "",
+    icon: data.icon || DEFAULT_ICON,
+    badge: data.badge || DEFAULT_ICON,
+    tag: data.tag,
+    data: { url: data.url || "/" },
+  };
+
+  const badgeCount = typeof data.badgeCount === "number" ? data.badgeCount : null;
+  let badgePromise = Promise.resolve();
+  if (badgeCount != null && self.navigator && self.navigator.setAppBadge) {
+    badgePromise =
+      badgeCount > 0
+        ? self.navigator.setAppBadge(badgeCount)
+        : self.navigator.clearAppBadge();
+  }
+
+  // MANDATORY: iOS cancels the push subscription if a push arrives without a
+  // visible notification, so always showNotification inside waitUntil.
+  event.waitUntil(
+    Promise.all([self.registration.showNotification(title, options), badgePromise])
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  // Note: the app-icon badge tracks the uninvoiced count, not unread
+  // notifications, so it isn't cleared here — the app reconciles it on open.
+
+  const targetUrl = (event.notification.data && event.notification.data.url) || "/";
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        // Prefer a window already showing targetUrl — just focus it.
+        const match = clientList.find((c) => c.url === targetUrl && "focus" in c);
+        if (match) return match.focus();
+        // Otherwise navigate an existing window rather than opening a new tab.
+        const any = clientList.find((c) => "focus" in c);
+        if (any) {
+          if ("navigate" in any) any.navigate(targetUrl).catch(() => {});
+          return any.focus();
+        }
+        return self.clients.openWindow(targetUrl);
+      })
+  );
+});

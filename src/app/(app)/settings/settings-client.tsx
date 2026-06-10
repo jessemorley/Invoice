@@ -11,11 +11,13 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PushNotificationToggle } from "@/components/push-notification-toggle";
 import {
   saveBusinessDetails,
   saveInvoicingSettings,
   saveEmailSettings,
   saveNotificationSettings,
+  sendTestPushNotification,
   type BusinessDetailsFormData,
   type InvoicingFormData,
   type NotificationFormData,
@@ -254,6 +256,34 @@ function InfoTab({
   );
 }
 
+function TestPushButton() {
+  const [pending, setPending] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  async function handleClick() {
+    setPending(true);
+    setResult(null);
+    try {
+      await sendTestPushNotification();
+      setResult("sent");
+    } catch (e) {
+      setResult(e instanceof Error ? e.message : "Failed to send.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <Button variant="outline" size="sm" className="self-start" onClick={handleClick} disabled={pending}>
+        {pending ? "Sending…" : "Send test notification"}
+      </Button>
+      {result === "sent" && <p className="text-sm text-muted-foreground">Notification sent — check your device.</p>}
+      {result && result !== "sent" && <p className="text-sm text-destructive">{result}</p>}
+    </div>
+  );
+}
+
 function InvoicingTab({
   invoiceSequence,
   userPreferences,
@@ -356,6 +386,8 @@ function InvoicingTab({
           <CardTitle>Notifications</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          <PushNotificationToggle />
+          <TestPushButton />
           <div className="flex items-start justify-between gap-4">
             <div className="flex flex-col gap-1">
               <label htmlFor="weekly_invoice_reminder" className="text-sm font-medium">

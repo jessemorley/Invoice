@@ -25,6 +25,9 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Invoices",
   },
+  icons: {
+    apple: "/app_icon.png",
+  },
 };
 
 export const viewport: Viewport = {

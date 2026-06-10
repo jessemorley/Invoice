@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { NonRetriableError } from "inngest";
 import { inngest } from "@/lib/inngest";
 import type { SendInvoiceEmailEvent } from "@/lib/inngest";
+import { sendPushToUser } from "@/lib/push";
 
 async function mintUserToken(userEmail: string): Promise<string> {
   const admin = createClient(
@@ -143,6 +144,16 @@ export const sendInvoiceEmail = inngest.createFunction(
       .from("scheduled_emails")
       .update({ status: "sent", sent_at: new Date().toISOString(), ...(sentPdfPath ? { sent_pdf_path: sentPdfPath } : {}) })
       .eq("id", scheduled_email_id);
+
+    // Best-effort push notification — never fail the job over a notification.
+    await sendPushToUser(user_id, {
+      title: "✉️ Invoice sent",
+      body: `${subject} was delivered to ${to_address}.`,
+      url: "/?view=invoices",
+      tag: `sent-${invoice_id}`,
+    }).catch((err) => {
+      console.error(JSON.stringify({ event: "invoice_sent_push_failed", invoice_id, error: err?.message }));
+    });
 
     if (mark_issued && invoice_id) {
       await supabase
