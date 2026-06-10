@@ -39,7 +39,7 @@ import {
 
 type DashboardState = { data: DashboardData } | null;
 type EntriesState = { entries: Entry[]; clients: Client[]; workflowRates: WorkflowRate[] } | null;
-type InvoicesState = { invoices: Invoice[]; uninvoicedCount: number; clients: Client[] } | null;
+type InvoicesState = { invoices: Invoice[]; uninvoicedCount: number; hasUninvoiced: boolean; clients: Client[] } | null;
 type ClientsState = Client[] | null;
 type ExpensesState = Expense[] | null;
 type SettingsState = { businessDetails: BusinessDetails | null; invoiceSequence: InvoiceSequence | null; userPreferences: UserPreferences | null } | null;
@@ -150,6 +150,7 @@ export function ViewSwitch({
         <InvoicesClient
           invoices={invoicesData?.invoices}
           uninvoicedCount={invoicesData?.uninvoicedCount}
+          hasUninvoiced={invoicesData?.hasUninvoiced}
           clients={invoicesData?.clients}
           loading={!invoicesData}
         />
