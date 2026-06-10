@@ -31,6 +31,13 @@ When you hit one of these during a task, do **not** fix it inline — that bloat
 - Symptom: `setForm(rateToForm(savedData))` called synchronously inside an effect that syncs form state from a saved record after a save roundtrip.
 - Risk: low. Only triggers when `savedData` changes externally; single extra render.
 
+### lint warning: unused `sendPushToUser` export — [src/app/(app)/settings/actions.ts:7](src/app/(app)/settings/actions.ts#L7)
+
+- First noted: 2026-06-10
+- Rule: `@typescript-eslint/no-unused-vars`
+- Symptom: `sendPushToUser` is exported from settings actions but not imported anywhere — likely exported for future use or direct invocation via server action.
+- Risk: none. Dead export only.
+
 ### lint warning: unused `Label` import — [src/components/client-sheet.tsx:29](src/components/client-sheet.tsx#L29)
 
 - First noted: 2026-06-10
