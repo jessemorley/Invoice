@@ -17,6 +17,7 @@ import {
   saveInvoicingSettings,
   saveEmailSettings,
   saveNotificationSettings,
+  sendTestPushNotification,
   type BusinessDetailsFormData,
   type InvoicingFormData,
   type NotificationFormData,
@@ -255,6 +256,34 @@ function InfoTab({
   );
 }
 
+function TestPushButton() {
+  const [pending, setPending] = useState(false);
+  const [result, setResult] = useState<"sent" | "error" | null>(null);
+
+  async function handleClick() {
+    setPending(true);
+    setResult(null);
+    try {
+      await sendTestPushNotification();
+      setResult("sent");
+    } catch {
+      setResult("error");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <Button variant="outline" size="sm" className="self-start" onClick={handleClick} disabled={pending}>
+        {pending ? "Sending…" : "Send test notification"}
+      </Button>
+      {result === "sent" && <p className="text-sm text-muted-foreground">Notification sent — check your device.</p>}
+      {result === "error" && <p className="text-sm text-destructive">Failed to send. Are push notifications enabled?</p>}
+    </div>
+  );
+}
+
 function InvoicingTab({
   invoiceSequence,
   userPreferences,
@@ -358,6 +387,7 @@ function InvoicingTab({
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <PushNotificationToggle />
+          <TestPushButton />
           <div className="flex items-start justify-between gap-4">
             <div className="flex flex-col gap-1">
               <label htmlFor="weekly_invoice_reminder" className="text-sm font-medium">
