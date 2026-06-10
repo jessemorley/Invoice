@@ -62,12 +62,14 @@ export type Invoice = {
   number: string;
   client: ClientRef;
   issued_date: string | null;
+  due_date: string | null;
   paid_date: string | null;
   subtotal: number;
   super_amount: number;
   total: number;
   status: InvoiceStatus;
   email: InvoiceEmail | null;
+  notes?: string | null;
 };
 
 export type Expense = {

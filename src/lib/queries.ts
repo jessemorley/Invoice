@@ -172,7 +172,7 @@ export async function fetchOutstandingInvoices(userId: string, token: string): P
 
   const { data, error } = await supabase
     .from("invoices")
-    .select("id, invoice_number, issued_date, paid_date, subtotal, super_amount, total, status, clients(id, name, billing_type, color)")
+    .select("id, invoice_number, issued_date, due_date, paid_date, subtotal, super_amount, total, status, clients(id, name, billing_type, color)")
     .eq("user_id", userId)
     .in("status", ["draft", "issued"]);
 
@@ -185,6 +185,7 @@ export async function fetchOutstandingInvoices(userId: string, token: string): P
       number: inv.invoice_number,
       client: toClientRef(client ?? { id: "", name: "Unknown", billing_type: "day_rate" }),
       issued_date: inv.issued_date,
+      due_date: inv.due_date ?? null,
       paid_date: inv.paid_date ?? null,
       subtotal: inv.subtotal,
       super_amount: inv.super_amount,
@@ -255,6 +256,7 @@ export async function fetchInvoices(userId: string, token: string, filters: Invo
       number: inv.invoice_number,
       client: toClientRef(client ?? { id: inv.client_id, name: "Unknown", billing_type: "day_rate" }),
       issued_date: inv.issued_date,
+      due_date: inv.due_date ?? null,
       paid_date: inv.paid_date ?? null,
       subtotal: inv.subtotal,
       super_amount: inv.super_amount,

@@ -7,6 +7,7 @@ import { getAuth, getAuthUserId, getAuthToken, getAuthUser } from "@/lib/auth";
 import { fetchUninvoicedGroups, fetchScheduledEmailForInvoice, fetchBusinessDetails, fetchInvoiceDetail, fetchFullClients, fetchWorkflowRates, fetchEntryById, fetchUserPreferences, CACHE_TAGS } from "@/lib/queries";
 import { inngest } from "@/lib/inngest";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
+import { computeDueDate } from "@/lib/utils";
 
 export async function createInvoice(clientId: string): Promise<Invoice> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
@@ -36,7 +37,7 @@ export async function createInvoice(clientId: string): Promise<Invoice> {
       total: 0,
       status: "draft",
     })
-    .select("id, invoice_number, status, issued_date, paid_date, subtotal, super_amount, total, clients(id, name, color, billing_type)")
+    .select("id, invoice_number, status, issued_date, due_date, paid_date, subtotal, super_amount, total, clients(id, name, color, billing_type)")
     .single();
   if (invError) throw new Error(`createInvoice: ${invError.message}`);
 
@@ -51,6 +52,7 @@ export async function createInvoice(clientId: string): Promise<Invoice> {
     number: inv.invoice_number,
     status: inv.status as InvoiceStatus,
     issued_date: inv.issued_date,
+    due_date: inv.due_date ?? null,
     paid_date: inv.paid_date,
     subtotal: inv.subtotal,
     super_amount: inv.super_amount,
@@ -607,12 +609,28 @@ export async function updateInvoiceNumber(id: string, number: string): Promise<v
 
 export async function updateInvoice(id: string, data: InvoiceFormData) {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+
+  let dueDate: string | null = null;
+  if (data.issued_date) {
+    if (data.due_date) {
+      dueDate = data.due_date;
+    } else {
+      const { data: seq } = await supabase
+        .from("invoice_sequence")
+        .select("due_date_offset")
+        .eq("user_id", userId)
+        .single();
+      const offset = (seq as { due_date_offset: number } | null)?.due_date_offset ?? 30;
+      dueDate = computeDueDate(data.issued_date, offset);
+    }
+  }
+
   const { error } = await supabase
     .from("invoices")
     .update({
       status: data.status,
       issued_date: data.issued_date || null,
-      due_date: data.due_date || null,
+      due_date: dueDate,
       notes: data.notes || null,
       paid_date: data.paid_date || null,
     })

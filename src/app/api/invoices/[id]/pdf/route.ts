@@ -1,9 +1,10 @@
 import type { NextRequest } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import React from "react";
-import { fetchInvoiceDetail, fetchBusinessDetails } from "@/lib/queries";
+import { fetchInvoiceDetail, fetchBusinessDetails, fetchInvoiceSequence } from "@/lib/queries";
 import { createClient } from "@/lib/supabase-server";
 import { InvoiceDocument } from "@/components/invoice-document";
+import { computeDueDate } from "@/lib/utils";
 
 async function renderPdf(invoiceId: string, userId: string, token: string) {
   const [invoice, business] = await Promise.all([
@@ -13,8 +14,15 @@ async function renderPdf(invoiceId: string, userId: string, token: string) {
 
   if (!invoice) return null;
 
+  let dueDate = invoice.due_date;
+  if (!dueDate && invoice.issued_date) {
+    const seq = await fetchInvoiceSequence(userId, token);
+    const offset = seq?.due_date_offset ?? 30;
+    dueDate = computeDueDate(invoice.issued_date, offset);
+  }
+
   const element = React.createElement(InvoiceDocument, {
-    invoice,
+    invoice: { ...invoice, due_date: dueDate },
     business: business ?? ({} as NonNullable<typeof business>),
   });
 
