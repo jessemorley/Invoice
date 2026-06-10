@@ -47,22 +47,41 @@ export const sendInvoiceEmail = inngest.createFunction(
         match: "data.scheduled_email_id",
       },
     ],
-    onFailure: async ({ event }) => {
-      const { invoice_id, mark_issued } = event.data.event.data as SendInvoiceEmailEvent["data"];
-      if (!mark_issued || !invoice_id) return;
+    onFailure: async ({ event, error }) => {
+      const { scheduled_email_id, user_id, invoice_id, to_address, subject, mark_issued } =
+        event.data.event.data as SendInvoiceEmailEvent["data"];
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
       );
+      // Only flip pending rows: a run can fail after the success path already
+      // marked the row sent, and cancelled rows must stay cancelled.
       await supabase
-        .from("invoices")
-        .update({ status: "draft", issued_date: null })
-        .eq("id", invoice_id)
-        .eq("status", "issued");
+        .from("scheduled_emails")
+        .update({ status: "failed", error: error.message })
+        .eq("id", scheduled_email_id)
+        .eq("status", "pending");
       // Status changed outside a server action, so expire the affected cache
       // tags here; updateTag is unavailable in this (route handler) context.
+      revalidateTag(CACHE_TAGS.scheduledEmails, { expire: 0 });
       revalidateTag(CACHE_TAGS.invoices, { expire: 0 });
-      revalidateTag(CACHE_TAGS.entries, { expire: 0 });
+      if (mark_issued && invoice_id) {
+        await supabase
+          .from("invoices")
+          .update({ status: "draft", issued_date: null })
+          .eq("id", invoice_id)
+          .eq("status", "issued");
+        revalidateTag(CACHE_TAGS.entries, { expire: 0 });
+      }
+      // Best-effort push notification — never fail the handler over a notification.
+      await sendPushToUser(user_id, {
+        title: "⚠️ Invoice email failed",
+        body: `${subject} to ${to_address} could not be sent. Tap to retry.`,
+        url: "/?view=invoices",
+        tag: `failed-${invoice_id}`,
+      }).catch((err) => {
+        console.error(JSON.stringify({ event: "invoice_failed_push_failed", invoice_id, error: err?.message }));
+      });
     },
   },
   async ({ event }: { event: SendInvoiceEmailEvent }) => {
