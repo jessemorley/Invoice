@@ -92,7 +92,9 @@ if (!key) throw new Error("Push is not configured (missing VAPID key).");
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
       if (sub) {
-        await sub.unsubscribe();
+        // Only remove the server-side record — do not call sub.unsubscribe().
+        // Unsubscribing in the browser requires a new user gesture to re-enable,
+        // which iOS silently blocks if not triggered directly from a click handler.
         await deletePushSubscription(sub.endpoint);
       }
       setStatus("default");
