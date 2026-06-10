@@ -148,9 +148,9 @@ export const sendInvoiceEmail = inngest.createFunction(
     // Best-effort push notification — never fail the job over a notification.
     await sendPushToUser(user_id, {
       title: "Invoice sent",
-      body: `${filename} was delivered to ${to_address}.`,
+      body: `${subject} was delivered to ${to_address}.`,
       url: "/?view=invoices",
-      tag: `invoice-sent-${invoice_id}`,
+      tag: `sent-${invoice_id}`,
     }).catch((err) => {
       console.error(JSON.stringify({ event: "invoice_sent_push_failed", invoice_id, error: err?.message }));
     });
