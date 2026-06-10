@@ -165,6 +165,36 @@ export async function fetchDashboardEntries(userId: string, token: string): Prom
   }));
 }
 
+export async function fetchDashboardLineItems(userId: string, token: string): Promise<DashboardEntry[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.invoices);
+  const supabase = createTokenClient(token);
+  const windowStart = (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 24);
+    return d.toISOString().slice(0, 10);
+  })();
+
+  const { data, error } = await supabase
+    .from("invoice_line_items")
+    .select("amount, invoices!inner(issued_date, status)")
+    .eq("user_id", userId)
+    .in("invoices.status", ["issued", "paid"])
+    .gte("invoices.issued_date", windowStart)
+    .not("invoices.issued_date", "is", null);
+
+  if (error) throw new Error(`fetchDashboardLineItems: ${error.message}`);
+
+  return (data ?? []).map((row) => {
+    const inv = Array.isArray(row.invoices) ? row.invoices[0] : row.invoices;
+    return {
+      date: inv.issued_date as string,
+      base_amount: row.amount,
+      bonus_amount: 0,
+    };
+  });
+}
+
 export async function fetchOutstandingInvoices(userId: string, token: string): Promise<Invoice[]> {
   "use cache";
   cacheTag(CACHE_TAGS.invoices);
