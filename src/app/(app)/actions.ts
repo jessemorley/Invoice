@@ -4,6 +4,7 @@ import { getAuth } from "@/lib/auth";
 import {
   fetchEntries,
   fetchDashboardEntries,
+  fetchDashboardLineItems,
   fetchInvoices,
   fetchOutstandingInvoices,
   fetchExpenses,
@@ -29,12 +30,13 @@ export async function loadEntriesViewData() {
 
 export async function loadDashboardViewData() {
   const { userId, token } = await getAuth();
-  const [entries, invoices, emails] = await Promise.all([
+  const [entries, lineItems, invoices, emails] = await Promise.all([
     fetchDashboardEntries(userId, token),
+    fetchDashboardLineItems(userId, token),
     fetchOutstandingInvoices(userId, token),
     fetchDashboardEmails(userId, token),
   ]);
-  const data = await fetchDashboardData(userId, entries, invoices, emails);
+  const data = await fetchDashboardData(userId, [...entries, ...lineItems], invoices, emails);
   return { data };
 }
 
