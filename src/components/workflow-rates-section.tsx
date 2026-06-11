@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -117,10 +117,13 @@ function RateTabContent({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // Sync form when the saved record is updated externally (e.g. after save roundtrip)
-  useEffect(() => {
+  // Sync form when the saved record is updated externally (e.g. after save
+  // roundtrip) — adjust-state-during-render, per react.dev/learn/you-might-not-need-an-effect
+  const [prevSavedData, setPrevSavedData] = useState(savedData);
+  if (savedData !== prevSavedData) {
+    setPrevSavedData(savedData);
     if (savedData) setForm(rateToForm(savedData));
-  }, [savedData]);
+  }
 
   function setField<K extends keyof RateFormState>(key: K, value: RateFormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
