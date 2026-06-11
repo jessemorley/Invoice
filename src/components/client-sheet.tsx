@@ -830,8 +830,14 @@ function WorkflowRatesSheet({ clientId }: { clientId: string }) {
   const [open, setOpen] = useState(false);
   const [rates, setRates] = useState<WorkflowRate[] | null>(null);
 
+  // Clear in the close handler (not the effect) so reopening shows the skeleton
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (!next) setRates(null);
+  };
+
   useEffect(() => {
-    if (!open) { setRates(null); return; }
+    if (!open) return;
     fetchWorkflowRates(clientId).then(setRates).catch(() => setRates([]));
   }, [open, clientId]);
 
@@ -845,7 +851,7 @@ function WorkflowRatesSheet({ clientId }: { clientId: string }) {
         <ChevronRight className="size-4 group-hover:translate-x-0.5 transition-transform" />
       </button>
 
-      <Sheet open={open} onOpenChange={setOpen}>
+      <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
           <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
             <div className="flex flex-col gap-1.5 flex-1 min-w-0">
@@ -866,7 +872,7 @@ function WorkflowRatesSheet({ clientId }: { clientId: string }) {
                 <div className="h-10 bg-muted rounded-md animate-pulse" />
               </div>
             ) : (
-              <WorkflowRatesSection clientId={clientId} initialRates={rates} onClose={() => setOpen(false)} />
+              <WorkflowRatesSection clientId={clientId} initialRates={rates} onClose={() => handleOpenChange(false)} />
             )}
           </div>
         </SheetContent>
