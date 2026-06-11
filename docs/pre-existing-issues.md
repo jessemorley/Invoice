@@ -10,14 +10,17 @@ When you hit one of these during a task, do **not** fix it inline — that bloat
 
 ## Open
 
-### lint warning: unused `Label` import — [src/components/client-sheet.tsx:29](src/components/client-sheet.tsx#L29)
-
-- First noted: 2026-06-10
-- Rule: `@typescript-eslint/no-unused-vars`
-- Symptom: `Label` is imported but not referenced anywhere in the file.
-- Risk: none. Dead import only.
+(none)
 
 ## Resolved
+
+### lint warning: unused `Label` import — src/components/client-sheet.tsx:29
+
+- First noted: 2026-06-10
+- Resolved: 2026-06-11 (#74)
+- Rule: `@typescript-eslint/no-unused-vars`
+- Symptom: `Label` was imported but not referenced anywhere in the file.
+- Fix: removed the dead import.
 
 ### lint: `setState` synchronously inside effect — src/components/client-sheet.tsx:834
 
