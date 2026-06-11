@@ -66,11 +66,15 @@ export const sendInvoiceEmail = inngest.createFunction(
       revalidateTag(CACHE_TAGS.scheduledEmails, { expire: 0 });
       revalidateTag(CACHE_TAGS.invoices, { expire: 0 });
       if (mark_issued && invoice_id) {
+        // mark_as_issued_on_send stamps issued_date at schedule time but only
+        // flips status to "issued" on a *successful* send. On failure the
+        // invoice is usually still "draft", so match both states to undo the
+        // stamp; never touch a "paid" invoice.
         await supabase
           .from("invoices")
           .update({ status: "draft", issued_date: null })
           .eq("id", invoice_id)
-          .eq("status", "issued");
+          .in("status", ["draft", "issued"]);
         revalidateTag(CACHE_TAGS.entries, { expire: 0 });
       }
       // Best-effort push notification — never fail the handler over a notification.
