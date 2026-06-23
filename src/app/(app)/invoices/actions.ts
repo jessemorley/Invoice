@@ -7,7 +7,7 @@ import { getAuth, getAuthUserId, getAuthToken, getAuthUser } from "@/lib/auth";
 import { fetchUninvoicedGroups, fetchScheduledEmailForInvoice, fetchBusinessDetails, fetchInvoiceDetail, fetchFullClients, fetchWorkflowRates, fetchEntryById, fetchUserPreferences, CACHE_TAGS } from "@/lib/queries";
 import { inngest } from "@/lib/inngest";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
-import { computeDueDate } from "@/lib/utils";
+import { computeDueDate, lineItemTotal } from "@/lib/utils";
 
 export async function createInvoice(clientId: string): Promise<Invoice> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
@@ -519,11 +519,14 @@ async function recomputeInvoiceTotal(supabase: Awaited<ReturnType<typeof createC
 
   const { data: lineItems } = await supabase
     .from("invoice_line_items")
-    .select("amount")
+    .select("amount, quantity")
     .eq("invoice_id", invoiceId);
 
   const entriesTotal = (entries ?? []).reduce((s, e) => s + Number(e.base_amount) + Number(e.bonus_amount), 0);
-  const lineItemsTotal = (lineItems ?? []).reduce((s, i) => s + Number(i.amount), 0);
+  const lineItemsTotal = (lineItems ?? []).reduce(
+    (s, i) => s + lineItemTotal({ quantity: i.quantity == null ? null : Number(i.quantity), amount: Number(i.amount) }),
+    0,
+  );
   const subtotal = entriesTotal + lineItemsTotal;
 
   const client = Array.isArray(inv?.clients) ? inv!.clients[0] : inv?.clients;

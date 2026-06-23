@@ -3,6 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import type { Client, Invoice, InvoiceDetail, InvoiceStatus } from "@/lib/types";
 import { formatAUD, formatRelativeTime } from "@/lib/format";
+import { lineItemTotal } from "@/lib/utils";
 import { createInvoice, loadInvoiceDetail, updateInvoice, updateInvoiceNumber, deleteInvoice, createLineItem, updateLineItem, deleteLineItem } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
 import type { InvoiceFormData } from "@/app/(app)/invoices/actions";
@@ -557,8 +558,11 @@ export function InvoiceSheet({
                     onClick={() => setView({ mode: "edit-line-item", item })}
                     className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left border-b"
                   >
-                    <span className="flex-1 truncate">{item.description}</span>
-                    <span className="tabular-nums shrink-0">{formatAUD(item.amount)}</span>
+                    <span className="flex-1 truncate">
+                      {item.quantity != null && <span className="tabular-nums text-muted-foreground">{item.quantity} × </span>}
+                      {item.description}
+                    </span>
+                    <span className="tabular-nums shrink-0">{formatAUD(lineItemTotal(item))}</span>
                   </button>
                 ))}
               </>
@@ -586,7 +590,7 @@ export function InvoiceSheet({
                 {effectiveInvoiceDetail
                   ? formatAUD(
                       effectiveInvoiceDetail.entries.reduce((s, e) => s + e.base_amount + e.bonus_amount, 0) +
-                      effectiveInvoiceDetail.line_items.reduce((s, i) => s + i.amount, 0)
+                      effectiveInvoiceDetail.line_items.reduce((s, i) => s + lineItemTotal(i), 0)
                     )
                   : formatAUD(activeInvoice!.subtotal)}
               </span>

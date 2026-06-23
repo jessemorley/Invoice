@@ -1,6 +1,7 @@
 import { cacheTag } from "next/cache";
 import { createTokenClient } from "./supabase";
 import { isoWeek, todayInSydney } from "./format";
+import { lineItemTotal } from "./utils";
 import type { Entry, Invoice, InvoiceDetail, Expense, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
@@ -176,7 +177,7 @@ export async function fetchDashboardLineItems(userId: string, token: string): Pr
 
   const { data, error } = await supabase
     .from("invoice_line_items")
-    .select("amount, invoices!inner(issued_date, status)")
+    .select("amount, quantity, invoices!inner(issued_date, status)")
     .eq("user_id", userId)
     .in("invoices.status", ["issued", "paid"])
     .gte("invoices.issued_date", windowStart);
@@ -189,7 +190,7 @@ export async function fetchDashboardLineItems(userId: string, token: string): Pr
     if (!inv?.issued_date) return [];
     return {
       date: inv.issued_date,
-      base_amount: row.amount,
+      base_amount: lineItemTotal(row),
       bonus_amount: 0,
     };
   });
