@@ -7,6 +7,7 @@ import {
 } from "@react-pdf/renderer";
 import type { InvoiceDetail } from "@/lib/types";
 import type { BusinessDetails } from "@/lib/queries";
+import { lineItemTotal } from "@/lib/utils";
 
 const SANS = "Helvetica";
 
@@ -135,18 +136,18 @@ type Entry = InvoiceDetail["entries"][0];
 type LineItem = InvoiceDetail["line_items"][0];
 
 type RowData =
-  | { type: "entry"; entry: Entry; clientRateHourly: number }
+  | { type: "entry"; entry: Entry }
   | { type: "sku_bonus"; entry: Entry }
   | { type: "time_range"; entry: Entry }
   | { type: "line_item"; item: LineItem }
   | { type: "line_item_detail"; item: LineItem };
 
-function buildRows(entries: Entry[], lineItems: LineItem[], clientRateHourly: number): RowData[] {
+function buildRows(entries: Entry[], lineItems: LineItem[]): RowData[] {
   const rows: RowData[] = [];
   const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
 
   for (const entry of sorted) {
-    rows.push({ type: "entry", entry, clientRateHourly });
+    rows.push({ type: "entry", entry });
     // skus != null guard also suppresses the bonus breakdown row for Own Brand entries,
     // whose markup is folded into the rate/amount columns instead.
     if (entry.bonus_amount > 0 && entry.skus != null) {
@@ -180,7 +181,7 @@ function entryDescription(entry: Entry): string {
   return entry.description ?? "";
 }
 
-function EntryRow({ entry, clientRateHourly, showHours, showQty }: { entry: Entry; clientRateHourly: number; showHours: boolean; showQty: boolean }) {
+function EntryRow({ entry, showHours, showQty }: { entry: Entry; showHours: boolean; showQty: boolean }) {
   const description = entryDescription(entry);
   const hours = entry.billing_type === "hourly" && entry.hours_worked != null
     ? String(entry.hours_worked)
@@ -189,8 +190,10 @@ function EntryRow({ entry, clientRateHourly, showHours, showQty }: { entry: Entr
   // hiding the internal base/markup split from the client.
   const isOwnBrand = entry.workflow_type === "Own Brand";
   const lineTotal = entry.base_amount + entry.bonus_amount;
+  // Derive the actual hourly rate from this entry (base / hours) so role-based rates
+  // show correctly — the client default rate is wrong when the entry used another role.
   const rate = entry.billing_type === "hourly"
-    ? fmtRate(clientRateHourly)
+    ? (entry.hours_worked && entry.hours_worked > 0 ? fmtRate(entry.base_amount / entry.hours_worked) : "")
     : entry.billing_type === "day_rate"
     ? fmtAmount(isOwnBrand ? lineTotal : entry.base_amount)
     : "";
@@ -256,8 +259,8 @@ function LineItemRow({ item, showQty, showRate }: { item: LineItem; showQty: boo
       <Text style={s.colDate} />
       <Text style={s.colItem}>{item.description}</Text>
       {showQty ? <Text style={s.colQty}>{item.quantity != null ? String(item.quantity) : ""}</Text> : null}
-      {showRate ? <Text style={s.colRate} /> : null}
-      <Text style={s.colAmount}>{fmtAmount(item.amount)}</Text>
+      {showRate ? <Text style={s.colRate}>{item.quantity != null ? fmtAmount(item.amount) : ""}</Text> : null}
+      <Text style={s.colAmount}>{fmtAmount(lineItemTotal(item))}</Text>
     </View>
   );
 }
@@ -273,12 +276,11 @@ export function InvoiceDocument({ invoice, business }: Props) {
   const showSuperDetails = client.pays_super;
   const superRatePct = Math.round(client.super_rate * 100);
   const descriptionHeader = client.entry_label ?? "Description";
-  const clientRateHourly = client.rate_hourly ?? 0;
   const showHours = invoice.entries.some((e) => e.billing_type === "hourly");
   const showRate = invoice.entries.length > 0;
   const showQty = showHours || invoice.line_items.length > 0;
 
-  const rows = buildRows(invoice.entries, invoice.line_items, clientRateHourly);
+  const rows = buildRows(invoice.entries, invoice.line_items);
 
   return (
     <Document>
@@ -335,7 +337,7 @@ export function InvoiceDocument({ invoice, business }: Props) {
 
           {rows.map((row, i) => {
             if (row.type === "entry") {
-              return <EntryRow key={`e-${row.entry.id}`} entry={row.entry} clientRateHourly={clientRateHourly} showHours={showHours} showQty={showQty} />;
+              return <EntryRow key={`e-${row.entry.id}`} entry={row.entry} showHours={showHours} showQty={showQty} />;
             }
             if (row.type === "sku_bonus") {
               return <SkuBonusRow key={`sku-${row.entry.id}`} entry={row.entry} showQty={showQty} />;

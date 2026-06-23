@@ -1,3 +1,16 @@
+## New
+
+### ~~Invoice line item amounts calculated incorrectly~~ ✅
+- entering quantity on a custom invoice line item:
+  - ~~displays number on pdf, but does not multiply line by amount for line total~~
+  - ~~does not display number on invoice sheet view~~
+
+### ~~Rate not displaying correctly on PDF~~ ✅
+- ~~Invoice JM188 has an entry billed at Photographer rate (60), but it still says 45 on the pdf invoice (despite calculating the total correctly)~~
+
+
+
+
 ## Functional
 
 - [ ] Settings > Invoicing > Include super in totals
