@@ -54,30 +54,23 @@ const TAG_TO_VIEWS: Record<InvalidationTag, ViewId[]> = {
   emails:   ["dashboard"],
 };
 
-type InitialEntriesData = { entries: Entry[]; clients: Client[]; workflowRates: WorkflowRate[] };
-
 export function ViewSwitch({
   userEmail,
   userName,
-  initialEntriesData,
 }: {
   userEmail: string;
   userName: string;
-  initialEntriesData?: InitialEntriesData;
 }) {
   const { view, settingsTab } = useActiveView();
 
   const [dashboardData, setDashboardData] = useState<DashboardState>(null);
-  const [entriesData, setEntriesData] = useState<EntriesState>(initialEntriesData ?? null);
+  const [entriesData, setEntriesData] = useState<EntriesState>(null);
   const [invoicesData, setInvoicesData] = useState<InvoicesState>(null);
   const [clientsData, setClientsData] = useState<ClientsState>(null);
   const [expensesData, setExpensesData] = useState<ExpensesState>(null);
   const [settingsData, setSettingsData] = useState<SettingsState>(null);
 
-  // Pre-mark entries as revealed if server-loaded data was provided
-  const revealed = useRef<Set<ViewId>>(
-    initialEntriesData ? new Set<ViewId>(["entries"]) : new Set<ViewId>()
-  );
+  const revealed = useRef<Set<ViewId>>(new Set<ViewId>());
 
   const fetchView = useCallback((v: ViewId) => {
     switch (v) {
