@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
-import { Bar, BarChart, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 function TaxSkeleton() {
   return (
@@ -194,6 +194,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
               {chartMode === "monthly" && hasMonthlyData && (
                 <ChartContainer config={monthlyConfig} className="h-48 w-full">
                   <BarChart data={monthly} barCategoryGap="20%">
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
                     <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
                     <ChartTooltip
                       content={
