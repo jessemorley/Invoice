@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
-import { Bar, BarChart, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, XAxis } from "recharts";
 
 function TaxSkeleton() {
   return (
@@ -41,7 +41,7 @@ function TaxSkeleton() {
               <Skeleton className="h-9 w-40 mt-1" />
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              <Skeleton className="h-12 w-full rounded-md" />
+              <Skeleton className="h-48 w-full rounded-md" />
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="rounded-xl border border-border p-4 flex flex-col gap-2">
@@ -110,18 +110,13 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const paygPaid = selectedTotals?.paygPaid ?? 0;
   const remainingTax = tax.total - paygPaid;
 
-  // Single 100%-stacked bar: how net profit splits into gross profit + each tax component.
-  const splitConfig = {
-    afterTax: { label: "Gross profit", color: "var(--chart-1)" },
-    incomeTax: { label: "Income tax", color: "var(--chart-3)" },
-    medicareLevy: { label: "Medicare levy", color: "var(--chart-4)" },
-    hecs: { label: "HECS/HELP", color: "var(--chart-5)" },
+  // 12-month revenue vs expenses bars (FY order: Jul→Jun).
+  const monthlyConfig = {
+    revenue: { label: "Revenue", color: "var(--color-primary)" },
+    expenses: { label: "Expenses", color: "var(--color-muted-foreground)" },
   } satisfies ChartConfig;
-  const splitData = [{ row: "split", afterTax, incomeTax: tax.incomeTax, medicareLevy: tax.medicareLevy, hecs: tax.hecs }];
-  // Only the non-zero segments, so the last one can carry the rounded right edge.
-  const splitKeys = (["afterTax", "incomeTax", "medicareLevy", "hecs"] as const).filter(
-    (k) => splitData[0][k] > 0
-  );
+  const monthly = selectedTotals?.monthly ?? [];
+  const hasMonthlyData = monthly.some((m) => m.revenue > 0 || m.expenses > 0);
   const incomeByClient = selectedTotals?.incomeByClient ?? [];
   const topClients = incomeByClient.slice(0, 4);
   const otherClientsIncome = incomeByClient.slice(4).reduce((sum, c) => sum + c.income, 0);
@@ -147,7 +142,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
             </SelectContent>
           </Select>
 
-          {/* Tier 1 — Hero: net profit + split bar */}
+          {/* Tier 1 — Hero: net profit + 12-month revenue/expenses bars */}
           <Card>
             <CardHeader className="flex flex-row items-start justify-between gap-2">
               <div>
@@ -160,42 +155,24 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
               <span className="text-xs text-muted-foreground shrink-0">{fyLabel(selected)}</span>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              {afterTax > 0 && (
-                <ChartContainer config={splitConfig} className="!aspect-auto h-12 w-full">
-                  <BarChart accessibilityLayer data={splitData} layout="vertical" stackOffset="expand" margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                    <XAxis type="number" hide />
-                    <YAxis type="category" dataKey="row" hide />
+              {hasMonthlyData && (
+                <ChartContainer config={monthlyConfig} className="h-48 w-full">
+                  <BarChart data={monthly} barCategoryGap="20%">
+                    <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
                     <ChartTooltip
-                      cursor={false}
-                      shared={false}
                       content={
                         <ChartTooltipContent
-                          hideLabel
                           formatter={(value, name) => (
-                            <div className="flex flex-1 items-center justify-between gap-3">
-                              <span className="text-muted-foreground">
-                                {splitConfig[name as keyof typeof splitConfig]?.label ?? name}
-                              </span>
-                              <span className="font-mono font-medium tabular-nums">{formatAUD(Number(value))}</span>
-                            </div>
+                            <>
+                              <span className="text-muted-foreground">{monthlyConfig[name as keyof typeof monthlyConfig]?.label ?? name}</span>
+                              <span className="font-mono font-medium tabular-nums ml-auto pl-4">{formatAUD(Number(value))}</span>
+                            </>
                           )}
                         />
                       }
                     />
-                    {splitKeys.map((key, i) => (
-                      <Bar
-                        key={key}
-                        dataKey={key}
-                        stackId="a"
-                        fill={`var(--color-${key})`}
-                        radius={[
-                          i === 0 ? 4 : 0,
-                          i === splitKeys.length - 1 ? 4 : 0,
-                          i === splitKeys.length - 1 ? 4 : 0,
-                          i === 0 ? 4 : 0,
-                        ]}
-                      />
-                    ))}
+                    <Bar dataKey="revenue" fill="var(--color-primary)" radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="expenses" fill="var(--color-muted-foreground)" fillOpacity={0.4} radius={[2, 2, 0, 0]} />
                   </BarChart>
                 </ChartContainer>
               )}

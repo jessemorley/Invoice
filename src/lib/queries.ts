@@ -384,15 +384,22 @@ export type TaxClientIncome = { client: ClientRef; income: number };
 
 export type PaygInstalment = { id: string; paid_date: string; amount: number; label: string | null };
 
+export type TaxMonthTotals = { month: string; revenue: number; expenses: number };
+
 export type TaxFyTotals = {
   startYear: number;
   income: number;
   expenditure: number;
   expenditureByCategory: Partial<Record<ExpenseCategory, number>>;
   incomeByClient: TaxClientIncome[];
+  monthly: TaxMonthTotals[];
   paygInstalments: PaygInstalment[];
   paygPaid: number;
 };
+
+// Australian FY runs Jul→Jun; chart shows all 12 months in that order.
+const FY_MONTH_LABELS = ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun"];
+const fyMonthIndex = (date: Date) => (date.getMonth() + 6) % 12;
 
 export async function fetchTaxData(userId: string, token: string): Promise<TaxFyTotals[]> {
   "use cache";
@@ -414,15 +421,17 @@ export async function fetchTaxData(userId: string, token: string): Promise<TaxFy
   const get = (startYear: number) => {
     let fy = byFy.get(startYear);
     if (!fy) {
-      fy = { startYear, income: 0, expenditure: 0, expenditureByCategory: {}, incomeByClient: [], incomeByClientId: new Map(), paygInstalments: [], paygPaid: 0 };
+      fy = { startYear, income: 0, expenditure: 0, expenditureByCategory: {}, incomeByClient: [], incomeByClientId: new Map(), monthly: FY_MONTH_LABELS.map((month) => ({ month, revenue: 0, expenses: 0 })), paygInstalments: [], paygPaid: 0 };
       byFy.set(startYear, fy);
     }
     return fy;
   };
 
   for (const inv of invoicesRes.data ?? []) {
-    const fy = get(fyStartYear(new Date(inv.paid_date + "T00:00:00")));
+    const date = new Date(inv.paid_date + "T00:00:00");
+    const fy = get(fyStartYear(date));
     fy.income += inv.total;
+    fy.monthly[fyMonthIndex(date)].revenue += inv.total;
     const client = Array.isArray(inv.clients) ? inv.clients[0] : inv.clients;
     if (client) {
       const ref = toClientRef(client);
@@ -432,8 +441,10 @@ export async function fetchTaxData(userId: string, token: string): Promise<TaxFy
     }
   }
   for (const exp of expensesRes.data ?? []) {
-    const fy = get(fyStartYear(new Date(exp.date + "T00:00:00")));
+    const date = new Date(exp.date + "T00:00:00");
+    const fy = get(fyStartYear(date));
     fy.expenditure += exp.amount;
+    fy.monthly[fyMonthIndex(date)].expenses += exp.amount;
     fy.expenditureByCategory[exp.category] = (fy.expenditureByCategory[exp.category] ?? 0) + exp.amount;
   }
   for (const p of paygRes.data ?? []) {
