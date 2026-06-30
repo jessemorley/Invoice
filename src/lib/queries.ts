@@ -2,7 +2,7 @@ import { cacheTag } from "next/cache";
 import { createTokenClient } from "./supabase";
 import { isoWeek, todayInSydney, fyStartYear } from "./format";
 import { lineItemTotal } from "./utils";
-import type { Entry, Invoice, InvoiceDetail, Expense, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
+import type { Entry, Invoice, InvoiceDetail, Expense, ExpenseCategory, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -379,7 +379,15 @@ export async function fetchExpenses(userId: string, token: string): Promise<Expe
   }));
 }
 
-export type TaxFyTotals = { startYear: number; income: number; expenditure: number };
+export type TaxClientIncome = { client: ClientRef; income: number };
+
+export type TaxFyTotals = {
+  startYear: number;
+  income: number;
+  expenditure: number;
+  expenditureByCategory: Partial<Record<ExpenseCategory, number>>;
+  incomeByClient: TaxClientIncome[];
+};
 
 export async function fetchTaxData(userId: string, token: string): Promise<TaxFyTotals[]> {
   "use cache";
@@ -388,30 +396,45 @@ export async function fetchTaxData(userId: string, token: string): Promise<TaxFy
   const supabase = createTokenClient(token);
 
   const [invoicesRes, expensesRes] = await Promise.all([
-    supabase.from("invoices").select("paid_date, total").eq("user_id", userId).not("paid_date", "is", null),
-    supabase.from("expenses").select("date, amount").eq("user_id", userId),
+    supabase.from("invoices").select("paid_date, total, clients(id, name, billing_type, color)").eq("user_id", userId).not("paid_date", "is", null),
+    supabase.from("expenses").select("date, amount, category").eq("user_id", userId),
   ]);
   if (invoicesRes.error) throw new Error(`fetchTaxData: ${invoicesRes.error.message}`);
   if (expensesRes.error) throw new Error(`fetchTaxData: ${expensesRes.error.message}`);
 
-  const byFy = new Map<number, TaxFyTotals>();
+  const byFy = new Map<number, TaxFyTotals & { incomeByClientId: Map<string, TaxClientIncome> }>();
   const get = (startYear: number) => {
     let fy = byFy.get(startYear);
     if (!fy) {
-      fy = { startYear, income: 0, expenditure: 0 };
+      fy = { startYear, income: 0, expenditure: 0, expenditureByCategory: {}, incomeByClient: [], incomeByClientId: new Map() };
       byFy.set(startYear, fy);
     }
     return fy;
   };
 
   for (const inv of invoicesRes.data ?? []) {
-    get(fyStartYear(new Date(inv.paid_date + "T00:00:00"))).income += inv.total;
+    const fy = get(fyStartYear(new Date(inv.paid_date + "T00:00:00")));
+    fy.income += inv.total;
+    const client = Array.isArray(inv.clients) ? inv.clients[0] : inv.clients;
+    if (client) {
+      const ref = toClientRef(client);
+      const existing = fy.incomeByClientId.get(ref.id);
+      if (existing) existing.income += inv.total;
+      else fy.incomeByClientId.set(ref.id, { client: ref, income: inv.total });
+    }
   }
   for (const exp of expensesRes.data ?? []) {
-    get(fyStartYear(new Date(exp.date + "T00:00:00"))).expenditure += exp.amount;
+    const fy = get(fyStartYear(new Date(exp.date + "T00:00:00")));
+    fy.expenditure += exp.amount;
+    fy.expenditureByCategory[exp.category] = (fy.expenditureByCategory[exp.category] ?? 0) + exp.amount;
   }
 
-  return Array.from(byFy.values()).sort((a, b) => b.startYear - a.startYear);
+  return Array.from(byFy.values())
+    .map((fy) => ({
+      ...fy,
+      incomeByClient: Array.from(fy.incomeByClientId.values()).sort((a, b) => b.income - a.income),
+    }))
+    .sort((a, b) => b.startYear - a.startYear);
 }
 
 export async function fetchClients(userId: string, token: string): Promise<{ id: string; name: string; billing_type: string; color: string | null }[]> {

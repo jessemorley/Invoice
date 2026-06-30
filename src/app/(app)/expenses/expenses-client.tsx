@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Expense, ExpenseCategory } from "@/lib/types";
-import { EXPENSE_CATEGORY_LABELS } from "@/lib/mock-data";
+import { EXPENSE_CATEGORY_LABELS, EXPENSE_CATEGORY_COLORS } from "@/lib/mock-data";
 import { formatAUD, formatDateShort } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,18 +42,6 @@ import { Paperclip, Plus, Receipt, Search } from "lucide-react";
 type SortKey = "date" | "category" | "amount";
 type SortDir = "asc" | "desc";
 type Timeframe = "all-time" | "this-week" | "this-month" | "last-month" | "this-year";
-
-const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
-  gear:            "#6366f1",
-  gear_consumable: "#818cf8",
-  gear_hire:       "#f97316",
-  lab:             "#06b6d4",
-  education:       "#8b5cf6",
-  software:        "#10b981",
-  travel:          "#f59e0b",
-  other:           "#94a3b8",
-  office:          "#64748b",
-};
 
 function gstAmount(expense: Expense): string | null {
   if (!expense.gst_included) return null;
@@ -117,8 +105,8 @@ function ExpenseCard({ expense, onClick }: { expense: Expense; onClick: () => vo
           <span
             className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
             style={{
-              backgroundColor: `${CATEGORY_COLORS[expense.category]}22`,
-              color: CATEGORY_COLORS[expense.category],
+              backgroundColor: `${EXPENSE_CATEGORY_COLORS[expense.category]}22`,
+              color: EXPENSE_CATEGORY_COLORS[expense.category],
             }}
           >
             {EXPENSE_CATEGORY_LABELS[expense.category]}
@@ -384,8 +372,8 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
                       <span
                         className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
                         style={{
-                          backgroundColor: `${CATEGORY_COLORS[exp.category]}22`,
-                          color: CATEGORY_COLORS[exp.category],
+                          backgroundColor: `${EXPENSE_CATEGORY_COLORS[exp.category]}22`,
+                          color: EXPENSE_CATEGORY_COLORS[exp.category],
                         }}
                       >
                         {EXPENSE_CATEGORY_LABELS[exp.category]}
