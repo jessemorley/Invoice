@@ -58,6 +58,7 @@ const TAG_TO_VIEWS: Record<InvalidationTag, ViewId[]> = {
   expenses: ["expenses", "dashboard", "tax"],
   settings: ["settings"],
   emails:   ["dashboard"],
+  payg:     ["tax"],
 };
 
 type InitialEntriesData = { entries: Entry[]; clients: Client[]; workflowRates: WorkflowRate[] };

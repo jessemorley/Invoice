@@ -13,6 +13,7 @@ export const CACHE_TAGS = {
   clients: "clients",
   settings: "settings",
   scheduledEmails: "scheduled-emails",
+  payg: "payg",
 } as const;
 
 function toClientRef(client: { id: string; name: string; billing_type: string; color?: string | null }): ClientRef {
@@ -381,32 +382,39 @@ export async function fetchExpenses(userId: string, token: string): Promise<Expe
 
 export type TaxClientIncome = { client: ClientRef; income: number };
 
+export type PaygInstalment = { id: string; paid_date: string; amount: number; label: string | null };
+
 export type TaxFyTotals = {
   startYear: number;
   income: number;
   expenditure: number;
   expenditureByCategory: Partial<Record<ExpenseCategory, number>>;
   incomeByClient: TaxClientIncome[];
+  paygInstalments: PaygInstalment[];
+  paygPaid: number;
 };
 
 export async function fetchTaxData(userId: string, token: string): Promise<TaxFyTotals[]> {
   "use cache";
   cacheTag(CACHE_TAGS.invoices);
   cacheTag(CACHE_TAGS.expenses);
+  cacheTag(CACHE_TAGS.payg);
   const supabase = createTokenClient(token);
 
-  const [invoicesRes, expensesRes] = await Promise.all([
+  const [invoicesRes, expensesRes, paygRes] = await Promise.all([
     supabase.from("invoices").select("paid_date, total, clients(id, name, billing_type, color)").eq("user_id", userId).not("paid_date", "is", null),
     supabase.from("expenses").select("date, amount, category").eq("user_id", userId),
+    supabase.from("payg_instalments").select("id, paid_date, amount, label").eq("user_id", userId),
   ]);
   if (invoicesRes.error) throw new Error(`fetchTaxData: ${invoicesRes.error.message}`);
   if (expensesRes.error) throw new Error(`fetchTaxData: ${expensesRes.error.message}`);
+  if (paygRes.error) throw new Error(`fetchTaxData: ${paygRes.error.message}`);
 
   const byFy = new Map<number, TaxFyTotals & { incomeByClientId: Map<string, TaxClientIncome> }>();
   const get = (startYear: number) => {
     let fy = byFy.get(startYear);
     if (!fy) {
-      fy = { startYear, income: 0, expenditure: 0, expenditureByCategory: {}, incomeByClient: [], incomeByClientId: new Map() };
+      fy = { startYear, income: 0, expenditure: 0, expenditureByCategory: {}, incomeByClient: [], incomeByClientId: new Map(), paygInstalments: [], paygPaid: 0 };
       byFy.set(startYear, fy);
     }
     return fy;
@@ -428,11 +436,17 @@ export async function fetchTaxData(userId: string, token: string): Promise<TaxFy
     fy.expenditure += exp.amount;
     fy.expenditureByCategory[exp.category] = (fy.expenditureByCategory[exp.category] ?? 0) + exp.amount;
   }
+  for (const p of paygRes.data ?? []) {
+    const fy = get(fyStartYear(new Date(p.paid_date + "T00:00:00")));
+    fy.paygInstalments.push({ id: p.id, paid_date: p.paid_date, amount: p.amount, label: p.label });
+    fy.paygPaid += p.amount;
+  }
 
   return Array.from(byFy.values())
     .map((fy) => ({
       ...fy,
       incomeByClient: Array.from(fy.incomeByClientId.values()).sort((a, b) => b.income - a.income),
+      paygInstalments: fy.paygInstalments.sort((a, b) => a.paid_date.localeCompare(b.paid_date)),
     }))
     .sort((a, b) => b.startYear - a.startYear);
 }

@@ -573,6 +573,33 @@ export type Database = {
           },
         ]
       }
+      payg_instalments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          label: string | null
+          paid_date: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          label?: string | null
+          paid_date: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          label?: string | null
+          paid_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string

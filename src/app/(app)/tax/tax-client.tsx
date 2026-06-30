@@ -1,14 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import type { TaxFyTotals } from "@/lib/queries";
-import { formatAUD, fyLabel, fyStartYear } from "@/lib/format";
+import { formatAUD, formatDateShort, fyLabel, fyStartYear } from "@/lib/format";
 import { taxEstimate } from "@/lib/tax-estimate";
+import { createPaygInstalment, deletePaygInstalment } from "@/app/(app)/tax/actions";
+import { invalidate } from "@/lib/invalidate";
 import { EXPENSE_CATEGORY_LABELS, EXPENSE_CATEGORY_COLORS } from "@/lib/mock-data";
 import type { ExpenseCategory } from "@/lib/types";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { ClientSquircle } from "@/components/client-squircle";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
+import { Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -50,6 +56,26 @@ function TaxSkeleton() {
 export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const currentStartYear = fyStartYear(new Date());
   const [selected, setSelected] = useState(currentStartYear);
+  const [newDate, setNewDate] = useState(() => new Date().toLocaleDateString("en-CA"));
+  const [newAmount, setNewAmount] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  const addInstalment = () => {
+    const amount = Number(newAmount);
+    if (!newDate || !Number.isFinite(amount) || amount <= 0) return;
+    startTransition(async () => {
+      await createPaygInstalment({ paid_date: newDate, amount, label: null });
+      invalidate("payg");
+      setNewAmount("");
+    });
+  };
+
+  const removeInstalment = (id: string) => {
+    startTransition(async () => {
+      await deletePaygInstalment(id);
+      invalidate("payg");
+    });
+  };
 
   if (!fyTotals) return <TaxSkeleton />;
 
@@ -63,6 +89,9 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const net = income - expenditure;
   const tax = taxEstimate(net);
   const afterTax = net - tax.total;
+  const paygInstalments = selectedTotals?.paygInstalments ?? [];
+  const paygPaid = selectedTotals?.paygPaid ?? 0;
+  const remainingTax = tax.total - paygPaid;
 
   // Single 100%-stacked bar: how net splits into take-home + each tax component.
   const splitConfig = {
@@ -220,6 +249,68 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                     <span className="text-sm tabular-nums shrink-0 ml-2">−{formatAUD(tax.hecs)}</span>
                   </div>
                 )}
+                {paygPaid > 0 && (
+                  <>
+                    <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">
+                      <span className="text-sm text-muted-foreground">PAYG instalments paid</span>
+                      <span className="text-sm tabular-nums shrink-0 ml-2">+{formatAUD(paygPaid)}</span>
+                    </div>
+                    <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border font-medium">
+                      <span className="text-sm">{remainingTax >= 0 ? "Remaining tax owing" : "Estimated refund"}</span>
+                      <span className="text-sm tabular-nums shrink-0 ml-2">{formatAUD(Math.abs(remainingTax))}</span>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+            <Card className="xl:col-span-2">
+              <CardHeader>
+                <CardDescription>PAYG instalments paid</CardDescription>
+                <CardTitle className="text-3xl tabular-nums">{formatAUD(paygPaid)}</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-2">
+                {paygInstalments.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between py-2 px-3 rounded-lg border border-border"
+                  >
+                    <span className="text-sm text-muted-foreground">{formatDateShort(p.paid_date)}</span>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className="text-sm tabular-nums">{formatAUD(p.amount)}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7 text-muted-foreground hover:text-destructive"
+                        disabled={pending}
+                        onClick={() => removeInstalment(p.id)}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2 pt-1">
+                  <Input
+                    type="date"
+                    value={newDate}
+                    onChange={(e) => setNewDate(e.target.value)}
+                    className="w-auto"
+                  />
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    min="0"
+                    placeholder="Amount"
+                    value={newAmount}
+                    onChange={(e) => setNewAmount(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") addInstalment(); }}
+                    className="flex-1"
+                  />
+                  <Button onClick={addInstalment} disabled={pending || !newAmount}>
+                    {pending ? <Spinner className="size-4" /> : "Add"}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
