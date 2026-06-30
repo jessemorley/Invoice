@@ -40,18 +40,18 @@ function TaxSkeleton() {
               <Skeleton className="h-3 w-24" />
               <Skeleton className="h-9 w-40 mt-1" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex flex-col gap-4">
               <Skeleton className="h-12 w-full rounded-md" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="rounded-xl border border-border p-4 flex flex-col gap-2">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-7 w-24" />
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="rounded-xl border border-border bg-card p-4 flex flex-col gap-2">
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-7 w-24" />
-              </div>
-            ))}
-          </div>
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {[...Array(2)].map((_, i) => (
               <Card key={i}>
@@ -159,8 +159,8 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
               </div>
               <span className="text-xs text-muted-foreground shrink-0">{fyLabel(selected)}</span>
             </CardHeader>
-            {afterTax > 0 && (
-              <CardContent>
+            <CardContent className="flex flex-col gap-4">
+              {afterTax > 0 && (
                 <ChartContainer config={splitConfig} className="!aspect-auto h-12 w-full">
                   <BarChart accessibilityLayer data={splitData} layout="vertical" stackOffset="expand" margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                     <XAxis type="number" hide />
@@ -198,32 +198,32 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                     ))}
                   </BarChart>
                 </ChartContainer>
-              </CardContent>
-            )}
-          </Card>
-
-          {/* Tier 2 — Stat tiles. ponytail: plain bordered divs, not a StatTile component — 3 usages, one file */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">Estimated gross profit</span>
-              <span className="text-2xl tabular-nums text-success">{formatAUD(afterTax)}</span>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">Estimated tax</span>
-              <span className="text-2xl tabular-nums">{formatAUD(tax.total)}</span>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">
-                {remainingTax > 0 ? "Estimated tax owing" : remainingTax < 0 ? "Estimated refund" : "Tax owing"}
-              </span>
-              <span className={cn("text-2xl tabular-nums", remainingTax > 0 && "text-destructive")}>
-                {remainingTax === 0 && paygPaid > 0 ? "Fully paid" : formatAUD(Math.abs(remainingTax))}
-              </span>
-              {paygPaid > 0 && remainingTax !== 0 && (
-                <span className="text-xs text-muted-foreground">{formatAUD(paygPaid)} PAYG paid</span>
               )}
-            </div>
-          </div>
+
+              {/* Stat tiles. ponytail: plain bordered divs, not a StatTile component — 3 usages, one file */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="rounded-xl border border-border p-4 flex flex-col gap-1">
+                  <span className="text-xs text-muted-foreground">Estimated gross profit</span>
+                  <span className="text-2xl tabular-nums text-success">{formatAUD(afterTax)}</span>
+                </div>
+                <div className="rounded-xl border border-border p-4 flex flex-col gap-1">
+                  <span className="text-xs text-muted-foreground">Estimated tax</span>
+                  <span className="text-2xl tabular-nums">{formatAUD(tax.total)}</span>
+                </div>
+                <div className="rounded-xl border border-border p-4 flex flex-col gap-1">
+                  <span className="text-xs text-muted-foreground">
+                    {remainingTax > 0 ? "Estimated tax owing" : remainingTax < 0 ? "Estimated refund" : "Tax owing"}
+                  </span>
+                  <span className={cn("text-2xl tabular-nums", remainingTax > 0 && "text-destructive")}>
+                    {remainingTax === 0 && paygPaid > 0 ? "Fully paid" : formatAUD(Math.abs(remainingTax))}
+                  </span>
+                  {paygPaid > 0 && remainingTax !== 0 && (
+                    <span className="text-xs text-muted-foreground">{formatAUD(paygPaid)} PAYG paid</span>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Tier 3a — Revenue & expenses, side by side */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
