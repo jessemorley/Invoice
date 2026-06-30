@@ -14,6 +14,19 @@ export function formatAUD(amount: number): string {
   }).format(amount);
 }
 
+// AU financial year: July 1 – June 30. Identified by its start year (FY26 = startYear 2025).
+export function fyStartYear(date: Date): number {
+  return date.getMonth() >= 6 ? date.getFullYear() : date.getFullYear() - 1;
+}
+
+export function fyLabel(startYear: number): string {
+  return `FY${String(startYear + 1).slice(2)}`;
+}
+
+export function fyDateRange(startYear: number): { from: string; to: string } {
+  return { from: `${startYear}-07-01`, to: `${startYear + 1}-06-30` };
+}
+
 export function formatDate(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
   const dow = d.toLocaleDateString("en-AU", { weekday: "short" });

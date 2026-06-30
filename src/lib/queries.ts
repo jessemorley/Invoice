@@ -1,6 +1,6 @@
 import { cacheTag } from "next/cache";
 import { createTokenClient } from "./supabase";
-import { isoWeek, todayInSydney } from "./format";
+import { isoWeek, todayInSydney, fyStartYear } from "./format";
 import { lineItemTotal } from "./utils";
 import type { Entry, Invoice, InvoiceDetail, Expense, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
 
@@ -377,6 +377,41 @@ export async function fetchExpenses(userId: string, token: string): Promise<Expe
     is_billable: e.is_billable,
     invoice_id: e.invoice_id,
   }));
+}
+
+export type TaxFyTotals = { startYear: number; income: number; expenditure: number };
+
+export async function fetchTaxData(userId: string, token: string): Promise<TaxFyTotals[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.invoices);
+  cacheTag(CACHE_TAGS.expenses);
+  const supabase = createTokenClient(token);
+
+  const [invoicesRes, expensesRes] = await Promise.all([
+    supabase.from("invoices").select("paid_date, total").eq("user_id", userId).not("paid_date", "is", null),
+    supabase.from("expenses").select("date, amount").eq("user_id", userId),
+  ]);
+  if (invoicesRes.error) throw new Error(`fetchTaxData: ${invoicesRes.error.message}`);
+  if (expensesRes.error) throw new Error(`fetchTaxData: ${expensesRes.error.message}`);
+
+  const byFy = new Map<number, TaxFyTotals>();
+  const get = (startYear: number) => {
+    let fy = byFy.get(startYear);
+    if (!fy) {
+      fy = { startYear, income: 0, expenditure: 0 };
+      byFy.set(startYear, fy);
+    }
+    return fy;
+  };
+
+  for (const inv of invoicesRes.data ?? []) {
+    get(fyStartYear(new Date(inv.paid_date + "T00:00:00"))).income += inv.total;
+  }
+  for (const exp of expensesRes.data ?? []) {
+    get(fyStartYear(new Date(exp.date + "T00:00:00"))).expenditure += exp.amount;
+  }
+
+  return Array.from(byFy.values()).sort((a, b) => b.startYear - a.startYear);
 }
 
 export async function fetchClients(userId: string, token: string): Promise<{ id: string; name: string; billing_type: string; color: string | null }[]> {

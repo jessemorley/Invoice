@@ -10,6 +10,7 @@ import {
   Users,
   Settings,
   Wallet,
+  Landmark,
   ChevronsUpDown,
   LogOut,
 } from "lucide-react";
@@ -42,6 +43,7 @@ const navItems: { view: ViewId; label: string; icon: React.ComponentType }[] = [
   { view: "invoices", label: "Invoices", icon: Receipt },
   { view: "clients", label: "Clients", icon: Users },
   { view: "expenses", label: "Expenses", icon: Wallet },
+  { view: "tax", label: "Tax", icon: Landmark },
   { view: "settings", label: "Settings", icon: Settings },
 ];
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LayoutDashboard, FileText, Receipt, Users, Wallet, Settings, Plus, Menu, X } from "lucide-react";
+import { LayoutDashboard, FileText, Receipt, Users, Wallet, Landmark, Settings, Plus, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveView, type ViewId } from "@/components/active-view-context";
 
@@ -14,6 +14,7 @@ const PRIMARY_TABS: { view: ViewId; icon: React.ComponentType<{ className?: stri
 const SECONDARY_TABS: { view: ViewId; icon: React.ComponentType<{ className?: string; strokeWidth?: number }>; label: string }[] = [
   { view: "clients", icon: Users, label: "Clients" },
   { view: "expenses", icon: Wallet, label: "Expenses" },
+  { view: "tax", icon: Landmark, label: "Tax" },
   { view: "settings", icon: Settings, label: "Settings" },
 ];
 
