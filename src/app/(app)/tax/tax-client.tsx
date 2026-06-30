@@ -93,9 +93,9 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const paygPaid = selectedTotals?.paygPaid ?? 0;
   const remainingTax = tax.total - paygPaid;
 
-  // Single 100%-stacked bar: how net splits into take-home + each tax component.
+  // Single 100%-stacked bar: how net profit splits into retained profit + each tax component.
   const splitConfig = {
-    afterTax: { label: "Take-home", color: "var(--chart-1)" },
+    afterTax: { label: "Net profit", color: "var(--chart-1)" },
     incomeTax: { label: "Income tax", color: "var(--chart-3)" },
     medicareLevy: { label: "Medicare levy", color: "var(--chart-4)" },
     hecs: { label: "HECS/HELP", color: "var(--chart-5)" },
@@ -133,7 +133,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
-                <CardDescription>Gross income</CardDescription>
+                <CardDescription>Revenue</CardDescription>
                 <CardTitle className="text-3xl tabular-nums">{formatAUD(income)}</CardTitle>
               </CardHeader>
               {incomeByClient.length > 0 && (
@@ -161,7 +161,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
             </Card>
             <Card>
               <CardHeader>
-                <CardDescription>Expenditure</CardDescription>
+                <CardDescription>Expenses</CardDescription>
                 <CardTitle className="text-3xl tabular-nums">{formatAUD(expenditure)}</CardTitle>
               </CardHeader>
               {categoryBreakdown.length > 0 && (
@@ -188,7 +188,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
             </Card>
             <Card className="xl:col-span-2">
               <CardHeader>
-                <CardDescription>Estimated after-tax</CardDescription>
+                <CardDescription>Estimated after-tax profit</CardDescription>
                 <CardTitle className="text-3xl tabular-nums">{formatAUD(afterTax)}</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-2">
@@ -232,7 +232,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                   </ChartContainer>
                 )}
                 <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">
-                  <span className="text-sm text-muted-foreground">Net (income − expenditure)</span>
+                  <span className="text-sm text-muted-foreground">Net profit (revenue − expenses)</span>
                   <span className="text-sm tabular-nums shrink-0 ml-2">{formatAUD(net)}</span>
                 </div>
                 <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">
