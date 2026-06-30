@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { TaxFyTotals } from "@/lib/queries";
 import { formatAUD, fyLabel, fyStartYear } from "@/lib/format";
+import { taxEstimate } from "@/lib/tax-estimate";
 import { EXPENSE_CATEGORY_LABELS, EXPENSE_CATEGORY_COLORS } from "@/lib/mock-data";
 import type { ExpenseCategory } from "@/lib/types";
 import { PageHeader } from "@/components/page-header";
@@ -57,6 +58,8 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const income = selectedTotals?.income ?? 0;
   const expenditure = selectedTotals?.expenditure ?? 0;
   const net = income - expenditure;
+  const tax = taxEstimate(net);
+  const afterTax = net - tax.total;
   const incomeByClient = selectedTotals?.incomeByClient ?? [];
   const topClients = incomeByClient.slice(0, 4);
   const otherClientsIncome = incomeByClient.slice(4).reduce((sum, c) => sum + c.income, 0);
@@ -138,11 +141,31 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                 </CardContent>
               )}
             </Card>
-            <Card>
+            <Card className="xl:col-span-2">
               <CardHeader>
-                <CardDescription>Net</CardDescription>
-                <CardTitle className="text-3xl tabular-nums">{formatAUD(net)}</CardTitle>
+                <CardDescription>Estimated after-tax</CardDescription>
+                <CardTitle className="text-3xl tabular-nums">{formatAUD(afterTax)}</CardTitle>
               </CardHeader>
+              <CardContent className="flex flex-col gap-2">
+                <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">
+                  <span className="text-sm text-muted-foreground">Net (income − expenditure)</span>
+                  <span className="text-sm tabular-nums shrink-0 ml-2">{formatAUD(net)}</span>
+                </div>
+                <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">
+                  <span className="text-sm text-muted-foreground">Income tax</span>
+                  <span className="text-sm tabular-nums shrink-0 ml-2">−{formatAUD(tax.incomeTax)}</span>
+                </div>
+                <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">
+                  <span className="text-sm text-muted-foreground">Medicare levy</span>
+                  <span className="text-sm tabular-nums shrink-0 ml-2">−{formatAUD(tax.medicareLevy)}</span>
+                </div>
+                {tax.hecs > 0 && (
+                  <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">
+                    <span className="text-sm text-muted-foreground">HECS/HELP</span>
+                    <span className="text-sm tabular-nums shrink-0 ml-2">−{formatAUD(tax.hecs)}</span>
+                  </div>
+                )}
+              </CardContent>
             </Card>
           </div>
         </div>
