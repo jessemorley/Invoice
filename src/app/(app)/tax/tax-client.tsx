@@ -16,8 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Bar, BarChart, Cell, XAxis, YAxis } from "recharts";
 
 function TaxSkeleton() {
   return (
@@ -63,7 +61,6 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const categoryBreakdown = Object.entries(selectedTotals?.expenditureByCategory ?? {}).sort(
     ([, a], [, b]) => b - a
   );
-  const categoryChartConfig = { amount: { label: "Amount" } };
 
   return (
     <div className="flex flex-col h-full">
@@ -112,43 +109,24 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                 <CardTitle className="text-3xl tabular-nums">{formatAUD(expenditure)}</CardTitle>
               </CardHeader>
               {categoryBreakdown.length > 0 && (
-                <CardContent>
-                  <ChartContainer config={categoryChartConfig} style={{ height: categoryBreakdown.length * 36 }} className="w-full">
-                    <BarChart
-                      data={categoryBreakdown.map(([category, amount]) => ({ category, amount }))}
-                      layout="vertical"
-                      margin={{ left: 0 }}
+                <CardContent className="flex flex-col gap-2">
+                  {categoryBreakdown.map(([category, amount]) => (
+                    <div
+                      key={category}
+                      className="flex items-center justify-between py-2 px-3 rounded-lg border border-border"
                     >
-                      <XAxis type="number" hide />
-                      <YAxis
-                        type="category"
-                        dataKey="category"
-                        tickLine={false}
-                        axisLine={false}
-                        tick={{ fontSize: 11 }}
-                        width={110}
-                        tickFormatter={(value: ExpenseCategory) => EXPENSE_CATEGORY_LABELS[value]}
-                      />
-                      <ChartTooltip
-                        cursor={false}
-                        content={
-                          <ChartTooltipContent
-                            labelFormatter={(_value, payload) =>
-                              EXPENSE_CATEGORY_LABELS[payload[0]?.payload?.category as ExpenseCategory] ?? ""
-                            }
-                            formatter={(value) => (
-                              <span className="font-mono font-medium tabular-nums">{formatAUD(Number(value))}</span>
-                            )}
-                          />
-                        }
-                      />
-                      <Bar dataKey="amount" radius={[0, 4, 4, 0]}>
-                        {categoryBreakdown.map(([category]) => (
-                          <Cell key={category} fill={EXPENSE_CATEGORY_COLORS[category as ExpenseCategory]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ChartContainer>
+                      <span
+                        className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                        style={{
+                          backgroundColor: `${EXPENSE_CATEGORY_COLORS[category as ExpenseCategory]}22`,
+                          color: EXPENSE_CATEGORY_COLORS[category as ExpenseCategory],
+                        }}
+                      >
+                        {EXPENSE_CATEGORY_LABELS[category as ExpenseCategory]}
+                      </span>
+                      <span className="text-sm tabular-nums shrink-0 ml-2">{formatAUD(amount)}</span>
+                    </div>
+                  ))}
                 </CardContent>
               )}
             </Card>
