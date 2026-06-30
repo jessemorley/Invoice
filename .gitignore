@@ -45,3 +45,6 @@ next-env.d.ts
 # References
 /References
 supabase/.temp
+
+# handoff docs
+/docs/handoff
