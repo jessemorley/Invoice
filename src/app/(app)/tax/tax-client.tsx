@@ -26,7 +26,7 @@ function TaxSkeleton() {
       <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
         <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
           <Skeleton className="h-9 w-32" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             {[...Array(3)].map((_, i) => (
               <Card key={i}>
                 <CardHeader>
@@ -83,7 +83,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
             </SelectContent>
           </Select>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
                 <CardDescription>Gross income</CardDescription>
