@@ -46,7 +46,7 @@ function TaxSkeleton() {
           </Card>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="rounded-xl border border-border p-4 flex flex-col gap-2">
+              <div key={i} className="rounded-xl border border-border bg-card p-4 flex flex-col gap-2">
                 <Skeleton className="h-3 w-20" />
                 <Skeleton className="h-7 w-24" />
               </div>
@@ -204,15 +204,15 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
 
           {/* Tier 2 — Stat tiles. ponytail: plain bordered divs, not a StatTile component — 3 usages, one file */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-xl border border-border p-4 flex flex-col gap-1">
+            <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">Estimated gross profit</span>
               <span className="text-2xl tabular-nums text-success">{formatAUD(afterTax)}</span>
             </div>
-            <div className="rounded-xl border border-border p-4 flex flex-col gap-1">
+            <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">Estimated tax</span>
               <span className="text-2xl tabular-nums">{formatAUD(tax.total)}</span>
             </div>
-            <div className="rounded-xl border border-border p-4 flex flex-col gap-1">
+            <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">
                 {remainingTax > 0 ? "Estimated tax owing" : remainingTax < 0 ? "Estimated refund" : "Tax owing"}
               </span>
