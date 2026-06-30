@@ -58,6 +58,8 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const expenditure = selectedTotals?.expenditure ?? 0;
   const net = income - expenditure;
   const incomeByClient = selectedTotals?.incomeByClient ?? [];
+  const topClients = incomeByClient.slice(0, 4);
+  const otherClientsIncome = incomeByClient.slice(4).reduce((sum, c) => sum + c.income, 0);
   const categoryBreakdown = Object.entries(selectedTotals?.expenditureByCategory ?? {}).sort(
     ([, a], [, b]) => b - a
   );
@@ -88,7 +90,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
               </CardHeader>
               {incomeByClient.length > 0 && (
                 <CardContent className="flex flex-col gap-2">
-                  {incomeByClient.map(({ client, income: clientIncome }) => (
+                  {topClients.map(({ client, income: clientIncome }) => (
                     <div
                       key={client.id}
                       className="flex items-center justify-between py-2 px-3 rounded-lg border border-border"
@@ -100,6 +102,12 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                       <span className="text-sm tabular-nums shrink-0 ml-2">{formatAUD(clientIncome)}</span>
                     </div>
                   ))}
+                  {otherClientsIncome > 0 && (
+                    <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">
+                      <span className="text-sm text-muted-foreground">Other</span>
+                      <span className="text-sm tabular-nums shrink-0 ml-2">{formatAUD(otherClientsIncome)}</span>
+                    </div>
+                  )}
                 </CardContent>
               )}
             </Card>
