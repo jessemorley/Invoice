@@ -268,7 +268,9 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                     {remainingTax > 0 ? "Estimated tax owing" : remainingTax < 0 ? "Estimated refund" : "Tax owing"}
                   </span>
                   <span className={cn("text-2xl tabular-nums", remainingTax > 0 && "text-destructive")}>
-                    {remainingTax === 0 && paygPaid > 0 ? "Fully paid" : formatAUD(Math.abs(remainingTax))}
+                    {remainingTax === 0 && paygPaid > 0
+                      ? "Fully paid"
+                      : `${remainingTax > 0 ? "−" : remainingTax < 0 ? "+" : ""}${formatAUD(Math.abs(remainingTax))}`}
                   </span>
                   {paygPaid > 0 && remainingTax !== 0 && (
                     <span className="text-xs text-muted-foreground">{formatAUD(paygPaid)} PAYG paid</span>
@@ -344,6 +346,11 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
             <CardHeader>
               <CardTitle className="text-sm font-medium">Tax estimate</CardTitle>
               <CardDescription className="tabular-nums">{formatAUD(tax.total)} total</CardDescription>
+              {selected !== currentStartYear && (
+                <p className="text-xs text-muted-foreground pt-1">
+                  Calculated using current tax brackets, not {fyLabel(selected)}&apos;s — may not match brackets in force that year.
+                </p>
+              )}
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
               <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">

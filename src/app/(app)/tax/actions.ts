@@ -25,6 +25,7 @@ export async function createPaygInstalment(data: PaygInstalmentFormData): Promis
     .single();
 
   if (error) throw new Error(`createPaygInstalment: ${error.message}`);
+  if (!row) throw new Error("createPaygInstalment: insert returned no row");
   updateTag(CACHE_TAGS.payg);
   refresh();
   return row.id;
