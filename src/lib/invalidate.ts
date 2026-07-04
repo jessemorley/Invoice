@@ -20,7 +20,8 @@ export type InvalidationTag =
   | "clients"
   | "expenses"
   | "settings"
-  | "emails";
+  | "emails"
+  | "payg";
 
 export function invalidate(...tags: InvalidationTag[]) {
   for (const tag of tags) {

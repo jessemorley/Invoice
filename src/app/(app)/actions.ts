@@ -14,6 +14,7 @@ import {
   fetchFullClients,
   fetchWorkflowRates,
   fetchUserPreferences,
+  fetchTaxData,
 } from "@/lib/queries";
 import { weeklyCutoff } from "@/lib/format";
 import { fetchSettings } from "./settings/actions";
@@ -78,6 +79,11 @@ export async function loadClientsViewData() {
 export async function loadExpensesViewData() {
   const { userId, token } = await getAuth();
   return fetchExpenses(userId, token);
+}
+
+export async function loadTaxViewData() {
+  const { userId, token } = await getAuth();
+  return fetchTaxData(userId, token);
 }
 
 export { fetchSettings as loadSettingsViewData };

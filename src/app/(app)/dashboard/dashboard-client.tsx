@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { ComposePrefill, DashboardData, DashboardEmail, InvoiceDetail } from "@/lib/types";
-import { formatAUD, formatRelativeTime } from "@/lib/format";
+import { formatAUD, formatRelativeTime, fyLabel, fyStartYear } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -34,12 +34,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-function fyLabel(year: number, month: number): string {
-  // AU financial year: July (6) – June. If month >= 6, FY is year/year+1, else year-1/year.
-  const startYear = month >= 6 ? year : year - 1;
-  return `FY${String(startYear + 1).slice(2)}`;
-}
 
 const audFormatter = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 });
 function formatChartAUD(value: number) { return audFormatter.format(value); }
@@ -143,8 +137,8 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
 
   const now = new Date();
   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const currentFY = fyLabel(lastMonth.getFullYear(), lastMonth.getMonth());
-  const priorFY = fyLabel(lastMonth.getFullYear() - 1, lastMonth.getMonth());
+  const currentFY = fyLabel(fyStartYear(lastMonth));
+  const priorFY = fyLabel(fyStartYear(lastMonth) - 1);
   const chartConfig = {
     current: { label: currentFY, color: "var(--color-primary)" },
     prior: { label: priorFY, color: "var(--color-muted-foreground)" },
