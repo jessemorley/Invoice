@@ -2,7 +2,7 @@
 
 import type { Client } from "@/lib/types";
 import { Search } from "lucide-react";
-import { SheetTitle } from "@/components/ui/sheet";
+import { AdaptiveSheetTitle } from "@/components/ui/adaptive-sheet";
 
 export function ClientSearchInput({
   placeholder,
@@ -15,7 +15,7 @@ export function ClientSearchInput({
 }) {
   return (
     <>
-      <SheetTitle className="sr-only">{placeholder}</SheetTitle>
+      <AdaptiveSheetTitle className="sr-only">{placeholder}</AdaptiveSheetTitle>
       <Search className="size-4 text-muted-foreground shrink-0" />
       <input
         className="text-lg font-semibold text-foreground flex-1 bg-transparent border-none outline-none p-0 ml-1.5 placeholder:text-foreground focus:placeholder:text-muted-foreground"

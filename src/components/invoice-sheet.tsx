@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import type { Client, Invoice, InvoiceDetail, InvoiceStatus } from "@/lib/types";
 import { formatAUD, formatRelativeTime } from "@/lib/format";
-import { lineItemTotal } from "@/lib/utils";
+import { cn, lineItemTotal } from "@/lib/utils";
 import { createInvoice, loadInvoiceDetail, updateInvoice, updateInvoiceNumber, deleteInvoice, createLineItem, updateLineItem, deleteLineItem } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
 import type { InvoiceFormData } from "@/app/(app)/invoices/actions";
@@ -20,7 +20,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { InvoiceStatusBadge } from "@/components/invoice-status-badge";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
@@ -34,14 +33,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-  SheetClose,
-} from "@/components/ui/sheet";
-import { ClientSquircle } from "@/components/client-squircle";
+  AdaptiveSheet,
+  AdaptiveSheetClose,
+  AdaptiveSheetContent,
+  AdaptiveSheetTitle,
+} from "@/components/ui/adaptive-sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { DateTimeInput } from "@/components/ui/date-time-input";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 
@@ -104,6 +101,7 @@ type LineItemViewProps =
   | { mode: "edit"; invoiceId?: never; nextSortOrder?: never; item: { id: string; description: string; quantity: number | null; amount: number; details: string | null }; onSave: () => void; onCancel: () => void };
 
 function LineItemView({ mode, invoiceId, nextSortOrder, item, onSave, onCancel }: LineItemViewProps) {
+  const isMobile = useIsMobile();
   const [description, setDescription] = useState(mode === "edit" ? item.description : "");
   const [details, setDetails] = useState(mode === "edit" ? (item.details ?? "") : "");
   const [quantity, setQuantity] = useState(mode === "edit" && item.quantity != null ? String(item.quantity) : "");
@@ -157,18 +155,27 @@ function LineItemView({ mode, invoiceId, nextSortOrder, item, onSave, onCancel }
     });
   }
 
-  return (
-    <>
-      <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
-        <SheetTitle className="flex-1">{mode === "add" ? "Add Line Item" : "Edit Line Item"}</SheetTitle>
-        <SheetClose asChild>
+  const headerRow = (
+    <div className={cn("flex flex-row items-center gap-1.5", isMobile ? "px-4 py-1" : "px-6 py-5 border-b")}>
+      <AdaptiveSheetTitle className={cn("flex-1", isMobile && "text-sm text-center")}>
+        {mode === "add" ? "Add Line Item" : "Edit Line Item"}
+      </AdaptiveSheetTitle>
+      {!isMobile && (
+        <AdaptiveSheetClose asChild>
           <Button variant="ghost" size="icon" className="shrink-0 size-8">
             <X className="size-5" />
             <span className="sr-only">Close</span>
           </Button>
-        </SheetClose>
-      </div>
+        </AdaptiveSheetClose>
+      )}
+    </div>
+  );
+
+  return (
+    <>
+      {!isMobile && headerRow}
       <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+        {isMobile && <div className="-mx-6 -mt-5">{headerRow}</div>}
         <div className="flex flex-col gap-2">
           <label htmlFor="li-description" className="text-sm font-medium">Description</label>
           <Input id="li-description" className="text-sm" value={description} onChange={(e) => setDescription(e.target.value)} autoFocus />
@@ -192,14 +199,14 @@ function LineItemView({ mode, invoiceId, nextSortOrder, item, onSave, onCancel }
         )}
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
-      <SheetFooter className="px-6 py-4 border-t flex-row gap-2">
-        <Button size="lg" variant="outline" className="flex-1" onClick={onCancel} disabled={isPending || isDeleting}>
+      <div className="px-4 py-3 flex gap-2">
+        <Button size="lg" variant="outline" className="h-9 flex-1 rounded-2xl" onClick={onCancel} disabled={isPending || isDeleting}>
           Cancel
         </Button>
-        <Button size="lg" className="flex-1" onClick={handleSave} disabled={!canSave || isPending || isDeleting}>
+        <Button size="lg" className="h-9 flex-1 rounded-2xl" onClick={handleSave} disabled={!canSave || isPending || isDeleting}>
           {isPending ? "Saving…" : "Save"}
         </Button>
-      </SheetFooter>
+      </div>
     </>
   );
 }
@@ -235,6 +242,7 @@ export function InvoiceSheet({
   onLineItemMutate?: () => void;
   clients?: Client[];
 }) {
+  const isMobile = useIsMobile();
   const [form, setForm] = useState<InvoiceFormData | null>(
     invoice ? defaultForm(invoice) : null
   );
@@ -394,25 +402,77 @@ export function InvoiceSheet({
     });
   }
 
+  // On mobile the drawer has no fixed header: it scrolls with the content,
+  // and dismissal is swipe-down/overlay instead of an X.
+  const invoiceHeaderRow = activeInvoice && form && (
+    <div className={cn("px-4", !isMobile && "border-b")}>
+      <div className={cn("flex flex-row items-center gap-1.5", isMobile ? "py-1" : "h-14")}>
+        {editingNumber ? (
+          <>
+            <AdaptiveSheetTitle className="sr-only">{localNumber ?? activeInvoice.number}</AdaptiveSheetTitle>
+            <input
+              autoFocus
+              className={cn("font-semibold bg-transparent outline-none flex-1 min-w-0", isMobile ? "text-sm text-center" : "text-lg")}
+              value={numberDraft}
+              disabled={isSavingNumber}
+              onChange={(e) => setNumberDraft(e.target.value)}
+              onBlur={handleNumberSave}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.currentTarget.blur(); }
+                if (e.key === "Escape") { setEditingNumber(false); setNumberError(null); }
+              }}
+            />
+          </>
+        ) : (
+          <AdaptiveSheetTitle className={cn("flex-1 min-w-0", isMobile ? "text-sm text-center" : "text-lg")}>
+            <button
+              className="hover:opacity-70 transition-opacity max-w-full truncate align-middle"
+              onClick={() => { setNumberDraft(localNumber ?? activeInvoice.number); setEditingNumber(true); setNumberError(null); }}
+              aria-label="Edit invoice number"
+            >
+              {isSavingNumber ? "Saving…" : `${localNumber ?? activeInvoice.number} - ${activeInvoice.client.name}`}
+            </button>
+          </AdaptiveSheetTitle>
+        )}
+        {!isMobile && (
+          <AdaptiveSheetClose asChild>
+            <Button variant="ghost" size="icon" className="shrink-0 size-8">
+              <X className="size-5" />
+              <span className="sr-only">Close</span>
+            </Button>
+          </AdaptiveSheetClose>
+        )}
+      </div>
+      {numberError && <p className={cn("text-xs text-destructive pb-2", isMobile && "text-center")}>{numberError}</p>}
+    </div>
+  );
+
+  const pickHeaderRow = (
+    <div className={cn("flex flex-row items-center gap-1.5 px-4", isMobile ? "py-1" : "h-14 border-b")}>
+      <ClientSearchInput
+        placeholder="New invoice"
+        value={clientQuery}
+        onChange={setClientQuery}
+      />
+      {!isMobile && (
+        <AdaptiveSheetClose asChild>
+          <Button variant="ghost" size="icon" className="shrink-0 size-8">
+            <X className="size-5" />
+            <span className="sr-only">Close</span>
+          </Button>
+        </AdaptiveSheetClose>
+      )}
+    </div>
+  );
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChangeAction}>
-      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+    <AdaptiveSheet open={open} onOpenChange={onOpenChangeAction}>
+      <AdaptiveSheetContent side="right" className="w-full md:max-w-md flex flex-col gap-0 p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
         {view === "client-pick" ? (
           <>
-            <div className="flex h-14 flex-row items-center gap-1.5 px-4 border-b">
-              <ClientSearchInput
-                placeholder="New invoice"
-                value={clientQuery}
-                onChange={setClientQuery}
-              />
-              <SheetClose asChild>
-                <Button variant="ghost" size="icon" className="shrink-0 size-8">
-                  <X className="size-5" />
-                  <span className="sr-only">Close</span>
-                </Button>
-              </SheetClose>
-            </div>
+            {!isMobile && pickHeaderRow}
             <div className="flex-1 overflow-y-auto">
+              {isMobile && pickHeaderRow}
               {isCreating ? (
                 <div className="flex items-center justify-center h-32">
                   <Spinner />
@@ -450,56 +510,10 @@ export function InvoiceSheet({
           />
         ) : (
         <>
-        <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
-          <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              {editingNumber ? (
-                <>
-                  <SheetTitle className="sr-only">{localNumber ?? activeInvoice!.number}</SheetTitle>
-                  <input
-                    autoFocus
-                    className="font-semibold text-base bg-transparent outline-none w-full"
-                    value={numberDraft}
-                    disabled={isSavingNumber}
-                    onChange={(e) => setNumberDraft(e.target.value)}
-                    onBlur={handleNumberSave}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") { e.currentTarget.blur(); }
-                      if (e.key === "Escape") { setEditingNumber(false); setNumberError(null); }
-                    }}
-                  />
-                </>
-              ) : (
-                <SheetTitle className="sr-only">{localNumber ?? activeInvoice!.number}</SheetTitle>
-              )}
-              {!editingNumber && (
-                <button
-                  className="hover:opacity-70 transition-opacity"
-                  onClick={() => { setNumberDraft(localNumber ?? activeInvoice!.number); setEditingNumber(true); setNumberError(null); }}
-                  aria-label="Edit invoice number"
-                >
-                  <InvoiceStatusBadge
-                    number={isSavingNumber ? "Saving…" : (localNumber ?? activeInvoice!.number)}
-                    status={form!.status}
-                  />
-                </button>
-              )}
-            </div>
-            {numberError && <p className="text-xs text-destructive">{numberError}</p>}
-            <div className="flex items-center gap-2">
-              <ClientSquircle name={activeInvoice!.client.name} color={activeInvoice!.client.color} className="size-[18px] shrink-0" />
-              <SheetDescription>{activeInvoice!.client.name}</SheetDescription>
-            </div>
-          </div>
-          <SheetClose asChild>
-            <Button variant="ghost" size="icon" className="shrink-0 self-center size-8">
-              <X className="size-5" />
-              <span className="sr-only">Close</span>
-            </Button>
-          </SheetClose>
-        </div>
+        {!isMobile && invoiceHeaderRow}
 
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+          {isMobile && <div className="-mx-6 -mt-5 -mb-2">{invoiceHeaderRow}</div>}
           {/* Status */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">Status</label>
@@ -694,13 +708,13 @@ export function InvoiceSheet({
           )}
         </div>
 
-        <SheetFooter className="px-6 py-4 border-t flex-row gap-2">
+        <div className="px-4 py-3 flex gap-2">
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
                 variant="destructive"
-                size="icon"
-                className="shrink-0"
+                size="icon-lg"
+                className="h-9 shrink-0 rounded-2xl"
                 disabled={isDeleting || isPending}
               >
                 <Trash2 className="size-4" />
@@ -719,18 +733,18 @@ export function InvoiceSheet({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <SheetClose asChild>
-            <Button size="lg" variant="outline" className="flex-1">
+          <AdaptiveSheetClose asChild>
+            <Button size="lg" variant="outline" className="h-9 flex-1 rounded-2xl">
               Cancel
             </Button>
-          </SheetClose>
-          <Button size="lg" className="flex-1" onClick={handleSubmit} disabled={isPending || isDeleting}>
+          </AdaptiveSheetClose>
+          <Button size="lg" className="h-9 flex-1 rounded-2xl" onClick={handleSubmit} disabled={isPending || isDeleting}>
             {isPending ? "Saving…" : "Save"}
           </Button>
-        </SheetFooter>
+        </div>
         </>
         )}
-      </SheetContent>
-    </Sheet>
+      </AdaptiveSheetContent>
+    </AdaptiveSheet>
   );
 }

@@ -40,12 +40,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  AdaptiveSheet,
+  AdaptiveSheetClose,
+  AdaptiveSheetContent,
+  AdaptiveSheetDescription,
+  AdaptiveSheetTitle,
+} from "@/components/ui/adaptive-sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import {
   Popover,
   PopoverContent,
@@ -325,6 +327,7 @@ function ClientForm({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const isMobile = useIsMobile();
   const [form, setForm] = useState<FormState>(initial);
   const [touchedRoles, setTouchedRoles] = useState<Set<number>>(new Set());
   const [rolesWithEntries, setRolesWithEntries] = useState<Set<string>>(new Set());
@@ -382,21 +385,30 @@ function ClientForm({
     });
   }
 
-  return (
-    <div className="flex flex-col gap-0 h-full">
-      <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
-        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-          <SheetTitle>{isNew ? "Add Client" : "Edit Client"}</SheetTitle>
-        </div>
-        <SheetClose asChild>
+  // On mobile the drawer has no fixed header: a small centered title scrolls
+  // with the content, and dismissal is swipe-down/overlay instead of an X.
+  const headerRow = (
+    <div className={cn("flex flex-row items-center gap-1.5", isMobile ? "px-4 py-1" : "px-6 py-5 border-b")}>
+      <AdaptiveSheetTitle className={cn("flex-1", isMobile && "text-sm text-center")}>
+        {isNew ? "Add Client" : "Edit Client"}
+      </AdaptiveSheetTitle>
+      {!isMobile && (
+        <AdaptiveSheetClose asChild>
           <Button variant="ghost" size="icon" className="shrink-0 self-center size-8">
             <X className="size-5" />
             <span className="sr-only">Close</span>
           </Button>
-        </SheetClose>
-      </div>
+        </AdaptiveSheetClose>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-0 h-full">
+      {!isMobile && headerRow}
 
       <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
+        {isMobile && <div className="-mx-4 -mt-4">{headerRow}</div>}
 
         {/* Details */}
         <Card>
@@ -653,13 +665,13 @@ function ClientForm({
         )}
       </div>
 
-      <div className="px-6 py-4 border-t flex flex-col gap-3">
+      <div className="px-4 py-3 flex flex-col gap-3">
         {saveError && <p className="text-sm text-destructive">{saveError}</p>}
-        <div className="flex gap-3">
-          <Button variant="outline" className="flex-1" onClick={() => { setForm(initial); onClose(); }} disabled={isPending}>
+        <div className="flex gap-2">
+          <Button size="lg" variant="outline" className="h-9 flex-1 rounded-2xl" onClick={() => { setForm(initial); onClose(); }} disabled={isPending}>
             Cancel
           </Button>
-          <Button className="flex-1" onClick={handleSave} disabled={isPending || !form.name.trim() || hasDuplicateRoles}>
+          <Button size="lg" className="h-9 flex-1 rounded-2xl" onClick={handleSave} disabled={isPending || !form.name.trim() || hasDuplicateRoles}>
             {isPending ? <Spinner className="size-4" /> : isNew ? "Create Client" : "Save Changes"}
           </Button>
         </div>
@@ -679,6 +691,7 @@ function ClientDetail({
   onEdit: () => void;
   onClose: () => void;
 }) {
+  const isMobile = useIsMobile();
   const { setView } = useActiveView();
   const [recentInvoices, setRecentInvoices] = useState<RecentInvoice[] | null>(null);
 
@@ -703,30 +716,37 @@ function ClientDetail({
     return "Manual";
   })();
 
-  return (
-    <>
-      <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
-        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <ColorSquircle clientId={client.id} name={client.name} current={client.color} />
-            <SheetTitle className="truncate">{client.name}</SheetTitle>
-            {!client.is_active && (
-              <span className="shrink-0 text-xs text-muted-foreground border rounded-full px-2 py-0.5">Inactive</span>
-            )}
-          </div>
+  const headerRow = (
+    <div className={cn("flex flex-row items-center gap-1.5", isMobile ? "px-4 py-1" : "px-6 py-5 border-b")}>
+      <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <ColorSquircle clientId={client.id} name={client.name} current={client.color} />
+          <AdaptiveSheetTitle className="truncate">{client.name}</AdaptiveSheetTitle>
+          {!client.is_active && (
+            <span className="shrink-0 text-xs text-muted-foreground border rounded-full px-2 py-0.5">Inactive</span>
+          )}
         </div>
-        <Button variant="ghost" size="icon" className="shrink-0 size-8 self-center" onClick={onEdit} aria-label="Edit client">
-          <Pencil className="size-4" />
-        </Button>
-        <SheetClose asChild>
+      </div>
+      <Button variant="ghost" size="icon" className="shrink-0 size-8 self-center" onClick={onEdit} aria-label="Edit client">
+        <Pencil className="size-4" />
+      </Button>
+      {!isMobile && (
+        <AdaptiveSheetClose asChild>
           <Button variant="ghost" size="icon" className="shrink-0 self-center size-8">
             <X className="size-5" />
             <span className="sr-only">Close</span>
           </Button>
-        </SheetClose>
-      </div>
+        </AdaptiveSheetClose>
+      )}
+    </div>
+  );
+
+  return (
+    <>
+      {!isMobile && headerRow}
 
       <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-6">
+        {isMobile && <div className="-mx-6 -mt-5">{headerRow}</div>}
         <Section title="Contact">
           {client.contact_name && <Row label="Contact" value={client.contact_name} />}
           {client.email && <Row label="Email" value={<a href={`mailto:${client.email}`} className="underline underline-offset-2">{client.email}</a>} />}
@@ -826,8 +846,26 @@ function ClientDetail({
 // ── Workflow rates sheet ──────────────────────────────────────────────────────
 
 function WorkflowRatesSheet({ clientId }: { clientId: string }) {
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [rates, setRates] = useState<WorkflowRate[] | null>(null);
+
+  const headerRow = (
+    <div className={cn("flex flex-row items-center gap-1.5", isMobile ? "px-4 py-1" : "px-6 py-5 border-b")}>
+      <div className={cn("flex flex-col flex-1 min-w-0", isMobile ? "items-center gap-0.5" : "gap-1.5")}>
+        <AdaptiveSheetTitle className={cn(isMobile && "text-sm")}>Workflow Rates</AdaptiveSheetTitle>
+        <AdaptiveSheetDescription className={cn(isMobile && "text-xs")}>Per-client KPI bonus structures</AdaptiveSheetDescription>
+      </div>
+      {!isMobile && (
+        <AdaptiveSheetClose asChild>
+          <Button variant="ghost" size="icon" className="shrink-0 self-center size-8">
+            <X className="size-5" />
+            <span className="sr-only">Close</span>
+          </Button>
+        </AdaptiveSheetClose>
+      )}
+    </div>
+  );
 
   // Clear in the close handler (not the effect) so reopening shows the skeleton
   const handleOpenChange = (next: boolean) => {
@@ -850,21 +888,11 @@ function WorkflowRatesSheet({ clientId }: { clientId: string }) {
         <ChevronRight className="size-4 group-hover:translate-x-0.5 transition-transform" />
       </button>
 
-      <Sheet open={open} onOpenChange={handleOpenChange}>
-        <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
-          <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
-            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-              <SheetTitle>Workflow Rates</SheetTitle>
-              <SheetDescription>Per-client KPI bonus structures</SheetDescription>
-            </div>
-            <SheetClose asChild>
-              <Button variant="ghost" size="icon" className="shrink-0 self-center size-8">
-                <X className="size-5" />
-                <span className="sr-only">Close</span>
-              </Button>
-            </SheetClose>
-          </div>
+      <AdaptiveSheet open={open} onOpenChange={handleOpenChange}>
+        <AdaptiveSheetContent side="right" className="w-full md:max-w-md flex flex-col gap-0 p-0">
+          {!isMobile && headerRow}
           <div className="flex-1 overflow-y-auto px-6 py-5">
+            {isMobile && <div className="-mx-6 -mt-5">{headerRow}</div>}
             {rates === null ? (
               <div className="flex flex-col gap-2">
                 <div className="h-7 bg-muted rounded-md animate-pulse w-3/4" />
@@ -874,8 +902,8 @@ function WorkflowRatesSheet({ clientId }: { clientId: string }) {
               <WorkflowRatesSection clientId={clientId} initialRates={rates} onClose={() => handleOpenChange(false)} />
             )}
           </div>
-        </SheetContent>
-      </Sheet>
+        </AdaptiveSheetContent>
+      </AdaptiveSheet>
     </>
   );
 }
@@ -940,15 +968,15 @@ export function ClientSheet({
   const contentKey = initialView === "create" ? "create" : (client?.id ?? "none");
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChangeAction}>
-      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
+    <AdaptiveSheet open={open} onOpenChange={onOpenChangeAction}>
+      <AdaptiveSheetContent side="right" className="w-full md:max-w-md flex flex-col gap-0 p-0">
         <ClientSheetContent
           key={contentKey}
           client={client}
           initialView={initialView}
           onClose={() => onOpenChangeAction(false)}
         />
-      </SheetContent>
-    </Sheet>
+      </AdaptiveSheetContent>
+    </AdaptiveSheet>
   );
 }
