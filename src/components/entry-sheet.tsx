@@ -380,7 +380,7 @@ export function EntrySheet({
         <Button
           variant="destructive"
           size="icon-lg"
-          className="h-8 shrink-0 rounded-2xl"
+          className="h-9 shrink-0 rounded-2xl"
           onClick={handleDelete}
           disabled={isDeleting || isPending}
         >
@@ -390,7 +390,7 @@ export function EntrySheet({
       <Button
         size="lg"
         variant="outline"
-        className="h-8 flex-1 rounded-2xl"
+        className="h-9 flex-1 rounded-2xl"
         onClick={() => onOpenChangeAction(false)}
         disabled={isPending || isDeleting}
       >
@@ -398,7 +398,7 @@ export function EntrySheet({
       </Button>
       <Button
         size="lg"
-        className="h-8 flex-1 rounded-2xl"
+        className="h-9 flex-1 rounded-2xl"
         onClick={handleSubmit}
         disabled={isPending || isDeleting}
       >
@@ -604,11 +604,9 @@ export function EntrySheet({
             />
           )}
 
-          {/* Footer scrolls with content on mobile so it can't cover the keyboard */}
-          {isMobile && footerRow}
         </div>
 
-        {!isMobile && footerRow}
+        {footerRow}
       </AdaptiveSheetContent>
     </AdaptiveSheet>
   );

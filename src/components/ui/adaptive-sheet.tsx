@@ -24,10 +24,16 @@ const MobileContext = React.createContext(false);
 
 function AdaptiveSheet(props: React.ComponentProps<typeof Sheet>) {
   const isMobile = useIsMobile();
-  const Root = isMobile ? Drawer : Sheet;
   return (
     <MobileContext.Provider value={isMobile}>
-      <Root {...props} />
+      {isMobile ? (
+        // repositionInputs disabled: vaul's own keyboard-avoidance resizes/
+        // offsets the drawer via inline styles, which fights our flex layout
+        // (scroll area + pinned footer) and leaves a gap above the footer.
+        <Drawer repositionInputs={false} {...props} />
+      ) : (
+        <Sheet {...props} />
+      )}
     </MobileContext.Provider>
   );
 }
