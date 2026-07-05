@@ -374,6 +374,39 @@ export function EntrySheet({
     </div>
   );
 
+  const footerRow = selectedClient && (
+    <div className="px-4 py-3 flex gap-2">
+      {entry && (
+        <Button
+          variant="destructive"
+          size="icon-lg"
+          className="h-8 shrink-0 rounded-2xl"
+          onClick={handleDelete}
+          disabled={isDeleting || isPending}
+        >
+          <Trash2 className="size-4" />
+        </Button>
+      )}
+      <Button
+        size="lg"
+        variant="outline"
+        className="h-8 flex-1 rounded-2xl"
+        onClick={() => onOpenChangeAction(false)}
+        disabled={isPending || isDeleting}
+      >
+        Cancel
+      </Button>
+      <Button
+        size="lg"
+        className="h-8 flex-1 rounded-2xl"
+        onClick={handleSubmit}
+        disabled={isPending || isDeleting}
+      >
+        {isPending ? "Saving…" : "Save"}
+      </Button>
+    </div>
+  );
+
   return (
     <AdaptiveSheet open={open} onOpenChange={onOpenChangeAction}>
       <AdaptiveSheetContent side="right" className="flex flex-col gap-0 p-0 w-full md:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
@@ -570,41 +603,12 @@ export function EntrySheet({
               rawMins={rawMins}
             />
           )}
+
+          {/* Footer scrolls with content on mobile so it can't cover the keyboard */}
+          {isMobile && footerRow}
         </div>
 
-        {/* Footer */}
-        {selectedClient && (
-          <div className="px-4 py-3 flex gap-2">
-            {entry && (
-              <Button
-                variant="destructive"
-                size="icon-lg"
-                className="h-8 shrink-0 rounded-2xl"
-                onClick={handleDelete}
-                disabled={isDeleting || isPending}
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            )}
-            <Button
-              size="lg"
-              variant="outline"
-              className="h-8 flex-1 rounded-2xl"
-              onClick={() => onOpenChangeAction(false)}
-              disabled={isPending || isDeleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="lg"
-              className="h-8 flex-1 rounded-2xl"
-              onClick={handleSubmit}
-              disabled={isPending || isDeleting}
-            >
-              {isPending ? "Saving…" : "Save"}
-            </Button>
-          </div>
-        )}
+        {!isMobile && footerRow}
       </AdaptiveSheetContent>
     </AdaptiveSheet>
   );
