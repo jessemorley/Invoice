@@ -25,14 +25,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetFooter,
-  SheetClose,
-} from "@/components/ui/sheet";
+  AdaptiveSheet,
+  AdaptiveSheetClose,
+  AdaptiveSheetContent,
+  AdaptiveSheetTitle,
+} from "@/components/ui/adaptive-sheet";
 import { Paperclip, Trash2, X } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 const TODAY = new Date().toLocaleDateString("en-CA");
 
@@ -68,6 +69,7 @@ export function ExpenseSheet({
   onOpenChangeAction: (open: boolean) => void;
   expense: Expense | null;
 }) {
+  const isMobile = useIsMobile();
   const [form, setForm] = useState<ExpenseFormData>(defaultForm(expense));
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
@@ -172,27 +174,36 @@ export function ExpenseSheet({
   const gst = form.gst_included && form.amount > 0 ? form.amount / 11 : null;
   const busy = isPending || isDeleting || isUploading;
 
+  // On mobile the drawer has no fixed header: a small centered title scrolls
+  // with the content, and dismissal is swipe-down/overlay instead of an X.
+  const headerRow = (
+    <div className={cn("flex flex-row items-center gap-1.5", isMobile ? "px-4 py-1" : "px-6 py-5 border-b")}>
+      <div className={cn("flex flex-col flex-1 min-w-0", isMobile ? "items-center gap-0.5" : "gap-1.5")}>
+        <AdaptiveSheetTitle className={cn(isMobile && "text-sm")}>
+          {expense ? expense.description || "Edit expense" : "Add expense"}
+        </AdaptiveSheetTitle>
+        {expense && (
+          <p className={cn("text-muted-foreground", isMobile ? "text-xs" : "text-sm")}>{formatDateShort(expense.date)}</p>
+        )}
+      </div>
+      {!isMobile && (
+        <AdaptiveSheetClose asChild>
+          <Button variant="ghost" size="icon" className="shrink-0 self-center size-8">
+            <X className="size-5" />
+            <span className="sr-only">Close</span>
+          </Button>
+        </AdaptiveSheetClose>
+      )}
+    </div>
+  );
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChangeAction}>
-      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
-        <div className="flex flex-row items-center gap-1.5 px-6 py-5 border-b">
-          <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-            <SheetTitle>
-              {expense ? expense.description || "Edit expense" : "Add expense"}
-            </SheetTitle>
-            {expense && (
-              <p className="text-sm text-muted-foreground">{formatDateShort(expense.date)}</p>
-            )}
-          </div>
-          <SheetClose asChild>
-            <Button variant="ghost" size="icon" className="shrink-0 self-center size-8">
-              <X className="size-5" />
-              <span className="sr-only">Close</span>
-            </Button>
-          </SheetClose>
-        </div>
+    <AdaptiveSheet open={open} onOpenChange={onOpenChangeAction}>
+      <AdaptiveSheetContent side="right" className="w-full md:max-w-md flex flex-col gap-0 p-0">
+        {!isMobile && headerRow}
 
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+          {isMobile && <div className="-mx-6 -mt-5">{headerRow}</div>}
           {/* Date */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">Date</label>
@@ -345,29 +356,29 @@ export function ExpenseSheet({
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
-        <SheetFooter className="px-6 py-4 border-t flex-row gap-2">
+        <div className="px-4 py-3 flex gap-2">
           {expense && (
             <Button
-              variant="ghost"
+              variant="destructive"
               size="icon-lg"
-              className="text-destructive hover:text-destructive"
+              className="h-9 shrink-0 rounded-2xl"
               onClick={handleDelete}
               disabled={busy}
             >
               <Trash2 className="size-4" />
             </Button>
           )}
-          <SheetClose asChild>
-            <Button size="lg" variant="outline" className="flex-1" disabled={busy}>
+          <AdaptiveSheetClose asChild>
+            <Button size="lg" variant="outline" className="h-9 flex-1 rounded-2xl" disabled={busy}>
               Cancel
             </Button>
-          </SheetClose>
-          <Button size="lg" className="flex-1" onClick={handleSave} disabled={busy}>
+          </AdaptiveSheetClose>
+          <Button size="lg" className="h-9 flex-1 rounded-2xl" onClick={handleSave} disabled={busy}>
             {busy && <Spinner />}
             {isUploading ? "Uploading…" : isPending ? "Saving…" : "Save"}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </div>
+      </AdaptiveSheetContent>
+    </AdaptiveSheet>
   );
 }

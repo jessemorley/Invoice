@@ -7,12 +7,14 @@ import {
   Sheet,
   SheetClose,
   SheetContent,
+  SheetDescription,
   SheetTitle,
 } from "@/components/ui/sheet";
 import {
   Drawer,
   DrawerClose,
   DrawerContent,
+  DrawerDescription,
   DrawerTitle,
 } from "@/components/ui/drawer";
 
@@ -62,9 +64,16 @@ function AdaptiveSheetTitle(props: React.ComponentProps<typeof SheetTitle>) {
   return <Title {...props} />;
 }
 
+function AdaptiveSheetDescription(props: React.ComponentProps<typeof SheetDescription>) {
+  const isMobile = React.useContext(MobileContext);
+  const Description = isMobile ? DrawerDescription : SheetDescription;
+  return <Description {...props} />;
+}
+
 export {
   AdaptiveSheet,
   AdaptiveSheetContent,
   AdaptiveSheetClose,
   AdaptiveSheetTitle,
+  AdaptiveSheetDescription,
 };
