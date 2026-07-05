@@ -560,17 +560,17 @@ export function EntrySheet({
               {error && <p className="text-sm text-destructive">{error}</p>}
             </div>
           )}
-        </div>
 
-        {/* Summary */}
-        {selectedClient && calcResult && (
-          <SummaryPanel
-            client={selectedClient}
-            calc={calcResult}
-            billingType={billingType}
-            rawMins={rawMins}
-          />
-        )}
+          {/* Summary */}
+          {selectedClient && calcResult && (
+            <SummaryPanel
+              client={selectedClient}
+              calc={calcResult}
+              billingType={billingType}
+              rawMins={rawMins}
+            />
+          )}
+        </div>
 
         {/* Footer */}
         {selectedClient && (
