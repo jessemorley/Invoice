@@ -12,15 +12,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  AdaptiveSheet,
+  AdaptiveSheetClose,
+  AdaptiveSheetContent,
+  AdaptiveSheetTitle,
+} from "@/components/ui/adaptive-sheet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ChevronLeft, Minus, Plus, Trash2, X } from "lucide-react";
 import { ClientPicker, ClientSearchInput } from "@/components/client-picker";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { DateTimeInput } from "@/components/ui/date-time-input";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 
@@ -130,17 +131,19 @@ function SummaryPanel({
               <span className="font-medium">{formatDuration(rawMins)}</span>
             </div>
           )}
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Base</span>
-            <span className="font-medium">{formatAUD(calc.base)}</span>
-          </div>
           {calc.bonus > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Bonus</span>
-              <span className="font-medium">{formatAUD(calc.bonus)}</span>
-            </div>
+            <>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Base</span>
+                <span className="font-medium">{formatAUD(calc.base)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Bonus</span>
+                <span className="font-medium">{formatAUD(calc.bonus)}</span>
+              </div>
+            </>
           )}
-          <Separator />
+          {((billingType === "hourly" && rawMins != null) || calc.bonus > 0) && <Separator />}
           <div className="flex justify-between text-sm font-semibold">
             <span>Total</span>
             <span>{formatAUD(calc.base + calc.bonus)}</span>
@@ -174,6 +177,7 @@ export function EntrySheet({
   clients: Client[];
   workflowRates: WorkflowRate[];
 }) {
+  const isMobile = useIsMobile();
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -337,33 +341,46 @@ export function EntrySheet({
     ? selectedClient.name
     : "Add entry";
 
+  // On mobile the drawer has no fixed header: a small centered title scrolls
+  // with the content, and dismissal is swipe-down/overlay instead of an X.
+  const headerRow = (
+    <div className={cn("flex flex-row items-center gap-1.5 px-4", isMobile ? "py-1" : "h-14 border-b")}>
+      {!entry && selectedClient && (
+        <Button variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => setSelectedClient(null)}>
+          <ChevronLeft className="size-4" />
+        </Button>
+      )}
+      {!selectedClient ? (
+        <ClientSearchInput
+          placeholder="New entry"
+          value={clientQuery}
+          onChange={setClientQuery}
+        />
+      ) : (
+        <AdaptiveSheetTitle className={cn("flex-1", isMobile ? "text-sm text-center" : "text-lg")}>
+          {title}
+        </AdaptiveSheetTitle>
+      )}
+      {isMobile ? (
+        !entry && selectedClient && <div className="size-8 shrink-0" aria-hidden />
+      ) : (
+        <AdaptiveSheetClose asChild>
+          <Button variant="ghost" size="icon" className="shrink-0 size-8">
+            <X className="size-5" />
+            <span className="sr-only">Close</span>
+          </Button>
+        </AdaptiveSheetClose>
+      )}
+    </div>
+  );
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChangeAction}>
-      <SheetContent side="right" className="flex flex-col gap-0 p-0 w-full sm:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
-        <div className={cn("flex h-14 flex-row items-center gap-1.5 px-4 border-b")}>
-          {!entry && selectedClient && (
-            <Button variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => setSelectedClient(null)}>
-              <ChevronLeft className="size-4" />
-            </Button>
-          )}
-          {!selectedClient ? (
-            <ClientSearchInput
-              placeholder="New entry"
-              value={clientQuery}
-              onChange={setClientQuery}
-            />
-          ) : (
-            <SheetTitle className="text-lg flex-1">{title}</SheetTitle>
-          )}
-          <SheetClose asChild>
-            <Button variant="ghost" size="icon" className="shrink-0 size-8">
-              <X className="size-5" />
-              <span className="sr-only">Close</span>
-            </Button>
-          </SheetClose>
-        </div>
+    <AdaptiveSheet open={open} onOpenChange={onOpenChangeAction}>
+      <AdaptiveSheetContent side="right" className="flex flex-col gap-0 p-0 w-full md:max-w-md" onOpenAutoFocus={(e) => e.preventDefault()}>
+        {!isMobile && headerRow}
 
         <div className="flex-1 overflow-y-auto">
+          {isMobile && headerRow}
           {!selectedClient ? (
             <ClientPicker clients={clients} query={clientQuery} onSelectAction={handleSelectClient} />
           ) : (
@@ -588,7 +605,7 @@ export function EntrySheet({
             </Button>
           </div>
         )}
-      </SheetContent>
-    </Sheet>
+      </AdaptiveSheetContent>
+    </AdaptiveSheet>
   );
 }
