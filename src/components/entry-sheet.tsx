@@ -579,7 +579,7 @@ export function EntrySheet({
               <Button
                 variant="destructive"
                 size="icon-lg"
-                className="shrink-0"
+                className="h-8 shrink-0 rounded-2xl"
                 onClick={handleDelete}
                 disabled={isDeleting || isPending}
               >
@@ -589,7 +589,7 @@ export function EntrySheet({
             <Button
               size="lg"
               variant="outline"
-              className="flex-1"
+              className="h-8 flex-1 rounded-2xl"
               onClick={() => onOpenChangeAction(false)}
               disabled={isPending || isDeleting}
             >
@@ -597,7 +597,7 @@ export function EntrySheet({
             </Button>
             <Button
               size="lg"
-              className="flex-1"
+              className="h-8 flex-1 rounded-2xl"
               onClick={handleSubmit}
               disabled={isPending || isDeleting}
             >
