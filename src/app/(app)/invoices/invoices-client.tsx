@@ -169,15 +169,19 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
           {invoice.client.name}
         </span>
         <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-xs font-medium text-foreground tabular-nums">{invoice.number}</span>
           <span className="text-xs text-muted-foreground">
             {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
           </span>
-          <span className="text-xs text-muted-foreground">{invoice.number}</span>
         </div>
       </div>
-      <div className="flex flex-col items-end gap-0.5 shrink-0">
+      <div className="flex flex-col items-end gap-1 shrink-0">
         <span className="text-sm tabular-nums text-foreground">{formatAUD(invoice.subtotal)}</span>
-        <span className="text-xs font-medium" style={{ color: INVOICE_STATUS_COLOR[invoice.status] }}>
+        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span
+            className="size-1.5 rounded-full shrink-0"
+            style={{ backgroundColor: INVOICE_STATUS_COLOR[invoice.status] }}
+          />
           {STATUS_LABEL[invoice.status]}
         </span>
       </div>
