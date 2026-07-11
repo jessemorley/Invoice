@@ -165,12 +165,12 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
       <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-8 shrink-0" />
       <div className="flex-1 min-w-0">
-        <span className="text-sm font-medium text-foreground truncate block">
-          {invoice.client.name}
+        <span className="text-sm font-medium text-foreground tabular-nums truncate block">
+          {invoice.number}
         </span>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-xs font-medium text-foreground tabular-nums">{invoice.number}</span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground truncate">{invoice.client.name}</span>
+          <span className="text-xs text-muted-foreground shrink-0">
             {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
           </span>
         </div>
