@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { ClientSquircle } from "@/components/client-squircle";
-import { InvoiceStatusBadge } from "@/components/invoice-status-badge";
+import { InvoiceStatusBadge, INVOICE_STATUS_COLOR } from "@/components/invoice-status-badge";
 import { revalidateInvoices, loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow, loadEntrySheetData } from "./actions";
 import { invalidate } from "@/lib/invalidate";
 import type { ComposePrefill, Invoice, InvoiceEmail, InvoiceStatus, InvoiceDetail, Entry, Client, WorkflowRate } from "@/lib/types";
@@ -162,11 +162,25 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
 
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
   return (
-    <div className="flex items-center gap-2.5 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
-      <InvoiceStatusBadge number={invoice.number} status={invoice.status} />
-      <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-6 shrink-0 ml-1" />
-      <span className="text-sm truncate flex-1 min-w-0">{invoice.client.name}</span>
-      <span className="text-sm tabular-nums shrink-0">{formatAUD(invoice.subtotal)}</span>
+    <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
+      <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-8 shrink-0" />
+      <div className="flex-1 min-w-0">
+        <span className="text-sm font-medium text-foreground truncate block">
+          {invoice.client.name}
+        </span>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-xs text-muted-foreground">
+            {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
+          </span>
+          <span className="text-xs text-muted-foreground">{invoice.number}</span>
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-0.5 shrink-0">
+        <span className="text-sm tabular-nums text-foreground">{formatAUD(invoice.subtotal)}</span>
+        <span className="text-xs font-medium" style={{ color: INVOICE_STATUS_COLOR[invoice.status] }}>
+          {STATUS_LABEL[invoice.status]}
+        </span>
+      </div>
     </div>
   );
 }
@@ -199,11 +213,16 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <Card key={i} className="py-0 rounded-lg">
           <CardContent className="p-0">
-            <div className="flex items-center gap-2.5 px-4 py-3">
-              <Skeleton className="h-5 w-14 rounded-full shrink-0" />
-              <Skeleton className="size-6 rounded-[30%] shrink-0" />
-              <Skeleton className="h-3 flex-1" />
-              <Skeleton className="h-3 w-16 shrink-0" />
+            <div className="flex items-center gap-3 px-4 py-3">
+              <Skeleton className="size-8 rounded-[30%] shrink-0" />
+              <div className="flex-1 flex flex-col gap-1.5">
+                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-3 w-10" />
+              </div>
             </div>
           </CardContent>
         </Card>
