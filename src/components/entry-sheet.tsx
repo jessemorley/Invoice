@@ -110,10 +110,22 @@ function applyClientDefaults(client: Client): Partial<FormState> {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  endLabel,
+  children,
+}: {
+  label: string;
+  endLabel?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium text-foreground">{label}</label>
+      <div className="grid grid-cols-[1fr_auto_1fr] items-baseline">
+        <label className="text-sm font-medium text-foreground">{label}</label>
+        <span className="justify-self-center">{endLabel}</span>
+        <span />
+      </div>
       {children}
     </div>
   );
@@ -201,6 +213,8 @@ export function EntrySheet({
   );
   const [clientQuery, setClientQuery] = useState("");
   const [form, setForm] = useState<FormState>(() => defaultForm(entry, editClient));
+  // date currently centered in the mobile date picker's row, for the month label — may lag form.date while scrolling
+  const [visibleDate, setVisibleDate] = useState(form.date);
 
   useEffect(() => {
     if (!open) return;
@@ -208,7 +222,9 @@ export function EntrySheet({
     startTransition(() => {
       setSelectedClient(entry ? ec : null);
       setClientQuery("");
-      setForm(defaultForm(entry, ec));
+      const next = defaultForm(entry, ec);
+      setForm(next);
+      setVisibleDate(next.date);
       setError(null);
     });
   }, [open, entry, clients, startTransition]);
@@ -445,9 +461,28 @@ export function EntrySheet({
           ) : (
             <div className="flex flex-col gap-4 px-4 py-4">
               {/* Date */}
-              <Field label="Date">
+              <Field
+                label={isMobile ? "" : "Date"}
+                endLabel={
+                  isMobile && (
+                    <span className="text-sm text-muted-foreground">
+                      {(() => {
+                        const [y, m, d] = visibleDate.split("-").map(Number);
+                        return new Date(y, m - 1, d).toLocaleDateString("en-AU", { month: "long" });
+                      })()}
+                    </span>
+                  )
+                }
+              >
                 {isMobile ? (
-                  <DateCardPicker value={form.date} onChange={(v) => set("date", v)} />
+                  <DateCardPicker
+                    value={form.date}
+                    onChange={(v) => {
+                      set("date", v);
+                      setVisibleDate(v);
+                    }}
+                    onVisibleDateChange={setVisibleDate}
+                  />
                 ) : (
                   <DateTimeInput type="date" value={form.date} onChange={(v) => set("date", v)} />
                 )}
