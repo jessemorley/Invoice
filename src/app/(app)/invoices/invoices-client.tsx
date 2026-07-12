@@ -168,6 +168,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
           <span className="text-sm font-medium text-foreground tabular-nums shrink-0">
             {invoice.number}
           </span>
+          <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-6" />
           <span className="text-sm text-muted-foreground truncate">{invoice.client.name}</span>
         </div>
         {(invoice.issued_date || invoice.email?.status === "sent") && (
