@@ -462,7 +462,7 @@ export function EntrySheet({
             <div className="flex flex-col gap-4 px-4 py-4">
               {/* Date */}
               <Field
-                label={isMobile ? "" : "Date"}
+                label="Date"
                 endLabel={
                   isMobile && (
                     <span className="text-sm text-muted-foreground">

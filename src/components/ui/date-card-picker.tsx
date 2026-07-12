@@ -89,8 +89,6 @@ export function DateCardPicker({
         // px centers the first/last card: half container minus half card width (w-14)
         "flex gap-2 overflow-x-auto snap-x snap-mandatory px-[calc(50%-1.75rem)]",
         "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-        // fade the row edges instead of a hard clip
-        "[mask-image:linear-gradient(to_right,transparent,black_1.75rem,black_calc(100%-1.75rem),transparent)]",
         className
       )}
     >
