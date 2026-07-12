@@ -166,7 +166,7 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
 
 function emailStatus(email: InvoiceEmail | null): { text: string; icon: typeof Send; destructive?: boolean } | null {
   if (email?.status === "sent") return { text: "Sent", icon: Send };
-  if (email?.status === "pending") return { text: "Scheduled", icon: Clock };
+  if (email?.status === "pending") return { text: "Sched.", icon: Clock };
   if (email?.status === "failed") return { text: "Failed", icon: MailWarning, destructive: true };
   return null;
 }
@@ -175,7 +175,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
   const email = emailStatus(invoice.email);
   return (
     <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
-      <div className="flex flex-col w-16 shrink-0">
+      <div className={cn("flex flex-col w-16 shrink-0", !email && "self-center")}>
         <span className="text-sm font-medium text-foreground tabular-nums truncate">{invoice.number}</span>
         {email && (
           <span
