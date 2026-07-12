@@ -170,10 +170,19 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
           </span>
           <span className="text-sm text-muted-foreground truncate">{invoice.client.name}</span>
         </div>
-        {invoice.issued_date && (
-          <span className="text-xs text-muted-foreground block mt-0.5">
-            Week {parseInt(isoWeek(invoice.issued_date).split("-W")[1], 10)}
-          </span>
+        {(invoice.issued_date || invoice.email?.status === "sent") && (
+          <div className="flex items-center gap-2 mt-0.5">
+            {invoice.issued_date && (
+              <span className="text-xs text-muted-foreground">
+                Week {parseInt(isoWeek(invoice.issued_date).split("-W")[1], 10)}
+              </span>
+            )}
+            {invoice.email?.status === "sent" && (
+              <span className="inline-flex items-center justify-center rounded-md border p-1 text-muted-foreground">
+                <Send className="size-3" />
+              </span>
+            )}
+          </div>
         )}
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
