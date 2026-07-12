@@ -10,20 +10,22 @@ function toISO(d: Date) {
 }
 
 // Horizontally swipeable row of date cards. Native scroll-snap does the
-// swiping; whichever card settles in the center becomes the selected date.
+// swiping; tapping a card selects it. Scrolling alone never selects —
+// it only reports the centered date via onVisibleDateChange, e.g. for a
+// month label that tracks the row as it scrolls.
 export function DateCardPicker({
   value,
   onChange,
+  onVisibleDateChange,
   className,
 }: {
   value: string // YYYY-MM-DD
   onChange: (value: string) => void
+  onVisibleDateChange?: (value: string) => void
   className?: string
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null)
-  const settleTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
-  // set when the change came from swiping, so we don't scroll under the user's finger
-  const fromScroll = useRef(false)
+  const throttleTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const behavior = useRef<ScrollBehavior>("instant")
 
   const [rangeCenter, setRangeCenter] = useState(value)
@@ -41,10 +43,6 @@ export function DateCardPicker({
 
   // Keep the selected card centered: instant on mount/external change, smooth on tap
   useEffect(() => {
-    if (fromScroll.current) {
-      fromScroll.current = false
-      return
-    }
     const scroller = scrollerRef.current
     const card = scroller?.querySelector<HTMLElement>(`[data-date="${value}"]`)
     if (!scroller || !card) return
@@ -55,29 +53,32 @@ export function DateCardPicker({
     behavior.current = "instant"
   }, [value, dates])
 
-  // ponytail: debounced scroll instead of `scrollend`, works on every browser
+  function centeredDate() {
+    const scroller = scrollerRef.current
+    if (!scroller) return undefined
+    const center = scroller.scrollLeft + scroller.clientWidth / 2
+    let closest: HTMLElement | undefined
+    let closestDist = Infinity
+    for (const child of scroller.children) {
+      const el = child as HTMLElement
+      const dist = Math.abs(el.offsetLeft + el.offsetWidth / 2 - center)
+      if (dist < closestDist) {
+        closestDist = dist
+        closest = el
+      }
+    }
+    return closest?.dataset.date
+  }
+
+  // Report the centered date live throughout the scroll (for a month label etc.);
+  // throttled since scroll fires far more often than we need to re-render.
   function handleScroll() {
-    clearTimeout(settleTimer.current)
-    settleTimer.current = setTimeout(() => {
-      const scroller = scrollerRef.current
-      if (!scroller) return
-      const center = scroller.scrollLeft + scroller.clientWidth / 2
-      let closest: HTMLElement | undefined
-      let closestDist = Infinity
-      for (const child of scroller.children) {
-        const el = child as HTMLElement
-        const dist = Math.abs(el.offsetLeft + el.offsetWidth / 2 - center)
-        if (dist < closestDist) {
-          closestDist = dist
-          closest = el
-        }
-      }
-      const date = closest?.dataset.date
-      if (date && date !== value) {
-        fromScroll.current = true
-        onChange(date)
-      }
-    }, 150)
+    if (throttleTimer.current) return
+    throttleTimer.current = setTimeout(() => {
+      throttleTimer.current = undefined
+      const date = centeredDate()
+      if (date) onVisibleDateChange?.(date)
+    }, 50)
   }
 
   return (
