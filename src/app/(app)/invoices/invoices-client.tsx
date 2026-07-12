@@ -178,7 +178,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
   const email = emailStatus(invoice.email);
   return (
     <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
-      <div className={cn("flex flex-col w-16 shrink-0", !email && "self-center")}>
+      <div className={cn("flex flex-col w-16 shrink-0 self-stretch border-r pr-3", !email && "justify-center")}>
         <span className="text-sm font-medium text-foreground tabular-nums truncate">{invoice.number}</span>
         {email && (
           <span
@@ -203,7 +203,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
       </div>
       <div className="flex flex-col items-end gap-0.5 shrink-0">
         <span className="text-sm tabular-nums text-foreground">{formatAUD(invoice.subtotal)}</span>
-        <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0 text-xs font-medium text-muted-foreground">
+        <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
           <span
             className="size-1.5 rounded-full shrink-0"
             style={{ backgroundColor: INVOICE_STATUS_COLOR[invoice.status] }}
