@@ -55,7 +55,7 @@ import { GenerateSheet } from "@/components/generate-sheet";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { RescheduleDialog } from "@/components/reschedule-dialog";
 import { EntrySheet } from "@/components/entry-sheet";
-import { ChevronDown, Clock, FileText, MailWarning, Plus, RefreshCw, Search, Send } from "lucide-react";
+import { ChevronDown, Clock, FileText, Mail, MailWarning, Plus, RefreshCw, Search, Send } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
 
@@ -162,14 +162,14 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
 
 function emailSummary(email: InvoiceEmail | null): string | null {
   if (email?.status === "sent" && email.sent_at) {
-    return `Email sent ${formatDateShort(email.sent_at.slice(0, 10))}`;
+    return `Sent ${formatDateShort(email.sent_at.slice(0, 10))}`;
   }
   if (email?.status === "pending") {
     const d = new Date(email.scheduled_for);
     const day = d.toLocaleDateString("en-AU", { weekday: "long" });
     const h = d.getHours();
     const tod = h < 12 ? "morning" : h < 17 ? "afternoon" : "evening";
-    return `Email scheduled for ${day} ${tod}`;
+    return `Scheduled for ${day} ${tod}`;
   }
   return null;
 }
@@ -189,7 +189,10 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
         <div className="min-w-0">
           <span className="text-sm text-foreground truncate block">{invoice.client.name}</span>
           {email && (
-            <span className="text-xs text-muted-foreground truncate block mt-0.5">{email}</span>
+            <span className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 min-w-0">
+              <Mail className="size-3 shrink-0" />
+              <span className="truncate">{email}</span>
+            </span>
           )}
         </div>
       </div>
