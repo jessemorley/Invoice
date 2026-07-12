@@ -19,6 +19,16 @@ import {
 } from "@/components/ui/adaptive-sheet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ChevronLeft, Minus, Plus, Trash2, X } from "lucide-react";
 import { ClientPicker, ClientSearchInput } from "@/components/client-picker";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -182,6 +192,7 @@ export function EntrySheet({
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const editClient = entry ? clients.find((c) => c.id === entry.client.id) ?? null : null;
 
@@ -378,15 +389,29 @@ export function EntrySheet({
   const footerRow = selectedClient && (
     <div className="px-4 py-3 flex gap-2">
       {entry && (
-        <Button
-          variant="destructive"
-          size="icon-lg"
-          className="h-9 shrink-0 rounded-2xl"
-          onClick={handleDelete}
-          disabled={isDeleting || isPending}
-        >
-          <Trash2 className="size-4" />
-        </Button>
+        <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+          <Button
+            variant="destructive"
+            size="icon-lg"
+            className="h-9 shrink-0 rounded-2xl"
+            onClick={() => (entry.invoice_id ? handleDelete() : setConfirmDeleteOpen(true))}
+            disabled={isDeleting || isPending}
+          >
+            <Trash2 className="size-4" />
+          </Button>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this entry?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete the entry. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
       <Button
         size="lg"
