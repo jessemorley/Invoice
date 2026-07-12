@@ -164,17 +164,17 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
       <div className="flex-1 min-w-0">
-        <span className="text-sm font-medium text-foreground tabular-nums truncate block">
-          {invoice.number}
-        </span>
-        <div className="flex items-center gap-2 mt-0.5">
-          {invoice.issued_date && (
-            <span className="text-xs text-muted-foreground shrink-0">
-              Week {parseInt(isoWeek(invoice.issued_date).split("-W")[1], 10)}
-            </span>
-          )}
-          <span className="text-xs text-muted-foreground truncate">{invoice.client.name}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-foreground tabular-nums shrink-0">
+            {invoice.number}
+          </span>
+          <span className="text-sm text-muted-foreground truncate">{invoice.client.name}</span>
         </div>
+        {invoice.issued_date && (
+          <span className="text-xs text-muted-foreground block mt-0.5">
+            Week {parseInt(isoWeek(invoice.issued_date).split("-W")[1], 10)}
+          </span>
+        )}
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
         <span className="text-sm tabular-nums text-foreground">{formatAUD(invoice.subtotal)}</span>
