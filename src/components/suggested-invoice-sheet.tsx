@@ -25,11 +25,13 @@ export function SuggestedInvoiceSheet({
   onOpenChangeAction,
   group,
   onCreatedAction,
+  onEntryClick,
 }: {
   open: boolean;
   onOpenChangeAction: (open: boolean) => void;
   group: SuggestedInvoice | null;
   onCreatedAction: (invoice: GeneratedInvoice) => void;
+  onEntryClick?: (entryId: string) => void;
 }) {
   const isMobile = useIsMobile();
   const [entries, setEntries] = useState<InvoiceEntry[] | null>(null);
@@ -89,15 +91,17 @@ export function SuggestedInvoiceSheet({
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
-          {group && (
-            <p className="text-sm text-muted-foreground">
-              {group.dateRange} · {group.entryCount} {group.entryCount === 1 ? "entry" : "entries"}
-            </p>
-          )}
+          <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium">Lines</label>
           <div className="rounded-lg border overflow-hidden flex flex-col text-sm">
             {entries ? (
               entries.map((entry) => (
-                <div key={entry.id} className="flex items-center gap-3 px-4 py-3 border-b">
+                <button
+                  key={entry.id}
+                  type="button"
+                  onClick={() => onEntryClick?.(entry.id)}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors text-left border-b"
+                >
                   <span className="text-muted-foreground shrink-0 tabular-nums">
                     {new Date(entry.date + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short" })}
                   </span>
@@ -106,7 +110,7 @@ export function SuggestedInvoiceSheet({
                     <span className="tabular-nums text-muted-foreground shrink-0">{entry.hours_worked}h</span>
                   )}
                   <span className="tabular-nums shrink-0">{formatAUD(entry.base_amount)}</span>
-                </div>
+                </button>
               ))
             ) : (
               <>
@@ -130,6 +134,7 @@ export function SuggestedInvoiceSheet({
               <span>Total</span>
               <span className="tabular-nums">{formatAUD(subtotal)}</span>
             </div>
+          </div>
           </div>
         </div>
 

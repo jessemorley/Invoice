@@ -358,6 +358,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [suggestedOpen, setSuggestedOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<SuggestedInvoice | null>(null);
   const [creatingKey, setCreatingKey] = useState<string | null>(null);
+  const entryReturnRef = useRef<"invoice" | "suggested">("invoice");
   const [entrySheetOpen, setEntrySheetOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const entrySheetMeta = useState<{ clients: Client[]; workflowRates: WorkflowRate[] } | null>(null);
@@ -490,8 +491,10 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     }
   }
 
-  function handleEntryClick(entryId: string) {
-    setSheetOpen(false);
+  function handleEntryClick(entryId: string, from: "invoice" | "suggested" = "invoice") {
+    entryReturnRef.current = from;
+    if (from === "suggested") setSuggestedOpen(false);
+    else setSheetOpen(false);
     setEntrySheetOpen(true);
     loadEntrySheetData(entryId).then(({ entry, clients, workflowRates }) => {
       if (entry) setSelectedEntry(entry);
@@ -823,7 +826,10 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         open={entrySheetOpen}
         onOpenChangeAction={(open) => {
           setEntrySheetOpen(open);
-          if (!open) setSheetOpen(true);
+          if (!open) {
+            if (entryReturnRef.current === "suggested") setSuggestedOpen(true);
+            else setSheetOpen(true);
+          }
         }}
         entry={selectedEntry}
         clients={entrySheetData?.clients ?? []}
@@ -867,6 +873,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         onOpenChangeAction={setSuggestedOpen}
         group={selectedGroup}
         onCreatedAction={(inv) => handleSuggestedCreated(inv, selectedGroup)}
+        onEntryClick={(id) => handleEntryClick(id, "suggested")}
       />
       <InvoiceSheet
         open={newInvoiceOpen}
