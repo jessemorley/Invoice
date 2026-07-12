@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -486,6 +487,8 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       const { invoices } = await generateInvoices([group.key]);
       invalidate("invoices", "entries");
       if (invoices[0]) handleSuggestedCreated(invoices[0], group);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to create invoice");
     } finally {
       setCreatingKey(null);
     }
