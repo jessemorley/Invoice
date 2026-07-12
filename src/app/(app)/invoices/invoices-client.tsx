@@ -168,12 +168,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
         <span className="text-sm font-medium text-foreground tabular-nums truncate block">
           {invoice.number}
         </span>
-        <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-xs text-muted-foreground shrink-0">
-            {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
-          </span>
-          <span className="text-xs text-muted-foreground truncate">{invoice.client.name}</span>
-        </div>
+        <span className="text-xs text-muted-foreground truncate block mt-0.5">{invoice.client.name}</span>
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
         <span className="text-sm tabular-nums text-foreground">{formatAUD(invoice.subtotal)}</span>
