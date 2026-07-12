@@ -9,7 +9,7 @@ import { invalidate } from "@/lib/invalidate";
 import type { ComposePrefill, Invoice, InvoiceEmail, InvoiceStatus, InvoiceDetail, Entry, Client, WorkflowRate } from "@/lib/types";
 import type { ScheduledEmail } from "@/lib/queries";
 import type { InvoiceFilters } from "@/lib/queries";
-import { formatAUD, formatDateShort, toLocalDateStr } from "@/lib/format";
+import { formatAUD, formatDateShort, toLocalDateStr, isoWeek } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -168,7 +168,14 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
         <span className="text-sm font-medium text-foreground tabular-nums truncate block">
           {invoice.number}
         </span>
-        <span className="text-xs text-muted-foreground truncate block mt-0.5">{invoice.client.name}</span>
+        <div className="flex items-center gap-2 mt-0.5">
+          {invoice.issued_date && (
+            <span className="text-xs text-muted-foreground shrink-0">
+              Week {parseInt(isoWeek(invoice.issued_date).split("-W")[1], 10)}
+            </span>
+          )}
+          <span className="text-xs text-muted-foreground truncate">{invoice.client.name}</span>
+        </div>
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
         <span className="text-sm tabular-nums text-foreground">{formatAUD(invoice.subtotal)}</span>
