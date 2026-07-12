@@ -85,8 +85,8 @@ export function DateCardPicker({
       ref={scrollerRef}
       onScroll={handleScroll}
       className={cn(
-        // px centers the first/last card: half container minus half card width (w-16)
-        "flex gap-2 overflow-x-auto snap-x snap-mandatory px-[calc(50%-2rem)]",
+        // px centers the first/last card: half container minus half card width (w-14)
+        "flex gap-2 overflow-x-auto snap-x snap-mandatory px-[calc(50%-1.75rem)]",
         "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         className
       )}
@@ -104,7 +104,7 @@ export function DateCardPicker({
               onChange(iso)
             }}
             className={cn(
-              "snap-center flex w-16 shrink-0 flex-col items-center gap-0.5 rounded-xl border py-2",
+              "snap-center flex w-14 shrink-0 flex-col items-center gap-0.5 rounded-xl border py-2",
               selected
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-input dark:bg-input/30"
