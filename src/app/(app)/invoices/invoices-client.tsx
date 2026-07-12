@@ -55,7 +55,7 @@ import { GenerateSheet } from "@/components/generate-sheet";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { RescheduleDialog } from "@/components/reschedule-dialog";
 import { EntrySheet } from "@/components/entry-sheet";
-import { ChevronDown, Clock, FileText, Mail, MailWarning, Plus, RefreshCw, Search, Send } from "lucide-react";
+import { ChevronDown, Clock, FileText, MailWarning, Plus, RefreshCw, Search, Send } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
 
@@ -190,7 +190,9 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
           <span className="text-sm text-foreground truncate block">{invoice.client.name}</span>
           {email && (
             <span className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 min-w-0">
-              <Mail className="size-3 shrink-0" />
+              {invoice.email?.status === "sent"
+                ? <Send className="size-3 shrink-0" />
+                : <Clock className="size-3 shrink-0" />}
               <span className="truncate">{email}</span>
             </span>
           )}
