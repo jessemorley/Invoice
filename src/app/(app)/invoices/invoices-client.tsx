@@ -226,7 +226,7 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
   return (
     <div className="px-4 py-4 flex flex-col gap-3">
       {Array.from({ length: count }).map((_, i) => (
-        <Card key={i} className="py-0 rounded-lg">
+        <Card key={i} className="py-0">
           <CardContent className="p-0">
             <div className="flex items-center gap-3 px-4 py-3">
               <div className="flex-1 flex flex-col gap-1.5">
@@ -652,7 +652,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         ) : (
           <div className="px-4 py-4 pb-28 flex flex-col gap-3">
             {visibleInvoices.map((inv) => (
-              <Card key={inv.id} className="py-0 rounded-lg" onClick={() => openInvoice(inv)}>
+              <Card key={inv.id} className="py-0" onClick={() => openInvoice(inv)}>
                 <CardContent className="p-0">
                   <InvoiceCard invoice={inv} />
                 </CardContent>
