@@ -171,16 +171,16 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
           <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-5" />
           <span className="text-sm text-muted-foreground truncate">{invoice.client.name}</span>
         </div>
-        {(invoice.issued_date || invoice.email?.status === "sent") && (
+        {(invoice.issued_date || invoice.email?.status === "sent" || invoice.email?.status === "pending") && (
           <div className="flex items-center gap-2 mt-0.5">
             {invoice.issued_date && (
               <span className="text-xs text-muted-foreground">
                 Week {parseInt(isoWeek(invoice.issued_date).split("-W")[1], 10)}
               </span>
             )}
-            {invoice.email?.status === "sent" && (
+            {(invoice.email?.status === "sent" || invoice.email?.status === "pending") && (
               <span className="inline-flex items-center justify-center rounded-md border p-1 text-muted-foreground">
-                <Send className="size-3" />
+                {invoice.email.status === "sent" ? <Send className="size-3" /> : <Clock className="size-3" />}
               </span>
             )}
           </div>
