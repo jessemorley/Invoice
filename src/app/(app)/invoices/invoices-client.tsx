@@ -9,7 +9,7 @@ import { invalidate } from "@/lib/invalidate";
 import type { ComposePrefill, Invoice, InvoiceEmail, InvoiceStatus, InvoiceDetail, Entry, Client, WorkflowRate } from "@/lib/types";
 import type { ScheduledEmail } from "@/lib/queries";
 import type { InvoiceFilters } from "@/lib/queries";
-import { formatAUD, formatDateShort, toLocalDateStr, isoWeek } from "@/lib/format";
+import { formatAUD, formatDateShort, toLocalDateStr } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -175,7 +175,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
           <div className="flex items-center gap-2 mt-0.5">
             {invoice.issued_date && (
               <span className="text-xs text-muted-foreground">
-                Week {parseInt(isoWeek(invoice.issued_date).split("-W")[1], 10)}
+                {formatDateShort(invoice.issued_date)}
               </span>
             )}
             {(invoice.email?.status === "sent" || invoice.email?.status === "pending") && (
