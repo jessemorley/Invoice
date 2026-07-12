@@ -163,8 +163,8 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
-      <div className="flex flex-col shrink-0">
-        <span className="text-sm font-medium text-foreground tabular-nums">{invoice.number}</span>
+      <div className="flex flex-col w-20 shrink-0">
+        <span className="text-sm font-medium text-foreground tabular-nums truncate">{invoice.number}</span>
         <span className="text-xs text-muted-foreground mt-0.5">
           {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
         </span>
@@ -219,7 +219,7 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
         <Card key={i} className="py-0">
           <CardContent className="p-0">
             <div className="flex items-center gap-3 px-4 py-3">
-              <div className="flex flex-col gap-1.5 shrink-0">
+              <div className="flex flex-col gap-1.5 w-20 shrink-0">
                 <Skeleton className="h-3 w-14" />
                 <Skeleton className="h-3 w-12" />
               </div>
