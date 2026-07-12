@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { ClientSquircle } from "@/components/client-squircle";
-import { InvoiceStatusBadge } from "@/components/invoice-status-badge";
+import { InvoiceStatusBadge, INVOICE_STATUS_COLOR } from "@/components/invoice-status-badge";
 import { revalidateInvoices, loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow, loadEntrySheetData } from "./actions";
 import { invalidate } from "@/lib/invalidate";
 import type { ComposePrefill, Invoice, InvoiceEmail, InvoiceStatus, InvoiceDetail, Entry, Client, WorkflowRate } from "@/lib/types";
@@ -160,13 +160,60 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
   );
 }
 
+function emailSummary(email: InvoiceEmail | null): { text: string; icon: typeof Send; destructive?: boolean } | null {
+  if (email?.status === "sent" && email.sent_at) {
+    return { text: `Sent ${formatDateShort(email.sent_at.slice(0, 10))}`, icon: Send };
+  }
+  if (email?.status === "pending") {
+    const d = new Date(email.scheduled_for);
+    const day = d.toLocaleDateString("en-AU", { weekday: "long" });
+    const h = d.getHours();
+    const tod = h < 12 ? "morning" : h < 17 ? "afternoon" : "evening";
+    return { text: `Scheduled for ${day} ${tod}`, icon: Clock };
+  }
+  if (email?.status === "failed") {
+    return { text: "Failed to send", icon: MailWarning, destructive: true };
+  }
+  return null;
+}
+
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
+  const email = emailSummary(invoice.email);
   return (
-    <div className="flex items-center gap-2.5 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
-      <InvoiceStatusBadge number={invoice.number} status={invoice.status} />
-      <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-6 shrink-0 ml-1" />
-      <span className="text-sm truncate flex-1 min-w-0">{invoice.client.name}</span>
-      <span className="text-sm tabular-nums shrink-0">{formatAUD(invoice.subtotal)}</span>
+    <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
+      <div className="flex flex-col w-16 shrink-0">
+        <span className="text-sm font-medium text-foreground tabular-nums truncate">{invoice.number}</span>
+        <span className="text-xs text-muted-foreground mt-0.5">
+          {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
+        </span>
+      </div>
+      <div className="flex flex-1 min-w-0 items-center gap-2">
+        <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-8" />
+        <div className="min-w-0">
+          <span className="text-sm text-foreground truncate block">{invoice.client.name}</span>
+          {email && (
+            <span
+              className={cn(
+                "flex items-center gap-1 text-xs mt-0.5 min-w-0",
+                email.destructive ? "text-destructive" : "text-muted-foreground"
+              )}
+            >
+              <email.icon className="size-3 shrink-0" />
+              <span className="truncate">{email.text}</span>
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-col items-end gap-0.5 shrink-0">
+        <span className="text-sm tabular-nums text-foreground">{formatAUD(invoice.subtotal)}</span>
+        <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0 text-xs font-medium text-muted-foreground">
+          <span
+            className="size-1.5 rounded-full shrink-0"
+            style={{ backgroundColor: INVOICE_STATUS_COLOR[invoice.status] }}
+          />
+          {STATUS_LABEL[invoice.status]}
+        </span>
+      </div>
     </div>
   );
 }
@@ -197,13 +244,24 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
   return (
     <div className="px-4 py-4 flex flex-col gap-3">
       {Array.from({ length: count }).map((_, i) => (
-        <Card key={i} className="py-0 rounded-lg">
+        <Card key={i} className="py-0">
           <CardContent className="p-0">
-            <div className="flex items-center gap-2.5 px-4 py-3">
-              <Skeleton className="h-5 w-14 rounded-full shrink-0" />
-              <Skeleton className="size-6 rounded-[30%] shrink-0" />
-              <Skeleton className="h-3 flex-1" />
-              <Skeleton className="h-3 w-16 shrink-0" />
+            <div className="flex items-center gap-3 px-4 py-3">
+              <div className="flex flex-col gap-1.5 w-16 shrink-0">
+                <Skeleton className="h-3 w-14" />
+                <Skeleton className="h-3 w-12" />
+              </div>
+              <div className="flex-1 flex items-center gap-2">
+                <Skeleton className="size-8 rounded-[30%] shrink-0" />
+                <div className="flex flex-col gap-1.5">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-5 w-14 rounded-full" />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -619,7 +677,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         ) : (
           <div className="px-4 py-4 pb-28 flex flex-col gap-3">
             {visibleInvoices.map((inv) => (
-              <Card key={inv.id} className="py-0 rounded-lg" onClick={() => openInvoice(inv)}>
+              <Card key={inv.id} className="py-0" onClick={() => openInvoice(inv)}>
                 <CardContent className="p-0">
                   <InvoiceCard invoice={inv} />
                 </CardContent>
