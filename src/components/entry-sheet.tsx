@@ -535,7 +535,7 @@ export function EntrySheet({
               {showDescription && (
                 <Field label="Description">
                   <Textarea
-                    className="text-sm rounded-lg"
+                    className="text-sm"
                     value={form.description}
                     onChange={(e) => set("description", e.target.value)}
                     placeholder="What did you work on?"
