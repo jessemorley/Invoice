@@ -18,6 +18,17 @@ _Avoid_: Costs, outgoings.
 **Net (Tax view)**:
 Gross income minus expenditure for the selected FY. Derived, not stored.
 
+**Uninvoiced group**:
+All uninvoiced entries for one client in one ISO week. The atomic unit of invoice generation — one group becomes one invoice.
+_Avoid_: "uninvoiced entries for a client" (a client can have several open weeks, hence several groups).
+
+**Suggested invoice**:
+An uninvoiced group presented as a potential invoice (e.g. a card in the invoices view). Not persisted — it exists only as long as its entries remain uninvoiced. Accepting it creates a draft invoice. Every uninvoiced group is a suggested invoice; readiness varies.
+_Avoid_: Draft invoice (that's a persisted invoice with `status: draft`), potential invoice.
+
+**Ready (suggested invoice)**:
+A suggested invoice is ready when the client's invoicing cutoff has passed — for weekly clients, the configured weekly cutoff (Friday 5pm / Sunday midnight / immediately); for everyone else, as soon as uninvoiced entries exist. Purely a fact about the cutoff — the weekly-reminder preference toggle governs only reminder badges/notifications, never readiness.
+
 ## Flagged ambiguities
 
 - `invoices.total` already includes `super_amount` regardless of the client-level `include_super_in_totals` display flag — super is baked into what's actually paid, so it correctly counts as gross income.

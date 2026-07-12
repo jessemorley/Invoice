@@ -7,8 +7,9 @@ import { InvoiceStatusBadge, INVOICE_STATUS_COLOR } from "@/components/invoice-s
 import { revalidateInvoices, loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow, loadEntrySheetData } from "./actions";
 import { invalidate } from "@/lib/invalidate";
 import type { ComposePrefill, Invoice, InvoiceEmail, InvoiceStatus, InvoiceDetail, Entry, Client, WorkflowRate } from "@/lib/types";
-import type { ScheduledEmail } from "@/lib/queries";
+import type { ScheduledEmail, SuggestedInvoice } from "@/lib/queries";
 import type { InvoiceFilters } from "@/lib/queries";
+import type { GeneratedInvoice } from "./actions";
 import { formatAUD, formatDateShort, toLocalDateStr } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,7 @@ import { ViewHeader } from "@/components/view-header";
 import { InvoiceSheet } from "@/components/invoice-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
+import { SuggestedInvoiceSheet } from "@/components/suggested-invoice-sheet";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { RescheduleDialog } from "@/components/reschedule-dialog";
 import { EntrySheet } from "@/components/entry-sheet";
@@ -218,6 +220,30 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
   );
 }
 
+function SuggestedInvoiceCard({ group }: { group: SuggestedInvoice }) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
+      <ClientSquircle name={group.clientName} color={group.clientColor} className="size-8" />
+      <div className="flex flex-col min-w-0 flex-1 gap-0.5">
+        <span className="text-sm text-foreground truncate">{group.clientName}</span>
+        <span className="text-xs text-muted-foreground">
+          {group.dateRange} · {group.entryCount} {group.entryCount === 1 ? "entry" : "entries"}
+        </span>
+      </div>
+      <div className="flex flex-col items-end gap-0.5 shrink-0">
+        <span className="text-sm tabular-nums text-foreground">{formatAUD(group.subtotal)}</span>
+        <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0 text-xs font-medium text-muted-foreground">
+          <span
+            className="size-1.5 rounded-full shrink-0"
+            style={{ backgroundColor: group.ready ? "#22c55e" : "#9ca3af" }}
+          />
+          {group.ready ? "Ready" : "In progress"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function SkeletonTableRows({ count = 8 }: { count?: number }) {
   return (
     <>
@@ -275,14 +301,16 @@ type Props = {
   uninvoicedCount?: number;
   hasUninvoiced?: boolean;
   clients?: Client[];
+  suggested?: SuggestedInvoice[];
   loading?: boolean;
 };
 
 const EMPTY_INVOICES: Invoice[] = [];
 const EMPTY_CLIENTS: Client[] = [];
+const EMPTY_SUGGESTED: SuggestedInvoice[] = [];
 const PAGE_SIZE = 25;
 
-export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uninvoicedCount = 0, hasUninvoiced = uninvoicedCount > 0, clients = EMPTY_CLIENTS, loading = false }: Props) {
+export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uninvoicedCount = 0, hasUninvoiced = uninvoicedCount > 0, clients = EMPTY_CLIENTS, suggested = EMPTY_SUGGESTED, loading = false }: Props) {
   const mobileScrollRef = useRef<HTMLDivElement>(null);
   const handlePullRefresh = useCallback(async () => {
     await revalidateInvoices();
@@ -314,6 +342,8 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const composeSentRef = useRef(false);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
+  const [suggestedOpen, setSuggestedOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<SuggestedInvoice | null>(null);
   const [entrySheetOpen, setEntrySheetOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const entrySheetMeta = useState<{ clients: Client[]; workflowRates: WorkflowRate[] } | null>(null);
@@ -409,6 +439,29 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       setScheduledEmail(result.scheduledEmail);
       setInvoiceDetail(result.invoiceDetail);
       setBusinessName(result.businessName);
+    });
+  }
+
+  function handleSuggestedCreated(created: GeneratedInvoice) {
+    const client = clients.find((c) => c.id === created.clientId);
+    openInvoice({
+      id: created.id,
+      number: created.number,
+      client: {
+        id: created.clientId,
+        name: client?.name ?? selectedGroup?.clientName ?? "",
+        color: client?.color ?? selectedGroup?.clientColor ?? "#9ca3af",
+        billing_type: client?.billing_type ?? "day_rate",
+      },
+      issued_date: null,
+      due_date: null,
+      paid_date: null,
+      subtotal: created.subtotal,
+      super_amount: created.super_amount,
+      total: created.total,
+      status: "draft",
+      email: null,
+      notes: null,
     });
   }
 
@@ -664,6 +717,22 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             style={{ transform: pullState !== "refreshing" ? `rotate(${(pullDistance / 70) * 180}deg)` : undefined }}
           />
         </div>
+        {/* Suggested invoices — not real invoices, so search/filters don't apply */}
+        {!loading && suggested.length > 0 && (
+          <div className="px-4 pt-4 flex flex-col gap-3">
+            {suggested.map((g) => (
+              <Card
+                key={g.key}
+                className="py-0 border-dashed"
+                onClick={() => { setSelectedGroup(g); setSuggestedOpen(true); }}
+              >
+                <CardContent className="p-0">
+                  <SuggestedInvoiceCard group={g} />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
         {loading ? (
           <SkeletonMobileCards />
         ) : filteredInvoices.length === 0 ? (
@@ -763,6 +832,12 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         open={generateOpen}
         onOpenChangeAction={setGenerateOpen}
         onBlankInvoiceAction={() => setNewInvoiceOpen(true)}
+      />
+      <SuggestedInvoiceSheet
+        open={suggestedOpen}
+        onOpenChangeAction={setSuggestedOpen}
+        group={selectedGroup}
+        onCreatedAction={handleSuggestedCreated}
       />
       <InvoiceSheet
         open={newInvoiceOpen}

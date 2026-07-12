@@ -2,7 +2,7 @@ import { cacheTag } from "next/cache";
 import { createTokenClient } from "./supabase";
 import { isoWeek, todayInSydney, fyStartYear } from "./format";
 import { lineItemTotal } from "./utils";
-import type { Entry, Invoice, InvoiceDetail, Expense, ExpenseCategory, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
+import type { Entry, Invoice, InvoiceDetail, InvoiceEntry, Expense, ExpenseCategory, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -353,6 +353,53 @@ export async function fetchUninvoicedGroups(userId: string, token: string): Prom
   }));
 }
 
+
+// A suggested invoice is an uninvoiced group plus readiness (see CONTEXT.md):
+// ready = the client's invoicing cutoff has passed, independent of reminder prefs.
+export type SuggestedInvoice = UninvoicedGroup & { ready: boolean };
+
+export async function fetchSuggestedInvoiceEntries(
+  userId: string,
+  token: string,
+  clientId: string,
+  week: string
+): Promise<InvoiceEntry[]> {
+  "use cache";
+  cacheTag(CACHE_TAGS.entries);
+  const supabase = createTokenClient(token);
+  const { data, error } = await supabase
+    .from("entries")
+    .select("id, date, description, billing_type_snapshot, day_type, workflow_type, brand, shoot_client, role, skus, hours_worked, start_time, finish_time, break_minutes, base_amount, bonus_amount, super_amount, total_amount")
+    .eq("user_id", userId)
+    .eq("client_id", clientId)
+    .is("invoice_id", null)
+    .order("date", { ascending: true });
+
+  if (error) throw new Error(`fetchSuggestedInvoiceEntries: ${error.message}`);
+
+  return (data ?? [])
+    .filter((e) => isoWeek(e.date) === week)
+    .map((e) => ({
+      id: e.id,
+      date: e.date,
+      description: e.description,
+      billing_type: e.billing_type_snapshot as InvoiceEntry["billing_type"],
+      day_type: e.day_type as InvoiceEntry["day_type"],
+      workflow_type: e.workflow_type,
+      brand: e.brand,
+      shoot_client: e.shoot_client,
+      role: e.role,
+      skus: e.skus,
+      hours_worked: e.hours_worked,
+      start_time: e.start_time,
+      finish_time: e.finish_time,
+      break_minutes: e.break_minutes,
+      base_amount: e.base_amount,
+      bonus_amount: e.bonus_amount,
+      super_amount: e.super_amount,
+      total_amount: e.total_amount,
+    }));
+}
 
 export async function fetchExpenses(userId: string, token: string): Promise<Expense[]> {
   "use cache";

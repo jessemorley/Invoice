@@ -68,7 +68,18 @@ export async function loadInvoicesViewData() {
   // hasUninvoiced is unfiltered — badge settings should not hide the generate sheet
   const hasUninvoiced = uninvoicedGroups.length > 0;
 
-  return { invoices, uninvoicedCount, hasUninvoiced, clients };
+  // Suggested invoice cards: readiness is cutoff-only — the reminder toggle
+  // governs badges, never readiness (see CONTEXT.md "Ready").
+  const suggested = uninvoicedGroups.map((g) => {
+    const client = clientMap.get(g.clientId);
+    const ready =
+      client?.invoice_frequency !== "weekly" ||
+      cutoffType === "immediately" ||
+      now >= weeklyCutoff(g.isoWeek, cutoffType);
+    return { ...g, ready };
+  });
+
+  return { invoices, uninvoicedCount, hasUninvoiced, clients, suggested };
 }
 
 export async function loadClientsViewData() {
