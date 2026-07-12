@@ -166,7 +166,10 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
 
 function emailStatus(email: InvoiceEmail | null): { text: string; icon: typeof Send; destructive?: boolean } | null {
   if (email?.status === "sent") return { text: "Sent", icon: Send };
-  if (email?.status === "pending") return { text: "Sched.", icon: Clock };
+  if (email?.status === "pending") {
+    const day = new Date(email.scheduled_for).toLocaleDateString("en-AU", { weekday: "short" });
+    return { text: day, icon: Clock };
+  }
   if (email?.status === "failed") return { text: "Failed", icon: MailWarning, destructive: true };
   return null;
 }
