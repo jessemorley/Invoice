@@ -535,11 +535,11 @@ export function EntrySheet({
               {showDescription && (
                 <Field label="Description">
                   <Textarea
-                    className="text-sm"
+                    className="text-sm min-h-9 py-1.5"
                     value={form.description}
                     onChange={(e) => set("description", e.target.value)}
                     placeholder="What did you work on?"
-                    rows={3}
+                    rows={1}
                   />
                 </Field>
               )}
