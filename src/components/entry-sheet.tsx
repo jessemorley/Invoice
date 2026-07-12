@@ -23,6 +23,7 @@ import { ChevronLeft, Minus, Plus, Trash2, X } from "lucide-react";
 import { ClientPicker, ClientSearchInput } from "@/components/client-picker";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DateTimeInput } from "@/components/ui/date-time-input";
+import { DateCardPicker } from "@/components/ui/date-card-picker";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -419,10 +420,13 @@ export function EntrySheet({
           ) : (
             <div className="flex flex-col gap-4 px-4 py-4">
               {/* Date */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-foreground">Date</label>
-                <DateTimeInput type="date" value={form.date} onChange={(v) => set("date", v)} />
-              </div>
+              <Field label="Date">
+                {isMobile ? (
+                  <DateCardPicker value={form.date} onChange={(v) => set("date", v)} />
+                ) : (
+                  <DateTimeInput type="date" value={form.date} onChange={(v) => set("date", v)} />
+                )}
+              </Field>
 
               {/* Day type */}
               {showDayType && (
