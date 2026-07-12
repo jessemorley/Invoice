@@ -164,53 +164,46 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
   );
 }
 
-function emailSummary(email: InvoiceEmail | null): { text: string; icon: typeof Send; destructive?: boolean } | null {
-  if (email?.status === "sent" && email.sent_at) {
-    return { text: `Sent ${formatDateShort(email.sent_at.slice(0, 10))}`, icon: Send };
-  }
+function emailStatus(email: InvoiceEmail | null): { text: string; icon: typeof Send; destructive?: boolean } | null {
+  if (email?.status === "sent") return { text: "Sent", icon: Send };
   if (email?.status === "pending") {
-    const d = new Date(email.scheduled_for);
-    const day = d.toLocaleDateString("en-AU", { weekday: "long" });
-    const h = d.getHours();
-    const tod = h < 12 ? "morning" : h < 17 ? "afternoon" : "evening";
-    return { text: `Scheduled for ${day} ${tod}`, icon: Clock };
+    const day = new Date(email.scheduled_for).toLocaleDateString("en-AU", { weekday: "short" });
+    return { text: day, icon: Clock };
   }
-  if (email?.status === "failed") {
-    return { text: "Failed to send", icon: MailWarning, destructive: true };
-  }
+  if (email?.status === "failed") return { text: "Failed", icon: MailWarning, destructive: true };
   return null;
 }
 
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
-  const email = emailSummary(invoice.email);
+  const email = emailStatus(invoice.email);
   return (
     <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
-      <div className="flex flex-col w-16 shrink-0">
+      <div className={cn("flex flex-col w-16 shrink-0", !email && "self-center")}>
         <span className="text-sm font-medium text-foreground tabular-nums truncate">{invoice.number}</span>
-        <span className="text-xs text-muted-foreground mt-0.5">
-          {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
-        </span>
+        {email && (
+          <span
+            className={cn(
+              "flex items-center gap-1 text-xs mt-0.5",
+              email.destructive ? "text-destructive" : "text-muted-foreground"
+            )}
+          >
+            <email.icon className="size-3 shrink-0" />
+            {email.text}
+          </span>
+        )}
       </div>
       <div className="flex flex-1 min-w-0 items-center gap-2">
         <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-8" />
         <div className="min-w-0">
           <span className="text-sm text-foreground truncate block">{invoice.client.name}</span>
-          {email && (
-            <span
-              className={cn(
-                "flex items-center gap-1 text-xs mt-0.5 min-w-0",
-                email.destructive ? "text-destructive" : "text-muted-foreground"
-              )}
-            >
-              <email.icon className="size-3 shrink-0" />
-              <span className="truncate">{email.text}</span>
-            </span>
-          )}
+          <span className="text-xs text-muted-foreground mt-0.5 block">
+            {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
+          </span>
         </div>
       </div>
       <div className="flex flex-col items-end gap-0.5 shrink-0">
         <span className="text-sm tabular-nums text-foreground">{formatAUD(invoice.subtotal)}</span>
-        <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0 text-xs font-medium text-muted-foreground">
+        <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
           <span
             className="size-1.5 rounded-full shrink-0"
             style={{ backgroundColor: INVOICE_STATUS_COLOR[invoice.status] }}
@@ -225,7 +218,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
 function SuggestedInvoiceCard({ group, creating, onCreate }: { group: SuggestedInvoice; creating: boolean; onCreate: () => void }) {
   return (
     <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer opacity-70">
-      <div className="flex w-16 shrink-0 self-stretch items-center">
+      <div className="flex w-16 shrink-0 items-center">
         <Button
           variant="outline"
           size="xs"
@@ -246,7 +239,7 @@ function SuggestedInvoiceCard({ group, creating, onCreate }: { group: SuggestedI
       </div>
       <div className="flex flex-col items-end gap-0.5 shrink-0">
         <span className="text-sm tabular-nums text-foreground">{formatAUD(group.subtotal)}</span>
-        <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0 text-xs font-medium text-muted-foreground">
+        <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
           <span
             className="size-1.5 rounded-full shrink-0"
             style={{ backgroundColor: group.ready ? "#3b82f6" : "#9ca3af" }}
