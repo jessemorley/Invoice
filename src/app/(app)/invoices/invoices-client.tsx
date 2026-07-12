@@ -177,7 +177,7 @@ function emailSummary(email: InvoiceEmail | null): string | null {
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
   const email = emailSummary(invoice.email);
   return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
+    <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
       <div className="flex flex-col w-18 shrink-0">
         <span className="text-sm font-medium text-foreground tabular-nums truncate">{invoice.number}</span>
         <span className="text-xs text-muted-foreground mt-0.5">
