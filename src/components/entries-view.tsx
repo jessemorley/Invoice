@@ -7,7 +7,7 @@ import {
 } from "@/app/(app)/entries/actions";
 import { invalidate } from "@/lib/invalidate";
 import type { Entry, Client, WorkflowRate, InvoiceRef, InvoiceStatus } from "@/lib/types";
-import { formatAUD, formatDate } from "@/lib/format";
+import { formatAUD, formatDate, todayInSydney } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -205,6 +205,7 @@ function EntryRow({
 }) {
   const description = entry.shoot_client || entry.description || entry.workflow_type;
   const total = entry.base_amount + entry.bonus_amount;
+  const isFuture = entry.date > todayInSydney();
 
   return (
     <div
@@ -212,7 +213,7 @@ function EntryRow({
       onClick={() => onEdit(entry)}
     >
       {/* Mobile */}
-      <div className="md:hidden flex items-center gap-3 px-4 py-2.5">
+      <div className={`md:hidden flex items-center gap-3 px-4 py-2.5 ${isFuture ? "opacity-70" : ""}`}>
         <ClientSquircle name={entry.client.name} color={entry.client.color} className="size-8" />
         <div className="flex-1 min-w-0">
           {showClient ? (
