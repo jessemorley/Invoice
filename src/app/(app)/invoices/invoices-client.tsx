@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { ClientSquircle } from "@/components/client-squircle";
 import { InvoiceStatusBadge, INVOICE_STATUS_COLOR } from "@/components/invoice-status-badge";
-import { revalidateInvoices, loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow, loadEntrySheetData } from "./actions";
+import { revalidateInvoices, loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow, loadEntrySheetData, generateInvoices } from "./actions";
 import { invalidate } from "@/lib/invalidate";
 import type { ComposePrefill, Invoice, InvoiceEmail, InvoiceStatus, InvoiceDetail, Entry, Client, WorkflowRate } from "@/lib/types";
 import type { ScheduledEmail, SuggestedInvoice } from "@/lib/queries";
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Select,
   SelectContent,
@@ -220,15 +221,27 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
   );
 }
 
-function SuggestedInvoiceCard({ group }: { group: SuggestedInvoice }) {
+function SuggestedInvoiceCard({ group, creating, onCreate }: { group: SuggestedInvoice; creating: boolean; onCreate: () => void }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
-      <ClientSquircle name={group.clientName} color={group.clientColor} className="size-8" />
-      <div className="flex flex-col min-w-0 flex-1 gap-0.5">
-        <span className="text-sm text-foreground truncate">{group.clientName}</span>
-        <span className="text-xs text-muted-foreground">
-          {group.dateRange} · {group.entryCount} {group.entryCount === 1 ? "entry" : "entries"}
-        </span>
+    <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
+      <div className="flex w-16 shrink-0 self-stretch items-center">
+        <Button
+          variant="outline"
+          size="xs"
+          disabled={creating}
+          onClick={(e) => { e.stopPropagation(); onCreate(); }}
+        >
+          {creating ? <Spinner /> : "Create"}
+        </Button>
+      </div>
+      <div className="flex flex-1 min-w-0 items-center gap-2">
+        <ClientSquircle name={group.clientName} color={group.clientColor} className="size-8" />
+        <div className="min-w-0">
+          <span className="text-sm text-foreground truncate block">{group.clientName}</span>
+          <span className="text-xs text-muted-foreground mt-0.5 block truncate">
+            {group.dateRange} · {group.entryCount} {group.entryCount === 1 ? "entry" : "entries"}
+          </span>
+        </div>
       </div>
       <div className="flex flex-col items-end gap-0.5 shrink-0">
         <span className="text-sm tabular-nums text-foreground">{formatAUD(group.subtotal)}</span>
@@ -344,6 +357,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
   const [suggestedOpen, setSuggestedOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<SuggestedInvoice | null>(null);
+  const [creatingKey, setCreatingKey] = useState<string | null>(null);
   const [entrySheetOpen, setEntrySheetOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const entrySheetMeta = useState<{ clients: Client[]; workflowRates: WorkflowRate[] } | null>(null);
@@ -442,15 +456,15 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     });
   }
 
-  function handleSuggestedCreated(created: GeneratedInvoice) {
+  function handleSuggestedCreated(created: GeneratedInvoice, group: SuggestedInvoice | null) {
     const client = clients.find((c) => c.id === created.clientId);
     openInvoice({
       id: created.id,
       number: created.number,
       client: {
         id: created.clientId,
-        name: client?.name ?? selectedGroup?.clientName ?? "",
-        color: client?.color ?? selectedGroup?.clientColor ?? "#9ca3af",
+        name: client?.name ?? group?.clientName ?? "",
+        color: client?.color ?? group?.clientColor ?? "#9ca3af",
         billing_type: client?.billing_type ?? "day_rate",
       },
       issued_date: null,
@@ -463,6 +477,17 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       email: null,
       notes: null,
     });
+  }
+
+  async function handleQuickCreate(group: SuggestedInvoice) {
+    setCreatingKey(group.key);
+    try {
+      const { invoices } = await generateInvoices([group.key]);
+      invalidate("invoices", "entries");
+      if (invoices[0]) handleSuggestedCreated(invoices[0], group);
+    } finally {
+      setCreatingKey(null);
+    }
   }
 
   function handleEntryClick(entryId: string) {
@@ -727,7 +752,11 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                 onClick={() => { setSelectedGroup(g); setSuggestedOpen(true); }}
               >
                 <CardContent className="p-0">
-                  <SuggestedInvoiceCard group={g} />
+                  <SuggestedInvoiceCard
+                    group={g}
+                    creating={creatingKey === g.key}
+                    onCreate={() => handleQuickCreate(g)}
+                  />
                 </CardContent>
               </Card>
             ))}
@@ -837,7 +866,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         open={suggestedOpen}
         onOpenChangeAction={setSuggestedOpen}
         group={selectedGroup}
-        onCreatedAction={handleSuggestedCreated}
+        onCreatedAction={(inv) => handleSuggestedCreated(inv, selectedGroup)}
       />
       <InvoiceSheet
         open={newInvoiceOpen}
