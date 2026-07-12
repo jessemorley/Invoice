@@ -223,7 +223,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
 
 function SuggestedInvoiceCard({ group, creating, onCreate }: { group: SuggestedInvoice; creating: boolean; onCreate: () => void }) {
   return (
-    <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
+    <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer opacity-70">
       <div className="flex w-16 shrink-0 self-stretch items-center">
         <Button
           variant="outline"
@@ -248,7 +248,7 @@ function SuggestedInvoiceCard({ group, creating, onCreate }: { group: SuggestedI
         <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0 text-xs font-medium text-muted-foreground">
           <span
             className="size-1.5 rounded-full shrink-0"
-            style={{ backgroundColor: group.ready ? "#22c55e" : "#9ca3af" }}
+            style={{ backgroundColor: group.ready ? "#3b82f6" : "#9ca3af" }}
           />
           {group.ready ? "Ready" : "In progress"}
         </span>
