@@ -163,28 +163,18 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-foreground tabular-nums shrink-0">
-            {invoice.number}
-          </span>
-          <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-5 text-[8px]" />
-          <span className="text-sm text-muted-foreground truncate">{invoice.client.name}</span>
+      <div className="flex flex-col shrink-0">
+        <span className="text-sm font-medium text-foreground tabular-nums">{invoice.number}</span>
+        <span className="text-xs text-muted-foreground mt-0.5">
+          {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
+        </span>
+      </div>
+      <div className="flex flex-1 min-w-0 items-center gap-2">
+        <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-8" />
+        <div className="min-w-0">
+          <span className="text-sm text-foreground truncate block">{invoice.client.name}</span>
+          <span className="text-xs text-muted-foreground truncate block mt-0.5">Placeholder text</span>
         </div>
-        {(invoice.issued_date || invoice.email?.status === "sent" || invoice.email?.status === "pending") && (
-          <div className="flex items-center gap-2 mt-0.5">
-            {invoice.issued_date && (
-              <span className="text-xs text-muted-foreground">
-                {formatDateShort(invoice.issued_date)}
-              </span>
-            )}
-            {(invoice.email?.status === "sent" || invoice.email?.status === "pending") && (
-              <span className="inline-flex items-center justify-center rounded-md border p-1 text-muted-foreground">
-                {invoice.email.status === "sent" ? <Send className="size-3" /> : <Clock className="size-3" />}
-              </span>
-            )}
-          </div>
-        )}
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
         <span className="text-sm tabular-nums text-foreground">{formatAUD(invoice.subtotal)}</span>
@@ -229,13 +219,20 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
         <Card key={i} className="py-0">
           <CardContent className="p-0">
             <div className="flex items-center gap-3 px-4 py-3">
-              <div className="flex-1 flex flex-col gap-1.5">
-                <Skeleton className="h-3 w-32" />
-                <Skeleton className="h-3 w-24" />
+              <div className="flex flex-col gap-1.5 shrink-0">
+                <Skeleton className="h-3 w-14" />
+                <Skeleton className="h-3 w-12" />
+              </div>
+              <div className="flex-1 flex items-center gap-2">
+                <Skeleton className="size-8 rounded-[30%] shrink-0" />
+                <div className="flex flex-col gap-1.5">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
               </div>
               <div className="flex flex-col items-end gap-1.5 shrink-0">
                 <Skeleton className="h-3 w-16" />
-                <Skeleton className="h-3 w-10" />
+                <Skeleton className="h-5 w-14 rounded-full" />
               </div>
             </div>
           </CardContent>
