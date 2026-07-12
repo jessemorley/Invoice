@@ -99,6 +99,8 @@ export function DateCardPicker({
             key={iso}
             type="button"
             data-date={iso}
+            aria-label={d.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}
+            aria-current={selected ? "date" : undefined}
             onClick={() => {
               behavior.current = "smooth"
               onChange(iso)
