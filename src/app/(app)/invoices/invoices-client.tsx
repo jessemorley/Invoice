@@ -198,9 +198,9 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
           )}
         </div>
       </div>
-      <div className="flex flex-col items-end gap-1 shrink-0">
+      <div className="flex flex-col items-end gap-0.5 shrink-0">
         <span className="text-sm tabular-nums text-foreground">{formatAUD(invoice.subtotal)}</span>
-        <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0 text-xs font-medium text-muted-foreground">
           <span
             className="size-1.5 rounded-full shrink-0"
             style={{ backgroundColor: INVOICE_STATUS_COLOR[invoice.status] }}
