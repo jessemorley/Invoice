@@ -218,7 +218,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
 function SuggestedInvoiceCard({ group, creating, onCreate }: { group: SuggestedInvoice; creating: boolean; onCreate: () => void }) {
   return (
     <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer opacity-70">
-      <div className="flex w-16 shrink-0 self-stretch items-center">
+      <div className="flex w-16 shrink-0 self-stretch items-center border-r pr-3">
         <Button
           variant="outline"
           size="xs"
@@ -239,7 +239,7 @@ function SuggestedInvoiceCard({ group, creating, onCreate }: { group: SuggestedI
       </div>
       <div className="flex flex-col items-end gap-0.5 shrink-0">
         <span className="text-sm tabular-nums text-foreground">{formatAUD(group.subtotal)}</span>
-        <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0 text-xs font-medium text-muted-foreground">
+        <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
           <span
             className="size-1.5 rounded-full shrink-0"
             style={{ backgroundColor: group.ready ? "#3b82f6" : "#9ca3af" }}
