@@ -178,7 +178,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
   const email = emailStatus(invoice.email);
   return (
     <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
-      <div className={cn("flex flex-col w-16 shrink-0 self-stretch border-r pr-3", !email && "justify-center")}>
+      <div className={cn("flex flex-col w-16 shrink-0", !email && "self-center")}>
         <span className="text-sm font-medium text-foreground tabular-nums truncate">{invoice.number}</span>
         {email && (
           <span
@@ -218,7 +218,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
 function SuggestedInvoiceCard({ group, creating, onCreate }: { group: SuggestedInvoice; creating: boolean; onCreate: () => void }) {
   return (
     <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer opacity-70">
-      <div className="flex w-16 shrink-0 self-stretch items-center border-r pr-3">
+      <div className="flex w-16 shrink-0 items-center">
         <Button
           variant="outline"
           size="xs"
