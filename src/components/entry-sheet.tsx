@@ -19,10 +19,21 @@ import {
 } from "@/components/ui/adaptive-sheet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ChevronLeft, Minus, Plus, Trash2, X } from "lucide-react";
 import { ClientPicker, ClientSearchInput } from "@/components/client-picker";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DateTimeInput } from "@/components/ui/date-time-input";
+import { DateCardPicker } from "@/components/ui/date-card-picker";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -181,6 +192,7 @@ export function EntrySheet({
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const editClient = entry ? clients.find((c) => c.id === entry.client.id) ?? null : null;
 
@@ -377,15 +389,29 @@ export function EntrySheet({
   const footerRow = selectedClient && (
     <div className="px-4 py-3 flex gap-2">
       {entry && (
-        <Button
-          variant="destructive"
-          size="icon-lg"
-          className="h-9 shrink-0 rounded-2xl"
-          onClick={handleDelete}
-          disabled={isDeleting || isPending}
-        >
-          <Trash2 className="size-4" />
-        </Button>
+        <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+          <Button
+            variant="destructive"
+            size="icon-lg"
+            className="h-9 shrink-0 rounded-2xl"
+            onClick={() => (entry.invoice_id ? handleDelete() : setConfirmDeleteOpen(true))}
+            disabled={isDeleting || isPending}
+          >
+            <Trash2 className="size-4" />
+          </Button>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this entry?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete the entry. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
       <Button
         size="lg"
@@ -419,10 +445,13 @@ export function EntrySheet({
           ) : (
             <div className="flex flex-col gap-4 px-4 py-4">
               {/* Date */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-foreground">Date</label>
-                <DateTimeInput type="date" value={form.date} onChange={(v) => set("date", v)} />
-              </div>
+              <Field label="Date">
+                {isMobile ? (
+                  <DateCardPicker value={form.date} onChange={(v) => set("date", v)} />
+                ) : (
+                  <DateTimeInput type="date" value={form.date} onChange={(v) => set("date", v)} />
+                )}
+              </Field>
 
               {/* Day type */}
               {showDayType && (
@@ -546,6 +575,7 @@ export function EntrySheet({
                       type="button"
                       variant="outline"
                       size="icon"
+                      className="rounded-lg"
                       onClick={() => set("break_minutes", Math.max(0, form.break_minutes - 15))}
                     >
                       <Minus className="size-4" />
@@ -562,6 +592,7 @@ export function EntrySheet({
                       type="button"
                       variant="outline"
                       size="icon"
+                      className="rounded-lg"
                       onClick={() => set("break_minutes", form.break_minutes + 15)}
                     >
                       <Plus className="size-4" />
