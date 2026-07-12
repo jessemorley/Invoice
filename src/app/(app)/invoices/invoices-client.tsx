@@ -169,10 +169,10 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
           {invoice.number}
         </span>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-xs text-muted-foreground truncate">{invoice.client.name}</span>
           <span className="text-xs text-muted-foreground shrink-0">
             {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
           </span>
+          <span className="text-xs text-muted-foreground truncate">{invoice.client.name}</span>
         </div>
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
