@@ -550,6 +550,7 @@ export function EntrySheet({
                       type="button"
                       variant="outline"
                       size="icon"
+                      className="rounded-lg"
                       onClick={() => set("break_minutes", Math.max(0, form.break_minutes - 15))}
                     >
                       <Minus className="size-4" />
@@ -566,6 +567,7 @@ export function EntrySheet({
                       type="button"
                       variant="outline"
                       size="icon"
+                      className="rounded-lg"
                       onClick={() => set("break_minutes", form.break_minutes + 15)}
                     >
                       <Plus className="size-4" />
