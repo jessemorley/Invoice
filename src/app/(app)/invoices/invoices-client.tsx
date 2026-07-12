@@ -160,16 +160,19 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
   );
 }
 
-function emailSummary(email: InvoiceEmail | null): string | null {
+function emailSummary(email: InvoiceEmail | null): { text: string; icon: typeof Send; destructive?: boolean } | null {
   if (email?.status === "sent" && email.sent_at) {
-    return `Sent ${formatDateShort(email.sent_at.slice(0, 10))}`;
+    return { text: `Sent ${formatDateShort(email.sent_at.slice(0, 10))}`, icon: Send };
   }
   if (email?.status === "pending") {
     const d = new Date(email.scheduled_for);
     const day = d.toLocaleDateString("en-AU", { weekday: "long" });
     const h = d.getHours();
     const tod = h < 12 ? "morning" : h < 17 ? "afternoon" : "evening";
-    return `Scheduled for ${day} ${tod}`;
+    return { text: `Scheduled for ${day} ${tod}`, icon: Clock };
+  }
+  if (email?.status === "failed") {
+    return { text: "Failed to send", icon: MailWarning, destructive: true };
   }
   return null;
 }
@@ -189,11 +192,14 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
         <div className="min-w-0">
           <span className="text-sm text-foreground truncate block">{invoice.client.name}</span>
           {email && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 min-w-0">
-              {invoice.email?.status === "sent"
-                ? <Send className="size-3 shrink-0" />
-                : <Clock className="size-3 shrink-0" />}
-              <span className="truncate">{email}</span>
+            <span
+              className={cn(
+                "flex items-center gap-1 text-xs mt-0.5 min-w-0",
+                email.destructive ? "text-destructive" : "text-muted-foreground"
+              )}
+            >
+              <email.icon className="size-3 shrink-0" />
+              <span className="truncate">{email.text}</span>
             </span>
           )}
         </div>

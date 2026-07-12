@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 function clientInitials(name: string): string {
   return name
     .split(/\s+/)
@@ -6,8 +8,6 @@ function clientInitials(name: string): string {
     .slice(0, 3)
     .join("");
 }
-
-import { cn } from "@/lib/utils";
 
 export function ClientSquircle({ name, color, className }: { name: string; color: string; className?: string }) {
   return (
