@@ -160,7 +160,22 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
   );
 }
 
+function emailSummary(email: InvoiceEmail | null): string | null {
+  if (email?.status === "sent" && email.sent_at) {
+    return `Email sent ${formatDateShort(email.sent_at.slice(0, 10))}`;
+  }
+  if (email?.status === "pending") {
+    const d = new Date(email.scheduled_for);
+    const day = d.toLocaleDateString("en-AU", { weekday: "long" });
+    const h = d.getHours();
+    const tod = h < 12 ? "morning" : h < 17 ? "afternoon" : "evening";
+    return `Email scheduled for ${day} ${tod}`;
+  }
+  return null;
+}
+
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
+  const email = emailSummary(invoice.email);
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
       <div className="flex flex-col w-18 shrink-0">
@@ -173,7 +188,9 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
         <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-8" />
         <div className="min-w-0">
           <span className="text-sm text-foreground truncate block">{invoice.client.name}</span>
-          <span className="text-xs text-muted-foreground truncate block mt-0.5">Placeholder text</span>
+          {email && (
+            <span className="text-xs text-muted-foreground truncate block mt-0.5">{email}</span>
+          )}
         </div>
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
