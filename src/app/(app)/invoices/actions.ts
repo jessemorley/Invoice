@@ -4,7 +4,7 @@ import { updateTag, refresh } from "next/cache";
 import { createClient } from "@/lib/supabase-server";
 import { createTokenClient } from "@/lib/supabase";
 import { getAuth, getAuthUserId, getAuthToken, getAuthUser } from "@/lib/auth";
-import { fetchUninvoicedGroups, fetchScheduledEmailForInvoice, fetchBusinessDetails, fetchInvoiceDetail, fetchFullClients, fetchWorkflowRates, fetchEntryById, fetchUserPreferences, CACHE_TAGS } from "@/lib/queries";
+import { fetchUninvoicedGroups, fetchSuggestedInvoiceEntries, fetchScheduledEmailForInvoice, fetchBusinessDetails, fetchInvoiceDetail, fetchFullClients, fetchWorkflowRates, fetchEntryById, fetchUserPreferences, CACHE_TAGS } from "@/lib/queries";
 import { inngest } from "@/lib/inngest";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
 import { computeDueDate, lineItemTotal } from "@/lib/utils";
@@ -87,7 +87,21 @@ export async function loadUninvoicedGroups() {
   return fetchUninvoicedGroups(userId, token);
 }
 
-export async function generateInvoices(groupKeys: string[]): Promise<{ created: number }> {
+export async function loadSuggestedInvoiceEntries(clientId: string, isoWeek: string) {
+  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  return fetchSuggestedInvoiceEntries(userId, token, clientId, isoWeek);
+}
+
+export type GeneratedInvoice = {
+  id: string;
+  number: string;
+  clientId: string;
+  subtotal: number;
+  super_amount: number;
+  total: number;
+};
+
+export async function generateInvoices(groupKeys: string[]): Promise<{ created: number; invoices: GeneratedInvoice[] }> {
   const [supabase, userId, token] = await Promise.all([createClient(), getAuthUserId(), getAuthToken()]);
   const groups = await fetchUninvoicedGroups(userId, token);
   const selected = groups.filter((g) => groupKeys.includes(g.key));
@@ -112,6 +126,7 @@ export async function generateInvoices(groupKeys: string[]): Promise<{ created: 
 
   const { isoWeek } = await import("@/lib/format");
 
+  const createdInvoices: GeneratedInvoice[] = [];
   for (const group of selected) {
     const entries = (allEntries ?? []).filter(
       (e) => e.client_id === group.clientId && isoWeek(e.date) === group.isoWeek
@@ -149,13 +164,22 @@ export async function generateInvoices(groupKeys: string[]): Promise<{ created: 
       .in("id", entries.map((e) => e.id));
 
     if (linkError) throw new Error(`generateInvoices: ${linkError.message}`);
+
+    createdInvoices.push({
+      id: inv.id,
+      number: `${seq.invoice_prefix}${invoiceNum}`,
+      clientId: group.clientId,
+      subtotal,
+      super_amount: superAmount,
+      total,
+    });
   }
 
   updateTag(CACHE_TAGS.invoices);
   updateTag(CACHE_TAGS.entries);
   refresh();
 
-  return { created: selected.length };
+  return { created: createdInvoices.length, invoices: createdInvoices };
 }
 
 export async function deleteInvoice(id: string) {

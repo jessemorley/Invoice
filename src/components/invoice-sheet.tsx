@@ -52,7 +52,7 @@ function abbreviateRole(role?: string | null): string {
   }
 }
 
-function entryDescription(entry: InvoiceEntry): string {
+export function entryDescription(entry: InvoiceEntry): string {
   let label: string;
   if (entry.billing_type === "day_rate") {
     if (entry.workflow_type === "Own Brand") label = entry.brand ?? "Own Brand";

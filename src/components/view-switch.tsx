@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { InvalidationTag } from "@/lib/invalidate";
 import { useActiveView, type ViewId } from "@/components/active-view-context";
 import type { DashboardData, Entry, Expense, Client, WorkflowRate, Invoice } from "@/lib/types";
-import type { BusinessDetails, InvoiceSequence, UserPreferences, TaxFyTotals } from "@/lib/queries";
+import type { BusinessDetails, InvoiceSequence, UserPreferences, TaxFyTotals, SuggestedInvoice } from "@/lib/queries";
 import dynamic from "next/dynamic";
 import { EntriesView } from "@/components/entries-view";
 
@@ -44,7 +44,7 @@ import {
 
 type DashboardState = { data: DashboardData } | null;
 type EntriesState = { entries: Entry[]; clients: Client[]; workflowRates: WorkflowRate[] } | null;
-type InvoicesState = { invoices: Invoice[]; uninvoicedCount: number; hasUninvoiced: boolean; clients: Client[] } | null;
+type InvoicesState = { invoices: Invoice[]; uninvoicedCount: number; hasUninvoiced: boolean; clients: Client[]; suggested: SuggestedInvoice[] } | null;
 type ClientsState = Client[] | null;
 type ExpensesState = Expense[] | null;
 type SettingsState = { businessDetails: BusinessDetails | null; invoiceSequence: InvoiceSequence | null; userPreferences: UserPreferences | null } | null;
@@ -161,6 +161,7 @@ export function ViewSwitch({
           uninvoicedCount={invoicesData?.uninvoicedCount}
           hasUninvoiced={invoicesData?.hasUninvoiced}
           clients={invoicesData?.clients}
+          suggested={invoicesData?.suggested}
           loading={!invoicesData}
         />
       </div>
