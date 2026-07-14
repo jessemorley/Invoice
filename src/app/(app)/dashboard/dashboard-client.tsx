@@ -417,7 +417,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                             )
                           }
                           className={cn(
-                            "size-3 rounded-[3px] flex gap-[1.5px] overflow-hidden",
+                            "size-3 rounded-[3px] flex flex-col gap-[1.5px] overflow-hidden",
                             clients.length === 0 && "bg-muted"
                           )}
                         >
