@@ -383,7 +383,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                           <div
                             key={date}
                             className={cn(
-                              "size-3.5 rounded-[3px] flex gap-0.5 overflow-hidden",
+                              "size-3.5 rounded-[3px] flex gap-[1.5px] overflow-hidden",
                               clients.length === 0 && "bg-muted",
                               date === todayStr && "ring-1 ring-foreground/40"
                             )}
