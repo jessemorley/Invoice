@@ -366,7 +366,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
               </CardDescription>
             </CardHeader>
             {outstanding.length > 0 && (
-              <CardContent className="flex flex-col divide-y divide-border">
+              <CardContent className="flex flex-col divide-y divide-border border-b border-border">
                 {outstanding.map((invoice) => (
                   <div
                     key={invoice.id}
@@ -491,7 +491,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
               </CardDescription>
             </CardHeader>
             {emails.length > 0 && (
-              <CardContent className="flex flex-col divide-y divide-border">
+              <CardContent className="flex flex-col divide-y divide-border border-b border-border">
                 {emails.map((email) => (
                   <div
                     key={email.id}
