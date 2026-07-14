@@ -145,6 +145,10 @@
   [data-slot="sheet-content"] {
     padding-bottom: max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem));
   }
+  /* Drawer footers carry their own py-3, so it counts toward the inset. */
+  [data-slot="drawer-content"] {
+    padding-bottom: max(0px, calc(env(safe-area-inset-bottom, 0px) - 0.75rem));
+  }
 }
 
 @keyframes breathe-spin {
