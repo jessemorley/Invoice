@@ -471,7 +471,7 @@ function TemplateEditor({ value, onChange }: { value: string; onChange: (v: stri
       <div
         ref={backdropRef}
         aria-hidden
-        className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg border border-transparent px-3 py-2 text-base whitespace-pre-wrap break-words md:text-sm dark:bg-input/30"
+        className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg border border-transparent px-3 py-2 text-sm whitespace-pre-wrap break-words dark:bg-input/30"
       >
         {parts.map((part, i) =>
           i % 2 === 1 ? (
@@ -492,7 +492,7 @@ function TemplateEditor({ value, onChange }: { value: string; onChange: (v: stri
           if (backdropRef.current) backdropRef.current.scrollTop = e.currentTarget.scrollTop;
         }}
         rows={9}
-        className="relative min-h-44 text-transparent caret-foreground dark:bg-transparent"
+        className="relative min-h-44 text-sm text-transparent caret-foreground dark:bg-transparent"
       />
     </div>
   );
