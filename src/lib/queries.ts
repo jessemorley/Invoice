@@ -140,7 +140,16 @@ export async function fetchEntries(userId: string, token: string, before?: strin
   });
 }
 
-type DashboardEntry = { date: string; base_amount: number; bonus_amount: number; client: { name: string; color: string } | null };
+type DashboardEntry = {
+  date: string;
+  base_amount: number;
+  bonus_amount: number;
+  client: { name: string; color: string } | null;
+  // Line items only: true when the parent invoice also has entries. Earnings
+  // still count these dollars; the calendar skips them (the entries' own days
+  // already mark the work).
+  invoiceHasEntries?: boolean;
+};
 
 // Start of the 24-month lookback window shared by the dashboard queries (YYYY-MM-DD).
 function dashboardWindowStart(): string {
@@ -182,7 +191,7 @@ export async function fetchDashboardLineItems(userId: string, token: string): Pr
 
   const { data, error } = await supabase
     .from("invoice_line_items")
-    .select("amount, quantity, invoices!inner(issued_date, status, clients(name, color))")
+    .select("amount, quantity, invoices!inner(issued_date, status, clients(name, color), entries(count))")
     .eq("user_id", userId)
     .in("invoices.status", ["issued", "paid"])
     .gte("invoices.issued_date", windowStart);
@@ -194,11 +203,13 @@ export async function fetchDashboardLineItems(userId: string, token: string): Pr
     // The gte filter above excludes null issued_date, but don't rely on it.
     if (!inv?.issued_date) return [];
     const client = Array.isArray(inv.clients) ? inv.clients[0] : inv.clients;
+    const entriesCount = Array.isArray(inv.entries) ? inv.entries[0] : inv.entries;
     return {
       date: inv.issued_date,
       base_amount: lineItemTotal(row),
       bonus_amount: 0,
       client: client ? { name: client.name, color: client.color ?? CLIENT_COLOR_FALLBACK } : null,
+      invoiceHasEntries: (entriesCount?.count ?? 0) > 0,
     };
   });
 }
@@ -757,7 +768,7 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
   const calEnd = fmtDate(calEndDate);
   const dayClients = new Map<string, Map<string, string>>();
   for (const e of entries) {
-    if (!e.client || e.date < calStart || e.date > calEnd) continue;
+    if (!e.client || e.invoiceHasEntries || e.date < calStart || e.date > calEnd) continue;
     const clients = dayClients.get(e.date) ?? new Map<string, string>();
     clients.set(e.client.name, e.client.color);
     dayClients.set(e.date, clients);
