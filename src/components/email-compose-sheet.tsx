@@ -2,11 +2,12 @@
 
 import { useState, useTransition, useRef, useCallback } from "react";
 import type { InvoiceDetail } from "@/lib/types";
-import { formatAUD, formatDateShort, toLocalDateStr } from "@/lib/format";
+import { toLocalDateStr } from "@/lib/format";
 import { scheduleInvoiceEmail, cancelScheduledEmail, updateScheduledEmail } from "@/app/(app)/invoices/actions";
 import type { EmailFormData } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
 import { toast } from "sonner";
+import { DEFAULT_INVOICE_TEMPLATE, invoiceTemplateVars, renderEmailTemplate } from "@/lib/email-templates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -65,10 +66,8 @@ function getPresets(): { label: string; date: Date | null }[] {
   ];
 }
 
-function defaultBody(invoice: InvoiceDetail, businessName: string): string {
-  const greeting = invoice.client.contact_name ?? invoice.client.name;
-  const duePart = invoice.due_date ? ` due ${formatDateShort(invoice.due_date)}` : "";
-  return `Hi ${greeting},\n\nPlease find attached invoice ${invoice.number} for ${formatAUD(invoice.total)}${duePart}.\n\nThanks,\n${businessName}`;
+function defaultBody(invoice: InvoiceDetail, businessName: string, template?: string | null): string {
+  return renderEmailTemplate(template ?? DEFAULT_INVOICE_TEMPLATE, invoiceTemplateVars(invoice, businessName));
 }
 
 interface EmailChipInputProps {
@@ -151,6 +150,7 @@ function toastDescription(date: Date | null): string {
 interface ComposeContentProps {
   invoice: InvoiceDetail;
   businessName: string;
+  bodyTemplate?: string | null;
   onClose: () => void;
   onSent: () => void;
   initialTo?: string[];
@@ -160,13 +160,13 @@ interface ComposeContentProps {
   editingId?: string;
 }
 
-function ComposeContent({ invoice, businessName, onClose, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId }: ComposeContentProps) {
+function ComposeContent({ invoice, businessName, bodyTemplate, onClose, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId }: ComposeContentProps) {
   const [chips, setChips] = useState<string[]>(() =>
     initialTo ?? (invoice.client.email ? [invoice.client.email] : [])
   );
   const [chipInput, setChipInput] = useState("");
   const [subject, setSubject] = useState(initialSubject ?? `Invoice ${invoice.number}`);
-  const [body, setBody] = useState(() => initialBody ?? defaultBody(invoice, businessName));
+  const [body, setBody] = useState(() => initialBody ?? defaultBody(invoice, businessName, bodyTemplate));
   const [scheduledFor, setScheduledFor] = useState<Date | null>(initialScheduledFor ?? null);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -351,6 +351,7 @@ interface EmailComposeSheetProps {
   onOpenChangeAction: (open: boolean) => void;
   invoice: InvoiceDetail | null;
   businessName: string;
+  bodyTemplate?: string | null;
   onSent: () => void;
   initialTo?: string[];
   initialSubject?: string;
@@ -359,7 +360,7 @@ interface EmailComposeSheetProps {
   editingId?: string;
 }
 
-export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessName, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId }: EmailComposeSheetProps) {
+export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessName, bodyTemplate, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId }: EmailComposeSheetProps) {
   if (!invoice) return null;
 
   return (
@@ -371,6 +372,7 @@ export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessN
         <ComposeContent
           invoice={invoice}
           businessName={businessName}
+          bodyTemplate={bodyTemplate}
           onClose={() => onOpenChangeAction(false)}
           onSent={onSent}
           initialTo={initialTo}

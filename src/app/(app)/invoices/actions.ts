@@ -231,15 +231,18 @@ export async function loadEntrySheetData(entryId: string) {
 
 export async function loadScheduledEmail(invoiceId: string) {
   const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
-  const [scheduledEmail, invoiceDetail, businessDetails] = await Promise.all([
+  const [scheduledEmail, invoiceDetail, businessDetails, userPrefs] = await Promise.all([
     fetchScheduledEmailForInvoice(invoiceId, userId, token),
     fetchInvoiceDetail(invoiceId, userId, token),
     fetchBusinessDetails(userId, token),
+    fetchUserPreferences(userId, token),
   ]);
   return {
     scheduledEmail,
     invoiceDetail,
     businessName: businessDetails?.business_name ?? businessDetails?.name ?? "",
+    invoiceTemplate: userPrefs?.invoice_email_template ?? null,
+    followupTemplate: userPrefs?.followup_email_template ?? null,
   };
 }
 

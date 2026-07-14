@@ -5,7 +5,7 @@ import type { ComposePrefill, Invoice, InvoiceDetail } from "@/lib/types";
 import type { ScheduledEmail } from "@/lib/queries";
 import { loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
-import { formatAUD, formatDateShort } from "@/lib/format";
+import { DEFAULT_FOLLOWUP_TEMPLATE, invoiceTemplateVars, renderEmailTemplate } from "@/lib/email-templates";
 import { InvoiceSheet } from "@/components/invoice-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
@@ -20,6 +20,7 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
   const [scheduledEmail, setScheduledEmail] = useState<ScheduledEmail | null>(null);
   const [invoiceDetail, setInvoiceDetail] = useState<InvoiceDetail | null>(null);
   const [businessName, setBusinessName] = useState("");
+  const [invoiceTemplate, setInvoiceTemplate] = useState<string | null>(null);
   const [sentEmailOpen, setSentEmailOpen] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
   const [composePrefill, setComposePrefill] = useState<ComposePrefill | null>(null);
@@ -38,6 +39,7 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
       setScheduledEmail(result.scheduledEmail);
       setInvoiceDetail(result.invoiceDetail);
       setBusinessName(result.businessName);
+      setInvoiceTemplate(result.invoiceTemplate);
     });
   }
 
@@ -58,14 +60,16 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
       setScheduledEmail(result.scheduledEmail);
       setInvoiceDetail(result.invoiceDetail);
       setBusinessName(result.businessName);
+      setInvoiceTemplate(result.invoiceTemplate);
       const detail = result.invoiceDetail;
       if (!detail) return;
-      const greeting = detail.client.contact_name ?? detail.client.name;
-      const duePart = detail.due_date ? ` (due ${formatDateShort(detail.due_date)})` : "";
       setComposePrefill({
         to: detail.client.email ? [detail.client.email] : [],
         subject: `Payment reminder: Invoice ${detail.number}`,
-        body: `Hi ${greeting},\n\nJust a friendly reminder that invoice ${detail.number} for ${formatAUD(detail.total)}${duePart} is now due for payment.\n\nIf you've already paid, please disregard this email.\n\nThanks,\n${result.businessName}`,
+        body: renderEmailTemplate(
+          result.followupTemplate ?? DEFAULT_FOLLOWUP_TEMPLATE,
+          invoiceTemplateVars(detail, result.businessName)
+        ),
         scheduledFor: null,
       });
       composeReturnRef.current = false;
@@ -149,6 +153,7 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
         }}
         invoice={invoiceDetail}
         businessName={businessName}
+        bodyTemplate={invoiceTemplate}
         onSent={() => { composeSentRef.current = true; invalidate("invoices"); }}
         initialTo={composePrefill?.to}
         initialSubject={composePrefill?.subject}

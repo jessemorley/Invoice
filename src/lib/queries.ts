@@ -965,6 +965,8 @@ export type UserPreferences = {
   mark_as_issued_on_send: boolean;
   weekly_invoice_reminder: boolean;
   weekly_invoice_reminder_cutoff: WeeklyInvoiceReminderCutoff;
+  invoice_email_template: string | null;
+  followup_email_template: string | null;
 };
 
 export async function fetchUserPreferences(userId: string, token: string): Promise<UserPreferences | null> {

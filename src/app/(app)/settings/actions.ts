@@ -118,6 +118,18 @@ export async function saveEmailSettings(data: EmailFormData) {
   refresh();
 }
 
+export async function saveEmailTemplate(which: "invoice" | "followup", body: string | null) {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const column = which === "invoice" ? "invoice_email_template" : "followup_email_template";
+  // Column not in generated DB types until `supabase gen types` is re-run.
+  const { error } = await supabase
+    .from("user_preferences")
+    .upsert({ user_id: userId, [column]: body } as never, { onConflict: "user_id" });
+  if (error) throw new Error(`saveEmailTemplate: ${error.message}`);
+  updateTag(CACHE_TAGS.settings);
+  refresh();
+}
+
 export type PushSubscriptionData = {
   endpoint: string;
   p256dh: string;

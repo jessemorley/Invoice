@@ -10,12 +10,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import {
+  DEFAULT_INVOICE_TEMPLATE,
+  DEFAULT_FOLLOWUP_TEMPLATE,
+  TEMPLATE_PLACEHOLDERS,
+  renderEmailTemplate,
+} from "@/lib/email-templates";
+import { formatAUD, formatDateShort, toLocalDateStr } from "@/lib/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PushNotificationToggle } from "@/components/push-notification-toggle";
 import {
   saveBusinessDetails,
   saveInvoicingSettings,
   saveEmailSettings,
+  saveEmailTemplate,
   saveNotificationSettings,
   sendTestPushNotification,
   type BusinessDetailsFormData,
@@ -434,14 +444,55 @@ function InvoicingTab({
   );
 }
 
+const TEMPLATE_DEFAULTS = {
+  invoice: DEFAULT_INVOICE_TEMPLATE,
+  followup: DEFAULT_FOLLOWUP_TEMPLATE,
+} as const;
+
+// Sample due date for template previews (~30 days out, computed once at load)
+const PREVIEW_DUE_DATE = formatDateShort(toLocalDateStr(new Date(Date.now() + 30 * 86_400_000)));
+
 function EmailTab({
   userPreferences,
+  businessName,
 }: {
   userPreferences: UserPreferences | null;
+  businessName: string;
 }) {
   const [markAsIssued, setMarkAsIssued] = useState(userPreferences?.mark_as_issued_on_send ?? false);
   const [bccSelf, setBccSelf] = useState(userPreferences?.bcc_self ?? false);
   const [, startTransition] = useTransition();
+
+  const [selectedTemplate, setSelectedTemplate] = useState<"invoice" | "followup">("invoice");
+  const [templateDrafts, setTemplateDrafts] = useState({
+    invoice: userPreferences?.invoice_email_template ?? DEFAULT_INVOICE_TEMPLATE,
+    followup: userPreferences?.followup_email_template ?? DEFAULT_FOLLOWUP_TEMPLATE,
+  });
+  const [showPreview, setShowPreview] = useState(false);
+  const [templatePending, startTemplateTransition] = useTransition();
+
+  const previewVars = {
+    name: "Alex",
+    invoice_number: "JM123",
+    amount: formatAUD(1250),
+    due_date: PREVIEW_DUE_DATE,
+    business_name: businessName || "Your Business",
+  };
+
+  function handleTemplateSave() {
+    const draft = templateDrafts[selectedTemplate].trim();
+    // Empty or unchanged-from-default saves null → keeps using the built-in default
+    const value = !draft || draft === TEMPLATE_DEFAULTS[selectedTemplate] ? null : draft;
+    startTemplateTransition(async () => {
+      try {
+        await saveEmailTemplate(selectedTemplate, value);
+        invalidate("settings");
+        toast.success("Template saved");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Failed to save template");
+      }
+    });
+  }
 
   function handleChange(markAsIssuedVal: boolean, bccSelfVal: boolean) {
     startTransition(async () => {
@@ -488,6 +539,52 @@ function EmailTab({
                 handleChange(markAsIssued, v);
               }}
             />
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Email Templates</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <Select
+            value={selectedTemplate}
+            onValueChange={(v) => {
+              setSelectedTemplate(v as "invoice" | "followup");
+              setShowPreview(false);
+            }}
+          >
+            <SelectTrigger className="w-56">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="invoice">Invoice template</SelectItem>
+              <SelectItem value="followup">Follow-up template</SelectItem>
+            </SelectContent>
+          </Select>
+          <Textarea
+            value={templateDrafts[selectedTemplate]}
+            onChange={(e) =>
+              setTemplateDrafts((prev) => ({ ...prev, [selectedTemplate]: e.target.value }))
+            }
+            rows={9}
+            className="min-h-44"
+          />
+          <p className="text-xs text-muted-foreground">
+            Placeholders: {TEMPLATE_PLACEHOLDERS.join(", ")}. Leave empty to restore the default.
+          </p>
+          {showPreview && (
+            <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm whitespace-pre-wrap">
+              {renderEmailTemplate(templateDrafts[selectedTemplate], previewVars)}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowPreview((p) => !p)}>
+              {showPreview ? "Hide preview" : "Preview"}
+            </Button>
+            <Button onClick={handleTemplateSave} disabled={templatePending}>
+              {templatePending ? "Saving…" : "Save"}
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -629,7 +726,10 @@ export function SettingsClient({
                 <InvoicingTab invoiceSequence={invoiceSequence ?? null} userPreferences={userPreferences ?? null} />
               </TabsContent>
               <TabsContent value="email">
-                <EmailTab userPreferences={userPreferences ?? null} />
+                <EmailTab
+                  userPreferences={userPreferences ?? null}
+                  businessName={businessDetails?.business_name ?? businessDetails?.name ?? ""}
+                />
               </TabsContent>
               <TabsContent value="account">
                 <AccountTab email={userEmail} name={userName} />
