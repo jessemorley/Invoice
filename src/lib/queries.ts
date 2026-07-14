@@ -2,7 +2,7 @@ import { cacheTag } from "next/cache";
 import { createTokenClient } from "./supabase";
 import { isoWeek, todayInSydney, fyStartYear } from "./format";
 import { lineItemTotal } from "./utils";
-import type { Entry, Invoice, InvoiceDetail, InvoiceEntry, Expense, ExpenseCategory, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
+import type { Entry, Invoice, InvoiceDetail, InvoiceEntry, Expense, ExpenseCategory, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate, CalendarDay } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -140,7 +140,7 @@ export async function fetchEntries(userId: string, token: string, before?: strin
   });
 }
 
-type DashboardEntry = { date: string; base_amount: number; bonus_amount: number };
+type DashboardEntry = { date: string; base_amount: number; bonus_amount: number; client: { name: string; color: string } | null };
 
 // Start of the 24-month lookback window shared by the dashboard queries (YYYY-MM-DD).
 function dashboardWindowStart(): string {
@@ -157,17 +157,21 @@ export async function fetchDashboardEntries(userId: string, token: string): Prom
 
   const { data, error } = await supabase
     .from("entries")
-    .select("date, base_amount, bonus_amount")
+    .select("date, base_amount, bonus_amount, clients(name, color)")
     .eq("user_id", userId)
     .gte("date", windowStart);
 
   if (error) throw new Error(`fetchDashboardEntries: ${error.message}`);
 
-  return (data ?? []).map((e) => ({
-    date: e.date,
-    base_amount: e.base_amount,
-    bonus_amount: e.bonus_amount,
-  }));
+  return (data ?? []).map((e) => {
+    const client = Array.isArray(e.clients) ? e.clients[0] : e.clients;
+    return {
+      date: e.date,
+      base_amount: e.base_amount,
+      bonus_amount: e.bonus_amount,
+      client: client ? { name: client.name, color: client.color ?? CLIENT_COLOR_FALLBACK } : null,
+    };
+  });
 }
 
 export async function fetchDashboardLineItems(userId: string, token: string): Promise<DashboardEntry[]> {
@@ -178,7 +182,7 @@ export async function fetchDashboardLineItems(userId: string, token: string): Pr
 
   const { data, error } = await supabase
     .from("invoice_line_items")
-    .select("amount, quantity, invoices!inner(issued_date, status)")
+    .select("amount, quantity, invoices!inner(issued_date, status, clients(name, color))")
     .eq("user_id", userId)
     .in("invoices.status", ["issued", "paid"])
     .gte("invoices.issued_date", windowStart);
@@ -189,10 +193,12 @@ export async function fetchDashboardLineItems(userId: string, token: string): Pr
     const inv = Array.isArray(row.invoices) ? row.invoices[0] : row.invoices;
     // The gte filter above excludes null issued_date, but don't rely on it.
     if (!inv?.issued_date) return [];
+    const client = Array.isArray(inv.clients) ? inv.clients[0] : inv.clients;
     return {
       date: inv.issued_date,
       base_amount: lineItemTotal(row),
       bonus_amount: 0,
+      client: client ? { name: client.name, color: client.color ?? CLIENT_COLOR_FALLBACK } : null,
     };
   });
 }
@@ -736,7 +742,24 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
     mtdPriorCumulative.push({ day: d, cumulative: priorRunning });
   }
 
-  return { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, emails };
+  // Contribution-style month calendar: which clients had entries (or line-item
+  // invoices, via the combined entries array) on each day of the current month.
+  // Includes future-dated entries so upcoming bookings show.
+  const dayClients = new Map<number, Map<string, string>>();
+  for (const e of entries) {
+    if (!e.client || !e.date.startsWith(currentMonthPrefix)) continue;
+    const day = Number(e.date.slice(8, 10));
+    const clients = dayClients.get(day) ?? new Map<string, string>();
+    clients.set(e.client.name, e.client.color);
+    dayClients.set(day, clients);
+  }
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const monthCalendar: CalendarDay[] = Array.from({ length: daysInMonth }, (_, i) => ({
+    day: i + 1,
+    clients: Array.from(dayClients.get(i + 1) ?? [], ([name, color]) => ({ name, color })),
+  }));
+
+  return { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, emails, monthCalendar };
 }
 
 export type BusinessDetails = {

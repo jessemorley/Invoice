@@ -104,7 +104,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
 
   if (!data) return <DashboardSkeleton />;
-  const { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, emails } = data;
+  const { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, emails, monthCalendar } = data;
   const weekSlice = timeframe === 26 ? weeklyEarnings.slice(26) : weeklyEarnings;
 
   // Cumulative mode: running total across weeks
@@ -169,6 +169,19 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   );
 
   const scheduledEmails = emails.filter((e) => e.status === "pending" || e.status === "failed");
+
+  // Monday-first offset for the 1st of the current month
+  const firstDayOffset = (new Date(now.getFullYear(), now.getMonth(), 1).getDay() + 6) % 7;
+  const activeClients = Array.from(
+    new Map(monthCalendar.flatMap((d) => d.clients).map((c) => [c.name, c])).values()
+  );
+  function dayBackground(clients: { color: string }[]): string | undefined {
+    if (clients.length === 0) return undefined;
+    if (clients.length === 1) return clients[0].color;
+    // ponytail: hard-stop gradient split for multi-client days; pie/stacked segments if it ever matters
+    const stops = clients.map((c, i) => `${c.color} ${(i / clients.length) * 100}%, ${c.color} ${((i + 1) / clients.length) * 100}%`);
+    return `linear-gradient(135deg, ${stops.join(", ")})`;
+  }
 
   async function handleEmailRowClick(email: DashboardEmail) {
     if (email.status === "sent") {
@@ -322,6 +335,48 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                 ))}
               </CardContent>
             )}
+          </Card>
+
+          {/* Month calendar */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">
+                {now.toLocaleDateString("en-AU", { month: "long", year: "numeric" })}
+              </CardTitle>
+              <CardDescription>Days worked this month</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-7 gap-1.5 max-w-72">
+                {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+                  <div key={i} className="text-center text-[10px] text-muted-foreground">{d}</div>
+                ))}
+                {Array.from({ length: firstDayOffset }, (_, i) => (
+                  <div key={`pad-${i}`} />
+                ))}
+                {monthCalendar.map(({ day, clients }) => (
+                  <div
+                    key={day}
+                    title={clients.length ? `${day}: ${clients.map((c) => c.name).join(", ")}` : undefined}
+                    className={cn(
+                      "aspect-square rounded-md",
+                      clients.length === 0 && "bg-muted",
+                      day === now.getDate() && "ring-2 ring-foreground/30 ring-offset-1 ring-offset-background"
+                    )}
+                    style={{ background: dayBackground(clients) }}
+                  />
+                ))}
+              </div>
+              {activeClients.length > 0 && (
+                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-4">
+                  {activeClients.map((c) => (
+                    <div key={c.name} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <div className="size-2.5 rounded-[3px]" style={{ backgroundColor: c.color }} />
+                      <span>{c.name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
           </Card>
 
           {/* Emails */}

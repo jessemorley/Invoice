@@ -217,6 +217,11 @@ export type MtdDailyPoint = {
   cumulative: number;
 };
 
+export type CalendarDay = {
+  day: number;
+  clients: { name: string; color: string }[];
+};
+
 export type DashboardData = {
   mtdEarnings: number;
   mtdPriorMonth: number;
@@ -225,4 +230,5 @@ export type DashboardData = {
   outstanding: Invoice[];
   weeklyEarnings: WeeklyEarning[];
   emails: DashboardEmail[];
+  monthCalendar: CalendarDay[];
 };
