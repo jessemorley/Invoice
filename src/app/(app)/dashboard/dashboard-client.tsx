@@ -470,7 +470,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
             </CardContent>
             <CardFooter className="flex-col items-start gap-1.5 text-xs text-muted-foreground">
               {topClient && workedDayCount > 0 && (
-                <div className="leading-none font-medium">
+                <div className="leading-none font-medium text-sm text-foreground">
                   {Math.round((topClient[1] / workedDayCount) * 100)}% of days spent at {topClient[0]}
                 </div>
               )}
