@@ -1,9 +1,8 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import type { ComposePrefill, DashboardData, DashboardEmail, Invoice, InvoiceDetail } from "@/lib/types";
-import type { ScheduledEmail } from "@/lib/queries";
-import { InvoiceSheet } from "@/components/invoice-sheet";
+import type { ComposePrefill, DashboardData, DashboardEmail, InvoiceDetail } from "@/lib/types";
+import { useInvoiceWorkflow } from "@/hooks/use-invoice-workflow";
 import { formatAUD, formatRelativeTime, fyLabel, fyStartYear } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -114,10 +113,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const [composeBusinessName, setComposeBusinessName] = useState("");
   const [composePrefill, setComposePrefill] = useState<ComposePrefill | null>(null);
   const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
-  const [invoiceSheetOpen, setInvoiceSheetOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-  const [selectedInvoiceDetail, setSelectedInvoiceDetail] = useState<InvoiceDetail | null>(null);
-  const [selectedScheduledEmail, setSelectedScheduledEmail] = useState<ScheduledEmail | null>(null);
+  const { openInvoice, sheets: invoiceSheets } = useInvoiceWorkflow();
   const [calHover, setCalHover] = useState<{
     col: number;
     row: number;
@@ -248,17 +244,6 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
         }]
       : []
   );
-
-  function handleInvoiceRowClick(invoice: Invoice) {
-    setSelectedInvoice(invoice);
-    setSelectedInvoiceDetail(null);
-    setSelectedScheduledEmail(null);
-    setInvoiceSheetOpen(true);
-    loadScheduledEmail(invoice.id).then((result) => {
-      setSelectedInvoiceDetail(result.invoiceDetail);
-      setSelectedScheduledEmail(result.scheduledEmail);
-    });
-  }
 
   async function handleEmailRowClick(email: DashboardEmail) {
     if (email.status === "sent") {
@@ -398,7 +383,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                   return (
                     <div
                       key={invoice.id}
-                      onClick={() => handleInvoiceRowClick(invoice)}
+                      onClick={() => openInvoice(invoice)}
                       className="flex items-center justify-between py-2.5 cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
@@ -704,20 +689,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
         onOpenChangeAction={setSentSheetOpen}
         email={sentEmail}
       />
-      <InvoiceSheet
-        open={invoiceSheetOpen}
-        onOpenChangeAction={(open) => {
-          setInvoiceSheetOpen(open);
-          if (!open) {
-            setSelectedInvoice(null);
-            setSelectedInvoiceDetail(null);
-            setSelectedScheduledEmail(null);
-          }
-        }}
-        invoice={selectedInvoice}
-        invoiceDetail={selectedInvoiceDetail}
-        scheduledEmail={selectedScheduledEmail}
-      />
+      {invoiceSheets}
     </div>
   );
 }
