@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { invalidate } from "@/lib/invalidate";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import {
@@ -426,8 +427,13 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                             <DropdownMenuItem onClick={() => openInvoice(invoice)}>View</DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={async () => {
-                                await updateInvoiceStatus(invoice.id, "paid");
-                                invalidate("invoices");
+                                try {
+                                  await updateInvoiceStatus(invoice.id, "paid");
+                                  invalidate("invoices");
+                                  toast.success(`Invoice ${invoice.number} marked as paid`);
+                                } catch (e) {
+                                  toast.error(e instanceof Error ? e.message : "Failed to mark as paid");
+                                }
                               }}
                             >
                               Mark as paid
