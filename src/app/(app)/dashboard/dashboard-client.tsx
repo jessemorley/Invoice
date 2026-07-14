@@ -389,7 +389,11 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                             )}
                           >
                             {clients.map((c) => (
-                              <div key={c.name} className="flex-1" style={{ backgroundColor: c.color }} />
+                              <div
+                                key={c.name}
+                                className={cn("flex-1", clients.length > 1 && "rounded-[2px]")}
+                                style={{ backgroundColor: c.color }}
+                              />
                             ))}
                           </div>
                         );
