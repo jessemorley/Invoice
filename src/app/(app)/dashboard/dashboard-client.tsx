@@ -35,7 +35,7 @@ import {
 import { Area, AreaChart, Bar, BarChart, XAxis, YAxis } from "recharts";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
-import { loadScheduledEmail, markInvoicePaid } from "@/app/(app)/invoices/actions";
+import { loadScheduledEmail, updateInvoiceStatus } from "@/app/(app)/invoices/actions";
 import {
   Select,
   SelectContent,
@@ -426,7 +426,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                             <DropdownMenuItem onClick={() => openInvoice(invoice)}>View</DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={async () => {
-                                await markInvoicePaid(invoice.id);
+                                await updateInvoiceStatus(invoice.id, "paid");
                                 invalidate("invoices");
                               }}
                             >

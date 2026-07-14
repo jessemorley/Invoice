@@ -616,14 +616,40 @@ export async function deleteLineItem(id: string) {
   refresh();
 }
 
-export async function markInvoicePaid(id: string): Promise<void> {
+// Quick status change (table badge dropdown, dashboard row menu). Handles the
+// date transitions; anything more deliberate goes through the invoice sheet.
+export async function updateInvoiceStatus(id: string, status: InvoiceStatus): Promise<void> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const today = new Date().toISOString().slice(0, 10);
+  const update: { status: InvoiceStatus; paid_date: string | null; issued_date?: string; due_date?: string } = {
+    status,
+    paid_date: status === "paid" ? today : null,
+  };
+  if (status === "issued") {
+    // Stamp issue/due dates only when not already set — don't clobber dates
+    // stamped by the email-schedule flow or set manually in the sheet.
+    const { data: inv } = await supabase
+      .from("invoices")
+      .select("issued_date")
+      .eq("id", id)
+      .eq("user_id", userId)
+      .single();
+    if (!inv?.issued_date) {
+      const { data: seq } = await supabase
+        .from("invoice_sequence")
+        .select("due_date_offset")
+        .eq("user_id", userId)
+        .single();
+      update.issued_date = today;
+      update.due_date = computeDueDate(today, (seq as { due_date_offset: number } | null)?.due_date_offset ?? 30);
+    }
+  }
   const { error } = await supabase
     .from("invoices")
-    .update({ status: "paid", paid_date: new Date().toISOString().slice(0, 10) })
+    .update(update)
     .eq("id", id)
     .eq("user_id", userId);
-  if (error) throw new Error(`markInvoicePaid: ${error.message}`);
+  if (error) throw new Error(`updateInvoiceStatus: ${error.message}`);
   updateTag(CACHE_TAGS.invoices);
   updateTag(CACHE_TAGS.entries);
   refresh();

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { ClientSquircle } from "@/components/client-squircle";
 import { InvoiceStatusBadge, INVOICE_STATUS_COLOR } from "@/components/invoice-status-badge";
-import { revalidateInvoices, loadEntrySheetData, generateInvoices } from "./actions";
+import { revalidateInvoices, loadEntrySheetData, generateInvoices, updateInvoiceStatus } from "./actions";
 import { invalidate } from "@/lib/invalidate";
 import { useInvoiceWorkflow } from "@/hooks/use-invoice-workflow";
 import type { Invoice, InvoiceEmail, InvoiceStatus, Entry, Client, WorkflowRate } from "@/lib/types";
@@ -483,8 +483,19 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     setSortDir(newDir);
   }
 
-  function handleStatusChange(id: string, status: InvoiceStatus) {
+  async function handleStatusChange(id: string, status: InvoiceStatus) {
     setStatusOverrides((prev) => ({ ...prev, [id]: status }));
+    try {
+      await updateInvoiceStatus(id, status);
+      invalidate("invoices");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update status");
+      setStatusOverrides((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    }
   }
 
   function sh(key: SortKey) {
