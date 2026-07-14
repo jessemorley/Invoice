@@ -88,6 +88,15 @@ function DashboardSkeleton() {
   );
 }
 
+function dueLabel(dueDate: string): { text: string; overdue: boolean } {
+  const days = Math.round(
+    (new Date(dueDate + "T00:00:00").getTime() - new Date(new Date().toDateString()).getTime()) / 86_400_000
+  );
+  if (days < 0) return { text: `Overdue by ${-days} ${days === -1 ? "day" : "days"}`, overdue: true };
+  if (days === 0) return { text: "Due today", overdue: false };
+  return { text: `Due in ${days} ${days === 1 ? "day" : "days"}`, overdue: false };
+}
+
 function emailStatusLabel(email: DashboardEmail): string {
   if (email.status === "sent" && email.sent_at) return `Sent ${formatRelativeTime(email.sent_at)}`;
   if (email.status === "failed") return "Failed";
@@ -367,23 +376,31 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
             </CardHeader>
             {outstanding.length > 0 && (
               <CardContent className="flex flex-col divide-y divide-border">
-                {outstanding.map((invoice) => (
-                  <div
-                    key={invoice.id}
-                    className="flex items-center justify-between py-2.5 cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <InvoiceStatusBadge number={invoice.number} status={invoice.status} />
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-[22px] shrink-0" />
-                        <span className="text-sm text-muted-foreground truncate">{invoice.client.name}</span>
+                {outstanding.map((invoice) => {
+                  const due = invoice.status === "issued" && invoice.due_date ? dueLabel(invoice.due_date) : null;
+                  return (
+                    <div
+                      key={invoice.id}
+                      className="flex items-center justify-between py-2.5 cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <InvoiceStatusBadge number={invoice.number} status={invoice.status} />
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-[22px] shrink-0" />
+                          <span className="text-sm text-muted-foreground truncate">{invoice.client.name}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        {due && (
+                          <Badge variant={due.overdue ? "destructive" : "outline"} className="hidden sm:inline-flex">
+                            {due.text}
+                          </Badge>
+                        )}
+                        <span className="text-sm tabular-nums">{formatAUD(invoice.total)}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                      <span className="text-sm tabular-nums">{formatAUD(invoice.total)}</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </CardContent>
             )}
           </Card>
