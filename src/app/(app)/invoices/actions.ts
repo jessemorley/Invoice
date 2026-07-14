@@ -243,6 +243,37 @@ export async function loadScheduledEmail(invoiceId: string) {
   };
 }
 
+// Shared by every mark_as_issued_on_send path: stamping issued_date must also
+// stamp due_date (issued + user's offset), and clearing it must clear both.
+async function stampIssuedDate(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  invoiceId: string,
+  issuedDate: string | null,
+  { draftOnly = true }: { draftOnly?: boolean } = {}
+) {
+  let dueDate: string | null = null;
+  if (issuedDate) {
+    const { data: seq } = await supabase
+      .from("invoice_sequence")
+      .select("due_date_offset")
+      .eq("user_id", userId)
+      .single();
+    const offset = (seq as { due_date_offset: number } | null)?.due_date_offset ?? 30;
+    dueDate = computeDueDate(issuedDate, offset);
+  }
+  let query = supabase
+    .from("invoices")
+    .update({ issued_date: issuedDate, due_date: dueDate })
+    .eq("id", invoiceId)
+    .eq("user_id", userId);
+  if (draftOnly) query = query.eq("status", "draft");
+  const { error } = await query;
+  if (error) throw new Error(`stampIssuedDate: ${error.message}`);
+  updateTag(CACHE_TAGS.invoices);
+  updateTag(CACHE_TAGS.entries);
+}
+
 export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormData): Promise<{ id: string }> {
   const [supabase, userId, token] = await Promise.all([createClient(), getAuthUserId(), getAuthToken()]);
 
@@ -280,14 +311,7 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
   const scheduledTs = new Date(data.scheduled_for).getTime();
 
   if (markIssued) {
-    await supabase
-      .from("invoices")
-      .update({ issued_date: data.scheduled_date })
-      .eq("id", invoiceId)
-      .eq("user_id", userId)
-      .eq("status", "draft");
-    updateTag(CACHE_TAGS.invoices);
-    updateTag(CACHE_TAGS.entries);
+    await stampIssuedDate(supabase, userId, invoiceId, data.scheduled_date);
   }
 
   await inngest.send({
@@ -327,14 +351,7 @@ export async function cancelScheduledEmail(scheduledEmailId: string): Promise<vo
   if (!row) return;
 
   if (row.mark_issued && row.invoice_id) {
-    await supabase
-      .from("invoices")
-      .update({ issued_date: null })
-      .eq("id", row.invoice_id)
-      .eq("user_id", userId)
-      .eq("status", "draft");
-    updateTag(CACHE_TAGS.invoices);
-    updateTag(CACHE_TAGS.entries);
+    await stampIssuedDate(supabase, userId, row.invoice_id, null);
   }
 
   await inngest.send({
@@ -366,14 +383,7 @@ export async function updateScheduledEmail(scheduledEmailId: string, data: Email
   if (error) throw new Error(`updateScheduledEmail: ${error.message}`);
 
   if (row.mark_issued && row.invoice_id) {
-    await supabase
-      .from("invoices")
-      .update({ issued_date: data.scheduled_date })
-      .eq("id", row.invoice_id)
-      .eq("user_id", userId)
-      .eq("status", "draft");
-    updateTag(CACHE_TAGS.invoices);
-    updateTag(CACHE_TAGS.entries);
+    await stampIssuedDate(supabase, userId, row.invoice_id, data.scheduled_date);
   }
 
   // Cancel + resend are two separate events. Inngest processes them in order in
@@ -421,14 +431,7 @@ export async function rescheduleScheduledEmail(scheduledEmailId: string, data: R
   if (error) throw new Error(`rescheduleScheduledEmail: ${error.message}`);
 
   if (row.mark_issued && row.invoice_id) {
-    await supabase
-      .from("invoices")
-      .update({ issued_date: scheduledDate })
-      .eq("id", row.invoice_id)
-      .eq("user_id", userId)
-      .eq("status", "draft");
-    updateTag(CACHE_TAGS.invoices);
-    updateTag(CACHE_TAGS.entries);
+    await stampIssuedDate(supabase, userId, row.invoice_id, scheduledDate);
   }
 
   // Same ordering caveat as updateScheduledEmail — see comment there.
@@ -481,13 +484,7 @@ export async function sendScheduledEmailNow(scheduledEmailId: string): Promise<v
 
   if (row.mark_issued && row.invoice_id) {
     const issuedDate = new Date().toISOString().split("T")[0];
-    await supabase
-      .from("invoices")
-      .update({ issued_date: issuedDate })
-      .eq("id", row.invoice_id)
-      .eq("user_id", userId);
-    updateTag(CACHE_TAGS.invoices);
-    updateTag(CACHE_TAGS.entries);
+    await stampIssuedDate(supabase, userId, row.invoice_id, issuedDate, { draftOnly: false });
   }
 
   await inngest.send({
