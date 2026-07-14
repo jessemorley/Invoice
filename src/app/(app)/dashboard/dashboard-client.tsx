@@ -392,7 +392,10 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                       </div>
                       <div className="flex items-center gap-2 shrink-0 ml-2">
                         {due && (
-                          <Badge variant={due.overdue ? "destructive" : "outline"} className="hidden sm:inline-flex">
+                          <Badge
+                            variant={due.overdue ? "destructive" : "outline"}
+                            className={cn("hidden sm:inline-flex", !due.overdue && "text-muted-foreground")}
+                          >
                             {due.text}
                           </Badge>
                         )}
