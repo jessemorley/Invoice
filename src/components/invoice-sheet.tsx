@@ -729,7 +729,7 @@ export function InvoiceSheet({
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                <AlertDialogAction variant="destructive" onClick={handleDelete}>Delete</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
