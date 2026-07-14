@@ -745,13 +745,16 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
   // Contribution-style calendar: which clients had entries (or line-item
   // invoices, via the combined entries array) on each day of the past 12 months
   // (eleven prior months + current month); the client crops to what fits its
-  // width. Includes future-dated entries so upcoming bookings show.
+  // width. Includes future-dated entries within this week so bookings show.
   const fmtDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   // Start on the Monday on/before the 1st so week columns have no gaps
   const calStartDate = new Date(currentYear, currentMonth - 11, 1);
   calStartDate.setDate(calStartDate.getDate() - ((calStartDate.getDay() + 6) % 7));
   const calStart = fmtDate(calStartDate);
-  const calEnd = fmtDate(new Date(currentYear, currentMonth + 1, 0));
+  // End on the Sunday of the current week so the last column is complete
+  const calEndDate = new Date(now);
+  calEndDate.setDate(now.getDate() + (7 - todayDow));
+  const calEnd = fmtDate(calEndDate);
   const dayClients = new Map<string, Map<string, string>>();
   for (const e of entries) {
     if (!e.client || e.date < calStart || e.date > calEnd) continue;
@@ -760,7 +763,6 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
     dayClients.set(e.date, clients);
   }
   const monthCalendar: CalendarDay[] = [];
-  const calEndDate = new Date(currentYear, currentMonth + 1, 0);
   for (const d = new Date(calStartDate); d <= calEndDate; d.setDate(d.getDate() + 1)) {
     const date = fmtDate(d);
     monthCalendar.push({ date, clients: Array.from(dayClients.get(date) ?? [], ([name, color]) => ({ name, color })) });
