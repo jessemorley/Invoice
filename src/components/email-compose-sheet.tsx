@@ -66,8 +66,8 @@ function getPresets(): { label: string; date: Date | null }[] {
   ];
 }
 
-function defaultBody(invoice: InvoiceDetail, businessName: string, template?: string | null): string {
-  return renderEmailTemplate(template ?? DEFAULT_INVOICE_TEMPLATE, invoiceTemplateVars(invoice, businessName));
+function defaultBody(invoice: InvoiceDetail, businessName: string, userName: string, template?: string | null): string {
+  return renderEmailTemplate(template ?? DEFAULT_INVOICE_TEMPLATE, invoiceTemplateVars(invoice, businessName, userName));
 }
 
 interface EmailChipInputProps {
@@ -150,6 +150,7 @@ function toastDescription(date: Date | null): string {
 interface ComposeContentProps {
   invoice: InvoiceDetail;
   businessName: string;
+  userName?: string;
   bodyTemplate?: string | null;
   onClose: () => void;
   onSent: () => void;
@@ -160,13 +161,13 @@ interface ComposeContentProps {
   editingId?: string;
 }
 
-function ComposeContent({ invoice, businessName, bodyTemplate, onClose, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId }: ComposeContentProps) {
+function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, onClose, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId }: ComposeContentProps) {
   const [chips, setChips] = useState<string[]>(() =>
     initialTo ?? (invoice.client.email ? [invoice.client.email] : [])
   );
   const [chipInput, setChipInput] = useState("");
   const [subject, setSubject] = useState(initialSubject ?? `Invoice ${invoice.number}`);
-  const [body, setBody] = useState(() => initialBody ?? defaultBody(invoice, businessName, bodyTemplate));
+  const [body, setBody] = useState(() => initialBody ?? defaultBody(invoice, businessName, userName, bodyTemplate));
   const [scheduledFor, setScheduledFor] = useState<Date | null>(initialScheduledFor ?? null);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -351,6 +352,7 @@ interface EmailComposeSheetProps {
   onOpenChangeAction: (open: boolean) => void;
   invoice: InvoiceDetail | null;
   businessName: string;
+  userName?: string;
   bodyTemplate?: string | null;
   onSent: () => void;
   initialTo?: string[];
@@ -360,7 +362,7 @@ interface EmailComposeSheetProps {
   editingId?: string;
 }
 
-export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessName, bodyTemplate, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId }: EmailComposeSheetProps) {
+export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessName, userName, bodyTemplate, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId }: EmailComposeSheetProps) {
   if (!invoice) return null;
 
   return (
@@ -372,6 +374,7 @@ export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessN
         <ComposeContent
           invoice={invoice}
           businessName={businessName}
+          userName={userName}
           bodyTemplate={bodyTemplate}
           onClose={() => onOpenChangeAction(false)}
           onSent={onSent}

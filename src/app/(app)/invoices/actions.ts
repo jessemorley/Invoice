@@ -241,6 +241,7 @@ export async function loadScheduledEmail(invoiceId: string) {
     scheduledEmail,
     invoiceDetail,
     businessName: businessDetails?.business_name ?? businessDetails?.name ?? "",
+    userName: businessDetails?.name ?? "",
     invoiceTemplate: userPrefs?.invoice_email_template ?? null,
     followupTemplate: userPrefs?.followup_email_template ?? null,
   };

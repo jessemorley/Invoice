@@ -20,6 +20,7 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
   const [scheduledEmail, setScheduledEmail] = useState<ScheduledEmail | null>(null);
   const [invoiceDetail, setInvoiceDetail] = useState<InvoiceDetail | null>(null);
   const [businessName, setBusinessName] = useState("");
+  const [userName, setUserName] = useState("");
   const [invoiceTemplate, setInvoiceTemplate] = useState<string | null>(null);
   const [sentEmailOpen, setSentEmailOpen] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
@@ -39,6 +40,7 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
       setScheduledEmail(result.scheduledEmail);
       setInvoiceDetail(result.invoiceDetail);
       setBusinessName(result.businessName);
+      setUserName(result.userName);
       setInvoiceTemplate(result.invoiceTemplate);
     });
   }
@@ -60,6 +62,7 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
       setScheduledEmail(result.scheduledEmail);
       setInvoiceDetail(result.invoiceDetail);
       setBusinessName(result.businessName);
+      setUserName(result.userName);
       setInvoiceTemplate(result.invoiceTemplate);
       const detail = result.invoiceDetail;
       if (!detail) return;
@@ -68,7 +71,7 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
         subject: `Payment reminder: Invoice ${detail.number}`,
         body: renderEmailTemplate(
           result.followupTemplate ?? DEFAULT_FOLLOWUP_TEMPLATE,
-          invoiceTemplateVars(detail, result.businessName)
+          invoiceTemplateVars(detail, result.businessName, result.userName)
         ),
         scheduledFor: null,
       });
@@ -153,6 +156,7 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
         }}
         invoice={invoiceDetail}
         businessName={businessName}
+        userName={userName}
         bodyTemplate={invoiceTemplate}
         onSent={() => { composeSentRef.current = true; invalidate("invoices"); }}
         initialTo={composePrefill?.to}

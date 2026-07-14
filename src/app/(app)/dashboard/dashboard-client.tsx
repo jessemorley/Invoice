@@ -119,6 +119,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const [sentSheetOpen, setSentSheetOpen] = useState(false);
   const [composeInvoice, setComposeInvoice] = useState<InvoiceDetail | null>(null);
   const [composeBusinessName, setComposeBusinessName] = useState("");
+  const [composeUserName, setComposeUserName] = useState("");
   const [composePrefill, setComposePrefill] = useState<ComposePrefill | null>(null);
   const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
   const { openInvoice, sendFollowUp, sheets: invoiceSheets } = useInvoiceWorkflow();
@@ -263,6 +264,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
     if (result.invoiceDetail) {
       setComposeInvoice(result.invoiceDetail);
       setComposeBusinessName(result.businessName);
+      setComposeUserName(result.userName);
       setComposePrefill({
         to: email.to_address.split(",").map((s) => s.trim()).filter(Boolean),
         subject: email.subject,
@@ -715,6 +717,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
         }}
         invoice={composeInvoice}
         businessName={composeBusinessName}
+        userName={composeUserName}
         onSent={() => { setComposeInvoice(null); setComposePrefill(null); }}
         initialTo={composePrefill?.to}
         initialSubject={composePrefill?.subject}
