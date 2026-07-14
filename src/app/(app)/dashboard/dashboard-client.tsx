@@ -425,7 +425,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                               <span className="sr-only">Invoice actions</span>
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => openInvoice(invoice)}>View</DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={async () => {

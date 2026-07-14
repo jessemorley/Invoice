@@ -254,8 +254,17 @@ async function stampIssuedDate(
   userId: string,
   invoiceId: string,
   issuedDate: string | null,
-  { draftOnly = true }: { draftOnly?: boolean } = {}
+  { draftOnly = true, skipIfSet = false }: { draftOnly?: boolean; skipIfSet?: boolean } = {}
 ) {
+  if (skipIfSet) {
+    const { data: inv } = await supabase
+      .from("invoices")
+      .select("issued_date")
+      .eq("id", invoiceId)
+      .eq("user_id", userId)
+      .single();
+    if (inv?.issued_date) return;
+  }
   let dueDate: string | null = null;
   if (issuedDate) {
     const { data: seq } = await supabase
@@ -625,32 +634,14 @@ export async function deleteLineItem(id: string) {
 export async function updateInvoiceStatus(id: string, status: InvoiceStatus): Promise<void> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const today = new Date().toISOString().slice(0, 10);
-  const update: { status: InvoiceStatus; paid_date: string | null; issued_date?: string; due_date?: string } = {
-    status,
-    paid_date: status === "paid" ? today : null,
-  };
+  // Stamp issue/due dates only when not already set — don't clobber dates
+  // stamped by the email-schedule flow or set manually in the sheet.
   if (status === "issued") {
-    // Stamp issue/due dates only when not already set — don't clobber dates
-    // stamped by the email-schedule flow or set manually in the sheet.
-    const { data: inv } = await supabase
-      .from("invoices")
-      .select("issued_date")
-      .eq("id", id)
-      .eq("user_id", userId)
-      .single();
-    if (!inv?.issued_date) {
-      const { data: seq } = await supabase
-        .from("invoice_sequence")
-        .select("due_date_offset")
-        .eq("user_id", userId)
-        .single();
-      update.issued_date = today;
-      update.due_date = computeDueDate(today, (seq as { due_date_offset: number } | null)?.due_date_offset ?? 30);
-    }
+    await stampIssuedDate(supabase, userId, id, today, { draftOnly: false, skipIfSet: true });
   }
   const { error } = await supabase
     .from("invoices")
-    .update(update)
+    .update({ status, paid_date: status === "paid" ? today : null })
     .eq("id", id)
     .eq("user_id", userId);
   if (error) throw new Error(`updateInvoiceStatus: ${error.message}`);
