@@ -207,7 +207,6 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
 
   const scheduledEmails = emails.filter((e) => e.status === "pending" || e.status === "failed");
 
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   // Show the most recent whole weeks that fit the card width (data starts on a Monday)
   const totalWeeks = Math.ceil(monthCalendar.length / 7);
   const weeksShown = Math.max(1, Math.min(calWeeks, totalWeeks));
@@ -419,8 +418,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                           }
                           className={cn(
                             "size-3 rounded-[3px] flex gap-[1.5px] overflow-hidden",
-                            clients.length === 0 && "bg-muted",
-                            date === todayStr && "ring-1 ring-foreground"
+                            clients.length === 0 && "bg-muted"
                           )}
                         >
                           {clients.map((c) => (
