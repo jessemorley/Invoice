@@ -385,7 +385,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                             className={cn(
                               "size-3.5 rounded-[3px] flex gap-[1.5px] overflow-hidden",
                               clients.length === 0 && "bg-muted",
-                              date === todayStr && "ring-1 ring-foreground/40"
+                              date === todayStr && "ring-1 ring-foreground"
                             )}
                           >
                             {clients.map((c) => (
