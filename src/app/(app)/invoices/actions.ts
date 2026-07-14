@@ -639,9 +639,22 @@ export async function updateInvoiceStatus(id: string, status: InvoiceStatus): Pr
   if (status === "issued") {
     await stampIssuedDate(supabase, userId, id, today, { draftOnly: false, skipIfSet: true });
   }
+  // Marking paid keeps an existing paid_date (manual or prior stamp) rather
+  // than clobbering it with today. Leaving paid must clear it — tax income
+  // queries count any invoice with a non-null paid_date, regardless of status.
+  let paidDate: string | null = null;
+  if (status === "paid") {
+    const { data: inv } = await supabase
+      .from("invoices")
+      .select("paid_date")
+      .eq("id", id)
+      .eq("user_id", userId)
+      .single();
+    paidDate = inv?.paid_date ?? today;
+  }
   const { error } = await supabase
     .from("invoices")
-    .update({ status, paid_date: status === "paid" ? today : null })
+    .update({ status, paid_date: paidDate })
     .eq("id", id)
     .eq("user_id", userId);
   if (error) throw new Error(`updateInvoiceStatus: ${error.message}`);
