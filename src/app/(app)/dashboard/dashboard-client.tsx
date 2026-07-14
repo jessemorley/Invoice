@@ -110,6 +110,19 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   } | null>(null);
   const calGridRef = useRef<HTMLDivElement>(null);
   const calTipRef = useRef<HTMLDivElement>(null);
+  const [calWeeks, setCalWeeks] = useState(26);
+  const calResizeObserver = useRef<ResizeObserver | null>(null);
+  // Callback ref: observe the card-width wrapper and fit whole week columns
+  // into it (32px weekday label column + 18px per week column).
+  const calWrapRef = (el: HTMLDivElement | null) => {
+    calResizeObserver.current?.disconnect();
+    calResizeObserver.current = null;
+    if (!el) return;
+    const update = () => setCalWeeks(Math.max(4, Math.floor((el.clientWidth - 32) / 18)));
+    update();
+    calResizeObserver.current = new ResizeObserver(update);
+    calResizeObserver.current.observe(el);
+  };
 
   // Mimic recharts' tooltip wrapper: one persistent element moved via transform
   // (transition handles the slide), flipped/clamped to stay inside the grid.
@@ -194,17 +207,18 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
 
   const scheduledEmails = emails.filter((e) => e.status === "pending" || e.status === "failed");
 
-  // Monday-first offset for the first calendar day
-  const firstDayOffset = monthCalendar.length
-    ? (new Date(monthCalendar[0].date + "T00:00:00").getDay() + 6) % 7
-    : 0;
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  const numWeeks = Math.ceil((firstDayOffset + monthCalendar.length) / 7);
+  // Show the most recent whole weeks that fit the card width (data starts on a Monday)
+  const totalWeeks = Math.ceil(monthCalendar.length / 7);
+  const weeksShown = Math.max(1, Math.min(calWeeks, totalWeeks));
+  const visibleDays = monthCalendar.slice((totalWeeks - weeksShown) * 7);
+  const numWeeks = Math.ceil(visibleDays.length / 7);
+  const calMonthsShown = Math.max(1, Math.round((visibleDays.length) / 30.4));
   // Month label above the week-column containing the 1st of each month
-  const monthLabels = monthCalendar.flatMap((d, i) =>
+  const monthLabels = visibleDays.flatMap((d, i) =>
     d.date.endsWith("-01")
       ? [{
-          col: Math.floor((firstDayOffset + i) / 7),
+          col: Math.floor(i / 7),
           label: new Date(d.date + "T00:00:00").toLocaleDateString("en-AU", { month: "short" }),
         }]
       : []
@@ -368,10 +382,10 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
           <Card>
             <CardHeader>
               <CardTitle className="text-sm font-medium">Activity</CardTitle>
-              <CardDescription>Days worked, past 6 months</CardDescription>
+              <CardDescription>Days worked, past {calMonthsShown === 1 ? "month" : `${calMonthsShown} months`}</CardDescription>
             </CardHeader>
-            <CardContent className="overflow-x-auto">
-              <div className="w-fit">
+            <CardContent>
+              <div ref={calWrapRef} className="w-full">
                 <div className="flex gap-1">
                   <div className="w-8 shrink-0" />
                   <div
@@ -393,21 +407,13 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                   </div>
                   <div ref={calGridRef} className="relative" onMouseLeave={() => setCalHover(null)}>
                     <div className="grid grid-rows-7 grid-flow-col gap-1">
-                      {Array.from({ length: firstDayOffset }, (_, i) => (
-                        <div key={`pad-${i}`} className="size-3.5" />
-                      ))}
-                      {monthCalendar.map(({ date, clients }, i) => (
+                      {visibleDays.map(({ date, clients }, i) => (
                         <div
                           key={date}
                           onMouseEnter={() =>
                             setCalHover(
                               clients.length
-                                ? {
-                                    col: Math.floor((firstDayOffset + i) / 7),
-                                    row: (firstDayOffset + i) % 7,
-                                    date,
-                                    clients,
-                                  }
+                                ? { col: Math.floor(i / 7), row: i % 7, date, clients }
                                 : null
                             )
                           }
