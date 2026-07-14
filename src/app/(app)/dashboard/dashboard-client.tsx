@@ -175,6 +175,16 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
     ? (new Date(monthCalendar[0].date + "T00:00:00").getDay() + 6) % 7
     : 0;
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const numWeeks = Math.ceil((firstDayOffset + monthCalendar.length) / 7);
+  // Month label above the week-column containing the 1st of each month
+  const monthLabels = monthCalendar.flatMap((d, i) =>
+    d.date.endsWith("-01")
+      ? [{
+          col: Math.floor((firstDayOffset + i) / 7),
+          label: new Date(d.date + "T00:00:00").toLocaleDateString("en-AU", { month: "short" }),
+        }]
+      : []
+  );
   const activeClients = Array.from(
     new Map(monthCalendar.flatMap((d) => d.clients).map((c) => [c.name, c])).values()
   );
@@ -344,29 +354,51 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
           <Card>
             <CardHeader>
               <CardTitle className="text-sm font-medium">Activity</CardTitle>
-              <CardDescription>Days worked, past 3 months</CardDescription>
+              <CardDescription>Days worked, past 6 months</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-rows-7 grid-flow-col gap-1 w-fit">
-                {Array.from({ length: firstDayOffset }, (_, i) => (
-                  <div key={`pad-${i}`} className="size-3.5" />
-                ))}
-                {monthCalendar.map(({ date, clients }) => (
+            <CardContent className="overflow-x-auto">
+              <div className="w-fit">
+                <div className="flex gap-1">
+                  <div className="w-8 shrink-0" />
                   <div
-                    key={date}
-                    title={
-                      clients.length
-                        ? `${new Date(date + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short" })}: ${clients.map((c) => c.name).join(", ")}`
-                        : undefined
-                    }
-                    className={cn(
-                      "size-3.5 rounded-[3px]",
-                      clients.length === 0 && "bg-muted",
-                      date === todayStr && "ring-1 ring-foreground/40"
-                    )}
-                    style={{ background: dayBackground(clients) }}
-                  />
-                ))}
+                    className="grid gap-1 text-[10px] text-muted-foreground"
+                    style={{ gridTemplateColumns: `repeat(${numWeeks}, 0.875rem)` }}
+                  >
+                    {monthLabels.map(({ col, label }) => (
+                      <div key={col} className="row-start-1 whitespace-nowrap" style={{ gridColumnStart: col + 1 }}>
+                        {label}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-1 mt-1">
+                  <div className="grid grid-rows-7 gap-1 w-8 shrink-0 text-[10px] text-muted-foreground">
+                    {["", "Mon", "", "Wed", "", "Fri", ""].map((d, i) => (
+                      <div key={i} className="flex items-center h-3.5">{d}</div>
+                    ))}
+                  </div>
+                  <div className="grid grid-rows-7 grid-flow-col gap-1">
+                    {Array.from({ length: firstDayOffset }, (_, i) => (
+                      <div key={`pad-${i}`} className="size-3.5" />
+                    ))}
+                    {monthCalendar.map(({ date, clients }) => (
+                      <div
+                        key={date}
+                        title={
+                          clients.length
+                            ? `${new Date(date + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short" })}: ${clients.map((c) => c.name).join(", ")}`
+                            : undefined
+                        }
+                        className={cn(
+                          "size-3.5 rounded-[3px]",
+                          clients.length === 0 && "bg-muted",
+                          date === todayStr && "ring-1 ring-foreground/40"
+                        )}
+                        style={{ background: dayBackground(clients) }}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
               {activeClients.length > 0 && (
                 <div className="flex flex-wrap gap-x-3 gap-y-1 mt-4">

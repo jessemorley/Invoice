@@ -743,11 +743,11 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
   }
 
   // Contribution-style calendar: which clients had entries (or line-item
-  // invoices, via the combined entries array) on each day of the past 3 months
-  // (two prior months + current month). Includes future-dated entries so
+  // invoices, via the combined entries array) on each day of the past 6 months
+  // (five prior months + current month). Includes future-dated entries so
   // upcoming bookings show.
   const fmtDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  const calStart = fmtDate(new Date(currentYear, currentMonth - 2, 1));
+  const calStart = fmtDate(new Date(currentYear, currentMonth - 5, 1));
   const calEnd = fmtDate(new Date(currentYear, currentMonth + 1, 0));
   const dayClients = new Map<string, Map<string, string>>();
   for (const e of entries) {
@@ -758,7 +758,7 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
   }
   const monthCalendar: CalendarDay[] = [];
   const calEndDate = new Date(currentYear, currentMonth + 1, 0);
-  for (const d = new Date(currentYear, currentMonth - 2, 1); d <= calEndDate; d.setDate(d.getDate() + 1)) {
+  for (const d = new Date(currentYear, currentMonth - 5, 1); d <= calEndDate; d.setDate(d.getDate() + 1)) {
     const date = fmtDate(d);
     monthCalendar.push({ date, clients: Array.from(dayClients.get(date) ?? [], ([name, color]) => ({ name, color })) });
   }
