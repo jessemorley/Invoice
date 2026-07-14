@@ -113,12 +113,12 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const [calWeeks, setCalWeeks] = useState(26);
   const calResizeObserver = useRef<ResizeObserver | null>(null);
   // Callback ref: observe the card-width wrapper and fit whole week columns
-  // into it (32px weekday label column + 18px per week column).
+  // into it (32px weekday label column + 16px per week column).
   const calWrapRef = (el: HTMLDivElement | null) => {
     calResizeObserver.current?.disconnect();
     calResizeObserver.current = null;
     if (!el) return;
-    const update = () => setCalWeeks(Math.max(4, Math.floor((el.clientWidth - 32) / 18)));
+    const update = () => setCalWeeks(Math.max(4, Math.floor((el.clientWidth - 32) / 16)));
     update();
     calResizeObserver.current = new ResizeObserver(update);
     calResizeObserver.current.observe(el);
@@ -130,12 +130,12 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
     const tip = calTipRef.current;
     const bounds = calGridRef.current;
     if (!calHover || !tip || !bounds) return;
-    const pitch = 18; // size-3.5 square (14px) + gap-1 (4px)
+    const pitch = 16; // size-3 square (12px) + gap-1 (4px)
     let x = (calHover.col + 1) * pitch; // right of the square
     if (x + tip.offsetWidth > bounds.offsetWidth) x = calHover.col * pitch - 4 - tip.offsetWidth;
     const y = Math.max(
       0,
-      Math.min(calHover.row * pitch + 7 - tip.offsetHeight / 2, bounds.offsetHeight - tip.offsetHeight)
+      Math.min(calHover.row * pitch + 6 - tip.offsetHeight / 2, bounds.offsetHeight - tip.offsetHeight)
     );
     tip.style.transform = `translate(${x}px, ${y}px)`;
   }, [calHover]);
@@ -390,7 +390,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                   <div className="w-8 shrink-0" />
                   <div
                     className="grid gap-1 text-[10px] text-muted-foreground"
-                    style={{ gridTemplateColumns: `repeat(${numWeeks}, 0.875rem)` }}
+                    style={{ gridTemplateColumns: `repeat(${numWeeks}, 0.75rem)` }}
                   >
                     {monthLabels.map(({ col, label }) => (
                       <div key={col} className="row-start-1 whitespace-nowrap" style={{ gridColumnStart: col + 1 }}>
@@ -402,7 +402,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                 <div className="flex gap-1 mt-1">
                   <div className="grid grid-rows-7 gap-1 w-8 shrink-0 text-[10px] text-muted-foreground">
                     {["Mon", "", "Wed", "", "Fri", "", ""].map((d, i) => (
-                      <div key={i} className="flex items-center h-3.5">{d}</div>
+                      <div key={i} className="flex items-center h-3">{d}</div>
                     ))}
                   </div>
                   <div ref={calGridRef} className="relative" onMouseLeave={() => setCalHover(null)}>
@@ -418,7 +418,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                             )
                           }
                           className={cn(
-                            "size-3.5 rounded-[3px] flex gap-[1.5px] overflow-hidden",
+                            "size-3 rounded-[3px] flex gap-[1.5px] overflow-hidden",
                             clients.length === 0 && "bg-muted",
                             date === todayStr && "ring-1 ring-foreground"
                           )}
