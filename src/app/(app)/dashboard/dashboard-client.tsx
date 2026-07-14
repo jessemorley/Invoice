@@ -191,13 +191,6 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
         }]
       : []
   );
-  function dayBackground(clients: { color: string }[]): string | undefined {
-    if (clients.length === 0) return undefined;
-    if (clients.length === 1) return clients[0].color;
-    // ponytail: hard-stop gradient split for multi-client days; pie/stacked segments if it ever matters
-    const stops = clients.map((c, i) => `${c.color} ${(i / clients.length) * 100}%, ${c.color} ${((i + 1) / clients.length) * 100}%`);
-    return `linear-gradient(135deg, ${stops.join(", ")})`;
-  }
 
   async function handleEmailRowClick(email: DashboardEmail) {
     if (email.status === "sent") {
@@ -390,12 +383,15 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                           <div
                             key={date}
                             className={cn(
-                              "size-3.5 rounded-[3px]",
+                              "size-3.5 rounded-[3px] flex gap-px overflow-hidden",
                               clients.length === 0 && "bg-muted",
                               date === todayStr && "ring-1 ring-foreground/40"
                             )}
-                            style={{ background: dayBackground(clients) }}
-                          />
+                          >
+                            {clients.map((c) => (
+                              <div key={c.name} className="flex-1" style={{ backgroundColor: c.color }} />
+                            ))}
+                          </div>
                         );
                         if (clients.length === 0) return square;
                         return (
