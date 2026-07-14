@@ -21,6 +21,7 @@ import {
 } from "@/lib/email-templates";
 import { formatAUD, formatDateShort, toLocalDateStr } from "@/lib/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PushNotificationToggle } from "@/components/push-notification-toggle";
 import {
   saveBusinessDetails,
@@ -629,19 +630,26 @@ function EmailTab({
           <p className="text-xs text-muted-foreground">
             Placeholders: {TEMPLATE_PLACEHOLDERS.join(", ")}
           </p>
-          {showPreview && (
-            <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm whitespace-pre-wrap">
-              {renderEmailTemplate(templateDrafts[selectedTemplate], previewVars)}
-            </div>
-          )}
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowPreview((p) => !p)}>
-              {showPreview ? "Hide preview" : "Preview"}
+            <Button variant="outline" onClick={() => setShowPreview(true)}>
+              Preview
             </Button>
             <Button onClick={handleTemplateSave} disabled={templatePending}>
               {templatePending ? "Saving…" : "Save"}
             </Button>
           </div>
+          <Dialog open={showPreview} onOpenChange={setShowPreview}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {selectedTemplate === "invoice" ? "Invoice email preview" : "Follow-up email preview"}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm whitespace-pre-wrap">
+                {renderEmailTemplate(templateDrafts[selectedTemplate], previewVars)}
+              </div>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
     </div>
