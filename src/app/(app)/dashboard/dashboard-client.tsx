@@ -403,7 +403,8 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                             <TooltipTrigger asChild>{square}</TooltipTrigger>
                             <TooltipContent
                               sideOffset={4}
-                              className="grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs text-foreground shadow-xl [&_svg]:hidden"
+                              hideArrow
+                              className="grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs text-foreground shadow-xl"
                             >
                               <div className="font-medium">
                                 {new Date(date + "T00:00:00").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}
