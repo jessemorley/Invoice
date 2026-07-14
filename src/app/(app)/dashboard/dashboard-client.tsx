@@ -28,6 +28,12 @@ import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { loadScheduledEmail } from "@/app/(app)/invoices/actions";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -184,9 +190,6 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
           label: new Date(d.date + "T00:00:00").toLocaleDateString("en-AU", { month: "short" }),
         }]
       : []
-  );
-  const activeClients = Array.from(
-    new Map(monthCalendar.flatMap((d) => d.clients).map((c) => [c.name, c])).values()
   );
   function dayBackground(clients: { color: string }[]): string | undefined {
     if (clients.length === 0) return undefined;
@@ -377,39 +380,48 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                       <div key={i} className="flex items-center h-3.5">{d}</div>
                     ))}
                   </div>
-                  <div className="grid grid-rows-7 grid-flow-col gap-1">
-                    {Array.from({ length: firstDayOffset }, (_, i) => (
-                      <div key={`pad-${i}`} className="size-3.5" />
-                    ))}
-                    {monthCalendar.map(({ date, clients }) => (
-                      <div
-                        key={date}
-                        title={
-                          clients.length
-                            ? `${new Date(date + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short" })}: ${clients.map((c) => c.name).join(", ")}`
-                            : undefined
-                        }
-                        className={cn(
-                          "size-3.5 rounded-[3px]",
-                          clients.length === 0 && "bg-muted",
-                          date === todayStr && "ring-1 ring-foreground/40"
-                        )}
-                        style={{ background: dayBackground(clients) }}
-                      />
-                    ))}
-                  </div>
+                  <TooltipProvider>
+                    <div className="grid grid-rows-7 grid-flow-col gap-1">
+                      {Array.from({ length: firstDayOffset }, (_, i) => (
+                        <div key={`pad-${i}`} className="size-3.5" />
+                      ))}
+                      {monthCalendar.map(({ date, clients }) => {
+                        const square = (
+                          <div
+                            key={date}
+                            className={cn(
+                              "size-3.5 rounded-[3px]",
+                              clients.length === 0 && "bg-muted",
+                              date === todayStr && "ring-1 ring-foreground/40"
+                            )}
+                            style={{ background: dayBackground(clients) }}
+                          />
+                        );
+                        if (clients.length === 0) return square;
+                        return (
+                          <Tooltip key={date}>
+                            <TooltipTrigger asChild>{square}</TooltipTrigger>
+                            <TooltipContent
+                              sideOffset={4}
+                              className="grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs text-foreground shadow-xl [&>svg]:hidden"
+                            >
+                              <div className="font-medium">
+                                {new Date(date + "T00:00:00").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}
+                              </div>
+                              {clients.map((c) => (
+                                <div key={c.name} className="flex w-full items-center gap-2">
+                                  <div className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: c.color }} />
+                                  <span className="text-muted-foreground">{c.name}</span>
+                                </div>
+                              ))}
+                            </TooltipContent>
+                          </Tooltip>
+                        );
+                      })}
+                    </div>
+                  </TooltipProvider>
                 </div>
               </div>
-              {activeClients.length > 0 && (
-                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-4">
-                  {activeClients.map((c) => (
-                    <div key={c.name} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <div className="size-2.5 rounded-[3px]" style={{ backgroundColor: c.color }} />
-                      <span>{c.name}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
             </CardContent>
           </Card>
 
