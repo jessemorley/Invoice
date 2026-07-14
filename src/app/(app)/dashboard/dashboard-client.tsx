@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { ComposePrefill, DashboardData, DashboardEmail, InvoiceDetail } from "@/lib/types";
+import { useInvoiceWorkflow } from "@/hooks/use-invoice-workflow";
 import { formatAUD, formatRelativeTime, fyLabel, fyStartYear } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -11,11 +12,20 @@ import { ClientSquircle } from "@/components/client-squircle";
 import {
   Card,
   CardContent,
+  CardFooter,
   CardHeader,
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { TrendingDown, TrendingUp, BarChart2 } from "lucide-react";
+import { TrendingDown, TrendingUp, BarChart2, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { invalidate } from "@/lib/invalidate";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import {
@@ -26,7 +36,7 @@ import {
 import { Area, AreaChart, Bar, BarChart, XAxis, YAxis } from "recharts";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
-import { loadScheduledEmail } from "@/app/(app)/invoices/actions";
+import { loadScheduledEmail, updateInvoiceStatus } from "@/app/(app)/invoices/actions";
 import {
   Select,
   SelectContent,
@@ -87,6 +97,15 @@ function DashboardSkeleton() {
   );
 }
 
+function dueLabel(dueDate: string): { text: string; overdue: boolean } {
+  const days = Math.round(
+    (new Date(dueDate + "T00:00:00").getTime() - new Date(new Date().toDateString()).getTime()) / 86_400_000
+  );
+  if (days < 0) return { text: `Overdue by ${-days} ${days === -1 ? "day" : "days"}`, overdue: true };
+  if (days === 0) return { text: "Due today", overdue: false };
+  return { text: `Due in ${days} ${days === 1 ? "day" : "days"}`, overdue: false };
+}
+
 function emailStatusLabel(email: DashboardEmail): string {
   if (email.status === "sent" && email.sent_at) return `Sent ${formatRelativeTime(email.sent_at)}`;
   if (email.status === "failed") return "Failed";
@@ -100,11 +119,50 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const [sentSheetOpen, setSentSheetOpen] = useState(false);
   const [composeInvoice, setComposeInvoice] = useState<InvoiceDetail | null>(null);
   const [composeBusinessName, setComposeBusinessName] = useState("");
+  const [composeUserName, setComposeUserName] = useState("");
   const [composePrefill, setComposePrefill] = useState<ComposePrefill | null>(null);
   const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
+  const { openInvoice, sendFollowUp, sheets: invoiceSheets } = useInvoiceWorkflow();
+  const [calHover, setCalHover] = useState<{
+    col: number;
+    row: number;
+    date: string;
+    clients: { name: string; color: string }[];
+  } | null>(null);
+  const calGridRef = useRef<HTMLDivElement>(null);
+  const calTipRef = useRef<HTMLDivElement>(null);
+  const [calWeeks, setCalWeeks] = useState(26);
+  const calResizeObserver = useRef<ResizeObserver | null>(null);
+  // Callback ref: observe the card-width wrapper and fit whole week columns
+  // into it (32px weekday label column + 16px per week column).
+  const calWrapRef = (el: HTMLDivElement | null) => {
+    calResizeObserver.current?.disconnect();
+    calResizeObserver.current = null;
+    if (!el) return;
+    const update = () => setCalWeeks(Math.max(4, Math.floor((el.clientWidth - 32) / 16)));
+    update();
+    calResizeObserver.current = new ResizeObserver(update);
+    calResizeObserver.current.observe(el);
+  };
+
+  // Mimic recharts' tooltip wrapper: one persistent element moved via transform
+  // (transition handles the slide), flipped/clamped to stay inside the grid.
+  useLayoutEffect(() => {
+    const tip = calTipRef.current;
+    const bounds = calGridRef.current;
+    if (!calHover || !tip || !bounds) return;
+    const pitch = 16; // size-3 square (12px) + gap-1 (4px)
+    let x = (calHover.col + 1) * pitch; // right of the square
+    if (x + tip.offsetWidth > bounds.offsetWidth) x = calHover.col * pitch - 4 - tip.offsetWidth;
+    const y = Math.max(
+      0,
+      Math.min(calHover.row * pitch + 6 - tip.offsetHeight / 2, bounds.offsetHeight - tip.offsetHeight)
+    );
+    tip.style.transform = `translate(${x}px, ${y}px)`;
+  }, [calHover]);
 
   if (!data) return <DashboardSkeleton />;
-  const { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, emails } = data;
+  const { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, emails, monthCalendar } = data;
   const weekSlice = timeframe === 26 ? weeklyEarnings.slice(26) : weeklyEarnings;
 
   // Cumulative mode: running total across weeks
@@ -170,6 +228,32 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
 
   const scheduledEmails = emails.filter((e) => e.status === "pending" || e.status === "failed");
 
+  // Show the most recent whole weeks that fit the card width (data starts on a Monday)
+  const totalWeeks = Math.ceil(monthCalendar.length / 7);
+  const weeksShown = Math.max(1, Math.min(calWeeks, totalWeeks));
+  const visibleDays = monthCalendar.slice((totalWeeks - weeksShown) * 7);
+  const numWeeks = Math.ceil(visibleDays.length / 7);
+  const calMonthsShown = Math.max(1, Math.round((visibleDays.length) / 30.4));
+  // Footer trend: which client claimed the biggest share of visible worked days
+  const workedDayCount = visibleDays.filter((d) => d.clients.length > 0).length;
+  const clientDayCounts = new Map<string, number>();
+  for (const d of visibleDays) for (const c of d.clients) clientDayCounts.set(c.name, (clientDayCounts.get(c.name) ?? 0) + 1);
+  const topClient = [...clientDayCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+  const calFirst = visibleDays[0] ? new Date(visibleDays[0].date + "T00:00:00") : null;
+  const calLast = visibleDays.at(-1) ? new Date(visibleDays.at(-1)!.date + "T00:00:00") : null;
+  const calRangeLabel = calFirst && calLast
+    ? `${calFirst.toLocaleDateString("en-AU", { month: "long", ...(calFirst.getFullYear() !== calLast.getFullYear() && { year: "numeric" }) })} – ${calLast.toLocaleDateString("en-AU", { month: "long", year: "numeric" })}`
+    : "";
+  // Month label above the week-column containing the 1st of each month
+  const monthLabels = visibleDays.flatMap((d, i) =>
+    d.date.endsWith("-01")
+      ? [{
+          col: Math.floor(i / 7),
+          label: new Date(d.date + "T00:00:00").toLocaleDateString("en-AU", { month: "short" }),
+        }]
+      : []
+  );
+
   async function handleEmailRowClick(email: DashboardEmail) {
     if (email.status === "sent") {
       setSentEmail(email);
@@ -180,6 +264,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
     if (result.invoiceDetail) {
       setComposeInvoice(result.invoiceDetail);
       setComposeBusinessName(result.businessName);
+      setComposeUserName(result.userName);
       setComposePrefill({
         to: email.to_address.split(",").map((s) => s.trim()).filter(Boolean),
         subject: email.subject,
@@ -302,26 +387,158 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
               </CardDescription>
             </CardHeader>
             {outstanding.length > 0 && (
-              <CardContent className="flex flex-col gap-2">
-                {outstanding.map((invoice) => (
-                  <div
-                    key={invoice.id}
-                    className="flex items-center justify-between py-2 px-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <InvoiceStatusBadge number={invoice.number} status={invoice.status} />
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-[22px] shrink-0" />
-                        <span className="text-sm text-muted-foreground truncate">{invoice.client.name}</span>
+              <CardContent className="flex flex-col divide-y divide-border">
+                {outstanding.map((invoice) => {
+                  const due = invoice.status === "issued" && invoice.due_date ? dueLabel(invoice.due_date) : null;
+                  return (
+                    <div
+                      key={invoice.id}
+                      onClick={() => openInvoice(invoice)}
+                      className="flex items-center justify-between py-2.5 cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <InvoiceStatusBadge number={invoice.number} status={invoice.status} />
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-[22px] shrink-0" />
+                          <span className="text-sm text-muted-foreground truncate">{invoice.client.name}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        {due && (
+                          <Badge
+                            variant={due.overdue ? "destructive" : "outline"}
+                            className={cn("hidden sm:inline-flex", !due.overdue && "text-muted-foreground")}
+                          >
+                            {due.text}
+                          </Badge>
+                        )}
+                        <span className="text-sm tabular-nums">{formatAUD(invoice.total)}</span>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7 -mr-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreVertical className="size-4" />
+                              <span className="sr-only">Invoice actions</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openInvoice(invoice)}>View</DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={async () => {
+                                try {
+                                  await updateInvoiceStatus(invoice.id, "paid");
+                                  invalidate("invoices");
+                                  toast.success(`Invoice ${invoice.number} marked as paid`);
+                                } catch (e) {
+                                  toast.error(e instanceof Error ? e.message : "Failed to mark as paid");
+                                }
+                              }}
+                            >
+                              Mark as paid
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => sendFollowUp(invoice)}>Send follow up</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                      <span className="text-sm tabular-nums">{formatAUD(invoice.total)}</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </CardContent>
             )}
+          </Card>
+
+          {/* Activity calendar */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Activity</CardTitle>
+              <CardDescription>Days worked, past {calMonthsShown === 1 ? "month" : `${calMonthsShown} months`}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div ref={calWrapRef} className="w-full">
+                <div className="flex gap-1">
+                  <div className="w-8 shrink-0" />
+                  <div
+                    className="grid gap-1 text-[10px] text-muted-foreground"
+                    style={{ gridTemplateColumns: `repeat(${numWeeks}, 0.75rem)` }}
+                  >
+                    {monthLabels.map(({ col, label }) => (
+                      <div key={col} className="row-start-1 whitespace-nowrap" style={{ gridColumnStart: col + 1 }}>
+                        {label}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-1 mt-1">
+                  <div className="grid grid-rows-7 gap-1 w-8 shrink-0 text-[10px] text-muted-foreground">
+                    {["Mon", "", "Wed", "", "Fri", "", ""].map((d, i) => (
+                      <div key={i} className="flex items-center h-3">{d}</div>
+                    ))}
+                  </div>
+                  <div ref={calGridRef} className="relative" onMouseLeave={() => setCalHover(null)}>
+                    <div className="grid grid-rows-7 grid-flow-col gap-1">
+                      {visibleDays.map(({ date, clients }, i) => (
+                        <div
+                          key={date}
+                          onMouseEnter={() =>
+                            setCalHover(
+                              clients.length
+                                ? { col: Math.floor(i / 7), row: i % 7, date, clients }
+                                : null
+                            )
+                          }
+                          className={cn(
+                            "size-3 rounded-[3px] flex flex-col gap-[1.5px] overflow-hidden",
+                            clients.length === 0 && "bg-muted"
+                          )}
+                        >
+                          {clients.map((c) => (
+                            <div
+                              key={c.name}
+                              className={cn("flex-1 opacity-70", clients.length > 1 && "rounded-[2px]")}
+                              style={{ backgroundColor: c.color }}
+                            />
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                    <div
+                      ref={calTipRef}
+                      className={cn(
+                        "absolute left-0 top-0 z-10 pointer-events-none w-max grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl",
+                        !calHover && "invisible"
+                      )}
+                      style={{ transition: "transform 400ms ease" }}
+                    >
+                      {calHover && (
+                        <>
+                          <div className="font-medium">
+                            {new Date(calHover.date + "T00:00:00").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}
+                          </div>
+                          {calHover.clients.map((c) => (
+                            <div key={c.name} className="flex w-full items-center gap-2">
+                              <div className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: c.color }} />
+                              <span className="text-muted-foreground">{c.name}</span>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="flex-col items-start gap-1.5 text-xs text-muted-foreground">
+              {topClient && workedDayCount > 0 && (
+                <div className="leading-none font-medium text-sm text-foreground">
+                  {Math.round((topClient[1] / workedDayCount) * 100)}% of days spent at {topClient[0]}
+                </div>
+              )}
+              <div className="leading-none">{calRangeLabel}</div>
+            </CardFooter>
           </Card>
 
           {/* Emails */}
@@ -337,12 +554,12 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
               </CardDescription>
             </CardHeader>
             {emails.length > 0 && (
-              <CardContent className="flex flex-col gap-2">
+              <CardContent className="flex flex-col divide-y divide-border">
                 {emails.map((email) => (
                   <div
                     key={email.id}
                     onClick={() => handleEmailRowClick(email)}
-                    className="flex items-center justify-between py-2 px-3 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
+                    className="flex items-center justify-between py-2.5 cursor-pointer"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <InvoiceStatusBadge number={email.invoice_number} status={email.invoice_status} />
@@ -500,6 +717,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
         }}
         invoice={composeInvoice}
         businessName={composeBusinessName}
+        userName={composeUserName}
         onSent={() => { setComposeInvoice(null); setComposePrefill(null); }}
         initialTo={composePrefill?.to}
         initialSubject={composePrefill?.subject}
@@ -512,6 +730,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
         onOpenChangeAction={setSentSheetOpen}
         email={sentEmail}
       />
+      {invoiceSheets}
     </div>
   );
 }

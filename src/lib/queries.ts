@@ -2,7 +2,7 @@ import { cacheTag } from "next/cache";
 import { createTokenClient } from "./supabase";
 import { isoWeek, todayInSydney, fyStartYear } from "./format";
 import { lineItemTotal } from "./utils";
-import type { Entry, Invoice, InvoiceDetail, InvoiceEntry, Expense, ExpenseCategory, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate } from "./types";
+import type { Entry, Invoice, InvoiceDetail, InvoiceEntry, Expense, ExpenseCategory, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate, CalendarDay } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -140,7 +140,16 @@ export async function fetchEntries(userId: string, token: string, before?: strin
   });
 }
 
-type DashboardEntry = { date: string; base_amount: number; bonus_amount: number };
+type DashboardEntry = {
+  date: string;
+  base_amount: number;
+  bonus_amount: number;
+  client: { name: string; color: string } | null;
+  // Line items only: true when the parent invoice also has entries. Earnings
+  // still count these dollars; the calendar skips them (the entries' own days
+  // already mark the work).
+  invoiceHasEntries?: boolean;
+};
 
 // Start of the 24-month lookback window shared by the dashboard queries (YYYY-MM-DD).
 function dashboardWindowStart(): string {
@@ -157,17 +166,21 @@ export async function fetchDashboardEntries(userId: string, token: string): Prom
 
   const { data, error } = await supabase
     .from("entries")
-    .select("date, base_amount, bonus_amount")
+    .select("date, base_amount, bonus_amount, clients(name, color)")
     .eq("user_id", userId)
     .gte("date", windowStart);
 
   if (error) throw new Error(`fetchDashboardEntries: ${error.message}`);
 
-  return (data ?? []).map((e) => ({
-    date: e.date,
-    base_amount: e.base_amount,
-    bonus_amount: e.bonus_amount,
-  }));
+  return (data ?? []).map((e) => {
+    const client = Array.isArray(e.clients) ? e.clients[0] : e.clients;
+    return {
+      date: e.date,
+      base_amount: e.base_amount,
+      bonus_amount: e.bonus_amount,
+      client: client ? { name: client.name, color: client.color ?? CLIENT_COLOR_FALLBACK } : null,
+    };
+  });
 }
 
 export async function fetchDashboardLineItems(userId: string, token: string): Promise<DashboardEntry[]> {
@@ -178,7 +191,7 @@ export async function fetchDashboardLineItems(userId: string, token: string): Pr
 
   const { data, error } = await supabase
     .from("invoice_line_items")
-    .select("amount, quantity, invoices!inner(issued_date, status)")
+    .select("amount, quantity, invoices!inner(issued_date, status, clients(name, color), entries(count))")
     .eq("user_id", userId)
     .in("invoices.status", ["issued", "paid"])
     .gte("invoices.issued_date", windowStart);
@@ -189,10 +202,14 @@ export async function fetchDashboardLineItems(userId: string, token: string): Pr
     const inv = Array.isArray(row.invoices) ? row.invoices[0] : row.invoices;
     // The gte filter above excludes null issued_date, but don't rely on it.
     if (!inv?.issued_date) return [];
+    const client = Array.isArray(inv.clients) ? inv.clients[0] : inv.clients;
+    const entriesCount = Array.isArray(inv.entries) ? inv.entries[0] : inv.entries;
     return {
       date: inv.issued_date,
       base_amount: lineItemTotal(row),
       bonus_amount: 0,
+      client: client ? { name: client.name, color: client.color ?? CLIENT_COLOR_FALLBACK } : null,
+      invoiceHasEntries: (entriesCount?.count ?? 0) > 0,
     };
   });
 }
@@ -736,7 +753,33 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
     mtdPriorCumulative.push({ day: d, cumulative: priorRunning });
   }
 
-  return { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, emails };
+  // Contribution-style calendar: which clients had entries (or line-item
+  // invoices, via the combined entries array) on each day of the past 12 months
+  // (eleven prior months + current month); the client crops to what fits its
+  // width. Includes future-dated entries within this week so bookings show.
+  const fmtDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  // Start on the Monday on/before the 1st so week columns have no gaps
+  const calStartDate = new Date(currentYear, currentMonth - 11, 1);
+  calStartDate.setDate(calStartDate.getDate() - ((calStartDate.getDay() + 6) % 7));
+  const calStart = fmtDate(calStartDate);
+  // End on the Sunday of the current week so the last column is complete
+  const calEndDate = new Date(now);
+  calEndDate.setDate(now.getDate() + (7 - todayDow));
+  const calEnd = fmtDate(calEndDate);
+  const dayClients = new Map<string, Map<string, string>>();
+  for (const e of entries) {
+    if (!e.client || e.invoiceHasEntries || e.date < calStart || e.date > calEnd) continue;
+    const clients = dayClients.get(e.date) ?? new Map<string, string>();
+    clients.set(e.client.name, e.client.color);
+    dayClients.set(e.date, clients);
+  }
+  const monthCalendar: CalendarDay[] = [];
+  for (const d = new Date(calStartDate); d <= calEndDate; d.setDate(d.getDate() + 1)) {
+    const date = fmtDate(d);
+    monthCalendar.push({ date, clients: Array.from(dayClients.get(date) ?? [], ([name, color]) => ({ name, color })) });
+  }
+
+  return { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, emails, monthCalendar };
 }
 
 export type BusinessDetails = {
@@ -922,6 +965,8 @@ export type UserPreferences = {
   mark_as_issued_on_send: boolean;
   weekly_invoice_reminder: boolean;
   weekly_invoice_reminder_cutoff: WeeklyInvoiceReminderCutoff;
+  invoice_email_template: string | null;
+  followup_email_template: string | null;
 };
 
 export async function fetchUserPreferences(userId: string, token: string): Promise<UserPreferences | null> {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useActionState } from "react";
+import { useRef, useState, useTransition, useActionState } from "react";
 import { useTheme } from "next-themes";
 import { invalidate } from "@/lib/invalidate";
 import { PageHeader } from "@/components/page-header";
@@ -10,12 +10,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import {
+  DEFAULT_INVOICE_TEMPLATE,
+  DEFAULT_FOLLOWUP_TEMPLATE,
+  TEMPLATE_PLACEHOLDERS,
+  normalizeTemplate,
+  renderEmailTemplate,
+} from "@/lib/email-templates";
+import { formatAUD, formatDateShort, toLocalDateStr } from "@/lib/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PushNotificationToggle } from "@/components/push-notification-toggle";
 import {
   saveBusinessDetails,
   saveInvoicingSettings,
   saveEmailSettings,
+  saveEmailTemplate,
   saveNotificationSettings,
   sendTestPushNotification,
   type BusinessDetailsFormData,
@@ -434,14 +446,102 @@ function InvoicingTab({
   );
 }
 
+const TEMPLATE_DEFAULTS = {
+  invoice: DEFAULT_INVOICE_TEMPLATE,
+  followup: DEFAULT_FOLLOWUP_TEMPLATE,
+} as const;
+
+// Sample due date for template previews (~30 days out, computed once at load)
+const PREVIEW_DUE_DATE = formatDateShort(toLocalDateStr(new Date(Date.now() + 30 * 86_400_000)));
+
+// Splits template text on registered placeholders; odd indices are placeholders.
+const PLACEHOLDER_SPLIT_RE = new RegExp(
+  `(${TEMPLATE_PLACEHOLDERS.map((p) => p.replace(/[{}]/g, "\\$&")).join("|")})`
+);
+
+// Textarea with a backdrop div that renders recognised {placeholders} as
+// chips. The textarea's text is transparent (caret kept visible); the backdrop
+// mirrors it with identical font metrics so the two stay aligned — chip
+// styling is background/color only, never padding or weight.
+function TemplateEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const parts = value.split(PLACEHOLDER_SPLIT_RE);
+  return (
+    <div className="relative">
+      <div
+        ref={backdropRef}
+        aria-hidden
+        className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg border border-transparent px-3 py-2 text-sm whitespace-pre-wrap break-words dark:bg-input/30"
+      >
+        {parts.map((part, i) =>
+          i % 2 === 1 ? (
+            <span key={i} className="rounded-sm bg-primary/15 text-primary">
+              {part}
+            </span>
+          ) : (
+            part
+          )
+        )}
+        {/* keeps a trailing empty line from collapsing */}
+        {"\u200b"}
+      </div>
+      <Textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onScroll={(e) => {
+          if (backdropRef.current) backdropRef.current.scrollTop = e.currentTarget.scrollTop;
+        }}
+        rows={9}
+        className="relative min-h-44 text-sm text-transparent caret-foreground dark:bg-transparent"
+      />
+    </div>
+  );
+}
+
 function EmailTab({
   userPreferences,
+  businessName,
+  userName,
 }: {
   userPreferences: UserPreferences | null;
+  businessName: string;
+  userName: string;
 }) {
   const [markAsIssued, setMarkAsIssued] = useState(userPreferences?.mark_as_issued_on_send ?? false);
   const [bccSelf, setBccSelf] = useState(userPreferences?.bcc_self ?? false);
   const [, startTransition] = useTransition();
+
+  const [selectedTemplate, setSelectedTemplate] = useState<"invoice" | "followup">("invoice");
+  const [templateDrafts, setTemplateDrafts] = useState({
+    invoice: normalizeTemplate(userPreferences?.invoice_email_template ?? DEFAULT_INVOICE_TEMPLATE),
+    followup: normalizeTemplate(userPreferences?.followup_email_template ?? DEFAULT_FOLLOWUP_TEMPLATE),
+  });
+  const [showPreview, setShowPreview] = useState(false);
+  const [templatePending, startTemplateTransition] = useTransition();
+
+  const previewVars = {
+    client_name: "Alex",
+    name: userName || "Your Name",
+    invoice_number: "JM123",
+    amount: formatAUD(1250),
+    due_date: PREVIEW_DUE_DATE,
+    business_name: businessName || "Your Business",
+  };
+
+  function handleTemplateSave() {
+    const draft = templateDrafts[selectedTemplate].trim();
+    // Empty or unchanged-from-default saves null → keeps using the built-in default
+    const value = !draft || draft === TEMPLATE_DEFAULTS[selectedTemplate] ? null : draft;
+    startTemplateTransition(async () => {
+      try {
+        await saveEmailTemplate(selectedTemplate, value);
+        invalidate("settings");
+        toast.success("Template saved");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Failed to save template");
+      }
+    });
+  }
 
   function handleChange(markAsIssuedVal: boolean, bccSelfVal: boolean) {
     startTransition(async () => {
@@ -489,6 +589,67 @@ function EmailTab({
               }}
             />
           </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Email Templates</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex items-center justify-between gap-2">
+            <Select
+              value={selectedTemplate}
+              onValueChange={(v) => {
+                setSelectedTemplate(v as "invoice" | "followup");
+                setShowPreview(false);
+              }}
+            >
+              <SelectTrigger className="w-56">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="invoice">Invoice template</SelectItem>
+                <SelectItem value="followup">Follow-up template</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={templateDrafts[selectedTemplate] === TEMPLATE_DEFAULTS[selectedTemplate]}
+              onClick={() =>
+                setTemplateDrafts((prev) => ({ ...prev, [selectedTemplate]: TEMPLATE_DEFAULTS[selectedTemplate] }))
+              }
+            >
+              Restore default
+            </Button>
+          </div>
+          <TemplateEditor
+            value={templateDrafts[selectedTemplate]}
+            onChange={(v) => setTemplateDrafts((prev) => ({ ...prev, [selectedTemplate]: v }))}
+          />
+          <p className="text-xs text-muted-foreground">
+            Placeholders: {TEMPLATE_PLACEHOLDERS.join(", ")}
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowPreview(true)}>
+              Preview
+            </Button>
+            <Button onClick={handleTemplateSave} disabled={templatePending}>
+              {templatePending ? "Saving…" : "Save"}
+            </Button>
+          </div>
+          <Dialog open={showPreview} onOpenChange={setShowPreview}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {selectedTemplate === "invoice" ? "Invoice email preview" : "Follow-up email preview"}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm whitespace-pre-wrap">
+                {renderEmailTemplate(templateDrafts[selectedTemplate], previewVars)}
+              </div>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
     </div>
@@ -629,7 +790,11 @@ export function SettingsClient({
                 <InvoicingTab invoiceSequence={invoiceSequence ?? null} userPreferences={userPreferences ?? null} />
               </TabsContent>
               <TabsContent value="email">
-                <EmailTab userPreferences={userPreferences ?? null} />
+                <EmailTab
+                  userPreferences={userPreferences ?? null}
+                  businessName={businessDetails?.business_name ?? businessDetails?.name ?? ""}
+                  userName={businessDetails?.name ?? ""}
+                />
               </TabsContent>
               <TabsContent value="account">
                 <AccountTab email={userEmail} name={userName} />

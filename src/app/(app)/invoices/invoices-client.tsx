@@ -4,10 +4,11 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { ClientSquircle } from "@/components/client-squircle";
 import { InvoiceStatusBadge, INVOICE_STATUS_COLOR } from "@/components/invoice-status-badge";
-import { revalidateInvoices, loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow, loadEntrySheetData, generateInvoices } from "./actions";
+import { revalidateInvoices, loadEntrySheetData, generateInvoices, updateInvoiceStatus } from "./actions";
 import { invalidate } from "@/lib/invalidate";
-import type { ComposePrefill, Invoice, InvoiceEmail, InvoiceStatus, InvoiceDetail, Entry, Client, WorkflowRate } from "@/lib/types";
-import type { ScheduledEmail, SuggestedInvoice } from "@/lib/queries";
+import { useInvoiceWorkflow } from "@/hooks/use-invoice-workflow";
+import type { Invoice, InvoiceEmail, InvoiceStatus, Entry, Client, WorkflowRate } from "@/lib/types";
+import type { SuggestedInvoice } from "@/lib/queries";
 import type { InvoiceFilters } from "@/lib/queries";
 import type { GeneratedInvoice } from "./actions";
 import { formatAUD, formatDateShort, toLocalDateStr } from "@/lib/format";
@@ -53,11 +54,8 @@ import { SortableTableHead, tableHeadCellBase } from "@/components/sortable-tabl
 import { cn } from "@/lib/utils";
 import { ViewHeader } from "@/components/view-header";
 import { InvoiceSheet } from "@/components/invoice-sheet";
-import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
 import { SuggestedInvoiceSheet } from "@/components/suggested-invoice-sheet";
-import { EmailComposeSheet } from "@/components/email-compose-sheet";
-import { RescheduleDialog } from "@/components/reschedule-dialog";
 import { EntrySheet } from "@/components/entry-sheet";
 import { ChevronDown, Clock, FileText, MailWarning, Plus, RefreshCw, Search, Send } from "lucide-react";
 
@@ -337,16 +335,9 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     setStatusOverrides({});
   }
 
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-  const [scheduledEmail, setScheduledEmail] = useState<ScheduledEmail | null>(null);
-  const [invoiceDetail, setInvoiceDetail] = useState<InvoiceDetail | null>(null);
-  const [businessName, setBusinessName] = useState("");
-  const [sentEmailOpen, setSentEmailOpen] = useState(false);
-  const [composeOpen, setComposeOpen] = useState(false);
-  const [composePrefill, setComposePrefill] = useState<ComposePrefill | null>(null);
-  const [rescheduleOpen, setRescheduleOpen] = useState(false);
-  const composeSentRef = useRef(false);
+  const { openInvoice, sheets: invoiceSheets, setSheetOpen } = useInvoiceWorkflow({
+    onEntryClick: (id) => handleEntryClick(id, "invoice"),
+  });
   const [generateOpen, setGenerateOpen] = useState(false);
   const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
   const [suggestedOpen, setSuggestedOpen] = useState(false);
@@ -439,18 +430,6 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     }
   }
 
-  function openInvoice(inv: Invoice) {
-    setSelectedInvoice(inv);
-    setScheduledEmail(null);
-    setInvoiceDetail(null);
-    setSheetOpen(true);
-    loadScheduledEmail(inv.id).then((result) => {
-      setScheduledEmail(result.scheduledEmail);
-      setInvoiceDetail(result.invoiceDetail);
-      setBusinessName(result.businessName);
-    });
-  }
-
   function handleSuggestedCreated(created: GeneratedInvoice, group: SuggestedInvoice | null) {
     const client = clients.find((c) => c.id === created.clientId);
     openInvoice({
@@ -498,51 +477,25 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     });
   }
 
-  function handleSendClick() {
-    setSheetOpen(false);
-    setComposePrefill(null);
-    setComposeOpen(true);
-  }
-
-  async function handleCancelEmail(id: string) {
-    await cancelScheduledEmail(id);
-    invalidate("invoices");
-    setScheduledEmail(null);
-  }
-
-  function handleEditEmail() {
-    if (!scheduledEmail) return;
-    setComposePrefill({
-      to: scheduledEmail.to_address.split(",").map((s) => s.trim()).filter(Boolean),
-      subject: scheduledEmail.subject,
-      body: scheduledEmail.body_text,
-      scheduledFor: new Date(scheduledEmail.scheduled_for),
-      editingId: scheduledEmail.id,
-    });
-    setSheetOpen(false);
-    setComposeOpen(true);
-  }
-
-  function handleReschedule() {
-    if (!scheduledEmail) return;
-    setSheetOpen(false);
-    setRescheduleOpen(true);
-  }
-
-  async function handleSendNow(id: string) {
-    await sendScheduledEmailNow(id);
-    invalidate("invoices");
-    setScheduledEmail((prev) => prev ? { ...prev, scheduled_for: new Date().toISOString() } : prev);
-  }
-
   function handleSort(key: SortKey) {
     const newDir = sortKey === key && sortDir === "asc" ? "desc" : "asc";
     setSortKey(key);
     setSortDir(newDir);
   }
 
-  function handleStatusChange(id: string, status: InvoiceStatus) {
+  async function handleStatusChange(id: string, status: InvoiceStatus) {
     setStatusOverrides((prev) => ({ ...prev, [id]: status }));
+    try {
+      await updateInvoiceStatus(id, status);
+      invalidate("invoices");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update status");
+      setStatusOverrides((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    }
   }
 
   function sh(key: SortKey) {
@@ -785,39 +738,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         )}
       </div>
 
-      <InvoiceSheet
-        open={sheetOpen}
-        onOpenChangeAction={setSheetOpen}
-        invoice={selectedInvoice}
-        invoiceDetail={invoiceDetail}
-        scheduledEmail={scheduledEmail}
-        onSendClick={handleSendClick}
-        onCancelEmail={handleCancelEmail}
-        onEditEmail={handleEditEmail}
-        onReschedule={handleReschedule}
-        onSendNow={handleSendNow}
-        onViewEmail={() => setSentEmailOpen(true)}
-        onEntryClick={handleEntryClick}
-        onLineItemMutate={() => {
-          if (selectedInvoice) {
-            loadScheduledEmail(selectedInvoice.id).then((result) => {
-              setScheduledEmail(result.scheduledEmail);
-              setInvoiceDetail(result.invoiceDetail);
-            });
-          }
-        }}
-      />
-      <SentEmailSheet
-        open={sentEmailOpen}
-        onOpenChangeAction={setSentEmailOpen}
-        email={scheduledEmail && selectedInvoice && scheduledEmail.status !== "cancelled" ? {
-          ...scheduledEmail,
-          status: scheduledEmail.status as "pending" | "sent" | "failed",
-          invoice_id: selectedInvoice.id,
-          invoice_number: selectedInvoice.number,
-          invoice_status: selectedInvoice.status,
-        } : null}
-      />
+      {invoiceSheets}
       <EntrySheet
         open={entrySheetOpen}
         onOpenChangeAction={(open) => {
@@ -830,34 +751,6 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         entry={selectedEntry}
         clients={entrySheetData?.clients ?? []}
         workflowRates={entrySheetData?.workflowRates ?? []}
-      />
-      <EmailComposeSheet
-        open={composeOpen}
-        onOpenChangeAction={(open) => {
-          setComposeOpen(open);
-          if (!open && !composeSentRef.current) setSheetOpen(true);
-          if (!open) { composeSentRef.current = false; setComposePrefill(null); }
-        }}
-        invoice={invoiceDetail}
-        businessName={businessName}
-        onSent={() => { composeSentRef.current = true; invalidate("invoices"); }}
-        initialTo={composePrefill?.to}
-        initialSubject={composePrefill?.subject}
-        initialBody={composePrefill?.body}
-        initialScheduledFor={composePrefill?.scheduledFor}
-        editingId={composePrefill?.editingId}
-      />
-      <RescheduleDialog
-        open={rescheduleOpen}
-        onOpenChangeAction={(open) => {
-          setRescheduleOpen(open);
-          if (!open) setSheetOpen(true);
-        }}
-        scheduledEmailId={scheduledEmail?.id ?? null}
-        currentScheduledFor={scheduledEmail?.scheduled_for ?? null}
-        onRescheduled={(iso) => {
-          setScheduledEmail((prev) => prev ? { ...prev, scheduled_for: iso } : prev);
-        }}
       />
       <GenerateSheet
         open={generateOpen}

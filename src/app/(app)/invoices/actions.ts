@@ -231,16 +231,60 @@ export async function loadEntrySheetData(entryId: string) {
 
 export async function loadScheduledEmail(invoiceId: string) {
   const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
-  const [scheduledEmail, invoiceDetail, businessDetails] = await Promise.all([
+  const [scheduledEmail, invoiceDetail, businessDetails, userPrefs] = await Promise.all([
     fetchScheduledEmailForInvoice(invoiceId, userId, token),
     fetchInvoiceDetail(invoiceId, userId, token),
     fetchBusinessDetails(userId, token),
+    fetchUserPreferences(userId, token),
   ]);
   return {
     scheduledEmail,
     invoiceDetail,
     businessName: businessDetails?.business_name ?? businessDetails?.name ?? "",
+    userName: businessDetails?.name ?? "",
+    invoiceTemplate: userPrefs?.invoice_email_template ?? null,
+    followupTemplate: userPrefs?.followup_email_template ?? null,
   };
+}
+
+// Shared by every mark_as_issued_on_send path: stamping issued_date must also
+// stamp due_date (issued + user's offset), and clearing it must clear both.
+async function stampIssuedDate(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  invoiceId: string,
+  issuedDate: string | null,
+  { draftOnly = true, skipIfSet = false }: { draftOnly?: boolean; skipIfSet?: boolean } = {}
+) {
+  if (skipIfSet) {
+    const { data: inv } = await supabase
+      .from("invoices")
+      .select("issued_date")
+      .eq("id", invoiceId)
+      .eq("user_id", userId)
+      .single();
+    if (inv?.issued_date) return;
+  }
+  let dueDate: string | null = null;
+  if (issuedDate) {
+    const { data: seq } = await supabase
+      .from("invoice_sequence")
+      .select("due_date_offset")
+      .eq("user_id", userId)
+      .single();
+    const offset = (seq as { due_date_offset: number } | null)?.due_date_offset ?? 30;
+    dueDate = computeDueDate(issuedDate, offset);
+  }
+  let query = supabase
+    .from("invoices")
+    .update({ issued_date: issuedDate, due_date: dueDate })
+    .eq("id", invoiceId)
+    .eq("user_id", userId);
+  if (draftOnly) query = query.eq("status", "draft");
+  const { error } = await query;
+  if (error) throw new Error(`stampIssuedDate: ${error.message}`);
+  updateTag(CACHE_TAGS.invoices);
+  updateTag(CACHE_TAGS.entries);
 }
 
 export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormData): Promise<{ id: string }> {
@@ -280,14 +324,7 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
   const scheduledTs = new Date(data.scheduled_for).getTime();
 
   if (markIssued) {
-    await supabase
-      .from("invoices")
-      .update({ issued_date: data.scheduled_date })
-      .eq("id", invoiceId)
-      .eq("user_id", userId)
-      .eq("status", "draft");
-    updateTag(CACHE_TAGS.invoices);
-    updateTag(CACHE_TAGS.entries);
+    await stampIssuedDate(supabase, userId, invoiceId, data.scheduled_date);
   }
 
   await inngest.send({
@@ -327,14 +364,7 @@ export async function cancelScheduledEmail(scheduledEmailId: string): Promise<vo
   if (!row) return;
 
   if (row.mark_issued && row.invoice_id) {
-    await supabase
-      .from("invoices")
-      .update({ issued_date: null })
-      .eq("id", row.invoice_id)
-      .eq("user_id", userId)
-      .eq("status", "draft");
-    updateTag(CACHE_TAGS.invoices);
-    updateTag(CACHE_TAGS.entries);
+    await stampIssuedDate(supabase, userId, row.invoice_id, null);
   }
 
   await inngest.send({
@@ -366,14 +396,7 @@ export async function updateScheduledEmail(scheduledEmailId: string, data: Email
   if (error) throw new Error(`updateScheduledEmail: ${error.message}`);
 
   if (row.mark_issued && row.invoice_id) {
-    await supabase
-      .from("invoices")
-      .update({ issued_date: data.scheduled_date })
-      .eq("id", row.invoice_id)
-      .eq("user_id", userId)
-      .eq("status", "draft");
-    updateTag(CACHE_TAGS.invoices);
-    updateTag(CACHE_TAGS.entries);
+    await stampIssuedDate(supabase, userId, row.invoice_id, data.scheduled_date);
   }
 
   // Cancel + resend are two separate events. Inngest processes them in order in
@@ -421,14 +444,7 @@ export async function rescheduleScheduledEmail(scheduledEmailId: string, data: R
   if (error) throw new Error(`rescheduleScheduledEmail: ${error.message}`);
 
   if (row.mark_issued && row.invoice_id) {
-    await supabase
-      .from("invoices")
-      .update({ issued_date: scheduledDate })
-      .eq("id", row.invoice_id)
-      .eq("user_id", userId)
-      .eq("status", "draft");
-    updateTag(CACHE_TAGS.invoices);
-    updateTag(CACHE_TAGS.entries);
+    await stampIssuedDate(supabase, userId, row.invoice_id, scheduledDate);
   }
 
   // Same ordering caveat as updateScheduledEmail — see comment there.
@@ -481,13 +497,7 @@ export async function sendScheduledEmailNow(scheduledEmailId: string): Promise<v
 
   if (row.mark_issued && row.invoice_id) {
     const issuedDate = new Date().toISOString().split("T")[0];
-    await supabase
-      .from("invoices")
-      .update({ issued_date: issuedDate })
-      .eq("id", row.invoice_id)
-      .eq("user_id", userId);
-    updateTag(CACHE_TAGS.invoices);
-    updateTag(CACHE_TAGS.entries);
+    await stampIssuedDate(supabase, userId, row.invoice_id, issuedDate, { draftOnly: false });
   }
 
   await inngest.send({
@@ -616,6 +626,40 @@ export async function deleteLineItem(id: string) {
   if (error) throw new Error(`deleteLineItem: ${error.message}`);
   await recomputeInvoiceTotal(supabase, item.invoice_id);
   updateTag(CACHE_TAGS.invoices);
+  refresh();
+}
+
+// Quick status change (table badge dropdown, dashboard row menu). Handles the
+// date transitions; anything more deliberate goes through the invoice sheet.
+export async function updateInvoiceStatus(id: string, status: InvoiceStatus): Promise<void> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const today = new Date().toISOString().slice(0, 10);
+  // Stamp issue/due dates only when not already set — don't clobber dates
+  // stamped by the email-schedule flow or set manually in the sheet.
+  if (status === "issued") {
+    await stampIssuedDate(supabase, userId, id, today, { draftOnly: false, skipIfSet: true });
+  }
+  // Marking paid keeps an existing paid_date (manual or prior stamp) rather
+  // than clobbering it with today. Leaving paid must clear it — tax income
+  // queries count any invoice with a non-null paid_date, regardless of status.
+  let paidDate: string | null = null;
+  if (status === "paid") {
+    const { data: inv } = await supabase
+      .from("invoices")
+      .select("paid_date")
+      .eq("id", id)
+      .eq("user_id", userId)
+      .single();
+    paidDate = inv?.paid_date ?? today;
+  }
+  const { error } = await supabase
+    .from("invoices")
+    .update({ status, paid_date: paidDate })
+    .eq("id", id)
+    .eq("user_id", userId);
+  if (error) throw new Error(`updateInvoiceStatus: ${error.message}`);
+  updateTag(CACHE_TAGS.invoices);
+  updateTag(CACHE_TAGS.entries);
   refresh();
 }
 
