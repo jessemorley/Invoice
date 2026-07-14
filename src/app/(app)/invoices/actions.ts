@@ -616,6 +616,19 @@ export async function deleteLineItem(id: string) {
   refresh();
 }
 
+export async function markInvoicePaid(id: string): Promise<void> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { error } = await supabase
+    .from("invoices")
+    .update({ status: "paid", paid_date: new Date().toISOString().slice(0, 10) })
+    .eq("id", id)
+    .eq("user_id", userId);
+  if (error) throw new Error(`markInvoicePaid: ${error.message}`);
+  updateTag(CACHE_TAGS.invoices);
+  updateTag(CACHE_TAGS.entries);
+  refresh();
+}
+
 export async function updateInvoiceNumber(id: string, number: string): Promise<void> {
   const trimmed = number.trim();
   if (!trimmed) throw new Error("Invoice number cannot be empty");

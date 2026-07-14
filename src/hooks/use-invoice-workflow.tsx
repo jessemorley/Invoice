@@ -5,6 +5,7 @@ import type { ComposePrefill, Invoice, InvoiceDetail } from "@/lib/types";
 import type { ScheduledEmail } from "@/lib/queries";
 import { loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
+import { formatAUD, formatDateShort } from "@/lib/format";
 import { InvoiceSheet } from "@/components/invoice-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
@@ -24,6 +25,9 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
   const [composePrefill, setComposePrefill] = useState<ComposePrefill | null>(null);
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const composeSentRef = useRef(false);
+  // Whether closing the compose sheet should return to the invoice sheet
+  // (true when compose was launched from within it).
+  const composeReturnRef = useRef(true);
 
   function openInvoice(inv: Invoice) {
     setSelectedInvoice(inv);
@@ -38,9 +42,35 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
   }
 
   function handleSendClick() {
+    composeReturnRef.current = true;
     setSheetOpen(false);
     setComposePrefill(null);
     setComposeOpen(true);
+  }
+
+  // Open the compose sheet directly (no invoice sheet) with a friendly
+  // payment-reminder template for the given invoice.
+  function sendFollowUp(inv: Invoice) {
+    setSelectedInvoice(inv);
+    setScheduledEmail(null);
+    setInvoiceDetail(null);
+    loadScheduledEmail(inv.id).then((result) => {
+      setScheduledEmail(result.scheduledEmail);
+      setInvoiceDetail(result.invoiceDetail);
+      setBusinessName(result.businessName);
+      const detail = result.invoiceDetail;
+      if (!detail) return;
+      const greeting = detail.client.contact_name ?? detail.client.name;
+      const duePart = detail.due_date ? ` (due ${formatDateShort(detail.due_date)})` : "";
+      setComposePrefill({
+        to: detail.client.email ? [detail.client.email] : [],
+        subject: `Payment reminder: Invoice ${detail.number}`,
+        body: `Hi ${greeting},\n\nJust a friendly reminder that invoice ${detail.number} for ${formatAUD(detail.total)}${duePart} is now due for payment.\n\nIf you've already paid, please disregard this email.\n\nThanks,\n${result.businessName}`,
+        scheduledFor: null,
+      });
+      composeReturnRef.current = false;
+      setComposeOpen(true);
+    });
   }
 
   async function handleCancelEmail(id: string) {
@@ -51,6 +81,7 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
 
   function handleEditEmail() {
     if (!scheduledEmail) return;
+    composeReturnRef.current = true;
     setComposePrefill({
       to: scheduledEmail.to_address.split(",").map((s) => s.trim()).filter(Boolean),
       subject: scheduledEmail.subject,
@@ -113,8 +144,8 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
         open={composeOpen}
         onOpenChangeAction={(open) => {
           setComposeOpen(open);
-          if (!open && !composeSentRef.current) setSheetOpen(true);
-          if (!open) { composeSentRef.current = false; setComposePrefill(null); }
+          if (!open && !composeSentRef.current && composeReturnRef.current) setSheetOpen(true);
+          if (!open) { composeSentRef.current = false; composeReturnRef.current = true; setComposePrefill(null); }
         }}
         invoice={invoiceDetail}
         businessName={businessName}
@@ -140,5 +171,5 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
     </>
   );
 
-  return { openInvoice, sheets, setSheetOpen };
+  return { openInvoice, sendFollowUp, sheets, setSheetOpen };
 }

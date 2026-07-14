@@ -17,7 +17,14 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { TrendingDown, TrendingUp, BarChart2 } from "lucide-react";
+import { TrendingDown, TrendingUp, BarChart2, MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { invalidate } from "@/lib/invalidate";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import {
@@ -28,7 +35,7 @@ import {
 import { Area, AreaChart, Bar, BarChart, XAxis, YAxis } from "recharts";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
-import { loadScheduledEmail } from "@/app/(app)/invoices/actions";
+import { loadScheduledEmail, markInvoicePaid } from "@/app/(app)/invoices/actions";
 import {
   Select,
   SelectContent,
@@ -113,7 +120,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const [composeBusinessName, setComposeBusinessName] = useState("");
   const [composePrefill, setComposePrefill] = useState<ComposePrefill | null>(null);
   const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
-  const { openInvoice, sheets: invoiceSheets } = useInvoiceWorkflow();
+  const { openInvoice, sendFollowUp, sheets: invoiceSheets } = useInvoiceWorkflow();
   const [calHover, setCalHover] = useState<{
     col: number;
     row: number;
@@ -403,6 +410,31 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                           </Badge>
                         )}
                         <span className="text-sm tabular-nums">{formatAUD(invoice.total)}</span>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7 -mr-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="size-4" />
+                              <span className="sr-only">Invoice actions</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenuItem onClick={() => openInvoice(invoice)}>View</DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={async () => {
+                                await markInvoicePaid(invoice.id);
+                                invalidate("invoices");
+                              }}
+                            >
+                              Mark as paid
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => sendFollowUp(invoice)}>Send follow up</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   );
