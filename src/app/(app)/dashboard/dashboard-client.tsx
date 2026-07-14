@@ -376,7 +376,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                 </div>
                 <div className="flex gap-1 mt-1">
                   <div className="grid grid-rows-7 gap-1 w-8 shrink-0 text-[10px] text-muted-foreground">
-                    {["", "Mon", "", "Wed", "", "Fri", ""].map((d, i) => (
+                    {["Mon", "", "Wed", "", "Fri", "", ""].map((d, i) => (
                       <div key={i} className="flex items-center h-3.5">{d}</div>
                     ))}
                   </div>
