@@ -170,8 +170,11 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
 
   const scheduledEmails = emails.filter((e) => e.status === "pending" || e.status === "failed");
 
-  // Monday-first offset for the 1st of the current month
-  const firstDayOffset = (new Date(now.getFullYear(), now.getMonth(), 1).getDay() + 6) % 7;
+  // Monday-first offset for the first calendar day
+  const firstDayOffset = monthCalendar.length
+    ? (new Date(monthCalendar[0].date + "T00:00:00").getDay() + 6) % 7
+    : 0;
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const activeClients = Array.from(
     new Map(monthCalendar.flatMap((d) => d.clients).map((c) => [c.name, c])).values()
   );
@@ -337,30 +340,29 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
             )}
           </Card>
 
-          {/* Month calendar */}
+          {/* Activity calendar */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">
-                {now.toLocaleDateString("en-AU", { month: "long", year: "numeric" })}
-              </CardTitle>
-              <CardDescription>Days worked this month</CardDescription>
+              <CardTitle className="text-sm font-medium">Activity</CardTitle>
+              <CardDescription>Days worked, past 3 months</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-7 gap-1.5 max-w-72">
-                {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
-                  <div key={i} className="text-center text-[10px] text-muted-foreground">{d}</div>
-                ))}
+              <div className="grid grid-rows-7 grid-flow-col gap-1 w-fit">
                 {Array.from({ length: firstDayOffset }, (_, i) => (
-                  <div key={`pad-${i}`} />
+                  <div key={`pad-${i}`} className="size-3.5" />
                 ))}
-                {monthCalendar.map(({ day, clients }) => (
+                {monthCalendar.map(({ date, clients }) => (
                   <div
-                    key={day}
-                    title={clients.length ? `${day}: ${clients.map((c) => c.name).join(", ")}` : undefined}
+                    key={date}
+                    title={
+                      clients.length
+                        ? `${new Date(date + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short" })}: ${clients.map((c) => c.name).join(", ")}`
+                        : undefined
+                    }
                     className={cn(
-                      "aspect-square rounded-md",
+                      "size-3.5 rounded-[3px]",
                       clients.length === 0 && "bg-muted",
-                      day === now.getDate() && "ring-2 ring-foreground/30 ring-offset-1 ring-offset-background"
+                      date === todayStr && "ring-1 ring-foreground/40"
                     )}
                     style={{ background: dayBackground(clients) }}
                   />

@@ -742,22 +742,26 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
     mtdPriorCumulative.push({ day: d, cumulative: priorRunning });
   }
 
-  // Contribution-style month calendar: which clients had entries (or line-item
-  // invoices, via the combined entries array) on each day of the current month.
-  // Includes future-dated entries so upcoming bookings show.
-  const dayClients = new Map<number, Map<string, string>>();
+  // Contribution-style calendar: which clients had entries (or line-item
+  // invoices, via the combined entries array) on each day of the past 3 months
+  // (two prior months + current month). Includes future-dated entries so
+  // upcoming bookings show.
+  const fmtDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const calStart = fmtDate(new Date(currentYear, currentMonth - 2, 1));
+  const calEnd = fmtDate(new Date(currentYear, currentMonth + 1, 0));
+  const dayClients = new Map<string, Map<string, string>>();
   for (const e of entries) {
-    if (!e.client || !e.date.startsWith(currentMonthPrefix)) continue;
-    const day = Number(e.date.slice(8, 10));
-    const clients = dayClients.get(day) ?? new Map<string, string>();
+    if (!e.client || e.date < calStart || e.date > calEnd) continue;
+    const clients = dayClients.get(e.date) ?? new Map<string, string>();
     clients.set(e.client.name, e.client.color);
-    dayClients.set(day, clients);
+    dayClients.set(e.date, clients);
   }
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const monthCalendar: CalendarDay[] = Array.from({ length: daysInMonth }, (_, i) => ({
-    day: i + 1,
-    clients: Array.from(dayClients.get(i + 1) ?? [], ([name, color]) => ({ name, color })),
-  }));
+  const monthCalendar: CalendarDay[] = [];
+  const calEndDate = new Date(currentYear, currentMonth + 1, 0);
+  for (const d = new Date(currentYear, currentMonth - 2, 1); d <= calEndDate; d.setDate(d.getDate() + 1)) {
+    const date = fmtDate(d);
+    monthCalendar.push({ date, clients: Array.from(dayClients.get(date) ?? [], ([name, color]) => ({ name, color })) });
+  }
 
   return { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, emails, monthCalendar };
 }

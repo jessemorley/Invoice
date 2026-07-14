@@ -218,7 +218,7 @@ export type MtdDailyPoint = {
 };
 
 export type CalendarDay = {
-  day: number;
+  date: string; // YYYY-MM-DD
   clients: { name: string; color: string }[];
 };
 
