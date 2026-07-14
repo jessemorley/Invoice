@@ -11,6 +11,7 @@ import { ClientSquircle } from "@/components/client-squircle";
 import {
   Card,
   CardContent,
+  CardFooter,
   CardHeader,
   CardTitle,
   CardDescription,
@@ -213,6 +214,16 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const visibleDays = monthCalendar.slice((totalWeeks - weeksShown) * 7);
   const numWeeks = Math.ceil(visibleDays.length / 7);
   const calMonthsShown = Math.max(1, Math.round((visibleDays.length) / 30.4));
+  // Footer trend: which client claimed the biggest share of visible worked days
+  const workedDayCount = visibleDays.filter((d) => d.clients.length > 0).length;
+  const clientDayCounts = new Map<string, number>();
+  for (const d of visibleDays) for (const c of d.clients) clientDayCounts.set(c.name, (clientDayCounts.get(c.name) ?? 0) + 1);
+  const topClient = [...clientDayCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+  const calFirst = visibleDays[0] ? new Date(visibleDays[0].date + "T00:00:00") : null;
+  const calLast = visibleDays.at(-1) ? new Date(visibleDays.at(-1)!.date + "T00:00:00") : null;
+  const calRangeLabel = calFirst && calLast
+    ? `${calFirst.toLocaleDateString("en-AU", { month: "long", ...(calFirst.getFullYear() !== calLast.getFullYear() && { year: "numeric" }) })} – ${calLast.toLocaleDateString("en-AU", { month: "long", year: "numeric" })}`
+    : "";
   // Month label above the week-column containing the 1st of each month
   const monthLabels = visibleDays.flatMap((d, i) =>
     d.date.endsWith("-01")
@@ -457,6 +468,14 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                 </div>
               </div>
             </CardContent>
+            <CardFooter className="flex-col items-start gap-2 text-sm">
+              {topClient && workedDayCount > 0 && (
+                <div className="leading-none font-medium">
+                  {Math.round((topClient[1] / workedDayCount) * 100)}% of days spent at {topClient[0]}
+                </div>
+              )}
+              <div className="text-muted-foreground leading-none">{calRangeLabel}</div>
+            </CardFooter>
           </Card>
 
           {/* Emails */}
