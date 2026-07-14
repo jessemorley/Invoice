@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { ComposePrefill, DashboardData, DashboardEmail, InvoiceDetail } from "@/lib/types";
 import { formatAUD, formatRelativeTime, fyLabel, fyStartYear } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,12 +27,6 @@ import { Area, AreaChart, Bar, BarChart, XAxis, YAxis } from "recharts";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { loadScheduledEmail } from "@/app/(app)/invoices/actions";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -108,6 +102,30 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   const [composeBusinessName, setComposeBusinessName] = useState("");
   const [composePrefill, setComposePrefill] = useState<ComposePrefill | null>(null);
   const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
+  const [calHover, setCalHover] = useState<{
+    col: number;
+    row: number;
+    date: string;
+    clients: { name: string; color: string }[];
+  } | null>(null);
+  const calGridRef = useRef<HTMLDivElement>(null);
+  const calTipRef = useRef<HTMLDivElement>(null);
+
+  // Mimic recharts' tooltip wrapper: one persistent element moved via transform
+  // (transition handles the slide), flipped/clamped to stay inside the grid.
+  useLayoutEffect(() => {
+    const tip = calTipRef.current;
+    const bounds = calGridRef.current;
+    if (!calHover || !tip || !bounds) return;
+    const pitch = 18; // size-3.5 square (14px) + gap-1 (4px)
+    let x = (calHover.col + 1) * pitch; // right of the square
+    if (x + tip.offsetWidth > bounds.offsetWidth) x = calHover.col * pitch - 4 - tip.offsetWidth;
+    const y = Math.max(
+      0,
+      Math.min(calHover.row * pitch + 7 - tip.offsetHeight / 2, bounds.offsetHeight - tip.offsetHeight)
+    );
+    tip.style.transform = `translate(${x}px, ${y}px)`;
+  }, [calHover]);
 
   if (!data) return <DashboardSkeleton />;
   const { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, emails, monthCalendar } = data;
@@ -373,54 +391,65 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                       <div key={i} className="flex items-center h-3.5">{d}</div>
                     ))}
                   </div>
-                  <TooltipProvider>
+                  <div ref={calGridRef} className="relative" onMouseLeave={() => setCalHover(null)}>
                     <div className="grid grid-rows-7 grid-flow-col gap-1">
                       {Array.from({ length: firstDayOffset }, (_, i) => (
                         <div key={`pad-${i}`} className="size-3.5" />
                       ))}
-                      {monthCalendar.map(({ date, clients }) => {
-                        const square = (
-                          <div
-                            key={date}
-                            className={cn(
-                              "size-3.5 rounded-[3px] flex gap-[1.5px] overflow-hidden",
-                              clients.length === 0 && "bg-muted",
-                              date === todayStr && "ring-1 ring-foreground"
-                            )}
-                          >
-                            {clients.map((c) => (
-                              <div
-                                key={c.name}
-                                className={cn("flex-1", clients.length > 1 && "rounded-[2px]")}
-                                style={{ backgroundColor: c.color }}
-                              />
-                            ))}
-                          </div>
-                        );
-                        if (clients.length === 0) return square;
-                        return (
-                          <Tooltip key={date}>
-                            <TooltipTrigger asChild>{square}</TooltipTrigger>
-                            <TooltipContent
-                              sideOffset={4}
-                              hideArrow
-                              className="grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs text-foreground shadow-xl"
-                            >
-                              <div className="font-medium">
-                                {new Date(date + "T00:00:00").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}
-                              </div>
-                              {clients.map((c) => (
-                                <div key={c.name} className="flex w-full items-center gap-2">
-                                  <div className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: c.color }} />
-                                  <span className="text-muted-foreground">{c.name}</span>
-                                </div>
-                              ))}
-                            </TooltipContent>
-                          </Tooltip>
-                        );
-                      })}
+                      {monthCalendar.map(({ date, clients }, i) => (
+                        <div
+                          key={date}
+                          onMouseEnter={() =>
+                            setCalHover(
+                              clients.length
+                                ? {
+                                    col: Math.floor((firstDayOffset + i) / 7),
+                                    row: (firstDayOffset + i) % 7,
+                                    date,
+                                    clients,
+                                  }
+                                : null
+                            )
+                          }
+                          className={cn(
+                            "size-3.5 rounded-[3px] flex gap-[1.5px] overflow-hidden",
+                            clients.length === 0 && "bg-muted",
+                            date === todayStr && "ring-1 ring-foreground"
+                          )}
+                        >
+                          {clients.map((c) => (
+                            <div
+                              key={c.name}
+                              className={cn("flex-1", clients.length > 1 && "rounded-[2px]")}
+                              style={{ backgroundColor: c.color }}
+                            />
+                          ))}
+                        </div>
+                      ))}
                     </div>
-                  </TooltipProvider>
+                    <div
+                      ref={calTipRef}
+                      className={cn(
+                        "absolute left-0 top-0 z-10 pointer-events-none w-max grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl",
+                        !calHover && "invisible"
+                      )}
+                      style={{ transition: "transform 400ms ease" }}
+                    >
+                      {calHover && (
+                        <>
+                          <div className="font-medium">
+                            {new Date(calHover.date + "T00:00:00").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}
+                          </div>
+                          {calHover.clients.map((c) => (
+                            <div key={c.name} className="flex w-full items-center gap-2">
+                              <div className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: c.color }} />
+                              <span className="text-muted-foreground">{c.name}</span>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
