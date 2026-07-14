@@ -747,7 +747,10 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
   // (five prior months + current month). Includes future-dated entries so
   // upcoming bookings show.
   const fmtDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  const calStart = fmtDate(new Date(currentYear, currentMonth - 5, 1));
+  // Start on the Monday on/before the 1st so the first week column has no gaps
+  const calStartDate = new Date(currentYear, currentMonth - 5, 1);
+  calStartDate.setDate(calStartDate.getDate() - ((calStartDate.getDay() + 6) % 7));
+  const calStart = fmtDate(calStartDate);
   const calEnd = fmtDate(new Date(currentYear, currentMonth + 1, 0));
   const dayClients = new Map<string, Map<string, string>>();
   for (const e of entries) {
@@ -758,7 +761,7 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
   }
   const monthCalendar: CalendarDay[] = [];
   const calEndDate = new Date(currentYear, currentMonth + 1, 0);
-  for (const d = new Date(currentYear, currentMonth - 5, 1); d <= calEndDate; d.setDate(d.getDate() + 1)) {
+  for (const d = new Date(calStartDate); d <= calEndDate; d.setDate(d.getDate() + 1)) {
     const date = fmtDate(d);
     monthCalendar.push({ date, clients: Array.from(dayClients.get(date) ?? [], ([name, color]) => ({ name, color })) });
   }
