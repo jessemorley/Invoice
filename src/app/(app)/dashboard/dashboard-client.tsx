@@ -435,7 +435,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                           {clients.map((c) => (
                             <div
                               key={c.name}
-                              className={cn("flex-1", clients.length > 1 && "rounded-[2px]")}
+                              className={cn("flex-1 opacity-70", clients.length > 1 && "rounded-[2px]")}
                               style={{ backgroundColor: c.color }}
                             />
                           ))}
