@@ -468,13 +468,13 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex-col items-start gap-2 text-sm">
+            <CardFooter className="flex-col items-start gap-1.5 text-xs text-muted-foreground">
               {topClient && workedDayCount > 0 && (
                 <div className="leading-none font-medium">
                   {Math.round((topClient[1] / workedDayCount) * 100)}% of days spent at {topClient[0]}
                 </div>
               )}
-              <div className="text-muted-foreground leading-none">{calRangeLabel}</div>
+              <div className="leading-none">{calRangeLabel}</div>
             </CardFooter>
           </Card>
 
