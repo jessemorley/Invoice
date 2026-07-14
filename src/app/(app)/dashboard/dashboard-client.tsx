@@ -17,7 +17,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { TrendingDown, TrendingUp, BarChart2, MoreHorizontal } from "lucide-react";
+import { TrendingDown, TrendingUp, BarChart2, MoreVertical } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -418,7 +418,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                               className="size-7 -mr-1"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <MoreHorizontal className="size-4" />
+                              <MoreVertical className="size-4" />
                               <span className="sr-only">Invoice actions</span>
                             </Button>
                           </DropdownMenuTrigger>
