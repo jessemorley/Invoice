@@ -45,7 +45,7 @@ type FormState = {
   workflow_type: string;
   brand: string;
   skus: number | null;
-  shoot_client: string;
+  label: string;
   description: string;
   role: string;
   start_time: string;
@@ -67,13 +67,17 @@ function defaultForm(entry: Entry | null, client: Client | null): FormState {
       workflow_type: entry.workflow_type ?? "Apparel",
       brand: entry.brand ?? "",
       skus: entry.skus ?? null,
-      shoot_client: entry.shoot_client || entry.description || "",
+      label: entry.label || entry.description || "",
       description: entry.description ?? "",
       role: entry.role ?? client?.roles[0]?.name ?? "",
       start_time: entry.start_time?.slice(0, 5) ?? client.default_start_time?.slice(0, 5) ?? "09:00",
       finish_time: entry.finish_time?.slice(0, 5) ?? client.default_finish_time?.slice(0, 5) ?? "17:00",
       break_minutes: entry.break_minutes ?? 0,
-      manual_amount: entry.base_amount ?? 0,
+      // manual entries store the line total in base_amount; recover the per-unit amount
+      manual_amount:
+        entry.billing_type === "manual" && entry.skus
+          ? Math.round(((entry.base_amount ?? 0) / entry.skus) * 100) / 100
+          : entry.base_amount ?? 0,
     };
   }
   return {
@@ -83,7 +87,7 @@ function defaultForm(entry: Entry | null, client: Client | null): FormState {
     workflow_type: "Apparel",
     brand: "",
     skus: null,
-    shoot_client: "",
+    label: "",
     description: "",
     role: "",
     start_time: "09:00",
@@ -105,7 +109,7 @@ function applyClientDefaults(client: Client): Partial<FormState> {
   if (client.billing_type === "day_rate") {
     return { day_type: "full", workflow_type: "Apparel" };
   }
-  return { manual_amount: 0 };
+  return { manual_amount: 0, skus: null };
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -280,7 +284,7 @@ export function EntrySheet({
     if (billingType === "hourly") {
       return calcHourly(selectedClient, form.start_time, form.finish_time, form.break_minutes, form.role);
     }
-    return calcManual(form.manual_amount, selectedClient);
+    return calcManual(form.manual_amount, form.skus, selectedClient);
   }, [selectedClient, billingType, form, workflowRates]);
 
   function buildPayload(): EntryFormData {
@@ -291,10 +295,10 @@ export function EntrySheet({
       billing_type: billingType,
       day_type: billingType === "day_rate" ? form.day_type : null,
       workflow_type: billingType === "day_rate" ? form.workflow_type : null,
-      skus: billingType === "day_rate" && needsSkus ? form.skus : null,
+      skus: (billingType === "day_rate" && needsSkus) || billingType === "manual" ? form.skus : null,
       brand: billingType === "day_rate" && needsBrand ? form.brand || null : null,
-      shoot_client: billingType === "hourly" && selectedClient?.entry_label ? form.shoot_client || null : null,
-      description: billingType !== "day_rate" && !selectedClient?.entry_label ? form.description || null : null,
+      label: showEntryLabel || billingType === "manual" ? form.label || null : null,
+      description: showDescription ? form.description || null : null,
       role: showRole ? form.role || null : null,
       start_time: billingType === "hourly" ? form.start_time || null : null,
       finish_time: billingType === "hourly" ? form.finish_time || null : null,
@@ -311,6 +315,10 @@ export function EntrySheet({
     if (!selectedClient) return;
     if (showRole && !form.role) {
       setError("Please select a role");
+      return;
+    }
+    if (billingType === "manual" && !form.label.trim()) {
+      setError("Please enter an item");
       return;
     }
     setError(null);
@@ -353,6 +361,8 @@ export function EntrySheet({
   const needsBrand = billingType === "day_rate" && form.workflow_type === "Own Brand";
   const needsSkus = billingType === "day_rate" && (form.workflow_type === "Apparel" || isProductWorkflow);
   const showEntryLabel = billingType === "hourly" && !!selectedClient?.entry_label;
+  // manual entries reuse label as the "Item" label, matching hourly's label-as-label pattern
+  const showItem = billingType === "manual";
   const showDescription = (billingType === "hourly" && !selectedClient?.entry_label) || billingType === "manual";
   const showRole = billingType === "hourly" && (selectedClient?.roles?.length ?? 0) > 0;
   const showTimes = billingType === "hourly";
@@ -554,14 +564,14 @@ export function EntrySheet({
                 </Field>
               )}
 
-              {/* Custom entry label (hourly-with-label) */}
-              {showEntryLabel && (
-                <Field label={selectedClient.entry_label!}>
+              {/* Custom entry label (hourly-with-label) / Item (manual) */}
+              {(showEntryLabel || showItem) && (
+                <Field label={showItem ? "Item" : selectedClient.entry_label!}>
                   <Input
                     className="text-sm"
-                    value={form.shoot_client}
-                    onChange={(e) => set("shoot_client", e.target.value)}
-                    placeholder={selectedClient.entry_label!}
+                    value={form.label}
+                    onChange={(e) => set("label", e.target.value)}
+                    placeholder={showItem ? "Item" : selectedClient.entry_label!}
                   />
                 </Field>
               )}
@@ -573,7 +583,7 @@ export function EntrySheet({
                     className="text-sm min-h-9 py-1.5"
                     value={form.description}
                     onChange={(e) => set("description", e.target.value)}
-                    placeholder="What did you work on?"
+                    placeholder={showItem ? "Optional description" : "What did you work on?"}
                     rows={1}
                   />
                 </Field>
@@ -633,6 +643,22 @@ export function EntrySheet({
                       <Plus className="size-4" />
                     </Button>
                   </div>
+                </Field>
+              )}
+
+              {/* Quantity (manual) */}
+              {showItem && (
+                <Field label="Quantity">
+                  <Input
+                    type="number"
+                    min={1}
+                    className="text-sm"
+                    value={form.skus ?? ""}
+                    onChange={(e) =>
+                      set("skus", e.target.value === "" ? null : parseInt(e.target.value, 10))
+                    }
+                    placeholder="1"
+                  />
                 </Field>
               )}
 

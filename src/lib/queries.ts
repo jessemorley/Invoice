@@ -65,7 +65,7 @@ export async function fetchEntryById(userId: string, entryId: string, token: str
     billing_type: data.billing_type_snapshot,
     day_type: data.day_type,
     hours: data.hours_worked,
-    shoot_client: data.shoot_client,
+    label: data.label,
     skus: data.skus,
     brand: data.brand,
     start_time: data.start_time,
@@ -123,7 +123,7 @@ export async function fetchEntries(userId: string, token: string, before?: strin
       billing_type: e.billing_type_snapshot,
       day_type: e.day_type,
       hours: e.hours_worked,
-      shoot_client: e.shoot_client,
+      label: e.label,
       skus: e.skus,
       brand: e.brand,
       start_time: e.start_time,
@@ -386,7 +386,7 @@ export async function fetchSuggestedInvoiceEntries(
   const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("entries")
-    .select("id, date, description, billing_type_snapshot, day_type, workflow_type, brand, shoot_client, role, skus, hours_worked, start_time, finish_time, break_minutes, base_amount, bonus_amount, super_amount, total_amount")
+    .select("id, date, description, billing_type_snapshot, day_type, workflow_type, brand, label, role, skus, hours_worked, start_time, finish_time, break_minutes, base_amount, bonus_amount, super_amount, total_amount")
     .eq("user_id", userId)
     .eq("client_id", clientId)
     .is("invoice_id", null)
@@ -404,7 +404,7 @@ export async function fetchSuggestedInvoiceEntries(
       day_type: e.day_type as InvoiceEntry["day_type"],
       workflow_type: e.workflow_type,
       brand: e.brand,
-      shoot_client: e.shoot_client,
+      label: e.label,
       role: e.role,
       skus: e.skus,
       hours_worked: e.hours_worked,
@@ -831,7 +831,7 @@ export async function fetchInvoiceDetail(invoiceId: string, userId: string, toke
     .select(`
       *,
       clients (id, name, color, address, suburb, email, abn, contact_name, entry_label, pays_super, super_rate, show_super_on_invoice, rate_hourly),
-      entries (id, date, description, billing_type_snapshot, day_type, workflow_type, brand, shoot_client, role, skus, hours_worked, start_time, finish_time, break_minutes, base_amount, bonus_amount, super_amount, total_amount),
+      entries (id, date, description, billing_type_snapshot, day_type, workflow_type, brand, label, role, skus, hours_worked, start_time, finish_time, break_minutes, base_amount, bonus_amount, super_amount, total_amount),
       invoice_line_items (id, invoice_id, description, quantity, amount, sort_order, details)
     `)
     .eq("id", invoiceId)
@@ -846,7 +846,7 @@ export async function fetchInvoiceDetail(invoiceId: string, userId: string, toke
     id: string; date: string; description: string | null;
     billing_type_snapshot: string; day_type: string | null;
     workflow_type: string | null; brand: string | null;
-    shoot_client: string | null; role: string | null; skus: number | null;
+    label: string | null; role: string | null; skus: number | null;
     hours_worked: number | null; start_time: string | null;
     finish_time: string | null; break_minutes: number | null;
     base_amount: number; bonus_amount: number; super_amount: number; total_amount: number;
@@ -858,7 +858,7 @@ export async function fetchInvoiceDetail(invoiceId: string, userId: string, toke
     day_type: e.day_type as InvoiceDetail["entries"][0]["day_type"],
     workflow_type: e.workflow_type,
     brand: e.brand,
-    shoot_client: e.shoot_client,
+    label: e.label,
     role: e.role,
     skus: e.skus,
     hours_worked: e.hours_worked,

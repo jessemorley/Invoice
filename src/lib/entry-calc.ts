@@ -80,8 +80,9 @@ export function calcHourly(
   return { base, bonus: 0, superAmt, total: base + superAmt, hoursWorked: roundedHours, rawMins: diffMins };
 }
 
-export function calcManual(amount: number, client: Client): CalcResult {
-  const base = amount || 0;
+// amount is per-unit when quantity is set; skus doubles as the quantity column for manual entries
+export function calcManual(amount: number, quantity: number | null, client: Client): CalcResult {
+  const base = (amount || 0) * (quantity ?? 1);
   const superAmt = client.pays_super ? base * (client.super_rate || 0.12) : 0;
   return { base, bonus: 0, superAmt, total: base + superAmt, hoursWorked: null };
 }

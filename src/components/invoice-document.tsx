@@ -139,6 +139,7 @@ type RowData =
   | { type: "entry"; entry: Entry }
   | { type: "sku_bonus"; entry: Entry }
   | { type: "time_range"; entry: Entry }
+  | { type: "entry_detail"; entry: Entry }
   | { type: "line_item"; item: LineItem }
   | { type: "line_item_detail"; item: LineItem };
 
@@ -155,6 +156,9 @@ function buildRows(entries: Entry[], lineItems: LineItem[]): RowData[] {
     }
     if (entry.billing_type === "hourly" && entry.start_time && entry.finish_time) {
       rows.push({ type: "time_range", entry });
+    }
+    if (entry.billing_type === "manual" && entry.label && entry.description) {
+      rows.push({ type: "entry_detail", entry });
     }
   }
 
@@ -175,16 +179,19 @@ function entryDescription(entry: Entry): string {
     return "Creative Assist";
   }
   if (entry.billing_type === "hourly") {
-    const label = entry.shoot_client ?? entry.description ?? "";
+    const label = entry.label ?? entry.description ?? "";
     return entry.role ? `${label} (${abbreviateRole(entry.role)})` : label;
   }
-  return entry.description ?? "";
+  // manual: label holds the item; description (rendered as a sub-row) is a fallback for legacy entries
+  return entry.label ?? entry.description ?? "";
 }
 
-function EntryRow({ entry, showHours, showQty }: { entry: Entry; showHours: boolean; showQty: boolean }) {
+function EntryRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
   const description = entryDescription(entry);
-  const hours = entry.billing_type === "hourly" && entry.hours_worked != null
+  const qty = entry.billing_type === "hourly" && entry.hours_worked != null
     ? String(entry.hours_worked)
+    : entry.billing_type === "manual" && entry.skus != null
+    ? String(entry.skus)
     : "";
   // Own Brand entries show the line total (base + markup) in both rate and amount columns,
   // hiding the internal base/markup split from the client.
@@ -196,14 +203,19 @@ function EntryRow({ entry, showHours, showQty }: { entry: Entry; showHours: bool
     ? (entry.hours_worked && entry.hours_worked > 0 ? fmtRate(entry.base_amount / entry.hours_worked) : "")
     : entry.billing_type === "day_rate"
     ? fmtAmount(isOwnBrand ? lineTotal : entry.base_amount)
+    : entry.skus
+    ? fmtAmount(entry.base_amount / entry.skus)
     : "";
-  const amount = fmtAmount(isOwnBrand ? lineTotal : entry.skus == null ? lineTotal : entry.base_amount);
+  // manual entries with no amount entered show a blank cell rather than 0.00
+  const amount = entry.billing_type === "manual" && lineTotal === 0
+    ? ""
+    : fmtAmount(isOwnBrand ? lineTotal : entry.skus == null ? lineTotal : entry.base_amount);
 
   return (
     <View style={s.tableRow}>
       <Text style={s.colDate}>{fmtDateDay(entry.date)}</Text>
       <Text style={s.colItem}>{description}</Text>
-      {showQty ? <Text style={s.colQty}>{showHours ? hours : ""}</Text> : null}
+      {showQty ? <Text style={s.colQty}>{qty}</Text> : null}
       <Text style={s.colRate}>{rate}</Text>
       <Text style={s.colAmount}>{amount}</Text>
     </View>
@@ -225,11 +237,7 @@ function SkuBonusRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
   );
 }
 
-function TimeRangeRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
-  let label = `${fmtTime(entry.start_time!)} – ${fmtTime(entry.finish_time!)}`;
-  if (entry.break_minutes && entry.break_minutes > 0) {
-    label += ` (${entry.break_minutes}m)`;
-  }
+function EntrySubRow({ label, showQty }: { label: string; showQty: boolean }) {
   return (
     <View style={s.tableSubRow}>
       <Text style={s.colDate} />
@@ -239,6 +247,14 @@ function TimeRangeRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
       <Text style={s.colAmount} />
     </View>
   );
+}
+
+function timeRangeLabel(entry: Entry): string {
+  let label = `${fmtTime(entry.start_time!)} – ${fmtTime(entry.finish_time!)}`;
+  if (entry.break_minutes && entry.break_minutes > 0) {
+    label += ` (${entry.break_minutes}m)`;
+  }
+  return label;
 }
 
 function LineItemDetailRow({ item, showQty, showRate }: { item: LineItem; showQty: boolean; showRate: boolean }) {
@@ -278,7 +294,10 @@ export function InvoiceDocument({ invoice, business }: Props) {
   const descriptionHeader = client.entry_label ?? "Description";
   const showHours = invoice.entries.some((e) => e.billing_type === "hourly");
   const showRate = invoice.entries.length > 0;
-  const showQty = showHours || invoice.line_items.length > 0;
+  const showQty =
+    showHours ||
+    invoice.line_items.length > 0 ||
+    invoice.entries.some((e) => e.billing_type === "manual" && e.skus != null);
 
   const rows = buildRows(invoice.entries, invoice.line_items);
 
@@ -337,13 +356,16 @@ export function InvoiceDocument({ invoice, business }: Props) {
 
           {rows.map((row, i) => {
             if (row.type === "entry") {
-              return <EntryRow key={`e-${row.entry.id}`} entry={row.entry} showHours={showHours} showQty={showQty} />;
+              return <EntryRow key={`e-${row.entry.id}`} entry={row.entry} showQty={showQty} />;
             }
             if (row.type === "sku_bonus") {
               return <SkuBonusRow key={`sku-${row.entry.id}`} entry={row.entry} showQty={showQty} />;
             }
             if (row.type === "time_range") {
-              return <TimeRangeRow key={`tr-${row.entry.id}-${i}`} entry={row.entry} showQty={showQty} />;
+              return <EntrySubRow key={`tr-${row.entry.id}-${i}`} label={timeRangeLabel(row.entry)} showQty={showQty} />;
+            }
+            if (row.type === "entry_detail") {
+              return <EntrySubRow key={`ed-${row.entry.id}`} label={row.entry.description!} showQty={showQty} />;
             }
             if (row.type === "line_item_detail") {
               return <LineItemDetailRow key={`lid-${row.item.id}`} item={row.item} showQty={showQty} showRate={showRate} />;

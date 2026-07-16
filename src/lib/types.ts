@@ -28,7 +28,7 @@ export type Entry = {
   billing_type: BillingType;
   day_type?: DayType | null;
   hours?: number | null;
-  shoot_client: string | null;
+  label: string | null;
   skus: number | null;
   brand: string | null;
   start_time: string | null;
@@ -148,7 +148,7 @@ export type InvoiceEntry = {
   day_type: DayType | null;
   workflow_type: string | null;
   brand: string | null;
-  shoot_client: string | null;
+  label: string | null;
   role: string | null;
   skus: number | null;
   hours_worked: number | null;
