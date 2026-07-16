@@ -203,7 +203,7 @@ function EntryRow({
   showClient?: boolean;
   onEdit: (entry: Entry) => void;
 }) {
-  const description = entry.shoot_client || entry.description || entry.workflow_type;
+  const description = entry.label || entry.description || entry.workflow_type;
   const total = entry.base_amount + entry.bonus_amount;
   const isFuture = entry.date > todayInSydney();
 
@@ -513,7 +513,7 @@ export function EntriesView({
         return (
           e.description?.toLowerCase().includes(q) ||
           e.client.name.toLowerCase().includes(q) ||
-          e.shoot_client?.toLowerCase().includes(q)
+          e.label?.toLowerCase().includes(q)
         );
       })
     : entries;

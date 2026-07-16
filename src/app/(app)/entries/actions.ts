@@ -23,7 +23,7 @@ export type EntryFormData = {
   workflow_type: string | null;
   skus: number | null;
   brand: string | null;
-  shoot_client: string | null;
+  label: string | null;
   description: string | null;
   role: string | null;
   start_time: string | null;
@@ -48,7 +48,7 @@ export async function updateEntry(id: string, data: EntryFormData) {
       workflow_type: data.workflow_type,
       skus: data.skus,
       brand: data.brand ?? null,
-      shoot_client: data.shoot_client ?? null,
+      label: data.label ?? null,
       description: data.description ?? null,
       role: data.role ?? null,
       start_time: data.start_time ?? null,
@@ -79,7 +79,7 @@ export async function createEntry(data: EntryFormData) {
     workflow_type: data.workflow_type,
     skus: data.skus,
     brand: data.brand ?? null,
-    shoot_client: data.shoot_client ?? null,
+    label: data.label ?? null,
     description: data.description ?? null,
     role: data.role ?? null,
     start_time: data.start_time ?? null,

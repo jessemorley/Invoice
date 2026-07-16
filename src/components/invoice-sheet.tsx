@@ -59,10 +59,10 @@ export function entryDescription(entry: InvoiceEntry): string {
     else if (entry.workflow_type) label = entry.workflow_type;
     else label = "Creative Assist";
   } else if (entry.billing_type === "hourly") {
-    const base = entry.shoot_client ?? entry.description ?? "";
+    const base = entry.label ?? entry.description ?? "";
     label = entry.role ? `${base} (${abbreviateRole(entry.role)})` : base;
   } else {
-    const base = entry.shoot_client ?? entry.description ?? "";
+    const base = entry.label ?? entry.description ?? "";
     label = entry.skus != null ? `${base} × ${entry.skus}` : base;
   }
   return label;

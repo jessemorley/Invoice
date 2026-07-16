@@ -45,7 +45,7 @@ type FormState = {
   workflow_type: string;
   brand: string;
   skus: number | null;
-  shoot_client: string;
+  label: string;
   description: string;
   role: string;
   start_time: string;
@@ -67,7 +67,7 @@ function defaultForm(entry: Entry | null, client: Client | null): FormState {
       workflow_type: entry.workflow_type ?? "Apparel",
       brand: entry.brand ?? "",
       skus: entry.skus ?? null,
-      shoot_client: entry.shoot_client || entry.description || "",
+      label: entry.label || entry.description || "",
       description: entry.description ?? "",
       role: entry.role ?? client?.roles[0]?.name ?? "",
       start_time: entry.start_time?.slice(0, 5) ?? client.default_start_time?.slice(0, 5) ?? "09:00",
@@ -87,7 +87,7 @@ function defaultForm(entry: Entry | null, client: Client | null): FormState {
     workflow_type: "Apparel",
     brand: "",
     skus: null,
-    shoot_client: "",
+    label: "",
     description: "",
     role: "",
     start_time: "09:00",
@@ -297,7 +297,7 @@ export function EntrySheet({
       workflow_type: billingType === "day_rate" ? form.workflow_type : null,
       skus: (billingType === "day_rate" && needsSkus) || billingType === "manual" ? form.skus : null,
       brand: billingType === "day_rate" && needsBrand ? form.brand || null : null,
-      shoot_client: showEntryLabel || billingType === "manual" ? form.shoot_client || null : null,
+      label: showEntryLabel || billingType === "manual" ? form.label || null : null,
       description: showDescription ? form.description || null : null,
       role: showRole ? form.role || null : null,
       start_time: billingType === "hourly" ? form.start_time || null : null,
@@ -317,7 +317,7 @@ export function EntrySheet({
       setError("Please select a role");
       return;
     }
-    if (billingType === "manual" && !form.shoot_client.trim()) {
+    if (billingType === "manual" && !form.label.trim()) {
       setError("Please enter an item");
       return;
     }
@@ -361,7 +361,7 @@ export function EntrySheet({
   const needsBrand = billingType === "day_rate" && form.workflow_type === "Own Brand";
   const needsSkus = billingType === "day_rate" && (form.workflow_type === "Apparel" || isProductWorkflow);
   const showEntryLabel = billingType === "hourly" && !!selectedClient?.entry_label;
-  // manual entries reuse shoot_client as the "Item" label, matching hourly's shoot_client-as-label pattern
+  // manual entries reuse label as the "Item" label, matching hourly's label-as-label pattern
   const showItem = billingType === "manual";
   const showDescription = (billingType === "hourly" && !selectedClient?.entry_label) || billingType === "manual";
   const showRole = billingType === "hourly" && (selectedClient?.roles?.length ?? 0) > 0;
@@ -569,8 +569,8 @@ export function EntrySheet({
                 <Field label={showItem ? "Item" : selectedClient.entry_label!}>
                   <Input
                     className="text-sm"
-                    value={form.shoot_client}
-                    onChange={(e) => set("shoot_client", e.target.value)}
+                    value={form.label}
+                    onChange={(e) => set("label", e.target.value)}
                     placeholder={showItem ? "Item" : selectedClient.entry_label!}
                   />
                 </Field>

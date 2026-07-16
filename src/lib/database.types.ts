@@ -258,7 +258,7 @@ export type Database = {
           id: string
           invoice_id: string | null
           role: string | null
-          shoot_client: string | null
+          label: string | null
           skus: number | null
           start_time: string | null
           super_amount: number
@@ -282,7 +282,7 @@ export type Database = {
           id?: string
           invoice_id?: string | null
           role?: string | null
-          shoot_client?: string | null
+          label?: string | null
           skus?: number | null
           start_time?: string | null
           super_amount?: number
@@ -306,7 +306,7 @@ export type Database = {
           id?: string
           invoice_id?: string | null
           role?: string | null
-          shoot_client?: string | null
+          label?: string | null
           skus?: number | null
           start_time?: string | null
           super_amount?: number

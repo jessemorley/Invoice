@@ -157,7 +157,7 @@ function buildRows(entries: Entry[], lineItems: LineItem[]): RowData[] {
     if (entry.billing_type === "hourly" && entry.start_time && entry.finish_time) {
       rows.push({ type: "time_range", entry });
     }
-    if (entry.billing_type === "manual" && entry.shoot_client && entry.description) {
+    if (entry.billing_type === "manual" && entry.label && entry.description) {
       rows.push({ type: "entry_detail", entry });
     }
   }
@@ -179,11 +179,11 @@ function entryDescription(entry: Entry): string {
     return "Creative Assist";
   }
   if (entry.billing_type === "hourly") {
-    const label = entry.shoot_client ?? entry.description ?? "";
+    const label = entry.label ?? entry.description ?? "";
     return entry.role ? `${label} (${abbreviateRole(entry.role)})` : label;
   }
-  // manual: shoot_client holds the item; description (rendered as a sub-row) is a fallback for legacy entries
-  return entry.shoot_client ?? entry.description ?? "";
+  // manual: label holds the item; description (rendered as a sub-row) is a fallback for legacy entries
+  return entry.label ?? entry.description ?? "";
 }
 
 function EntryRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
