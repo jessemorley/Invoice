@@ -302,6 +302,7 @@ function EntryRow({
           {entry.billing_type === "day_rate" &&
             (entry.day_type === "full" ? "Full day" : "Half day")}
           {entry.billing_type === "hourly" && entry.hours && `${entry.hours}h`}
+          {entry.billing_type === "manual" && entry.skus != null && `× ${entry.skus}`}
         </span>
         <div className="flex items-center gap-3 shrink-0 ml-auto">
           {showClient && (

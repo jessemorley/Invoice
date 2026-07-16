@@ -62,7 +62,8 @@ export function entryDescription(entry: InvoiceEntry): string {
     const base = entry.shoot_client ?? entry.description ?? "";
     label = entry.role ? `${base} (${abbreviateRole(entry.role)})` : base;
   } else {
-    label = entry.shoot_client ?? entry.description ?? "";
+    const base = entry.shoot_client ?? entry.description ?? "";
+    label = entry.skus != null ? `${base} × ${entry.skus}` : base;
   }
   return label;
 }

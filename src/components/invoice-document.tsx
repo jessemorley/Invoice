@@ -186,10 +186,12 @@ function entryDescription(entry: Entry): string {
   return entry.shoot_client ?? entry.description ?? "";
 }
 
-function EntryRow({ entry, showHours, showQty }: { entry: Entry; showHours: boolean; showQty: boolean }) {
+function EntryRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
   const description = entryDescription(entry);
-  const hours = entry.billing_type === "hourly" && entry.hours_worked != null
+  const qty = entry.billing_type === "hourly" && entry.hours_worked != null
     ? String(entry.hours_worked)
+    : entry.billing_type === "manual" && entry.skus != null
+    ? String(entry.skus)
     : "";
   // Own Brand entries show the line total (base + markup) in both rate and amount columns,
   // hiding the internal base/markup split from the client.
@@ -201,6 +203,8 @@ function EntryRow({ entry, showHours, showQty }: { entry: Entry; showHours: bool
     ? (entry.hours_worked && entry.hours_worked > 0 ? fmtRate(entry.base_amount / entry.hours_worked) : "")
     : entry.billing_type === "day_rate"
     ? fmtAmount(isOwnBrand ? lineTotal : entry.base_amount)
+    : entry.skus
+    ? fmtAmount(entry.base_amount / entry.skus)
     : "";
   // manual entries with no amount entered show a blank cell rather than 0.00
   const amount = entry.billing_type === "manual" && lineTotal === 0
@@ -211,7 +215,7 @@ function EntryRow({ entry, showHours, showQty }: { entry: Entry; showHours: bool
     <View style={s.tableRow}>
       <Text style={s.colDate}>{fmtDateDay(entry.date)}</Text>
       <Text style={s.colItem}>{description}</Text>
-      {showQty ? <Text style={s.colQty}>{showHours ? hours : ""}</Text> : null}
+      {showQty ? <Text style={s.colQty}>{qty}</Text> : null}
       <Text style={s.colRate}>{rate}</Text>
       <Text style={s.colAmount}>{amount}</Text>
     </View>
@@ -290,7 +294,10 @@ export function InvoiceDocument({ invoice, business }: Props) {
   const descriptionHeader = client.entry_label ?? "Description";
   const showHours = invoice.entries.some((e) => e.billing_type === "hourly");
   const showRate = invoice.entries.length > 0;
-  const showQty = showHours || invoice.line_items.length > 0;
+  const showQty =
+    showHours ||
+    invoice.line_items.length > 0 ||
+    invoice.entries.some((e) => e.billing_type === "manual" && e.skus != null);
 
   const rows = buildRows(invoice.entries, invoice.line_items);
 
@@ -349,7 +356,7 @@ export function InvoiceDocument({ invoice, business }: Props) {
 
           {rows.map((row, i) => {
             if (row.type === "entry") {
-              return <EntryRow key={`e-${row.entry.id}`} entry={row.entry} showHours={showHours} showQty={showQty} />;
+              return <EntryRow key={`e-${row.entry.id}`} entry={row.entry} showQty={showQty} />;
             }
             if (row.type === "sku_bonus") {
               return <SkuBonusRow key={`sku-${row.entry.id}`} entry={row.entry} showQty={showQty} />;

@@ -73,7 +73,11 @@ function defaultForm(entry: Entry | null, client: Client | null): FormState {
       start_time: entry.start_time?.slice(0, 5) ?? client.default_start_time?.slice(0, 5) ?? "09:00",
       finish_time: entry.finish_time?.slice(0, 5) ?? client.default_finish_time?.slice(0, 5) ?? "17:00",
       break_minutes: entry.break_minutes ?? 0,
-      manual_amount: entry.base_amount ?? 0,
+      // manual entries store the line total in base_amount; recover the per-unit amount
+      manual_amount:
+        entry.billing_type === "manual" && entry.skus
+          ? Math.round(((entry.base_amount ?? 0) / entry.skus) * 100) / 100
+          : entry.base_amount ?? 0,
     };
   }
   return {
@@ -105,7 +109,7 @@ function applyClientDefaults(client: Client): Partial<FormState> {
   if (client.billing_type === "day_rate") {
     return { day_type: "full", workflow_type: "Apparel" };
   }
-  return { manual_amount: 0 };
+  return { manual_amount: 0, skus: null };
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -280,7 +284,7 @@ export function EntrySheet({
     if (billingType === "hourly") {
       return calcHourly(selectedClient, form.start_time, form.finish_time, form.break_minutes, form.role);
     }
-    return calcManual(form.manual_amount, selectedClient);
+    return calcManual(form.manual_amount, form.skus, selectedClient);
   }, [selectedClient, billingType, form, workflowRates]);
 
   function buildPayload(): EntryFormData {
@@ -291,7 +295,7 @@ export function EntrySheet({
       billing_type: billingType,
       day_type: billingType === "day_rate" ? form.day_type : null,
       workflow_type: billingType === "day_rate" ? form.workflow_type : null,
-      skus: billingType === "day_rate" && needsSkus ? form.skus : null,
+      skus: (billingType === "day_rate" && needsSkus) || billingType === "manual" ? form.skus : null,
       brand: billingType === "day_rate" && needsBrand ? form.brand || null : null,
       shoot_client: showEntryLabel || billingType === "manual" ? form.shoot_client || null : null,
       description: showDescription ? form.description || null : null,
@@ -639,6 +643,22 @@ export function EntrySheet({
                       <Plus className="size-4" />
                     </Button>
                   </div>
+                </Field>
+              )}
+
+              {/* Quantity (manual) */}
+              {showItem && (
+                <Field label="Quantity">
+                  <Input
+                    type="number"
+                    min={1}
+                    className="text-sm"
+                    value={form.skus ?? ""}
+                    onChange={(e) =>
+                      set("skus", e.target.value === "" ? null : parseInt(e.target.value, 10))
+                    }
+                    placeholder="1"
+                  />
                 </Field>
               )}
 
