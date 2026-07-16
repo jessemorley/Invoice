@@ -204,11 +204,6 @@ function EntryRow({
   onEdit: (entry: Entry) => void;
 }) {
   const description = entry.shoot_client || entry.description || entry.workflow_type;
-  // manual entries: shoot_client is the item, description is an optional sub-line (mirrors the PDF)
-  const detail =
-    entry.billing_type === "manual" && entry.shoot_client && entry.description
-      ? entry.description
-      : null;
   const total = entry.base_amount + entry.bonus_amount;
   const isFuture = entry.date > todayInSydney();
 
@@ -232,7 +227,7 @@ function EntryRow({
                 </span>
                 <span className="text-xs text-muted-foreground shrink-0">·</span>
                 <span className="text-xs text-muted-foreground truncate">
-                  {detail ? `${description} · ${detail}` : description}
+                  {description}
                 </span>
               </div>
             </>
@@ -241,11 +236,6 @@ function EntryRow({
               <span className="text-sm font-medium text-foreground truncate block">
                 {description}
               </span>
-              {detail && (
-                <span className="text-xs text-muted-foreground truncate mt-0.5 block">
-                  {detail}
-                </span>
-              )}
               <span className="text-xs text-muted-foreground tabular-nums mt-0.5 block">
                 {formatDate(entry.date)}
               </span>
@@ -270,31 +260,24 @@ function EntryRow({
             </span>
           </div>
         )}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-foreground truncate">
-              {description}
+        <div className="flex flex-1 min-w-0 items-center gap-2">
+          <span className="text-sm text-foreground truncate">
+            {description}
+          </span>
+          {entry.brand && (
+            <span className="text-sm text-muted-foreground shrink-0">
+              ({entry.brand})
             </span>
-            {entry.brand && (
-              <span className="text-sm text-muted-foreground shrink-0">
-                ({entry.brand})
-              </span>
-            )}
-            {entry.role && (
-              <span className="text-sm text-muted-foreground shrink-0">
-                (
-                {entry.role === "Photographer"
-                  ? "P"
-                  : entry.role === "Operator" || entry.role === "O"
-                    ? "O"
-                    : entry.role}
-                )
-              </span>
-            )}
-          </div>
-          {detail && (
-            <span className="text-xs text-muted-foreground truncate block">
-              {detail}
+          )}
+          {entry.role && (
+            <span className="text-sm text-muted-foreground shrink-0">
+              (
+              {entry.role === "Photographer"
+                ? "P"
+                : entry.role === "Operator" || entry.role === "O"
+                  ? "O"
+                  : entry.role}
+              )
             </span>
           )}
         </div>
@@ -302,7 +285,6 @@ function EntryRow({
           {entry.billing_type === "day_rate" &&
             (entry.day_type === "full" ? "Full day" : "Half day")}
           {entry.billing_type === "hourly" && entry.hours && `${entry.hours}h`}
-          {entry.billing_type === "manual" && entry.skus != null && `× ${entry.skus}`}
         </span>
         <div className="flex items-center gap-3 shrink-0 ml-auto">
           {showClient && (
