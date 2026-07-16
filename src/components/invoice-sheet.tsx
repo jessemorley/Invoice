@@ -62,7 +62,7 @@ export function entryDescription(entry: InvoiceEntry): string {
     const base = entry.shoot_client ?? entry.description ?? "";
     label = entry.role ? `${base} (${abbreviateRole(entry.role)})` : base;
   } else {
-    label = entry.description ?? "";
+    label = entry.shoot_client ?? entry.description ?? "";
   }
   return label;
 }

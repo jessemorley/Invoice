@@ -293,8 +293,8 @@ export function EntrySheet({
       workflow_type: billingType === "day_rate" ? form.workflow_type : null,
       skus: billingType === "day_rate" && needsSkus ? form.skus : null,
       brand: billingType === "day_rate" && needsBrand ? form.brand || null : null,
-      shoot_client: billingType === "hourly" && selectedClient?.entry_label ? form.shoot_client || null : null,
-      description: billingType !== "day_rate" && !selectedClient?.entry_label ? form.description || null : null,
+      shoot_client: showEntryLabel || billingType === "manual" ? form.shoot_client || null : null,
+      description: showDescription ? form.description || null : null,
       role: showRole ? form.role || null : null,
       start_time: billingType === "hourly" ? form.start_time || null : null,
       finish_time: billingType === "hourly" ? form.finish_time || null : null,
@@ -311,6 +311,10 @@ export function EntrySheet({
     if (!selectedClient) return;
     if (showRole && !form.role) {
       setError("Please select a role");
+      return;
+    }
+    if (billingType === "manual" && !form.shoot_client.trim()) {
+      setError("Please enter an item");
       return;
     }
     setError(null);
@@ -353,6 +357,8 @@ export function EntrySheet({
   const needsBrand = billingType === "day_rate" && form.workflow_type === "Own Brand";
   const needsSkus = billingType === "day_rate" && (form.workflow_type === "Apparel" || isProductWorkflow);
   const showEntryLabel = billingType === "hourly" && !!selectedClient?.entry_label;
+  // manual entries reuse shoot_client as the "Item" label, matching hourly's shoot_client-as-label pattern
+  const showItem = billingType === "manual";
   const showDescription = (billingType === "hourly" && !selectedClient?.entry_label) || billingType === "manual";
   const showRole = billingType === "hourly" && (selectedClient?.roles?.length ?? 0) > 0;
   const showTimes = billingType === "hourly";
@@ -554,14 +560,14 @@ export function EntrySheet({
                 </Field>
               )}
 
-              {/* Custom entry label (hourly-with-label) */}
-              {showEntryLabel && (
-                <Field label={selectedClient.entry_label!}>
+              {/* Custom entry label (hourly-with-label) / Item (manual) */}
+              {(showEntryLabel || showItem) && (
+                <Field label={showItem ? "Item" : selectedClient.entry_label!}>
                   <Input
                     className="text-sm"
                     value={form.shoot_client}
                     onChange={(e) => set("shoot_client", e.target.value)}
-                    placeholder={selectedClient.entry_label!}
+                    placeholder={showItem ? "Item" : selectedClient.entry_label!}
                   />
                 </Field>
               )}
@@ -573,7 +579,7 @@ export function EntrySheet({
                     className="text-sm min-h-9 py-1.5"
                     value={form.description}
                     onChange={(e) => set("description", e.target.value)}
-                    placeholder="What did you work on?"
+                    placeholder={showItem ? "Optional description" : "What did you work on?"}
                     rows={1}
                   />
                 </Field>
