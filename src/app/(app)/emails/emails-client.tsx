@@ -30,7 +30,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ClientSquircle } from "@/components/client-squircle";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
-import { Paperclip, Plus } from "lucide-react";
+import { Paperclip, Pencil } from "lucide-react";
 
 function emailDate(email: DashboardEmail): string {
   const d = new Date(email.status === "sent" && email.sent_at ? email.sent_at : email.scheduled_for);
@@ -247,8 +247,8 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
     <div className="flex flex-col h-full">
       <PageHeader title="Emails">
         <Button size="sm" className="hidden md:flex" disabled={loading} onClick={openNewEmail}>
-          <Plus className="size-4" />
-          New email
+          <Pencil className="size-4" />
+          Compose
         </Button>
         {selected.size > 0 && (
           <AlertDialog>
