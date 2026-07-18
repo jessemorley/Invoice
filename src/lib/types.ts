@@ -202,6 +202,8 @@ export type DashboardEmail = {
   invoice_id: string;
   invoice_number: string;
   invoice_status: InvoiceStatus;
+  client_name: string | null;
+  client_color: string | null;
   to_address: string;
   subject: string;
   body_text: string;

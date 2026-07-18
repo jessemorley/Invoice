@@ -611,7 +611,7 @@ export async function fetchAllEmails(userId: string, token: string): Promise<Das
   const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("scheduled_emails")
-    .select("id, invoice_id, to_address, subject, body_text, filename, scheduled_for, sent_at, sent_pdf_path, status, invoices(invoice_number, status)")
+    .select("id, invoice_id, to_address, subject, body_text, filename, scheduled_for, sent_at, sent_pdf_path, status, invoices(invoice_number, status, clients(name, color))")
     .eq("user_id", userId)
     .in("status", ["pending", "failed", "sent"])
     .order("status", { ascending: true })
@@ -624,11 +624,14 @@ export async function fetchAllEmails(userId: string, token: string): Promise<Das
 
   for (const row of data ?? []) {
     const inv = Array.isArray(row.invoices) ? row.invoices[0] : row.invoices;
+    const client = inv && (Array.isArray(inv.clients) ? inv.clients[0] : inv.clients);
     const email: DashboardEmail = {
       id: row.id,
       invoice_id: row.invoice_id ?? "",
       invoice_number: inv?.invoice_number ?? "",
       invoice_status: (inv?.status ?? "draft") as DashboardEmail["invoice_status"],
+      client_name: client?.name ?? null,
+      client_color: client?.color ?? null,
       to_address: row.to_address,
       subject: row.subject,
       body_text: row.body_text,

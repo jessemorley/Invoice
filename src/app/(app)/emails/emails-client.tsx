@@ -5,12 +5,21 @@ import type { ComposePrefill, DashboardEmail, InvoiceDetail } from "@/lib/types"
 import { loadScheduledEmail } from "@/app/(app)/invoices/actions";
 import { formatRelativeTime } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InvoiceStatusBadge } from "@/components/invoice-status-badge";
+import { ClientSquircle } from "@/components/client-squircle";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
+import { tableHeadCellBase } from "@/components/sortable-table-head";
 
 function emailStatusLabel(email: DashboardEmail): string {
   if (email.status === "sent" && email.sent_at) return `Sent ${formatRelativeTime(email.sent_at)}`;
@@ -18,23 +27,32 @@ function emailStatusLabel(email: DashboardEmail): string {
   return formatRelativeTime(email.scheduled_for);
 }
 
-function EmailRow({ email, onClick }: { email: DashboardEmail; onClick: () => void }) {
+function StatusCell({ email }: { email: DashboardEmail }) {
   return (
-    <div onClick={onClick} className="flex items-center justify-between py-2.5 cursor-pointer">
-      <div className="flex items-center gap-2.5 min-w-0">
-        <InvoiceStatusBadge number={email.invoice_number} status={email.invoice_status} />
-        <div className="min-w-0">
-          <p className="text-sm truncate">{email.subject}</p>
-          <p className="text-sm text-muted-foreground truncate">{email.to_address}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 shrink-0 ml-2">
-        <span className="text-xs text-muted-foreground hidden sm:block">{emailStatusLabel(email)}</span>
-        <Badge variant={email.status === "failed" ? "destructive" : email.status === "sent" ? "secondary" : "outline"}>
-          {email.status === "pending" ? "scheduled" : email.status}
-        </Badge>
-      </div>
-    </div>
+    <Badge variant={email.status === "failed" ? "destructive" : email.status === "sent" ? "secondary" : "outline"}>
+      {email.status === "pending" ? "scheduled" : email.status}
+    </Badge>
+  );
+}
+
+function SkeletonTableRows({ count = 6 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }, (_, i) => (
+        <TableRow key={i}>
+          <TableCell className="py-3 px-6"><Skeleton className="h-5 w-24 rounded-full" /></TableCell>
+          <TableCell className="py-3 px-6">
+            <div className="flex items-center gap-3">
+              <Skeleton className="size-6 rounded-md" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </TableCell>
+          <TableCell className="py-3 px-6"><Skeleton className="h-4 w-48" /></TableCell>
+          <TableCell className="py-3 px-6"><Skeleton className="h-4 w-20" /></TableCell>
+          <TableCell className="py-3 px-6 text-right"><Skeleton className="h-5 w-16 ml-auto rounded-full" /></TableCell>
+        </TableRow>
+      ))}
+    </>
   );
 }
 
@@ -47,8 +65,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
   const [composePrefill, setComposePrefill] = useState<ComposePrefill | null>(null);
   const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
 
-  const scheduled = emails?.filter((e) => e.status === "pending" || e.status === "failed") ?? [];
-  const sent = emails?.filter((e) => e.status === "sent") ?? [];
+  const loading = !emails;
 
   async function handleEmailRowClick(email: DashboardEmail) {
     if (email.status === "sent") {
@@ -78,51 +95,57 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
 
       <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
         <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
-          {!emails ? (
-            <Card>
-              <CardContent className="flex flex-col gap-3 py-6">
-                <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-5 w-2/3" />
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium">Scheduled</CardTitle>
-                  <CardDescription>
-                    {scheduled.length === 0
-                      ? "No scheduled emails"
-                      : `${scheduled.length} scheduled`}
-                  </CardDescription>
-                </CardHeader>
-                {scheduled.length > 0 && (
-                  <CardContent className="flex flex-col divide-y divide-border">
-                    {scheduled.map((email) => (
-                      <EmailRow key={email.id} email={email} onClick={() => handleEmailRowClick(email)} />
-                    ))}
-                  </CardContent>
+          <div className="rounded-lg border overflow-hidden bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className={`${tableHeadCellBase} w-24`}>Invoice</TableHead>
+                  <TableHead className={`${tableHeadCellBase} w-48`}>To</TableHead>
+                  <TableHead className={tableHeadCellBase}>Subject</TableHead>
+                  <TableHead className={`${tableHeadCellBase} w-36`}>When</TableHead>
+                  <TableHead className={`${tableHeadCellBase} w-24 text-right`}>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <SkeletonTableRows />
+                ) : emails.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+                      No emails yet.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  emails.map((email) => (
+                    <TableRow key={email.id} className="cursor-pointer" onClick={() => handleEmailRowClick(email)}>
+                      <TableCell className="py-3 px-6">
+                        <InvoiceStatusBadge number={email.invoice_number} status={email.invoice_status} />
+                      </TableCell>
+                      <TableCell className="py-3 px-6">
+                        {email.client_name ? (
+                          <div className="flex items-center gap-3">
+                            <ClientSquircle name={email.client_name} color={email.client_color ?? ""} />
+                            <span className="text-sm truncate">{email.client_name}</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground truncate">{email.to_address}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-3 px-6 max-w-0">
+                        <span className="text-sm text-muted-foreground block truncate">{email.subject}</span>
+                      </TableCell>
+                      <TableCell className="py-3 px-6 whitespace-nowrap">
+                        <span className="text-xs text-muted-foreground">{emailStatusLabel(email)}</span>
+                      </TableCell>
+                      <TableCell className="py-3 px-6 text-right">
+                        <StatusCell email={email} />
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium">Sent</CardTitle>
-                  <CardDescription>
-                    {sent.length === 0 ? "No sent emails" : `${sent.length} sent`}
-                  </CardDescription>
-                </CardHeader>
-                {sent.length > 0 && (
-                  <CardContent className="flex flex-col divide-y divide-border">
-                    {sent.map((email) => (
-                      <EmailRow key={email.id} email={email} onClick={() => handleEmailRowClick(email)} />
-                    ))}
-                  </CardContent>
-                )}
-              </Card>
-            </>
-          )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </div>
 
