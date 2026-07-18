@@ -246,7 +246,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Emails">
-        <Button className="relative hidden md:flex" disabled={loading} onClick={openNewEmail}>
+        <Button size="sm" className="hidden md:flex" disabled={loading} onClick={openNewEmail}>
           <Plus className="size-4" />
           New email
         </Button>
