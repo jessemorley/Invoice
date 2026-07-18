@@ -111,14 +111,12 @@ function EmailsTable({
                   />
                 </TableCell>
                 <TableCell className="py-3 px-6 w-48">
-                  {email.client_name ? (
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {email.client_name && (
                       <ClientSquircle name={email.client_name} color={email.client_color ?? ""} className="size-[22px] shrink-0" />
-                      <span className="text-sm truncate">{email.client_name}</span>
-                    </div>
-                  ) : (
-                    <span className="text-sm text-muted-foreground truncate">{email.to_address}</span>
-                  )}
+                    )}
+                    <span className="text-sm truncate">{email.to_address}</span>
+                  </div>
                 </TableCell>
                 <TableCell className="py-3 px-6 max-w-0">
                   <span className="text-sm block truncate">{email.subject}</span>
