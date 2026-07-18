@@ -613,7 +613,7 @@ export async function fetchAllEmails(userId: string, token: string): Promise<Das
     .from("scheduled_emails")
     .select("id, invoice_id, to_address, subject, body_text, filename, scheduled_for, sent_at, sent_pdf_path, status, invoices(invoice_number, status, clients(name, color))")
     .eq("user_id", userId)
-    .in("status", ["pending", "failed", "sent"])
+    .in("status", ["pending", "failed", "bounced", "sent"])
     .order("status", { ascending: true })
     .order("sent_at", { ascending: false });
 
@@ -641,7 +641,7 @@ export async function fetchAllEmails(userId: string, token: string): Promise<Das
       sent_pdf_path: row.sent_pdf_path ?? null,
       status: row.status as DashboardEmail["status"],
     };
-    if (row.status === "pending" || row.status === "failed") {
+    if (row.status === "pending" || row.status === "failed" || row.status === "bounced") {
       scheduled.push(email);
     } else {
       recent.push(email);
