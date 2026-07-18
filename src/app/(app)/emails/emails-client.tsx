@@ -75,7 +75,7 @@ function SkeletonTableRows({ count = 6 }: { count?: number }) {
           </TableCell>
           <TableCell className="py-3 px-6"><Skeleton className="h-4 w-72 max-w-full" /></TableCell>
           <TableCell className="py-3 px-2 w-8"><Skeleton className="size-3.5 mx-auto" /></TableCell>
-          <TableCell className="py-3 px-6 w-28 text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+          <TableCell className="py-3 pl-2 pr-6 w-28 text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
         </TableRow>
       ))}
     </>
@@ -158,7 +158,7 @@ function EmailsTable({
                 <TableCell className="py-3 px-2 w-8">
                   {email.filename && <Paperclip className="size-3.5 text-muted-foreground mx-auto" />}
                 </TableCell>
-                <TableCell className={`py-3 px-6 whitespace-nowrap ${showStatus ? "w-56" : "w-28 text-right"}`}>
+                <TableCell className={`py-3 pl-2 pr-6 whitespace-nowrap ${showStatus ? "w-56" : "w-28 text-right"}`}>
                   <span className="text-sm text-muted-foreground">
                     {showStatus ? scheduledLabel(email) : emailDate(email)}
                   </span>
