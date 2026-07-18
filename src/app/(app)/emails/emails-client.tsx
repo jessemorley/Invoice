@@ -2,8 +2,23 @@
 
 import { useState } from "react";
 import type { ComposePrefill, DashboardEmail, InvoiceDetail } from "@/lib/types";
-import { loadScheduledEmail } from "@/app/(app)/invoices/actions";
+import { loadScheduledEmail, deleteEmails } from "@/app/(app)/invoices/actions";
+import { invalidate } from "@/lib/invalidate";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -34,6 +49,7 @@ function SkeletonTableRows({ count = 6 }: { count?: number }) {
     <>
       {Array.from({ length: count }, (_, i) => (
         <TableRow key={i}>
+          <TableCell className="py-3 pl-4 pr-0 w-10"><Skeleton className="size-4" /></TableCell>
           <TableCell className="py-3 px-6">
             <div className="flex items-center gap-3">
               <Skeleton className="size-6 rounded-md" />
@@ -56,6 +72,8 @@ function EmailsTable({
   loading,
   emptyLabel,
   showStatus,
+  selected,
+  onToggle,
 }: {
   title: string;
   emails: DashboardEmail[];
@@ -63,6 +81,8 @@ function EmailsTable({
   loading?: boolean;
   emptyLabel?: string;
   showStatus?: boolean;
+  selected: Set<string>;
+  onToggle: (id: string) => void;
 }) {
   return (
     <div>
@@ -76,13 +96,20 @@ function EmailsTable({
             <SkeletonTableRows />
           ) : emails.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={showStatus ? 5 : 4} className="text-center text-muted-foreground py-12">
+              <TableCell colSpan={showStatus ? 6 : 5} className="text-center text-muted-foreground py-12">
                 {emptyLabel}
               </TableCell>
             </TableRow>
           ) : (
             emails.map((email) => (
               <TableRow key={email.id} className="cursor-pointer" onClick={() => onRowClick(email)}>
+                <TableCell className="py-3 pl-4 pr-0 w-10" onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={selected.has(email.id)}
+                    onCheckedChange={() => onToggle(email.id)}
+                    aria-label={`Select email to ${email.client_name ?? email.to_address}`}
+                  />
+                </TableCell>
                 <TableCell className="py-3 px-6 w-48">
                   {email.client_name ? (
                     <div className="flex items-center gap-3">
@@ -125,6 +152,8 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
   const [composeUserName, setComposeUserName] = useState("");
   const [composePrefill, setComposePrefill] = useState<ComposePrefill | null>(null);
   const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
 
   const loading = !emails;
   const scheduled = emails?.filter((e) => e.status === "pending" || e.status === "failed") ?? [];
@@ -152,14 +181,59 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
     }
   }
 
+  function toggleSelected(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await deleteEmails([...selected]);
+      setSelected(new Set());
+      invalidate("emails", "invoices");
+      toast.success(selected.size === 1 ? "Email deleted" : `${selected.size} emails deleted`);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Emails" />
+      <PageHeader title="Emails">
+        {selected.size > 0 && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" disabled={deleting}>
+                Delete ({selected.size})
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Delete {selected.size === 1 ? "this email" : `${selected.size} emails`}?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Scheduled emails will be cancelled, and sent emails will be removed from history along with their archived PDFs. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </PageHeader>
 
       <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
         <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
           {!loading && scheduled.length > 0 && (
-            <EmailsTable title="Scheduled" emails={scheduled} onRowClick={handleEmailRowClick} showStatus />
+            <EmailsTable title="Scheduled" emails={scheduled} onRowClick={handleEmailRowClick} showStatus selected={selected} onToggle={toggleSelected} />
           )}
           <EmailsTable
             title="Sent"
@@ -167,6 +241,8 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
             onRowClick={handleEmailRowClick}
             loading={loading}
             emptyLabel="No sent emails yet."
+            selected={selected}
+            onToggle={toggleSelected}
           />
         </div>
       </div>

@@ -376,6 +376,48 @@ export async function cancelScheduledEmail(scheduledEmailId: string): Promise<vo
   refresh();
 }
 
+export async function deleteEmails(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+
+  const { data: rows, error } = await supabase
+    .from("scheduled_emails")
+    .select("id, status, invoice_id, mark_issued, sent_pdf_path")
+    .in("id", ids)
+    .eq("user_id", userId);
+  if (error) throw new Error(`deleteEmails: ${error.message}`);
+  if (!rows?.length) return;
+
+  // Pending rows are live Inngest jobs — cancel and un-stamp before deleting.
+  for (const row of rows) {
+    if (row.status !== "pending") continue;
+    if (row.mark_issued && row.invoice_id) {
+      await stampIssuedDate(supabase, userId, row.invoice_id, null);
+    }
+    await inngest.send({
+      name: "invoice/email.cancelled",
+      data: { scheduled_email_id: row.id },
+    });
+  }
+
+  // Best-effort: archived PDFs are orphaned once the row is gone.
+  const pdfPaths = rows.flatMap((r) => (r.sent_pdf_path ? [r.sent_pdf_path] : []));
+  if (pdfPaths.length) {
+    const { error: storageError } = await supabase.storage.from("invoices").remove(pdfPaths);
+    if (storageError) console.error(`deleteEmails: failed to remove archived PDFs: ${storageError.message}`);
+  }
+
+  const { error: delError } = await supabase
+    .from("scheduled_emails")
+    .delete()
+    .in("id", rows.map((r) => r.id))
+    .eq("user_id", userId);
+  if (delError) throw new Error(`deleteEmails: ${delError.message}`);
+
+  updateTag(CACHE_TAGS.scheduledEmails);
+  refresh();
+}
+
 export async function updateScheduledEmail(scheduledEmailId: string, data: EmailFormData): Promise<void> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
 
