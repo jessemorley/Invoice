@@ -1,9 +1,9 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import type { ComposePrefill, DashboardData, DashboardEmail, InvoiceDetail } from "@/lib/types";
+import type { DashboardData } from "@/lib/types";
 import { useInvoiceWorkflow } from "@/hooks/use-invoice-workflow";
-import { formatAUD, formatRelativeTime, fyLabel, fyStartYear } from "@/lib/format";
+import { formatAUD, fyLabel, fyStartYear } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -34,9 +34,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Area, AreaChart, Bar, BarChart, XAxis, YAxis } from "recharts";
-import { EmailComposeSheet } from "@/components/email-compose-sheet";
-import { SentEmailSheet } from "@/components/sent-email-sheet";
-import { loadScheduledEmail, updateInvoiceStatus } from "@/app/(app)/invoices/actions";
+import { updateInvoiceStatus } from "@/app/(app)/invoices/actions";
 import {
   Select,
   SelectContent,
@@ -106,22 +104,9 @@ function dueLabel(dueDate: string): { text: string; overdue: boolean } {
   return { text: `Due in ${days} ${days === 1 ? "day" : "days"}`, overdue: false };
 }
 
-function emailStatusLabel(email: DashboardEmail): string {
-  if (email.status === "sent" && email.sent_at) return `Sent ${formatRelativeTime(email.sent_at)}`;
-  if (email.status === "failed") return "Failed";
-  return formatRelativeTime(email.scheduled_for);
-}
-
 export function DashboardClient({ data }: { data?: DashboardData }) {
   const [timeframe, setTimeframe] = useState<26 | 52>(26);
   const [chartMode, setChartMode] = useState<"cumulative" | "monthly">("cumulative");
-  const [composeOpen, setComposeOpen] = useState(false);
-  const [sentSheetOpen, setSentSheetOpen] = useState(false);
-  const [composeInvoice, setComposeInvoice] = useState<InvoiceDetail | null>(null);
-  const [composeBusinessName, setComposeBusinessName] = useState("");
-  const [composeUserName, setComposeUserName] = useState("");
-  const [composePrefill, setComposePrefill] = useState<ComposePrefill | null>(null);
-  const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
   const { openInvoice, sendFollowUp, sheets: invoiceSheets } = useInvoiceWorkflow();
   const [calHover, setCalHover] = useState<{
     col: number;
@@ -162,7 +147,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
   }, [calHover]);
 
   if (!data) return <DashboardSkeleton />;
-  const { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, emails, monthCalendar } = data;
+  const { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, monthCalendar } = data;
   const weekSlice = timeframe === 26 ? weeklyEarnings.slice(26) : weeklyEarnings;
 
   // Cumulative mode: running total across weeks
@@ -226,8 +211,6 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
     (d, i, arr) => arr.indexOf(d) === i
   );
 
-  const scheduledEmails = emails.filter((e) => e.status === "pending" || e.status === "failed");
-
   // Show the most recent whole weeks that fit the card width (data starts on a Monday)
   const totalWeeks = Math.ceil(monthCalendar.length / 7);
   const weeksShown = Math.max(1, Math.min(calWeeks, totalWeeks));
@@ -253,28 +236,6 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
         }]
       : []
   );
-
-  async function handleEmailRowClick(email: DashboardEmail) {
-    if (email.status === "sent") {
-      setSentEmail(email);
-      setSentSheetOpen(true);
-      return;
-    }
-    const result = await loadScheduledEmail(email.invoice_id);
-    if (result.invoiceDetail) {
-      setComposeInvoice(result.invoiceDetail);
-      setComposeBusinessName(result.businessName);
-      setComposeUserName(result.userName);
-      setComposePrefill({
-        to: email.to_address.split(",").map((s) => s.trim()).filter(Boolean),
-        subject: email.subject,
-        body: email.body_text,
-        scheduledFor: new Date(email.scheduled_for),
-        editingId: email.id,
-      });
-      setComposeOpen(true);
-    }
-  }
 
   return (
     <div className="flex flex-col h-full">
@@ -541,42 +502,6 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
             </CardFooter>
           </Card>
 
-          {/* Emails */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Emails</CardTitle>
-              <CardDescription>
-                {scheduledEmails.length === 0
-                  ? "No scheduled emails"
-                  : scheduledEmails.length === 1
-                  ? "1 scheduled"
-                  : `${scheduledEmails.length} scheduled`}
-              </CardDescription>
-            </CardHeader>
-            {emails.length > 0 && (
-              <CardContent className="flex flex-col divide-y divide-border">
-                {emails.map((email) => (
-                  <div
-                    key={email.id}
-                    onClick={() => handleEmailRowClick(email)}
-                    className="flex items-center justify-between py-2.5 cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <InvoiceStatusBadge number={email.invoice_number} status={email.invoice_status} />
-                      <span className="text-sm text-muted-foreground truncate">{email.to_address}</span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                      <span className="text-xs text-muted-foreground hidden sm:block">{emailStatusLabel(email)}</span>
-                      <Badge variant={email.status === "failed" ? "destructive" : email.status === "sent" ? "secondary" : "outline"}>
-                        {email.status === "pending" ? "scheduled" : email.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            )}
-          </Card>
-
           {/* Earnings chart */}
           <Card>
             <CardHeader className="flex flex-row items-start justify-between gap-2">
@@ -709,27 +634,6 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
         </div>
       </div>
 
-      <EmailComposeSheet
-        open={composeOpen}
-        onOpenChangeAction={(open) => {
-          setComposeOpen(open);
-          if (!open) { setComposeInvoice(null); setComposePrefill(null); }
-        }}
-        invoice={composeInvoice}
-        businessName={composeBusinessName}
-        userName={composeUserName}
-        onSent={() => { setComposeInvoice(null); setComposePrefill(null); }}
-        initialTo={composePrefill?.to}
-        initialSubject={composePrefill?.subject}
-        initialBody={composePrefill?.body}
-        initialScheduledFor={composePrefill?.scheduledFor}
-        editingId={composePrefill?.editingId}
-      />
-      <SentEmailSheet
-        open={sentSheetOpen}
-        onOpenChangeAction={setSentSheetOpen}
-        email={sentEmail}
-      />
       {invoiceSheets}
     </div>
   );

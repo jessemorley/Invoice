@@ -231,6 +231,5 @@ export type DashboardData = {
   mtdPriorCumulative: MtdDailyPoint[];
   outstanding: Invoice[];
   weeklyEarnings: WeeklyEarning[];
-  emails: DashboardEmail[];
   monthCalendar: CalendarDay[];
 };

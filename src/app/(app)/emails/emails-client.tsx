@@ -124,7 +124,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
                       <TableCell className="py-3 px-6">
                         {email.client_name ? (
                           <div className="flex items-center gap-3">
-                            <ClientSquircle name={email.client_name} color={email.client_color ?? ""} />
+                            <ClientSquircle name={email.client_name} color={email.client_color ?? ""} className="size-[22px] shrink-0" />
                             <span className="text-sm truncate">{email.client_name}</span>
                           </div>
                         ) : (

@@ -652,12 +652,7 @@ export async function fetchAllEmails(userId: string, token: string): Promise<Das
   return [...scheduled, ...recent];
 }
 
-export async function fetchDashboardEmails(userId: string, token: string): Promise<DashboardEmail[]> {
-  const emails = await fetchAllEmails(userId, token);
-  return emails.slice(0, 4);
-}
-
-export async function fetchDashboardData(userId: string, entries: DashboardEntry[], invoices: Invoice[], emails: DashboardEmail[]): Promise<DashboardData> {
+export async function fetchDashboardData(userId: string, entries: DashboardEntry[], invoices: Invoice[]): Promise<DashboardData> {
   const todayStr = todayInSydney(); // YYYY-MM-DD in Sydney time
   const [currentYear, currentMonth0, todayDay] = todayStr.split("-").map(Number);
   const currentMonth = currentMonth0 - 1; // 0-indexed to match Date.getMonth()
@@ -787,7 +782,7 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
     monthCalendar.push({ date, clients: Array.from(dayClients.get(date) ?? [], ([name, color]) => ({ name, color })) });
   }
 
-  return { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, emails, monthCalendar };
+  return { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, monthCalendar };
 }
 
 export type BusinessDetails = {
