@@ -38,7 +38,6 @@ function emailDate(email: DashboardEmail): string {
 }
 
 function scheduledLabel(email: DashboardEmail): string {
-  if (email.status === "failed") return emailDate(email);
   const d = new Date(email.scheduled_for);
   const now = new Date();
   const tomorrow = new Date(now);
@@ -53,12 +52,6 @@ function scheduledLabel(email: DashboardEmail): string {
     hour12: true,
   }).toLowerCase();
   return `Scheduled for ${day} ${time}`;
-}
-
-// Chip only flags problems: failed (and later, bounced) rows.
-function StatusCell({ email }: { email: DashboardEmail }) {
-  if (email.status !== "failed") return null;
-  return <Badge variant="destructive">failed</Badge>;
 }
 
 function SkeletonTableRows({ count = 6 }: { count?: number }) {
@@ -113,7 +106,7 @@ function EmailsTable({
             <SkeletonTableRows />
           ) : emails.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={showStatus ? 6 : 5} className="text-center text-muted-foreground py-12">
+              <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
                 {emptyLabel}
               </TableCell>
             </TableRow>
@@ -158,14 +151,15 @@ function EmailsTable({
                 <TableCell className="py-3 px-2 w-8">
                   {email.filename && <Paperclip className="size-3.5 text-muted-foreground ml-auto" />}
                 </TableCell>
-                <TableCell className={`py-3 pl-2 pr-6 whitespace-nowrap ${showStatus ? "w-56" : "w-24 text-right"}`}>
-                  <span className="text-sm text-muted-foreground">
-                    {showStatus ? scheduledLabel(email) : emailDate(email)}
-                  </span>
-                </TableCell>
-                {showStatus && (
-                  <TableCell className="py-3 px-6 w-24 text-center">
-                    <StatusCell email={email} />
+                {showStatus ? (
+                  <TableCell className="py-3 pl-2 pr-6 w-56 text-right whitespace-nowrap">
+                    <Badge variant={email.status === "failed" ? "destructive" : "outline"}>
+                      {email.status === "failed" ? "failed" : scheduledLabel(email)}
+                    </Badge>
+                  </TableCell>
+                ) : (
+                  <TableCell className="py-3 pl-2 pr-6 w-24 text-right whitespace-nowrap">
+                    <span className="text-sm text-muted-foreground">{emailDate(email)}</span>
                   </TableCell>
                 )}
               </TableRow>
