@@ -153,8 +153,8 @@ function EmailsTable({
                 </TableCell>
                 {showStatus ? (
                   <TableCell className="py-3 pl-2 pr-6 w-56 text-right whitespace-nowrap">
-                    <Badge variant={email.status === "failed" ? "destructive" : "outline"}>
-                      {email.status === "failed" ? "failed" : scheduledLabel(email)}
+                    <Badge variant={email.status === "pending" ? "outline" : "destructive"}>
+                      {email.status === "pending" ? scheduledLabel(email) : email.status}
                     </Badge>
                   </TableCell>
                 ) : (
@@ -184,7 +184,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
   const [deleting, setDeleting] = useState(false);
 
   const loading = !emails;
-  const scheduled = emails?.filter((e) => e.status === "pending" || e.status === "failed") ?? [];
+  const scheduled = emails?.filter((e) => e.status !== "sent") ?? [];
   const sent = emails?.filter((e) => e.status === "sent") ?? [];
 
   function openNewEmail() {
