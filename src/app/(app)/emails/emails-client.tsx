@@ -55,6 +55,73 @@ function SkeletonTableRows({ count = 6 }: { count?: number }) {
   );
 }
 
+function EmailsTable({
+  title,
+  emails,
+  onRowClick,
+  loading,
+  emptyLabel,
+}: {
+  title: string;
+  emails: DashboardEmail[];
+  onRowClick: (email: DashboardEmail) => void;
+  loading?: boolean;
+  emptyLabel?: string;
+}) {
+  return (
+    <div className="rounded-lg border overflow-hidden bg-card">
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead colSpan={6} className={tableHeadCellBase}>{title}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {loading ? (
+            <SkeletonTableRows />
+          ) : emails.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
+                {emptyLabel}
+              </TableCell>
+            </TableRow>
+          ) : (
+            emails.map((email) => (
+              <TableRow key={email.id} className="cursor-pointer" onClick={() => onRowClick(email)}>
+                <TableCell className="py-3 px-6 w-24">
+                  <InvoiceStatusBadge number={email.invoice_number} status={email.invoice_status} />
+                </TableCell>
+                <TableCell className="py-3 px-6 w-48">
+                  {email.client_name ? (
+                    <div className="flex items-center gap-3">
+                      <ClientSquircle name={email.client_name} color={email.client_color ?? ""} className="size-[22px] shrink-0" />
+                      <span className="text-sm truncate">{email.client_name}</span>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-muted-foreground truncate">{email.to_address}</span>
+                  )}
+                </TableCell>
+                <TableCell className="py-3 px-6 max-w-0">
+                  <span className="text-sm block truncate">{email.subject}</span>
+                </TableCell>
+                <TableCell className="py-3 px-6 max-w-0">
+                  <span className="text-sm text-muted-foreground block truncate">{email.body_text.replace(/\s+/g, " ")}</span>
+                </TableCell>
+                <TableCell className="py-3 px-6 w-28 whitespace-nowrap">
+                  <span className="text-sm text-muted-foreground">{emailDate(email)}</span>
+                </TableCell>
+                <TableCell className="py-3 px-6 w-24 text-right">
+                  <StatusCell email={email} />
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
   const [composeOpen, setComposeOpen] = useState(false);
   const [sentSheetOpen, setSentSheetOpen] = useState(false);
@@ -65,6 +132,8 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
   const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
 
   const loading = !emails;
+  const scheduled = emails?.filter((e) => e.status === "pending" || e.status === "failed") ?? [];
+  const sent = emails?.filter((e) => e.status === "sent") ?? [];
 
   async function handleEmailRowClick(email: DashboardEmail) {
     if (email.status === "sent") {
@@ -94,61 +163,16 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
 
       <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
         <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
-          <div className="rounded-lg border overflow-hidden bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className={`${tableHeadCellBase} w-24`}>Invoice</TableHead>
-                  <TableHead className={`${tableHeadCellBase} w-48`}>To</TableHead>
-                  <TableHead className={tableHeadCellBase}>Subject</TableHead>
-                  <TableHead className={tableHeadCellBase}>Preview</TableHead>
-                  <TableHead className={`${tableHeadCellBase} w-28`}>Date</TableHead>
-                  <TableHead className={`${tableHeadCellBase} w-24 text-right`}>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <SkeletonTableRows />
-                ) : emails.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
-                      No emails yet.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  emails.map((email) => (
-                    <TableRow key={email.id} className="cursor-pointer" onClick={() => handleEmailRowClick(email)}>
-                      <TableCell className="py-3 px-6">
-                        <InvoiceStatusBadge number={email.invoice_number} status={email.invoice_status} />
-                      </TableCell>
-                      <TableCell className="py-3 px-6">
-                        {email.client_name ? (
-                          <div className="flex items-center gap-3">
-                            <ClientSquircle name={email.client_name} color={email.client_color ?? ""} className="size-[22px] shrink-0" />
-                            <span className="text-sm truncate">{email.client_name}</span>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground truncate">{email.to_address}</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="py-3 px-6 max-w-0">
-                        <span className="text-sm block truncate">{email.subject}</span>
-                      </TableCell>
-                      <TableCell className="py-3 px-6 max-w-0">
-                        <span className="text-sm text-muted-foreground block truncate">{email.body_text.replace(/\s+/g, " ")}</span>
-                      </TableCell>
-                      <TableCell className="py-3 px-6 whitespace-nowrap">
-                        <span className="text-sm text-muted-foreground">{emailDate(email)}</span>
-                      </TableCell>
-                      <TableCell className="py-3 px-6 text-right">
-                        <StatusCell email={email} />
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          {!loading && scheduled.length > 0 && (
+            <EmailsTable title="Scheduled" emails={scheduled} onRowClick={handleEmailRowClick} />
+          )}
+          <EmailsTable
+            title="Sent"
+            emails={sent}
+            onRowClick={handleEmailRowClick}
+            loading={loading}
+            emptyLabel="No sent emails yet."
+          />
         </div>
       </div>
 
