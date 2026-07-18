@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { InvoiceStatusBadge } from "@/components/invoice-status-badge";
 import { ClientSquircle } from "@/components/client-squircle";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
@@ -35,7 +34,6 @@ function SkeletonTableRows({ count = 6 }: { count?: number }) {
     <>
       {Array.from({ length: count }, (_, i) => (
         <TableRow key={i}>
-          <TableCell className="py-3 px-6"><Skeleton className="h-5 w-24 rounded-full" /></TableCell>
           <TableCell className="py-3 px-6">
             <div className="flex items-center gap-3">
               <Skeleton className="size-6 rounded-md" />
@@ -77,16 +75,13 @@ function EmailsTable({
             <SkeletonTableRows />
           ) : emails.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
+              <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
                 {emptyLabel}
               </TableCell>
             </TableRow>
           ) : (
             emails.map((email) => (
               <TableRow key={email.id} className="cursor-pointer" onClick={() => onRowClick(email)}>
-                <TableCell className="py-3 px-6 w-24">
-                  <InvoiceStatusBadge number={email.invoice_number} status={email.invoice_status} />
-                </TableCell>
                 <TableCell className="py-3 px-6 w-48">
                   {email.client_name ? (
                     <div className="flex items-center gap-3">
