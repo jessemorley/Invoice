@@ -10,6 +10,7 @@ import {
   fetchExpenses,
   fetchDashboardData,
   fetchDashboardEmails,
+  fetchAllEmails,
   fetchUninvoicedGroups,
   fetchFullClients,
   fetchWorkflowRates,
@@ -90,6 +91,11 @@ export async function loadClientsViewData() {
 export async function loadExpensesViewData() {
   const { userId, token } = await getAuth();
   return fetchExpenses(userId, token);
+}
+
+export async function loadEmailsViewData() {
+  const { userId, token } = await getAuth();
+  return fetchAllEmails(userId, token);
 }
 
 export async function loadTaxViewData() {

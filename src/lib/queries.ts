@@ -605,7 +605,7 @@ export async function fetchWorkflowRates(token: string): Promise<WorkflowRate[]>
   }));
 }
 
-export async function fetchDashboardEmails(userId: string, token: string): Promise<DashboardEmail[]> {
+export async function fetchAllEmails(userId: string, token: string): Promise<DashboardEmail[]> {
   "use cache";
   cacheTag(CACHE_TAGS.scheduledEmails);
   const supabase = createTokenClient(token);
@@ -615,10 +615,9 @@ export async function fetchDashboardEmails(userId: string, token: string): Promi
     .eq("user_id", userId)
     .in("status", ["pending", "failed", "sent"])
     .order("status", { ascending: true })
-    .order("sent_at", { ascending: false })
-    .limit(4);
+    .order("sent_at", { ascending: false });
 
-  if (error) throw new Error(`fetchDashboardEmails: ${error.message}`);
+  if (error) throw new Error(`fetchAllEmails: ${error.message}`);
 
   const scheduled: DashboardEmail[] = [];
   const recent: DashboardEmail[] = [];
@@ -646,7 +645,13 @@ export async function fetchDashboardEmails(userId: string, token: string): Promi
     }
   }
 
-  return [...scheduled, ...recent].slice(0, 4);
+  scheduled.sort((a, b) => a.scheduled_for.localeCompare(b.scheduled_for));
+  return [...scheduled, ...recent];
+}
+
+export async function fetchDashboardEmails(userId: string, token: string): Promise<DashboardEmail[]> {
+  const emails = await fetchAllEmails(userId, token);
+  return emails.slice(0, 4);
 }
 
 export async function fetchDashboardData(userId: string, entries: DashboardEntry[], invoices: Invoice[], emails: DashboardEmail[]): Promise<DashboardData> {

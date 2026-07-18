@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { InvalidationTag } from "@/lib/invalidate";
 import { useActiveView, type ViewId } from "@/components/active-view-context";
-import type { DashboardData, Entry, Expense, Client, WorkflowRate, Invoice } from "@/lib/types";
+import type { DashboardData, DashboardEmail, Entry, Expense, Client, WorkflowRate, Invoice } from "@/lib/types";
 import type { BusinessDetails, InvoiceSequence, UserPreferences, TaxFyTotals, SuggestedInvoice } from "@/lib/queries";
 import dynamic from "next/dynamic";
 import { EntriesView } from "@/components/entries-view";
@@ -32,6 +32,10 @@ const TaxClient = dynamic(() =>
   import("@/app/(app)/tax/tax-client").then((m) => m.TaxClient),
   { ssr: false }
 );
+const EmailsClient = dynamic(() =>
+  import("@/app/(app)/emails/emails-client").then((m) => m.EmailsClient),
+  { ssr: false }
+);
 import {
   loadDashboardViewData,
   loadEntriesViewData,
@@ -40,6 +44,7 @@ import {
   loadExpensesViewData,
   loadSettingsViewData,
   loadTaxViewData,
+  loadEmailsViewData,
 } from "@/app/(app)/actions";
 
 type DashboardState = { data: DashboardData } | null;
@@ -49,15 +54,16 @@ type ClientsState = Client[] | null;
 type ExpensesState = Expense[] | null;
 type SettingsState = { businessDetails: BusinessDetails | null; invoiceSequence: InvoiceSequence | null; userPreferences: UserPreferences | null } | null;
 type TaxState = TaxFyTotals[] | null;
+type EmailsState = DashboardEmail[] | null;
 
 // Which views need to re-fetch when a given tag is invalidated
 const TAG_TO_VIEWS: Record<InvalidationTag, ViewId[]> = {
   entries:  ["entries", "dashboard", "invoices"],
-  invoices: ["invoices", "dashboard", "tax"],
+  invoices: ["invoices", "dashboard", "tax", "emails"],
   clients:  ["clients", "entries", "invoices"],
   expenses: ["expenses", "dashboard", "tax"],
   settings: ["settings"],
-  emails:   ["dashboard"],
+  emails:   ["dashboard", "emails"],
   payg:     ["tax"],
 };
 
@@ -81,6 +87,7 @@ export function ViewSwitch({
   const [expensesData, setExpensesData] = useState<ExpensesState>(null);
   const [settingsData, setSettingsData] = useState<SettingsState>(null);
   const [taxData, setTaxData] = useState<TaxState>(null);
+  const [emailsData, setEmailsData] = useState<EmailsState>(null);
 
   // Pre-mark entries as revealed if server-loaded data was provided
   const revealed = useRef<Set<ViewId>>(
@@ -99,6 +106,7 @@ export function ViewSwitch({
       case "expenses":  loadExpensesViewData().then(setExpensesData); break;
       case "settings":  loadSettingsViewData().then(setSettingsData); break;
       case "tax":       loadTaxViewData().then(setTaxData); break;
+      case "emails":    loadEmailsViewData().then(setEmailsData); break;
     }
   }, []);
 
@@ -195,6 +203,9 @@ export function ViewSwitch({
       </div>
       <div className={view === "tax" ? "contents" : "hidden"}>
         <TaxClient fyTotals={taxData ?? undefined} />
+      </div>
+      <div className={view === "emails" ? "contents" : "hidden"}>
+        <EmailsClient emails={emailsData ?? undefined} />
       </div>
     </>
   );
