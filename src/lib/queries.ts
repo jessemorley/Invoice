@@ -939,7 +939,8 @@ export async function fetchScheduledEmailForInvoice(invoiceId: string, userId: s
     to_address: data.to_address,
     subject: data.subject,
     body_text: data.body_text,
-    filename: data.filename,
+    // Invoice-scoped emails always carry a filename; null only occurs on free-form rows.
+    filename: data.filename ?? "",
     scheduled_for: data.scheduled_for,
     sent_at: data.sent_at ?? null,
     sent_pdf_path: data.sent_pdf_path ?? null,

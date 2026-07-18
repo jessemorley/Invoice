@@ -350,6 +350,49 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
   return { id: row.id };
 }
 
+export async function scheduleFreeEmail(data: EmailFormData): Promise<{ id: string }> {
+  const [supabase, userId, token] = await Promise.all([createClient(), getAuthUserId(), getAuthToken()]);
+  const userPrefs = await fetchUserPreferences(userId, token);
+  const bccAddress = userPrefs?.bcc_self ? (await getAuthUser()).email : null;
+
+  const { data: row, error } = await supabase.from("scheduled_emails").insert({
+    user_id: userId,
+    invoice_id: null,
+    to_address: data.to,
+    subject: data.subject,
+    body_text: data.body_text,
+    scheduled_for: data.scheduled_for,
+    filename: null,
+    bcc_address: bccAddress,
+    mark_issued: false,
+    status: "pending",
+  }).select("id").single();
+
+  if (error) throw new Error(`scheduleFreeEmail: ${error.message}`);
+
+  await inngest.send({
+    name: "invoice/email.scheduled",
+    data: {
+      scheduled_email_id: row.id,
+      user_id: userId,
+      invoice_id: null,
+      to_address: data.to,
+      cc_address: null,
+      bcc_address: bccAddress,
+      subject: data.subject,
+      body_text: data.body_text,
+      filename: null,
+      mark_issued: false,
+      scheduled_for: data.scheduled_for,
+    },
+    ts: new Date(data.scheduled_for).getTime(),
+  });
+
+  updateTag(CACHE_TAGS.scheduledEmails);
+  refresh();
+  return { id: row.id };
+}
+
 export async function cancelScheduledEmail(scheduledEmailId: string): Promise<void> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { data: row, error } = await supabase

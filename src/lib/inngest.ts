@@ -7,13 +7,13 @@ export type SendInvoiceEmailEvent = {
   data: {
     scheduled_email_id: string;
     user_id: string;
-    invoice_id: string;
+    invoice_id: string | null;
     to_address: string;
     cc_address: string | null;
     bcc_address: string | null;
     subject: string;
     body_text: string;
-    filename: string;
+    filename: string | null;
     mark_issued: boolean;
     scheduled_for: string;
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ComposePrefill, DashboardEmail, InvoiceDetail } from "@/lib/types";
 import { loadScheduledEmail, deleteEmails } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
@@ -30,7 +30,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ClientSquircle } from "@/components/client-squircle";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
-import { Paperclip } from "lucide-react";
+import { Paperclip, Plus } from "lucide-react";
 
 function emailDate(email: DashboardEmail): string {
   const d = new Date(email.status === "sent" && email.sent_at ? email.sent_at : email.scheduled_for);
@@ -144,7 +144,7 @@ function EmailsTable({
                   <span className="text-sm text-muted-foreground">{emailDate(email)}</span>
                 </TableCell>
                 {showStatus && (
-                  <TableCell className="py-3 px-6 w-24 text-right">
+                  <TableCell className="py-3 px-6 w-24 text-center">
                     <StatusCell email={email} />
                   </TableCell>
                 )}
@@ -173,10 +173,37 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
   const scheduled = emails?.filter((e) => e.status === "pending" || e.status === "failed") ?? [];
   const sent = emails?.filter((e) => e.status === "sent") ?? [];
 
+  function openNewEmail() {
+    setComposeInvoice(null);
+    setComposePrefill(null);
+    setComposeOpen(true);
+  }
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if ((e as CustomEvent<string>).detail === "emails") openNewEmail();
+    };
+    window.addEventListener("dock:new", handler);
+    return () => window.removeEventListener("dock:new", handler);
+  }, []);
+
   async function handleEmailRowClick(email: DashboardEmail) {
     if (email.status === "sent") {
       setSentEmail(email);
       setSentSheetOpen(true);
+      return;
+    }
+    // Free-form emails have no invoice to load — edit directly.
+    if (!email.invoice_id) {
+      setComposeInvoice(null);
+      setComposePrefill({
+        to: email.to_address.split(",").map((s) => s.trim()).filter(Boolean),
+        subject: email.subject,
+        body: email.body_text,
+        scheduledFor: new Date(email.scheduled_for),
+        editingId: email.id,
+      });
+      setComposeOpen(true);
       return;
     }
     const result = await loadScheduledEmail(email.invoice_id);
@@ -219,6 +246,10 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Emails">
+        <Button className="relative hidden md:flex" disabled={loading} onClick={openNewEmail}>
+          <Plus className="size-4" />
+          New email
+        </Button>
         {selected.size > 0 && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -276,6 +307,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
         initialBody={composePrefill?.body}
         initialScheduledFor={composePrefill?.scheduledFor}
         editingId={composePrefill?.editingId}
+        freeform
       />
       <SentEmailSheet
         open={sentSheetOpen}

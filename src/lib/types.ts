@@ -207,7 +207,7 @@ export type DashboardEmail = {
   to_address: string;
   subject: string;
   body_text: string;
-  filename: string;
+  filename: string | null;
   scheduled_for: string;
   sent_at: string | null;
   sent_pdf_path: string | null;

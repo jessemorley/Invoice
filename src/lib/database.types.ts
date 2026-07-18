@@ -515,7 +515,7 @@ export type Database = {
           cc_address: string | null
           created_at: string
           error: string | null
-          filename: string
+          filename: string | null
           id: string
           invoice_id: string | null
           mark_issued: boolean
@@ -533,7 +533,7 @@ export type Database = {
           cc_address?: string | null
           created_at?: string
           error?: string | null
-          filename: string
+          filename?: string | null
           id?: string
           invoice_id?: string | null
           mark_issued?: boolean
@@ -551,7 +551,7 @@ export type Database = {
           cc_address?: string | null
           created_at?: string
           error?: string | null
-          filename?: string
+          filename?: string | null
           id?: string
           invoice_id?: string | null
           mark_issued?: boolean
