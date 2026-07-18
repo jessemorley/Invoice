@@ -67,7 +67,7 @@ function SkeletonTableRows({ count = 6 }: { count?: number }) {
       {Array.from({ length: count }, (_, i) => (
         <TableRow key={i}>
           <TableCell className="py-3 pl-4 pr-0 w-10"><Skeleton className="size-4" /></TableCell>
-          <TableCell className="py-3 px-6 w-40">
+          <TableCell className="py-3 px-6 w-72">
             <div className="flex items-center gap-3">
               <Skeleton className="size-6 rounded-md" />
               <Skeleton className="h-4 w-24" />
@@ -127,7 +127,7 @@ function EmailsTable({
                     aria-label={`Select email to ${email.client_name ?? email.to_address}`}
                   />
                 </TableCell>
-                <TableCell className="py-3 px-6 w-40">
+                <TableCell className="py-3 px-6 w-72">
                   <div className="flex items-center gap-3 min-w-0">
                     <ClientSquircle
                       name={email.client_name ?? email.to_address}
