@@ -111,12 +111,24 @@ function EmailsTable({
                     aria-label={`Select email to ${email.client_name ?? email.to_address}`}
                   />
                 </TableCell>
-                <TableCell className="py-3 px-6 w-48">
+                <TableCell className="py-3 px-6 w-40">
                   <div className="flex items-center gap-3 min-w-0">
                     {email.client_name && (
                       <ClientSquircle name={email.client_name} color={email.client_color ?? ""} className="size-[22px] shrink-0" />
                     )}
-                    <span className="text-sm truncate">{email.to_address}</span>
+                    {(() => {
+                      const addresses = email.to_address.split(",").map((s) => s.trim()).filter(Boolean);
+                      return (
+                        <>
+                          <span className="text-sm truncate">{addresses[0]}</span>
+                          {addresses.length > 1 && (
+                            <span className="text-xs text-muted-foreground border rounded-full px-1.5 py-px shrink-0">
+                              +{addresses.length - 1}
+                            </span>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </TableCell>
                 <TableCell className="py-3 px-6 max-w-0">
