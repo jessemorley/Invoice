@@ -37,12 +37,28 @@ function emailDate(email: DashboardEmail): string {
   return `${d.toLocaleDateString("en-AU", { month: "long" })} ${d.getDate()}`;
 }
 
+function scheduledLabel(email: DashboardEmail): string {
+  if (email.status === "failed") return emailDate(email);
+  const d = new Date(email.scheduled_for);
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  const day =
+    d.toDateString() === now.toDateString() ? "today"
+    : d.toDateString() === tomorrow.toDateString() ? "tomorrow"
+    : d.toLocaleDateString("en-AU", { weekday: "long" });
+  const time = d.toLocaleTimeString("en-AU", {
+    hour: "numeric",
+    ...(d.getMinutes() ? { minute: "2-digit" } : {}),
+    hour12: true,
+  }).toLowerCase();
+  return `Scheduled for ${day} ${time}`;
+}
+
+// Chip only flags problems: failed (and later, bounced) rows.
 function StatusCell({ email }: { email: DashboardEmail }) {
-  return (
-    <Badge variant={email.status === "failed" ? "destructive" : email.status === "sent" ? "secondary" : "outline"}>
-      {email.status === "pending" ? "scheduled" : email.status}
-    </Badge>
-  );
+  if (email.status !== "failed") return null;
+  return <Badge variant="destructive">failed</Badge>;
 }
 
 function SkeletonTableRows({ count = 6 }: { count?: number }) {
@@ -51,15 +67,15 @@ function SkeletonTableRows({ count = 6 }: { count?: number }) {
       {Array.from({ length: count }, (_, i) => (
         <TableRow key={i}>
           <TableCell className="py-3 pl-4 pr-0 w-10"><Skeleton className="size-4" /></TableCell>
-          <TableCell className="py-3 px-6">
+          <TableCell className="py-3 px-6 w-40">
             <div className="flex items-center gap-3">
               <Skeleton className="size-6 rounded-md" />
               <Skeleton className="h-4 w-24" />
             </div>
           </TableCell>
-          <TableCell className="py-3 px-6"><Skeleton className="h-4 w-72" /></TableCell>
+          <TableCell className="py-3 px-6"><Skeleton className="h-4 w-72 max-w-full" /></TableCell>
           <TableCell className="py-3 px-2 w-8"><Skeleton className="size-3.5 mx-auto" /></TableCell>
-          <TableCell className="py-3 px-6 text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+          <TableCell className="py-3 px-6 w-28 text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
         </TableRow>
       ))}
     </>
@@ -91,7 +107,7 @@ function EmailsTable({
         <span className="text-sm font-medium text-muted-foreground">{title}</span>
       </div>
       <div className="rounded-lg border overflow-hidden bg-card">
-      <Table>
+      <Table className="table-fixed">
         <TableBody>
           {loading ? (
             <SkeletonTableRows />
@@ -113,9 +129,11 @@ function EmailsTable({
                 </TableCell>
                 <TableCell className="py-3 px-6 w-40">
                   <div className="flex items-center gap-3 min-w-0">
-                    {email.client_name && (
-                      <ClientSquircle name={email.client_name} color={email.client_color ?? ""} className="size-[22px] shrink-0" />
-                    )}
+                    <ClientSquircle
+                      name={email.client_name ?? email.to_address}
+                      color={email.client_name ? (email.client_color ?? "#9ca3af") : "#9ca3af"}
+                      className="size-[22px] shrink-0"
+                    />
                     {(() => {
                       const addresses = email.to_address.split(",").map((s) => s.trim()).filter(Boolean);
                       return (
@@ -140,8 +158,10 @@ function EmailsTable({
                 <TableCell className="py-3 px-2 w-8">
                   {email.filename && <Paperclip className="size-3.5 text-muted-foreground mx-auto" />}
                 </TableCell>
-                <TableCell className={`py-3 px-6 w-28 whitespace-nowrap ${showStatus ? "" : "text-right"}`}>
-                  <span className="text-sm text-muted-foreground">{emailDate(email)}</span>
+                <TableCell className={`py-3 px-6 whitespace-nowrap ${showStatus ? "w-56" : "w-28 text-right"}`}>
+                  <span className="text-sm text-muted-foreground">
+                    {showStatus ? scheduledLabel(email) : emailDate(email)}
+                  </span>
                 </TableCell>
                 {showStatus && (
                   <TableCell className="py-3 px-6 w-24 text-center">
