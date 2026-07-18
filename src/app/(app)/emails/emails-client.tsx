@@ -56,8 +56,7 @@ function SkeletonTableRows({ count = 6 }: { count?: number }) {
               <Skeleton className="h-4 w-24" />
             </div>
           </TableCell>
-          <TableCell className="py-3 px-6"><Skeleton className="h-4 w-40" /></TableCell>
-          <TableCell className="py-3 px-6"><Skeleton className="h-4 w-40" /></TableCell>
+          <TableCell className="py-3 px-6"><Skeleton className="h-4 w-72" /></TableCell>
           <TableCell className="py-3 px-6 text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
         </TableRow>
       ))}
@@ -96,7 +95,7 @@ function EmailsTable({
             <SkeletonTableRows />
           ) : emails.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={showStatus ? 6 : 5} className="text-center text-muted-foreground py-12">
+              <TableCell colSpan={showStatus ? 5 : 4} className="text-center text-muted-foreground py-12">
                 {emptyLabel}
               </TableCell>
             </TableRow>
@@ -119,10 +118,10 @@ function EmailsTable({
                   </div>
                 </TableCell>
                 <TableCell className="py-3 px-6 max-w-0">
-                  <span className="text-sm block truncate">{email.subject}</span>
-                </TableCell>
-                <TableCell className="py-3 px-6 max-w-0">
-                  <span className="text-sm text-muted-foreground block truncate">{email.body_text.replace(/\s+/g, " ")}</span>
+                  <span className="text-sm block truncate">
+                    {email.subject}
+                    <span className="text-muted-foreground"> · {email.body_text.replace(/\s+/g, " ")}</span>
+                  </span>
                 </TableCell>
                 <TableCell className={`py-3 px-6 w-28 whitespace-nowrap ${showStatus ? "" : "text-right"}`}>
                   <span className="text-sm text-muted-foreground">{emailDate(email)}</span>
