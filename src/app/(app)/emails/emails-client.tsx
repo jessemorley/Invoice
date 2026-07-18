@@ -3,7 +3,6 @@
 import { useState } from "react";
 import type { ComposePrefill, DashboardEmail, InvoiceDetail } from "@/lib/types";
 import { loadScheduledEmail } from "@/app/(app)/invoices/actions";
-import { formatRelativeTime } from "@/lib/format";
 import { PageHeader } from "@/components/page-header";
 import {
   Table,
@@ -21,10 +20,9 @@ import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { tableHeadCellBase } from "@/components/sortable-table-head";
 
-function emailStatusLabel(email: DashboardEmail): string {
-  if (email.status === "sent" && email.sent_at) return `Sent ${formatRelativeTime(email.sent_at)}`;
-  if (email.status === "failed") return "Failed";
-  return formatRelativeTime(email.scheduled_for);
+function emailDate(email: DashboardEmail): string {
+  const d = new Date(email.status === "sent" && email.sent_at ? email.sent_at : email.scheduled_for);
+  return `${d.toLocaleDateString("en-AU", { month: "long" })} ${d.getDate()}`;
 }
 
 function StatusCell({ email }: { email: DashboardEmail }) {
@@ -47,8 +45,9 @@ function SkeletonTableRows({ count = 6 }: { count?: number }) {
               <Skeleton className="h-4 w-24" />
             </div>
           </TableCell>
-          <TableCell className="py-3 px-6"><Skeleton className="h-4 w-48" /></TableCell>
-          <TableCell className="py-3 px-6"><Skeleton className="h-4 w-20" /></TableCell>
+          <TableCell className="py-3 px-6"><Skeleton className="h-4 w-40" /></TableCell>
+          <TableCell className="py-3 px-6"><Skeleton className="h-4 w-40" /></TableCell>
+          <TableCell className="py-3 px-6"><Skeleton className="h-4 w-16" /></TableCell>
           <TableCell className="py-3 px-6 text-right"><Skeleton className="h-5 w-16 ml-auto rounded-full" /></TableCell>
         </TableRow>
       ))}
@@ -102,7 +101,8 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
                   <TableHead className={`${tableHeadCellBase} w-24`}>Invoice</TableHead>
                   <TableHead className={`${tableHeadCellBase} w-48`}>To</TableHead>
                   <TableHead className={tableHeadCellBase}>Subject</TableHead>
-                  <TableHead className={`${tableHeadCellBase} w-36`}>When</TableHead>
+                  <TableHead className={tableHeadCellBase}>Preview</TableHead>
+                  <TableHead className={`${tableHeadCellBase} w-28`}>Date</TableHead>
                   <TableHead className={`${tableHeadCellBase} w-24 text-right`}>Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -111,7 +111,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
                   <SkeletonTableRows />
                 ) : emails.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
                       No emails yet.
                     </TableCell>
                   </TableRow>
@@ -132,10 +132,13 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
                         )}
                       </TableCell>
                       <TableCell className="py-3 px-6 max-w-0">
-                        <span className="text-sm text-muted-foreground block truncate">{email.subject}</span>
+                        <span className="text-sm block truncate">{email.subject}</span>
+                      </TableCell>
+                      <TableCell className="py-3 px-6 max-w-0">
+                        <span className="text-sm text-muted-foreground block truncate">{email.body_text.replace(/\s+/g, " ")}</span>
                       </TableCell>
                       <TableCell className="py-3 px-6 whitespace-nowrap">
-                        <span className="text-xs text-muted-foreground">{emailStatusLabel(email)}</span>
+                        <span className="text-sm text-muted-foreground">{emailDate(email)}</span>
                       </TableCell>
                       <TableCell className="py-3 px-6 text-right">
                         <StatusCell email={email} />
