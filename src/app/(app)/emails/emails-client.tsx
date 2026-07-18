@@ -8,8 +8,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
-  TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +16,6 @@ import { InvoiceStatusBadge } from "@/components/invoice-status-badge";
 import { ClientSquircle } from "@/components/client-squircle";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
-import { tableHeadCellBase } from "@/components/sortable-table-head";
 
 function emailDate(email: DashboardEmail): string {
   const d = new Date(email.status === "sent" && email.sent_at ? email.sent_at : email.scheduled_for);
@@ -69,13 +66,12 @@ function EmailsTable({
   emptyLabel?: string;
 }) {
   return (
-    <div className="rounded-lg border overflow-hidden bg-card">
+    <div>
+      <div className="flex items-center px-4 py-2.5">
+        <span className="text-sm font-medium text-muted-foreground">{title}</span>
+      </div>
+      <div className="rounded-lg border overflow-hidden bg-card">
       <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead colSpan={6} className={tableHeadCellBase}>{title}</TableHead>
-          </TableRow>
-        </TableHeader>
         <TableBody>
           {loading ? (
             <SkeletonTableRows />
@@ -118,6 +114,7 @@ function EmailsTable({
           )}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }
