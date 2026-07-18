@@ -74,7 +74,8 @@ function SkeletonTableRows({ count = 6 }: { count?: number }) {
             </div>
           </TableCell>
           <TableCell className="py-3 px-6"><Skeleton className="h-4 w-72 max-w-full" /></TableCell>
-          <TableCell className="py-3 px-6 w-36"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+          <TableCell className="py-3 px-2 w-8"><Skeleton className="size-3.5 mx-auto" /></TableCell>
+          <TableCell className="py-3 pl-2 pr-6 w-28"><Skeleton className="h-4 w-16" /></TableCell>
         </TableRow>
       ))}
     </>
@@ -112,7 +113,7 @@ function EmailsTable({
             <SkeletonTableRows />
           ) : emails.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={showStatus ? 5 : 4} className="text-center text-muted-foreground py-12">
+              <TableCell colSpan={showStatus ? 6 : 5} className="text-center text-muted-foreground py-12">
                 {emptyLabel}
               </TableCell>
             </TableRow>
@@ -154,13 +155,13 @@ function EmailsTable({
                     <span className="text-muted-foreground"> · {email.body_text.replace(/\s+/g, " ")}</span>
                   </span>
                 </TableCell>
-                <TableCell className={`py-3 px-6 whitespace-nowrap ${showStatus ? "w-56" : "w-36"}`}>
-                  <div className={`flex items-center gap-2 ${showStatus ? "" : "justify-end"}`}>
-                    {email.filename && <Paperclip className="size-3.5 text-muted-foreground shrink-0" />}
-                    <span className="text-sm text-muted-foreground">
-                      {showStatus ? scheduledLabel(email) : emailDate(email)}
-                    </span>
-                  </div>
+                <TableCell className="py-3 px-2 w-8">
+                  {email.filename && <Paperclip className="size-3.5 text-muted-foreground mx-auto" />}
+                </TableCell>
+                <TableCell className={`py-3 pl-2 pr-6 whitespace-nowrap ${showStatus ? "w-56" : "w-28"}`}>
+                  <span className="text-sm text-muted-foreground">
+                    {showStatus ? scheduledLabel(email) : emailDate(email)}
+                  </span>
                 </TableCell>
                 {showStatus && (
                   <TableCell className="py-3 px-6 w-24 text-center">
