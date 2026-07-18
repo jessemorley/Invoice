@@ -42,8 +42,7 @@ function SkeletonTableRows({ count = 6 }: { count?: number }) {
           </TableCell>
           <TableCell className="py-3 px-6"><Skeleton className="h-4 w-40" /></TableCell>
           <TableCell className="py-3 px-6"><Skeleton className="h-4 w-40" /></TableCell>
-          <TableCell className="py-3 px-6"><Skeleton className="h-4 w-16" /></TableCell>
-          <TableCell className="py-3 px-6 text-right"><Skeleton className="h-5 w-16 ml-auto rounded-full" /></TableCell>
+          <TableCell className="py-3 px-6 text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
         </TableRow>
       ))}
     </>
@@ -56,12 +55,14 @@ function EmailsTable({
   onRowClick,
   loading,
   emptyLabel,
+  showStatus,
 }: {
   title: string;
   emails: DashboardEmail[];
   onRowClick: (email: DashboardEmail) => void;
   loading?: boolean;
   emptyLabel?: string;
+  showStatus?: boolean;
 }) {
   return (
     <div>
@@ -75,7 +76,7 @@ function EmailsTable({
             <SkeletonTableRows />
           ) : emails.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
+              <TableCell colSpan={showStatus ? 5 : 4} className="text-center text-muted-foreground py-12">
                 {emptyLabel}
               </TableCell>
             </TableRow>
@@ -98,12 +99,14 @@ function EmailsTable({
                 <TableCell className="py-3 px-6 max-w-0">
                   <span className="text-sm text-muted-foreground block truncate">{email.body_text.replace(/\s+/g, " ")}</span>
                 </TableCell>
-                <TableCell className="py-3 px-6 w-28 whitespace-nowrap">
+                <TableCell className={`py-3 px-6 w-28 whitespace-nowrap ${showStatus ? "" : "text-right"}`}>
                   <span className="text-sm text-muted-foreground">{emailDate(email)}</span>
                 </TableCell>
-                <TableCell className="py-3 px-6 w-24 text-right">
-                  <StatusCell email={email} />
-                </TableCell>
+                {showStatus && (
+                  <TableCell className="py-3 px-6 w-24 text-right">
+                    <StatusCell email={email} />
+                  </TableCell>
+                )}
               </TableRow>
             ))
           )}
@@ -156,7 +159,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
       <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
         <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
           {!loading && scheduled.length > 0 && (
-            <EmailsTable title="Scheduled" emails={scheduled} onRowClick={handleEmailRowClick} />
+            <EmailsTable title="Scheduled" emails={scheduled} onRowClick={handleEmailRowClick} showStatus />
           )}
           <EmailsTable
             title="Sent"
