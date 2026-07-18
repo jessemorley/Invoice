@@ -30,6 +30,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ClientSquircle } from "@/components/client-squircle";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
+import { Paperclip } from "lucide-react";
 
 function emailDate(email: DashboardEmail): string {
   const d = new Date(email.status === "sent" && email.sent_at ? email.sent_at : email.scheduled_for);
@@ -57,6 +58,7 @@ function SkeletonTableRows({ count = 6 }: { count?: number }) {
             </div>
           </TableCell>
           <TableCell className="py-3 px-6"><Skeleton className="h-4 w-72" /></TableCell>
+          <TableCell className="py-3 pl-0 pr-2 w-8"><Skeleton className="size-3.5" /></TableCell>
           <TableCell className="py-3 px-6 text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
         </TableRow>
       ))}
@@ -95,7 +97,7 @@ function EmailsTable({
             <SkeletonTableRows />
           ) : emails.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={showStatus ? 5 : 4} className="text-center text-muted-foreground py-12">
+              <TableCell colSpan={showStatus ? 6 : 5} className="text-center text-muted-foreground py-12">
                 {emptyLabel}
               </TableCell>
             </TableRow>
@@ -122,6 +124,9 @@ function EmailsTable({
                     {email.subject}
                     <span className="text-muted-foreground"> · {email.body_text.replace(/\s+/g, " ")}</span>
                   </span>
+                </TableCell>
+                <TableCell className="py-3 pl-0 pr-2 w-8">
+                  {email.filename && <Paperclip className="size-3.5 text-muted-foreground" />}
                 </TableCell>
                 <TableCell className={`py-3 px-6 w-28 whitespace-nowrap ${showStatus ? "" : "text-right"}`}>
                   <span className="text-sm text-muted-foreground">{emailDate(email)}</span>
