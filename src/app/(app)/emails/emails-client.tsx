@@ -510,9 +510,9 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Emails">
-        <Button size="sm" disabled={loading} onClick={openNewEmail}>
+        <Button size="sm" className="hidden md:flex" disabled={loading} onClick={openNewEmail}>
           <Pencil className="size-4" />
-          <span className="hidden md:inline">Compose</span>
+          Compose
         </Button>
         {selected.size > 0 && (
           <AlertDialog>
