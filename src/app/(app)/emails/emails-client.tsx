@@ -154,8 +154,8 @@ function EmailsTable({
                       )}
                     </span>
                   </div>
-                  <p className="text-sm truncate">{email.subject}</p>
-                  <p className="text-sm text-muted-foreground truncate">
+                  <p className="text-xs truncate">{email.subject}</p>
+                  <p className="text-xs text-muted-foreground truncate">
                     {email.body_text.replace(/\s+/g, " ")}
                   </p>
                 </div>
