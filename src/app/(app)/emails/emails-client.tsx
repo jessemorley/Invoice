@@ -33,7 +33,8 @@ import { SentEmailSheet } from "@/components/sent-email-sheet";
 import { Paperclip, Pencil } from "lucide-react";
 
 function emailDate(email: DashboardEmail): string {
-  const d = new Date(email.status === "sent" && email.sent_at ? email.sent_at : email.scheduled_for);
+  // Bounced rows keep their sent_at — show when the email actually went out.
+  const d = new Date(email.sent_at ?? email.scheduled_for);
   return `${d.toLocaleDateString("en-AU", { month: "short" })} ${d.getDate()}`;
 }
 
@@ -150,15 +151,15 @@ function EmailsTable({
                       <span className="text-xs text-muted-foreground">{emailDate(email)}</span>
                     </span>
                   </div>
+                  <p className="text-xs truncate">{email.subject}</p>
                   <div className="flex items-start gap-2">
-                    <p className="text-xs truncate flex-1 min-w-0">{email.subject}</p>
+                    <p className="text-xs text-muted-foreground truncate flex-1 min-w-0">
+                      {email.body_text.replace(/\s+/g, " ")}
+                    </p>
                     {broken && (
                       <Badge variant="destructive" className="shrink-0">{email.status}</Badge>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {email.body_text.replace(/\s+/g, " ")}
-                  </p>
                 </div>
               </div>
             );
@@ -219,9 +220,14 @@ function EmailsTable({
                 </TableCell>
                 {showStatus ? (
                   <TableCell className="py-3 pl-2 pr-6 w-56 text-right whitespace-nowrap">
-                    <Badge variant={email.status === "pending" ? "outline" : "destructive"}>
-                      {email.status === "pending" ? scheduledLabel(email) : email.status}
-                    </Badge>
+                    {email.status === "pending" ? (
+                      <Badge variant="outline">{scheduledLabel(email)}</Badge>
+                    ) : (
+                      <span className="inline-flex items-center gap-2">
+                        <Badge variant="destructive">{email.status}</Badge>
+                        <span className="text-sm text-muted-foreground">{emailDate(email)}</span>
+                      </span>
+                    )}
                   </TableCell>
                 ) : (
                   <TableCell className="py-3 pl-2 pr-6 w-24 text-right whitespace-nowrap">
