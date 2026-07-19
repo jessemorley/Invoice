@@ -35,9 +35,6 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  // Keyboard shrinks the viewport instead of panning it — keeps bottom
-  // drawers and the dock glued to the visible area (dvh tracks the keyboard).
-  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({
