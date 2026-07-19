@@ -80,7 +80,7 @@ function SkeletonMobileRows({ count = 6 }: { count?: number }) {
     <>
       {Array.from({ length: count }, (_, i) => (
         <div key={i} className="flex items-center gap-3 py-2.5">
-          <Skeleton className="size-10 rounded-lg shrink-0" />
+          <Skeleton className="size-8 rounded-lg shrink-0" />
           <div className="flex-1 flex flex-col gap-1.5 min-w-0">
             <Skeleton className="h-4 w-40" />
             <Skeleton className="h-4 w-56 max-w-full" />
@@ -117,7 +117,7 @@ function EmailsTable({
         <span className="text-sm font-medium text-muted-foreground">{title}</span>
       </div>
       {/* Mobile: Mail-style rows, no card chrome. Multi-select stays desktop-only. */}
-      <div className="md:hidden divide-y">
+      <div className="md:hidden">
         {loading ? (
           <SkeletonMobileRows />
         ) : emails.length === 0 ? (
@@ -135,7 +135,7 @@ function EmailsTable({
                 <ClientSquircle
                   name={email.client_name ?? email.to_address}
                   color={email.client_name ? (email.client_color ?? "#9ca3af") : "#9ca3af"}
-                  className="size-10 shrink-0"
+                  className="size-8 shrink-0"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -355,7 +355,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
       </PageHeader>
 
       <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
-        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+        <div className="px-4 md:px-6 pb-6 pt-1 md:pt-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
           {!loading && scheduled.length > 0 && (
             <EmailsTable title="Scheduled" emails={scheduled} onRowClick={handleEmailRowClick} showStatus selected={selected} onToggle={toggleSelected} />
           )}
