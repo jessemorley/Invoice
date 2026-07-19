@@ -166,7 +166,7 @@ function SwipeableRow({
       >
         <Trash2
           className={cn(
-            "size-5 transition-transform duration-100",
+            "size-5 transition-transform duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
             pastThreshold ? "scale-125" : "scale-75"
           )}
         />
