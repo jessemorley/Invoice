@@ -355,7 +355,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
       </PageHeader>
 
       <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
-        <div className="px-4 md:px-6 pb-6 pt-1 md:pt-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+        <div className="px-4 md:px-6 pb-6 pt-1 md:pt-6 mx-auto w-full max-w-6xl flex flex-col gap-0 md:gap-4">
           {!loading && scheduled.length > 0 && (
             <EmailsTable title="Scheduled" emails={scheduled} onRowClick={handleEmailRowClick} showStatus selected={selected} onToggle={toggleSelected} />
           )}
