@@ -624,7 +624,7 @@ export function InvoiceSheet({
                 Email
               </Button>
             )}
-            {scheduledEmail?.status === "failed" && (
+            {(scheduledEmail?.status === "failed" || scheduledEmail?.status === "bounced") && (
               <Button
                 variant="outline"
                 size="sm"
@@ -632,7 +632,7 @@ export function InvoiceSheet({
                 onClick={onSendClick}
               >
                 <Mail className="size-3.5" />
-                Failed — Retry
+                {scheduledEmail.status === "bounced" ? "Bounced" : "Failed"} — Retry
               </Button>
             )}
           </div>

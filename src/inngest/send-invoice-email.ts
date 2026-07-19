@@ -110,68 +110,82 @@ export const sendInvoiceEmail = inngest.createFunction(
     const fromAddress = `Jesse Morley <${process.env.FROM_ADDRESS!}>`;
     const nextjsBaseUrl = process.env.NEXTJS_BASE_URL!;
 
-    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(user_id);
-    if (userError || !userData.user?.email) {
-      throw new NonRetriableError(`Failed to fetch user: ${userError?.message}`);
+    // Free-form emails (no invoice) skip the PDF entirely.
+    let attachments: { filename: string; content: string }[] | undefined;
+    let sentPdfPath: string | null = null;
+
+    if (invoice_id && filename) {
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(user_id);
+      if (userError || !userData.user?.email) {
+        throw new NonRetriableError(`Failed to fetch user: ${userError?.message}`);
+      }
+
+      const userToken = await mintUserToken(userData.user.email).catch((err) => {
+        throw new NonRetriableError(`Failed to mint user token: ${err.message}`);
+      });
+
+      const pdfRes = await fetch(`${nextjsBaseUrl}/api/invoices/${invoice_id}/pdf`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}`,
+          "Content-Type": "application/json",
+          "x-vercel-protection-bypass": process.env.VERCEL_BYPASS_SECRET ?? "",
+        },
+        body: JSON.stringify({ user_id, token: userToken }),
+      });
+
+      if (!pdfRes.ok) throw new Error(`PDF fetch failed: ${pdfRes.status}`);
+
+      const pdfBytes = new Uint8Array(await pdfRes.arrayBuffer());
+      let binary = "";
+      const chunk = 8192;
+      for (let i = 0; i < pdfBytes.length; i += chunk) {
+        binary += String.fromCharCode(...pdfBytes.slice(i, i + chunk));
+      }
+      const pdfBase64 = btoa(binary);
+
+      const storagePath = `${user_id}/${invoice_id}/${scheduled_email_id}.pdf`;
+      const uploadResult = await supabase.storage
+        .from("invoices")
+        .upload(storagePath, pdfBytes, { contentType: "application/pdf", upsert: true })
+        .catch((err: unknown) => ({ error: err }));
+      if (uploadResult.error) {
+        const err = uploadResult.error as { message?: string };
+        console.error(
+          JSON.stringify({
+            event: "sent_pdf_archive_failed",
+            scheduled_email_id,
+            invoice_id,
+            user_id,
+            storage_path: storagePath,
+            error: err?.message ?? String(uploadResult.error),
+          })
+        );
+      }
+      sentPdfPath = uploadResult.error ? null : storagePath;
+      attachments = [{ filename, content: pdfBase64 }];
     }
 
-    const userToken = await mintUserToken(userData.user.email).catch((err) => {
-      throw new NonRetriableError(`Failed to mint user token: ${err.message}`);
-    });
-
-    const pdfRes = await fetch(`${nextjsBaseUrl}/api/invoices/${invoice_id}/pdf`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}`,
-        "Content-Type": "application/json",
-        "x-vercel-protection-bypass": process.env.VERCEL_BYPASS_SECRET ?? "",
-      },
-      body: JSON.stringify({ user_id, token: userToken }),
-    });
-
-    if (!pdfRes.ok) throw new Error(`PDF fetch failed: ${pdfRes.status}`);
-
-    const pdfBytes = new Uint8Array(await pdfRes.arrayBuffer());
-    let binary = "";
-    const chunk = 8192;
-    for (let i = 0; i < pdfBytes.length; i += chunk) {
-      binary += String.fromCharCode(...pdfBytes.slice(i, i + chunk));
-    }
-    const pdfBase64 = btoa(binary);
-
-    const storagePath = `${user_id}/${invoice_id}/${scheduled_email_id}.pdf`;
-    const uploadResult = await supabase.storage
-      .from("invoices")
-      .upload(storagePath, pdfBytes, { contentType: "application/pdf", upsert: true })
-      .catch((err: unknown) => ({ error: err }));
-    if (uploadResult.error) {
-      const err = uploadResult.error as { message?: string };
-      console.error(
-        JSON.stringify({
-          event: "sent_pdf_archive_failed",
-          scheduled_email_id,
-          invoice_id,
-          user_id,
-          storage_path: storagePath,
-          error: err?.message ?? String(uploadResult.error),
-        })
-      );
-    }
-    const sentPdfPath = uploadResult.error ? null : storagePath;
-
-    await resend.emails.send({
+    const { data: sendData, error: sendError } = await resend.emails.send({
       from: fromAddress,
       to: to_address.split(",").map((e: string) => e.trim()),
       cc: cc_address ? cc_address.split(",").map((e: string) => e.trim()) : undefined,
       bcc: bcc_address ? bcc_address.split(",").map((e: string) => e.trim()) : undefined,
       subject,
       text: body_text,
-      attachments: [{ filename, content: pdfBase64 }],
+      attachments,
     });
+    // The SDK returns errors instead of throwing — surface them so Inngest retries.
+    if (sendError) throw new Error(`Resend send failed: ${sendError.message}`);
 
     await supabase
       .from("scheduled_emails")
-      .update({ status: "sent", sent_at: new Date().toISOString(), ...(sentPdfPath ? { sent_pdf_path: sentPdfPath } : {}) })
+      .update({
+        status: "sent",
+        sent_at: new Date().toISOString(),
+        resend_id: sendData?.id ?? null,
+        ...(sentPdfPath ? { sent_pdf_path: sentPdfPath } : {}),
+      })
       .eq("id", scheduled_email_id);
     revalidateTag(CACHE_TAGS.scheduledEmails, { expire: 0 });
 

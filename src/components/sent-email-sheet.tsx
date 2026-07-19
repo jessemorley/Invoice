@@ -56,7 +56,7 @@ export function SentEmailSheet({ open, onOpenChangeAction, email }: SentEmailShe
     <Sheet open={open} onOpenChange={onOpenChangeAction}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
         <SheetHeader className="sr-only" showCloseButton={false}>
-          <SheetTitle>Sent Email — Invoice {email?.invoice_number}</SheetTitle>
+          <SheetTitle>{email?.invoice_number ? `Sent Email — Invoice ${email.invoice_number}` : "Sent Email"}</SheetTitle>
         </SheetHeader>
 
         {email && (
@@ -64,7 +64,7 @@ export function SentEmailSheet({ open, onOpenChangeAction, email }: SentEmailShe
             {/* Header */}
             <div className="px-6 py-5 border-b flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-base font-semibold">Sent Email — Invoice {email.invoice_number}</h2>
+                <h2 className="text-base font-semibold">{email.invoice_number ? `Sent Email — Invoice ${email.invoice_number}` : "Sent Email"}</h2>
                 {email.sent_at && (
                   <p className="text-sm text-muted-foreground mt-0.5">
                     {formatRelativeTime(email.sent_at)}
@@ -98,6 +98,7 @@ export function SentEmailSheet({ open, onOpenChangeAction, email }: SentEmailShe
                 <p className="text-sm whitespace-pre-wrap text-muted-foreground">{email.body_text}</p>
               </div>
 
+              {email.filename && (
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Attachment</span>
                 {archivePresent ? (
@@ -132,6 +133,7 @@ export function SentEmailSheet({ open, onOpenChangeAction, email }: SentEmailShe
                   </>
                 )}
               </div>
+              )}
             </div>
           </>
         )}

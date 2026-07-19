@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef, useCallback } from "react";
 import type { InvoiceDetail } from "@/lib/types";
 import { toLocalDateStr } from "@/lib/format";
-import { scheduleInvoiceEmail, cancelScheduledEmail, updateScheduledEmail } from "@/app/(app)/invoices/actions";
+import { scheduleInvoiceEmail, scheduleFreeEmail, cancelScheduledEmail, updateScheduledEmail } from "@/app/(app)/invoices/actions";
 import type { EmailFormData } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
 import { toast } from "sonner";
@@ -148,7 +148,7 @@ function toastDescription(date: Date | null): string {
 }
 
 interface ComposeContentProps {
-  invoice: InvoiceDetail;
+  invoice: InvoiceDetail | null;
   businessName: string;
   userName?: string;
   bodyTemplate?: string | null;
@@ -163,11 +163,11 @@ interface ComposeContentProps {
 
 function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, onClose, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId }: ComposeContentProps) {
   const [chips, setChips] = useState<string[]>(() =>
-    initialTo ?? (invoice.client.email ? [invoice.client.email] : [])
+    initialTo ?? (invoice?.client.email ? [invoice.client.email] : [])
   );
   const [chipInput, setChipInput] = useState("");
-  const [subject, setSubject] = useState(initialSubject ?? `Invoice ${invoice.number}`);
-  const [body, setBody] = useState(() => initialBody ?? defaultBody(invoice, businessName, userName, bodyTemplate));
+  const [subject, setSubject] = useState(initialSubject ?? (invoice ? `Invoice ${invoice.number}` : ""));
+  const [body, setBody] = useState(() => initialBody ?? (invoice ? defaultBody(invoice, businessName, userName, bodyTemplate) : ""));
   const [scheduledFor, setScheduledFor] = useState<Date | null>(initialScheduledFor ?? null);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -219,7 +219,9 @@ function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, on
           return;
         }
 
-        const result = await scheduleInvoiceEmail(invoice.id, data);
+        const result = invoice
+          ? await scheduleInvoiceEmail(invoice.id, data)
+          : await scheduleFreeEmail(data);
         invalidate("invoices", "emails");
         onSent();
         onClose();
@@ -249,7 +251,11 @@ function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, on
     <>
       {/* Header */}
       <div className="px-6 py-5 border-b flex items-center justify-between">
-        <h2 className="text-base font-semibold">{editingId ? `Edit email — Invoice ${invoice.number}` : `Send Invoice ${invoice.number}`}</h2>
+        <h2 className="text-base font-semibold">
+          {invoice
+            ? (editingId ? `Edit email — Invoice ${invoice.number}` : `Send Invoice ${invoice.number}`)
+            : (editingId ? "Edit email" : "New email")}
+        </h2>
         <button
           type="button"
           onClick={onClose}
@@ -360,16 +366,24 @@ interface EmailComposeSheetProps {
   initialBody?: string;
   initialScheduledFor?: Date | null;
   editingId?: string;
+  /** Render even without an invoice — free-form compose with no PDF attachment. */
+  freeform?: boolean;
 }
 
-export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessName, userName, bodyTemplate, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId }: EmailComposeSheetProps) {
-  if (!invoice) return null;
+export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessName, userName, bodyTemplate, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId, freeform }: EmailComposeSheetProps) {
+  // Mount only while usable: invoice flows clear `invoice` on close, freeform
+  // relies on `open` — either way ComposeContent remounts with fresh state.
+  if (!invoice && !(freeform && open)) return null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChangeAction}>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
         <SheetHeader className="sr-only" showCloseButton={false}>
-          <SheetTitle>{editingId ? `Edit email — Invoice ${invoice.number}` : `Send Invoice ${invoice.number}`}</SheetTitle>
+          <SheetTitle>
+            {invoice
+              ? (editingId ? `Edit email — Invoice ${invoice.number}` : `Send Invoice ${invoice.number}`)
+              : (editingId ? "Edit email" : "New email")}
+          </SheetTitle>
         </SheetHeader>
         <ComposeContent
           invoice={invoice}

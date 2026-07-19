@@ -143,6 +143,7 @@ const EMAIL_VARIANT: Record<InvoiceEmail["status"], "default" | "secondary" | "d
   pending: "secondary",
   sent:    "secondary",
   failed:  "destructive",
+  bounced: "destructive",
 };
 
 function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate?: boolean }) {
@@ -156,7 +157,7 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
     <Badge variant={EMAIL_VARIANT[email.status]} className="h-5 py-0">
       {email.status === "sent" && <Send />}
       {email.status === "pending" && <Clock />}
-      {email.status === "failed" && <MailWarning />}
+      {(email.status === "failed" || email.status === "bounced") && <MailWarning />}
       {showDate && date && <span>{date}</span>}
     </Badge>
   );
@@ -169,6 +170,7 @@ function emailStatus(email: InvoiceEmail | null): { text: string; icon: typeof S
     return { text: day, icon: Clock };
   }
   if (email?.status === "failed") return { text: "Failed", icon: MailWarning, destructive: true };
+  if (email?.status === "bounced") return { text: "Bounced", icon: MailWarning, destructive: true };
   return null;
 }
 

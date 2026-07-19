@@ -350,6 +350,49 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
   return { id: row.id };
 }
 
+export async function scheduleFreeEmail(data: EmailFormData): Promise<{ id: string }> {
+  const [supabase, userId, token] = await Promise.all([createClient(), getAuthUserId(), getAuthToken()]);
+  const userPrefs = await fetchUserPreferences(userId, token);
+  const bccAddress = userPrefs?.bcc_self ? (await getAuthUser()).email : null;
+
+  const { data: row, error } = await supabase.from("scheduled_emails").insert({
+    user_id: userId,
+    invoice_id: null,
+    to_address: data.to,
+    subject: data.subject,
+    body_text: data.body_text,
+    scheduled_for: data.scheduled_for,
+    filename: null,
+    bcc_address: bccAddress,
+    mark_issued: false,
+    status: "pending",
+  }).select("id").single();
+
+  if (error) throw new Error(`scheduleFreeEmail: ${error.message}`);
+
+  await inngest.send({
+    name: "invoice/email.scheduled",
+    data: {
+      scheduled_email_id: row.id,
+      user_id: userId,
+      invoice_id: null,
+      to_address: data.to,
+      cc_address: null,
+      bcc_address: bccAddress,
+      subject: data.subject,
+      body_text: data.body_text,
+      filename: null,
+      mark_issued: false,
+      scheduled_for: data.scheduled_for,
+    },
+    ts: new Date(data.scheduled_for).getTime(),
+  });
+
+  updateTag(CACHE_TAGS.scheduledEmails);
+  refresh();
+  return { id: row.id };
+}
+
 export async function cancelScheduledEmail(scheduledEmailId: string): Promise<void> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { data: row, error } = await supabase
@@ -371,6 +414,48 @@ export async function cancelScheduledEmail(scheduledEmailId: string): Promise<vo
     name: "invoice/email.cancelled",
     data: { scheduled_email_id: scheduledEmailId },
   });
+
+  updateTag(CACHE_TAGS.scheduledEmails);
+  refresh();
+}
+
+export async function deleteEmails(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+
+  const { data: rows, error } = await supabase
+    .from("scheduled_emails")
+    .select("id, status, invoice_id, mark_issued, sent_pdf_path")
+    .in("id", ids)
+    .eq("user_id", userId);
+  if (error) throw new Error(`deleteEmails: ${error.message}`);
+  if (!rows?.length) return;
+
+  // Pending rows are live Inngest jobs — cancel and un-stamp before deleting.
+  for (const row of rows) {
+    if (row.status !== "pending") continue;
+    if (row.mark_issued && row.invoice_id) {
+      await stampIssuedDate(supabase, userId, row.invoice_id, null);
+    }
+    await inngest.send({
+      name: "invoice/email.cancelled",
+      data: { scheduled_email_id: row.id },
+    });
+  }
+
+  // Best-effort: archived PDFs are orphaned once the row is gone.
+  const pdfPaths = rows.flatMap((r) => (r.sent_pdf_path ? [r.sent_pdf_path] : []));
+  if (pdfPaths.length) {
+    const { error: storageError } = await supabase.storage.from("invoices").remove(pdfPaths);
+    if (storageError) console.error(`deleteEmails: failed to remove archived PDFs: ${storageError.message}`);
+  }
+
+  const { error: delError } = await supabase
+    .from("scheduled_emails")
+    .delete()
+    .in("id", rows.map((r) => r.id))
+    .eq("user_id", userId);
+  if (delError) throw new Error(`deleteEmails: ${delError.message}`);
 
   updateTag(CACHE_TAGS.scheduledEmails);
   refresh();

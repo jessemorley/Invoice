@@ -10,7 +10,16 @@ When you hit one of these during a task, do **not** fix it inline — that bloat
 
 ## Open
 
-(none)
+### test failures: floating-dock.test.tsx expects pre-redesign dock behavior (4 tests)
+
+- First noted: 2026-07-19 (during feature/emails-view)
+- Symptom: `npm test` fails 4 tests on clean `main` — "Plus is disabled when view is clients" (Plus is now enabled for clients via `DOCK_NEW_VIEWS`), and three overflow-menu tests that expect a "Dashboard" button inside the popover (Dashboard is now a primary tab, not a menu item). Tests describe an older dock layout.
+- Likely fix: update the test's `PRIMARY_TABS`/`SECONDARY_TABS`/`DOCK_NEW_VIEWS` expectations to match the current dock.
+
+### test suite broken: src/lib/tax-estimate.test.ts — "No test suite found in file"
+
+- First noted: 2026-07-19 (during feature/emails-view)
+- Symptom: vitest reports the file contains no test suite; the whole file fails to load/collect.
 
 ## Resolved
 

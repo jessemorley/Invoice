@@ -2,7 +2,7 @@ import { cacheTag } from "next/cache";
 import { createTokenClient } from "./supabase";
 import { isoWeek, todayInSydney, fyStartYear } from "./format";
 import { lineItemTotal } from "./utils";
-import type { Entry, Invoice, InvoiceDetail, InvoiceEntry, Expense, ExpenseCategory, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate, CalendarDay } from "./types";
+import type { Entry, Invoice, InvoiceDetail, InvoiceEntry, InvoiceEmail, Expense, ExpenseCategory, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate, CalendarDay } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -312,7 +312,7 @@ export async function fetchInvoices(userId: string, token: string, filters: Invo
       total: inv.total,
       status: inv.status,
       email: activeEmail ? {
-        status: activeEmail.status as "pending" | "sent" | "failed",
+        status: activeEmail.status as InvoiceEmail["status"],
         scheduled_for: activeEmail.scheduled_for,
         sent_at: activeEmail.sent_at,
       } : null,
@@ -605,31 +605,33 @@ export async function fetchWorkflowRates(token: string): Promise<WorkflowRate[]>
   }));
 }
 
-export async function fetchDashboardEmails(userId: string, token: string): Promise<DashboardEmail[]> {
+export async function fetchAllEmails(userId: string, token: string): Promise<DashboardEmail[]> {
   "use cache";
   cacheTag(CACHE_TAGS.scheduledEmails);
   const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("scheduled_emails")
-    .select("id, invoice_id, to_address, subject, body_text, filename, scheduled_for, sent_at, sent_pdf_path, status, invoices(invoice_number, status)")
+    .select("id, invoice_id, to_address, subject, body_text, filename, scheduled_for, sent_at, sent_pdf_path, status, invoices(invoice_number, status, clients(name, color))")
     .eq("user_id", userId)
-    .in("status", ["pending", "failed", "sent"])
+    .in("status", ["pending", "failed", "bounced", "sent"])
     .order("status", { ascending: true })
-    .order("sent_at", { ascending: false })
-    .limit(4);
+    .order("sent_at", { ascending: false });
 
-  if (error) throw new Error(`fetchDashboardEmails: ${error.message}`);
+  if (error) throw new Error(`fetchAllEmails: ${error.message}`);
 
   const scheduled: DashboardEmail[] = [];
   const recent: DashboardEmail[] = [];
 
   for (const row of data ?? []) {
     const inv = Array.isArray(row.invoices) ? row.invoices[0] : row.invoices;
+    const client = inv && (Array.isArray(inv.clients) ? inv.clients[0] : inv.clients);
     const email: DashboardEmail = {
       id: row.id,
       invoice_id: row.invoice_id ?? "",
       invoice_number: inv?.invoice_number ?? "",
       invoice_status: (inv?.status ?? "draft") as DashboardEmail["invoice_status"],
+      client_name: client?.name ?? null,
+      client_color: client?.color ?? null,
       to_address: row.to_address,
       subject: row.subject,
       body_text: row.body_text,
@@ -639,17 +641,18 @@ export async function fetchDashboardEmails(userId: string, token: string): Promi
       sent_pdf_path: row.sent_pdf_path ?? null,
       status: row.status as DashboardEmail["status"],
     };
-    if (row.status === "pending" || row.status === "failed") {
+    if (row.status === "pending" || row.status === "failed" || row.status === "bounced") {
       scheduled.push(email);
     } else {
       recent.push(email);
     }
   }
 
-  return [...scheduled, ...recent].slice(0, 4);
+  scheduled.sort((a, b) => a.scheduled_for.localeCompare(b.scheduled_for));
+  return [...scheduled, ...recent];
 }
 
-export async function fetchDashboardData(userId: string, entries: DashboardEntry[], invoices: Invoice[], emails: DashboardEmail[]): Promise<DashboardData> {
+export async function fetchDashboardData(userId: string, entries: DashboardEntry[], invoices: Invoice[]): Promise<DashboardData> {
   const todayStr = todayInSydney(); // YYYY-MM-DD in Sydney time
   const [currentYear, currentMonth0, todayDay] = todayStr.split("-").map(Number);
   const currentMonth = currentMonth0 - 1; // 0-indexed to match Date.getMonth()
@@ -779,7 +782,7 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
     monthCalendar.push({ date, clients: Array.from(dayClients.get(date) ?? [], ([name, color]) => ({ name, color })) });
   }
 
-  return { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, emails, monthCalendar };
+  return { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, monthCalendar };
 }
 
 export type BusinessDetails = {
@@ -906,7 +909,7 @@ export async function fetchInvoiceDetail(invoiceId: string, userId: string, toke
 
 export type ScheduledEmail = {
   id: string;
-  status: "pending" | "sent" | "cancelled" | "failed";
+  status: "pending" | "sent" | "cancelled" | "failed" | "bounced";
   to_address: string;
   subject: string;
   body_text: string;
@@ -936,7 +939,8 @@ export async function fetchScheduledEmailForInvoice(invoiceId: string, userId: s
     to_address: data.to_address,
     subject: data.subject,
     body_text: data.body_text,
-    filename: data.filename,
+    // Invoice-scoped emails always carry a filename; null only occurs on free-form rows.
+    filename: data.filename ?? "",
     scheduled_for: data.scheduled_for,
     sent_at: data.sent_at ?? null,
     sent_pdf_path: data.sent_pdf_path ?? null,

@@ -44,7 +44,7 @@ export type Entry = {
 };
 
 export type InvoiceEmail = {
-  status: "pending" | "sent" | "failed";
+  status: "pending" | "sent" | "failed" | "bounced";
   scheduled_for: string;
   sent_at: string | null;
 };
@@ -202,14 +202,16 @@ export type DashboardEmail = {
   invoice_id: string;
   invoice_number: string;
   invoice_status: InvoiceStatus;
+  client_name: string | null;
+  client_color: string | null;
   to_address: string;
   subject: string;
   body_text: string;
-  filename: string;
+  filename: string | null;
   scheduled_for: string;
   sent_at: string | null;
   sent_pdf_path: string | null;
-  status: "pending" | "sent" | "failed";
+  status: "pending" | "sent" | "failed" | "bounced";
 };
 
 export type MtdDailyPoint = {
@@ -229,6 +231,5 @@ export type DashboardData = {
   mtdPriorCumulative: MtdDailyPoint[];
   outstanding: Invoice[];
   weeklyEarnings: WeeklyEarning[];
-  emails: DashboardEmail[];
   monthCalendar: CalendarDay[];
 };

@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export type ViewId = "dashboard" | "entries" | "invoices" | "clients" | "expenses" | "tax" | "settings";
+export type ViewId = "dashboard" | "entries" | "invoices" | "emails" | "clients" | "expenses" | "tax" | "settings";
 
 type ActiveViewContextValue = {
   view: ViewId;
