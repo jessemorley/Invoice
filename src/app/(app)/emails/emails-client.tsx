@@ -79,7 +79,8 @@ function SkeletonTableRows({ count = 6 }: { count?: number }) {
 
 const SWIPE_BTN_WIDTH = 80;
 
-// Mail-style swipe-left row: drag reveals a Delete button behind the content.
+// Mail-style swipe-left row: drag past half the row width to delete
+// (confirmation follows); anything short of that snaps back closed.
 // Axis-locked so vertical list scrolling never fights the swipe.
 function SwipeableRow({
   open,
@@ -107,7 +108,7 @@ function SwipeableRow({
 
   function handleTouchStart(e: React.TouchEvent) {
     const t = e.touches[0];
-    start.current = { x: t.clientX, y: t.clientY, base: open ? -SWIPE_BTN_WIDTH : 0 };
+    start.current = { x: t.clientX, y: t.clientY, base: 0 };
     axis.current = null;
     setDragging(true);
   }
@@ -131,14 +132,13 @@ function SwipeableRow({
     if (axis.current === "h") {
       const width = rowRef.current?.clientWidth ?? 360;
       if (dx < -width / 2) {
-        // Full swipe: fire delete straight away (confirmation dialog opens).
+        // Past the threshold: fire delete (confirmation dialog opens); the row
+        // holds the revealed state until the dialog resolves.
         setDx(-SWIPE_BTN_WIDTH);
         onOpenChange(true);
         onDelete();
       } else {
-        const shouldOpen = dx < -SWIPE_BTN_WIDTH / 2;
-        setDx(shouldOpen ? -SWIPE_BTN_WIDTH : 0);
-        onOpenChange(shouldOpen);
+        setDx(0);
       }
     }
     start.current = null;
@@ -150,24 +150,18 @@ function SwipeableRow({
       axis.current = null;
       return;
     }
-    if (open) {
-      onOpenChange(false);
-      return;
-    }
     onClick();
   }
 
   return (
     <div ref={rowRef} className="relative overflow-hidden">
-      <button
-        type="button"
+      <div
+        aria-hidden
         className="absolute inset-y-0 right-0 flex items-center justify-start bg-destructive text-sm font-medium text-white"
         style={{ width: Math.max(SWIPE_BTN_WIDTH, -dx), paddingLeft: 19 }}
-        tabIndex={open ? 0 : -1}
-        onClick={onDelete}
       >
         Delete
-      </button>
+      </div>
       <div
         className={cn("bg-background touch-pan-y", !dragging && "transition-transform duration-200")}
         style={{ transform: `translateX(${dx}px)` }}
