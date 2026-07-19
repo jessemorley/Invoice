@@ -147,14 +147,15 @@ function EmailsTable({
                     )}
                     <span className="ml-auto flex items-center gap-1.5 shrink-0">
                       {email.filename && <Paperclip className="size-3.5 text-muted-foreground" />}
-                      {broken ? (
-                        <Badge variant="destructive">{email.status}</Badge>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">{emailDate(email)}</span>
-                      )}
+                      <span className="text-xs text-muted-foreground">{emailDate(email)}</span>
                     </span>
                   </div>
-                  <p className="text-xs truncate">{email.subject}</p>
+                  <div className="flex items-start gap-2">
+                    <p className="text-xs truncate flex-1 min-w-0">{email.subject}</p>
+                    {broken && (
+                      <Badge variant="destructive" className="shrink-0">{email.status}</Badge>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground truncate">
                     {email.body_text.replace(/\s+/g, " ")}
                   </p>
