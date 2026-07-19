@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 import type { ComposePrefill, DashboardEmail, InvoiceDetail } from "@/lib/types";
 import { loadScheduledEmail, deleteEmails } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
@@ -76,6 +77,101 @@ function SkeletonTableRows({ count = 6 }: { count?: number }) {
   );
 }
 
+const SWIPE_BTN_WIDTH = 80;
+
+// Mail-style swipe-left row: drag reveals a Delete button behind the content.
+// Axis-locked so vertical list scrolling never fights the swipe.
+function SwipeableRow({
+  open,
+  onOpenChange,
+  onDelete,
+  onClick,
+  children,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onDelete: () => void;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  const [dx, setDx] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const start = useRef<{ x: number; y: number; base: number } | null>(null);
+  const axis = useRef<"h" | "v" | null>(null);
+
+  // Snap shut when another row opens (parent clears `open`).
+  useEffect(() => {
+    setDx(open ? -SWIPE_BTN_WIDTH : 0);
+  }, [open]);
+
+  function handleTouchStart(e: React.TouchEvent) {
+    const t = e.touches[0];
+    start.current = { x: t.clientX, y: t.clientY, base: open ? -SWIPE_BTN_WIDTH : 0 };
+    axis.current = null;
+    setDragging(true);
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    if (!start.current) return;
+    const t = e.touches[0];
+    const moveX = t.clientX - start.current.x;
+    const moveY = t.clientY - start.current.y;
+    if (!axis.current) {
+      if (Math.abs(moveX) < 8 && Math.abs(moveY) < 8) return;
+      axis.current = Math.abs(moveX) > Math.abs(moveY) ? "h" : "v";
+    }
+    if (axis.current === "v") return;
+    setDx(Math.min(0, Math.max(-SWIPE_BTN_WIDTH - 24, start.current.base + moveX)));
+  }
+
+  function handleTouchEnd() {
+    setDragging(false);
+    if (axis.current === "h") {
+      const shouldOpen = dx < -SWIPE_BTN_WIDTH / 2;
+      setDx(shouldOpen ? -SWIPE_BTN_WIDTH : 0);
+      onOpenChange(shouldOpen);
+    }
+    start.current = null;
+  }
+
+  function handleClick() {
+    // A horizontal drag ends with a click event — swallow it.
+    if (axis.current === "h") {
+      axis.current = null;
+      return;
+    }
+    if (open) {
+      onOpenChange(false);
+      return;
+    }
+    onClick();
+  }
+
+  return (
+    <div className="relative overflow-hidden">
+      <button
+        type="button"
+        className="absolute inset-y-0 right-0 flex items-center justify-center bg-destructive text-sm font-medium text-white"
+        style={{ width: SWIPE_BTN_WIDTH }}
+        tabIndex={open ? 0 : -1}
+        onClick={onDelete}
+      >
+        Delete
+      </button>
+      <div
+        className={cn("bg-background touch-pan-y", !dragging && "transition-transform duration-200")}
+        style={{ transform: `translateX(${dx}px)` }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onClick={handleClick}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function SkeletonMobileRows({ count = 6 }: { count?: number }) {
   return (
     <>
@@ -102,6 +198,9 @@ function EmailsTable({
   showStatus,
   selected,
   onToggle,
+  swipeOpenId,
+  onSwipeOpenChange,
+  onRequestDelete,
 }: {
   title: string;
   emails: DashboardEmail[];
@@ -111,6 +210,9 @@ function EmailsTable({
   showStatus?: boolean;
   selected: Set<string>;
   onToggle: (id: string) => void;
+  swipeOpenId: string | null;
+  onSwipeOpenChange: (id: string | null) => void;
+  onRequestDelete: (email: DashboardEmail) => void;
 }) {
   return (
     <div>
@@ -128,11 +230,14 @@ function EmailsTable({
             const addresses = email.to_address.split(",").map((s) => s.trim()).filter(Boolean);
             const broken = email.status === "failed" || email.status === "bounced";
             return (
-              <div
+              <SwipeableRow
                 key={email.id}
-                className="flex items-start gap-3 py-3.5 cursor-pointer active:bg-accent/50"
+                open={swipeOpenId === email.id}
+                onOpenChange={(o) => onSwipeOpenChange(o ? email.id : null)}
+                onDelete={() => onRequestDelete(email)}
                 onClick={() => onRowClick(email)}
               >
+              <div className="flex items-start gap-3 py-3.5 cursor-pointer active:bg-accent/50">
                 <ClientSquircle
                   name={email.client_name ?? email.to_address}
                   color={email.client_name ? (email.client_color ?? "#9ca3af") : "#9ca3af"}
@@ -162,6 +267,7 @@ function EmailsTable({
                   </div>
                 </div>
               </div>
+              </SwipeableRow>
             );
           })
         )}
@@ -254,6 +360,8 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
   const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [swipeOpenId, setSwipeOpenId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<DashboardEmail | null>(null);
 
   const loading = !emails;
   const scheduled = emails?.filter((e) => e.status !== "sent") ?? [];
@@ -332,6 +440,20 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
     }
   }
 
+  async function handleSwipeDelete() {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    try {
+      await deleteEmails([confirmDelete.id]);
+      invalidate("emails", "invoices");
+      toast.success("Email deleted");
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(null);
+      setSwipeOpenId(null);
+    }
+  }
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Emails">
@@ -367,7 +489,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
       <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
         <div className="px-4 md:px-6 pb-6 pt-1 md:pt-6 mx-auto w-full max-w-6xl flex flex-col gap-0 md:gap-4">
           {!loading && scheduled.length > 0 && (
-            <EmailsTable title="Scheduled" emails={scheduled} onRowClick={handleEmailRowClick} showStatus selected={selected} onToggle={toggleSelected} />
+            <EmailsTable title="Scheduled" emails={scheduled} onRowClick={handleEmailRowClick} showStatus selected={selected} onToggle={toggleSelected} swipeOpenId={swipeOpenId} onSwipeOpenChange={setSwipeOpenId} onRequestDelete={setConfirmDelete} />
           )}
           <EmailsTable
             title="Sent"
@@ -377,9 +499,29 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
             emptyLabel="No sent emails yet."
             selected={selected}
             onToggle={toggleSelected}
+            swipeOpenId={swipeOpenId}
+            onSwipeOpenChange={setSwipeOpenId}
+            onRequestDelete={setConfirmDelete}
           />
         </div>
       </div>
+
+      <AlertDialog open={!!confirmDelete} onOpenChange={(open) => { if (!open) setConfirmDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this email?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDelete?.status === "sent"
+                ? "It will be removed from history along with its archived PDF. This cannot be undone."
+                : "The scheduled email will be cancelled. This cannot be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSwipeDelete} disabled={deleting}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <EmailComposeSheet
         open={composeOpen}
