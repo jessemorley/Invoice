@@ -102,9 +102,10 @@ function SwipeableRow({
   const axis = useRef<"h" | "v" | null>(null);
   const rowRef = useRef<HTMLDivElement>(null);
 
-  // Snap shut when another row opens (parent clears `open`).
+  // While awaiting delete confirmation the card sits off-screen; a cancelled
+  // dialog clears `open` and slides it back in.
   useEffect(() => {
-    setDx(open ? -SWIPE_BTN_WIDTH : 0);
+    setDx(open ? -(rowRef.current?.clientWidth ?? 500) : 0);
   }, [open]);
 
   function handleTouchStart(e: React.TouchEvent) {
@@ -135,9 +136,9 @@ function SwipeableRow({
     if (axis.current === "h") {
       const width = rowRef.current?.clientWidth ?? 360;
       if (dx < -width / 4) {
-        // Past the threshold: fire delete (confirmation dialog opens); the row
-        // holds the revealed state until the dialog resolves.
-        setDx(-SWIPE_BTN_WIDTH);
+        // Past the threshold: the card carries on off-screen and the delete
+        // confirmation opens; cancelling slides it back in.
+        setDx(-width);
         onOpenChange(true);
         onDelete();
       } else {
@@ -161,7 +162,7 @@ function SwipeableRow({
     <div ref={rowRef} className="relative overflow-hidden">
       <div
         aria-hidden
-        className="absolute inset-y-0 right-0 flex items-center justify-end bg-red-600 pr-7 text-white"
+        className="absolute inset-y-0 right-0 flex items-center justify-end bg-destructive pr-7 text-white"
         style={{ width: Math.max(SWIPE_BTN_WIDTH, -dx) }}
       >
         <Trash2
@@ -172,7 +173,7 @@ function SwipeableRow({
         />
       </div>
       <div
-        className={cn("bg-background touch-pan-y", !dragging && "transition-transform duration-200")}
+        className={cn("bg-background touch-pan-y", !dragging && "transition-transform duration-200 ease-out")}
         style={{ transform: `translateX(${dx}px)` }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -251,7 +252,7 @@ function EmailsTable({
                 onDelete={() => onRequestDelete(email)}
                 onClick={() => onRowClick(email)}
               >
-              <div className="flex items-start gap-3 px-4 py-3.5 cursor-pointer active:bg-accent/50">
+              <div className="flex items-start gap-3 px-4 py-3.5 cursor-pointer">
                 <ClientSquircle
                   name={email.client_name ?? email.to_address}
                   color={email.client_name ? (email.client_color ?? "#9ca3af") : "#9ca3af"}
