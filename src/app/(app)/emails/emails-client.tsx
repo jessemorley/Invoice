@@ -98,6 +98,7 @@ function SwipeableRow({
   const [dragging, setDragging] = useState(false);
   const start = useRef<{ x: number; y: number; base: number } | null>(null);
   const axis = useRef<"h" | "v" | null>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
 
   // Snap shut when another row opens (parent clears `open`).
   useEffect(() => {
@@ -121,15 +122,24 @@ function SwipeableRow({
       axis.current = Math.abs(moveX) > Math.abs(moveY) ? "h" : "v";
     }
     if (axis.current === "v") return;
-    setDx(Math.min(0, Math.max(-SWIPE_BTN_WIDTH - 24, start.current.base + moveX)));
+    const width = rowRef.current?.clientWidth ?? 360;
+    setDx(Math.min(0, Math.max(-width, start.current.base + moveX)));
   }
 
   function handleTouchEnd() {
     setDragging(false);
     if (axis.current === "h") {
-      const shouldOpen = dx < -SWIPE_BTN_WIDTH / 2;
-      setDx(shouldOpen ? -SWIPE_BTN_WIDTH : 0);
-      onOpenChange(shouldOpen);
+      const width = rowRef.current?.clientWidth ?? 360;
+      if (dx < -width / 2) {
+        // Full swipe: fire delete straight away (confirmation dialog opens).
+        setDx(-SWIPE_BTN_WIDTH);
+        onOpenChange(true);
+        onDelete();
+      } else {
+        const shouldOpen = dx < -SWIPE_BTN_WIDTH / 2;
+        setDx(shouldOpen ? -SWIPE_BTN_WIDTH : 0);
+        onOpenChange(shouldOpen);
+      }
     }
     start.current = null;
   }
@@ -148,11 +158,11 @@ function SwipeableRow({
   }
 
   return (
-    <div className="relative overflow-hidden">
+    <div ref={rowRef} className="relative overflow-hidden">
       <button
         type="button"
-        className="absolute inset-y-0 right-0 flex items-center justify-center bg-destructive text-sm font-medium text-white"
-        style={{ width: SWIPE_BTN_WIDTH }}
+        className="absolute inset-y-0 right-0 flex items-center justify-start bg-destructive text-sm font-medium text-white"
+        style={{ width: Math.max(SWIPE_BTN_WIDTH, -dx), paddingLeft: 19 }}
         tabIndex={open ? 0 : -1}
         onClick={onDelete}
       >
@@ -176,7 +186,7 @@ function SkeletonMobileRows({ count = 6 }: { count?: number }) {
   return (
     <>
       {Array.from({ length: count }, (_, i) => (
-        <div key={i} className="flex items-start gap-3 py-3.5">
+        <div key={i} className="flex items-start gap-3 px-4 py-3.5">
           <Skeleton className="size-8 rounded-lg shrink-0" />
           <div className="flex-1 flex flex-col gap-1.5 min-w-0">
             <Skeleton className="h-4 w-40" />
@@ -219,8 +229,9 @@ function EmailsTable({
       <div className="flex items-center px-0 md:px-4 py-2.5">
         <span className="text-sm font-medium text-muted-foreground">{title}</span>
       </div>
-      {/* Mobile: Mail-style rows, no card chrome. Multi-select stays desktop-only. */}
-      <div className="md:hidden">
+      {/* Mobile: Mail-style rows, no card chrome. Multi-select stays desktop-only.
+          Full-bleed (-mx-4) so swipe rows reach the viewport edges. */}
+      <div className="md:hidden -mx-4">
         {loading ? (
           <SkeletonMobileRows />
         ) : emails.length === 0 ? (
@@ -237,7 +248,7 @@ function EmailsTable({
                 onDelete={() => onRequestDelete(email)}
                 onClick={() => onRowClick(email)}
               >
-              <div className="flex items-start gap-3 py-3.5 cursor-pointer active:bg-accent/50">
+              <div className="flex items-start gap-3 px-4 py-3.5 cursor-pointer active:bg-accent/50">
                 <ClientSquircle
                   name={email.client_name ?? email.to_address}
                   color={email.client_name ? (email.client_color ?? "#9ca3af") : "#9ca3af"}
@@ -506,7 +517,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
         </div>
       </div>
 
-      <AlertDialog open={!!confirmDelete} onOpenChange={(open) => { if (!open) setConfirmDelete(null); }}>
+      <AlertDialog open={!!confirmDelete} onOpenChange={(open) => { if (!open) { setConfirmDelete(null); setSwipeOpenId(null); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this email?</AlertDialogTitle>
@@ -518,7 +529,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSwipeDelete} disabled={deleting}>Delete</AlertDialogAction>
+            <AlertDialogAction variant="destructive" onClick={handleSwipeDelete} disabled={deleting}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
