@@ -106,7 +106,7 @@ function SwipeableRow({
     el.style.transition =
       mode === "drag" ? "none"
       // Accelerating exit — slight ease at the start, then away.
-      : mode === "exit" ? "transform 170ms cubic-bezier(0.55, 0.085, 0.68, 0.53)"
+      : mode === "exit" ? "transform 85ms cubic-bezier(0.55, 0.085, 0.68, 0.53)"
       : "";
     el.style.transform = `translateX(${dx}px)`;
     dxRef.current = dx;
@@ -122,10 +122,10 @@ function SwipeableRow({
       }
       wrapper.style.height = `${wrapper.offsetHeight}px`;
       void wrapper.offsetHeight; // flush so the height transition has a start value
-      wrapper.style.transition = "height 200ms ease-out";
+      wrapper.style.transition = "height 100ms ease-out";
       wrapper.style.height = "0px";
-      window.setTimeout(onDelete, 210);
-    }, 180);
+      window.setTimeout(onDelete, 110);
+    }, 90);
   }
 
   function handleTouchStart(e: React.TouchEvent) {
