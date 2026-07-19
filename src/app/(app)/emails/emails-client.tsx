@@ -192,7 +192,7 @@ function SwipeableRow({
       </div>
       <div
         ref={cardRef}
-        className="relative bg-background touch-pan-y transition-transform duration-200 ease-out"
+        className="relative bg-card touch-pan-y transition-transform duration-200 ease-out"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -508,7 +508,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-md:bg-card">
       <PageHeader title="Emails">
         <Button size="sm" className="hidden md:flex" disabled={loading} onClick={openNewEmail}>
           <Pencil className="size-4" />
