@@ -127,14 +127,14 @@ function SwipeableRow({
     const width = rowRef.current?.clientWidth ?? 360;
     const next = Math.min(0, Math.max(-width, start.current.base + moveX));
     setDx(next);
-    setPastThreshold(next < -width / 2);
+    setPastThreshold(next < -width / 4);
   }
 
   function handleTouchEnd() {
     setDragging(false);
     if (axis.current === "h") {
       const width = rowRef.current?.clientWidth ?? 360;
-      if (dx < -width / 2) {
+      if (dx < -width / 4) {
         // Past the threshold: fire delete (confirmation dialog opens); the row
         // holds the revealed state until the dialog resolves.
         setDx(-SWIPE_BTN_WIDTH);
