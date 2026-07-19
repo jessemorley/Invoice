@@ -75,6 +75,23 @@ function SkeletonTableRows({ count = 6 }: { count?: number }) {
   );
 }
 
+function SkeletonMobileRows({ count = 6 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} className="flex items-center gap-3 py-2.5">
+          <Skeleton className="size-10 rounded-lg shrink-0" />
+          <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-4 w-56 max-w-full" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
 function EmailsTable({
   title,
   emails,
@@ -96,10 +113,58 @@ function EmailsTable({
 }) {
   return (
     <div>
-      <div className="flex items-center px-4 py-2.5">
+      <div className="flex items-center px-0 md:px-4 py-2.5">
         <span className="text-sm font-medium text-muted-foreground">{title}</span>
       </div>
-      <div className="rounded-lg border overflow-hidden bg-card">
+      {/* Mobile: Mail-style rows, no card chrome. Multi-select stays desktop-only. */}
+      <div className="md:hidden divide-y">
+        {loading ? (
+          <SkeletonMobileRows />
+        ) : emails.length === 0 ? (
+          <p className="text-center text-sm text-muted-foreground py-12">{emptyLabel}</p>
+        ) : (
+          emails.map((email) => {
+            const addresses = email.to_address.split(",").map((s) => s.trim()).filter(Boolean);
+            const broken = email.status === "failed" || email.status === "bounced";
+            return (
+              <div
+                key={email.id}
+                className="flex items-center gap-3 py-2.5 cursor-pointer active:bg-accent/50"
+                onClick={() => onRowClick(email)}
+              >
+                <ClientSquircle
+                  name={email.client_name ?? email.to_address}
+                  color={email.client_name ? (email.client_color ?? "#9ca3af") : "#9ca3af"}
+                  className="size-10 shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium truncate">{addresses[0]}</span>
+                    {addresses.length > 1 && (
+                      <span className="text-xs text-muted-foreground border rounded-full px-1.5 py-px shrink-0">
+                        +{addresses.length - 1}
+                      </span>
+                    )}
+                    <span className="ml-auto flex items-center gap-1.5 shrink-0">
+                      {email.filename && <Paperclip className="size-3.5 text-muted-foreground" />}
+                      {broken ? (
+                        <Badge variant="destructive">{email.status}</Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">{emailDate(email)}</span>
+                      )}
+                    </span>
+                  </div>
+                  <p className="text-sm truncate">{email.subject}</p>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {email.body_text.replace(/\s+/g, " ")}
+                  </p>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+      <div className="rounded-lg border overflow-hidden bg-card hidden md:block">
       <Table className="table-fixed">
         <TableBody>
           {loading ? (
