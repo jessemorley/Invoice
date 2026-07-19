@@ -18,6 +18,8 @@ function makeEmail(overrides: Partial<DashboardEmail> = {}): DashboardEmail {
     invoice_id: "invoice-1",
     invoice_number: "INV-001",
     invoice_status: "issued",
+    client_name: null,
+    client_color: null,
     to_address: "customer@example.com",
     subject: "Invoice INV-001",
     body_text: "Hi, please find your invoice attached.",
@@ -26,6 +28,7 @@ function makeEmail(overrides: Partial<DashboardEmail> = {}): DashboardEmail {
     sent_at: "2026-05-20T10:00:01.000Z",
     sent_pdf_path: "user-1/invoice-1/email-1.pdf",
     status: "sent",
+    error: null,
     ...overrides,
   };
 }

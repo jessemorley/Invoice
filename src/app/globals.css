@@ -151,19 +151,13 @@
   }
 }
 
-/* Native-app feel on touch devices: no text selection or long-press callout,
-   except inside editable fields. */
+/* Swipe-to-delete rows: no text selection or long-press callout while
+   dragging, on touch devices only. */
 @media (pointer: coarse) {
-  html {
+  .swipeable-row {
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
-  }
-  input,
-  textarea,
-  [contenteditable] {
-    -webkit-user-select: text;
-    user-select: text;
   }
 }
 

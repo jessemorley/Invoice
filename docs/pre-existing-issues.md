@@ -21,6 +21,12 @@ When you hit one of these during a task, do **not** fix it inline — that bloat
 - First noted: 2026-07-19 (during feature/emails-view)
 - Symptom: vitest reports the file contains no test suite; the whole file fails to load/collect.
 
+### test failures: sent-email-sheet.test.tsx — window.matchMedia is not a function (6 tests)
+
+- First noted: 2026-07-19 (during feature/emails-mobile-view)
+- Symptom: all 6 tests fail with `TypeError: window.matchMedia is not a function` thrown from `src/hooks/use-mobile.ts:9`. `SentEmailSheet` now renders via `AdaptiveSheet`, which uses the mobile-detection hook; the vitest setup has no `matchMedia` polyfill/mock.
+- Likely fix: add a `window.matchMedia` mock to the vitest setup file (or this test's `beforeEach`).
+
 ## Resolved
 
 ### lint warning: unused `Label` import — src/components/client-sheet.tsx:29

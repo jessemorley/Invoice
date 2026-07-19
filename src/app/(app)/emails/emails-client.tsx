@@ -39,6 +39,21 @@ function emailDate(email: DashboardEmail): string {
   return `${d.toLocaleDateString("en-AU", { month: "short" })} ${d.getDate()}`;
 }
 
+function emailAddresses(email: DashboardEmail): string[] {
+  return email.to_address.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+function emailIsBroken(email: DashboardEmail): boolean {
+  return email.status === "failed" || email.status === "bounced";
+}
+
+function emailSquircleProps(email: DashboardEmail): { name: string; color: string } {
+  return {
+    name: email.client_name ?? email.to_address,
+    color: email.client_name ? (email.client_color ?? "#9ca3af") : "#9ca3af",
+  };
+}
+
 function scheduledLabel(email: DashboardEmail): string {
   const d = new Date(email.scheduled_for);
   const now = new Date();
@@ -192,7 +207,7 @@ function SwipeableRow({
       </div>
       <div
         ref={cardRef}
-        className="relative bg-card touch-pan-y transition-transform duration-200 ease-out"
+        className="swipeable-row relative bg-card touch-pan-y transition-transform duration-200 ease-out"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -244,6 +259,7 @@ function EmailsTable({
   pendingDeleteIds: Set<string>;
   onSwipeDelete: (email: DashboardEmail) => void;
 }) {
+  const visibleEmails = emails.filter((e) => !pendingDeleteIds.has(e.id));
   return (
     <div>
       <div className="flex items-center px-0 md:px-4 py-2.5">
@@ -254,13 +270,12 @@ function EmailsTable({
       <div className="md:hidden -mx-4">
         {loading ? (
           <SkeletonMobileRows />
-        ) : emails.length === 0 ? (
+        ) : visibleEmails.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-12">{emptyLabel}</p>
         ) : (
-          emails.map((email) => {
-            if (pendingDeleteIds.has(email.id)) return null;
-            const addresses = email.to_address.split(",").map((s) => s.trim()).filter(Boolean);
-            const broken = email.status === "failed" || email.status === "bounced";
+          visibleEmails.map((email) => {
+            const addresses = emailAddresses(email);
+            const broken = emailIsBroken(email);
             return (
               <SwipeableRow
                 key={email.id}
@@ -269,8 +284,7 @@ function EmailsTable({
               >
               <div className="flex items-start gap-3 px-4 py-3.5 cursor-pointer">
                 <ClientSquircle
-                  name={email.client_name ?? email.to_address}
-                  color={email.client_name ? (email.client_color ?? "#9ca3af") : "#9ca3af"}
+                  {...emailSquircleProps(email)}
                   className="size-8 shrink-0"
                 />
                 <div className="flex-1 min-w-0">
@@ -307,14 +321,16 @@ function EmailsTable({
         <TableBody>
           {loading ? (
             <SkeletonTableRows />
-          ) : emails.length === 0 ? (
+          ) : visibleEmails.length === 0 ? (
             <TableRow>
               <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
                 {emptyLabel}
               </TableCell>
             </TableRow>
           ) : (
-            emails.map((email) => (
+            visibleEmails.map((email) => {
+              const addresses = emailAddresses(email);
+              return (
               <TableRow key={email.id} className="cursor-pointer" onClick={() => onRowClick(email)}>
                 <TableCell className="py-3 pl-4 pr-0 w-10" onClick={(e) => e.stopPropagation()}>
                   <Checkbox
@@ -326,23 +342,15 @@ function EmailsTable({
                 <TableCell className="py-3 px-6 w-72">
                   <div className="flex items-center gap-3 min-w-0">
                     <ClientSquircle
-                      name={email.client_name ?? email.to_address}
-                      color={email.client_name ? (email.client_color ?? "#9ca3af") : "#9ca3af"}
+                      {...emailSquircleProps(email)}
                       className="size-[22px] shrink-0"
                     />
-                    {(() => {
-                      const addresses = email.to_address.split(",").map((s) => s.trim()).filter(Boolean);
-                      return (
-                        <>
-                          <span className="text-sm truncate">{addresses[0]}</span>
-                          {addresses.length > 1 && (
-                            <span className="text-xs text-muted-foreground border rounded-full px-1.5 py-px shrink-0">
-                              +{addresses.length - 1}
-                            </span>
-                          )}
-                        </>
-                      );
-                    })()}
+                    <span className="text-sm truncate">{addresses[0]}</span>
+                    {addresses.length > 1 && (
+                      <span className="text-xs text-muted-foreground border rounded-full px-1.5 py-px shrink-0">
+                        +{addresses.length - 1}
+                      </span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="py-3 px-6 max-w-0">
@@ -371,7 +379,8 @@ function EmailsTable({
                   </TableCell>
                 )}
               </TableRow>
-            ))
+              );
+            })
           )}
         </TableBody>
       </Table>
@@ -413,18 +422,29 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
     return () => window.removeEventListener("dock:new", handler);
   }, []);
 
+  // Pending swipe-deletes are irreversible once they fire (deleteEmails removes
+  // jobs/PDFs) — if the component unmounts mid-undo-window, cancel rather than
+  // let a stale closure delete behind the user's back.
+  useEffect(() => {
+    const timers = deleteTimers.current;
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+      timers.clear();
+    };
+  }, []);
+
   async function handleEmailRowClick(email: DashboardEmail) {
     if (email.status === "sent") {
       setSentEmail(email);
       setSentSheetOpen(true);
       return;
     }
-    const failReason = email.status === "failed" || email.status === "bounced" ? email.error : null;
+    const failReason = emailIsBroken(email) ? email.error : null;
     // Free-form emails have no invoice to load — edit directly.
     if (!email.invoice_id) {
       setComposeInvoice(null);
       setComposePrefill({
-        to: email.to_address.split(",").map((s) => s.trim()).filter(Boolean),
+        to: emailAddresses(email),
         subject: email.subject,
         body: email.body_text,
         scheduledFor: new Date(email.scheduled_for),
@@ -440,7 +460,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
       setComposeBusinessName(result.businessName);
       setComposeUserName(result.userName);
       setComposePrefill({
-        to: email.to_address.split(",").map((s) => s.trim()).filter(Boolean),
+        to: emailAddresses(email),
         subject: email.subject,
         body: email.body_text,
         scheduledFor: new Date(email.scheduled_for),
