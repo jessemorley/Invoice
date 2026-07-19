@@ -279,6 +279,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
       setSentSheetOpen(true);
       return;
     }
+    const failReason = email.status === "failed" || email.status === "bounced" ? email.error : null;
     // Free-form emails have no invoice to load — edit directly.
     if (!email.invoice_id) {
       setComposeInvoice(null);
@@ -288,6 +289,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
         body: email.body_text,
         scheduledFor: new Date(email.scheduled_for),
         editingId: email.id,
+        error: failReason,
       });
       setComposeOpen(true);
       return;
@@ -303,6 +305,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
         body: email.body_text,
         scheduledFor: new Date(email.scheduled_for),
         editingId: email.id,
+        error: failReason,
       });
       setComposeOpen(true);
     }
@@ -393,6 +396,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
         initialBody={composePrefill?.body}
         initialScheduledFor={composePrefill?.scheduledFor}
         editingId={composePrefill?.editingId}
+        errorReason={composePrefill?.error}
         freeform
       />
       <SentEmailSheet

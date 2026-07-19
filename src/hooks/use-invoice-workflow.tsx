@@ -166,6 +166,11 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
         initialBody={composePrefill?.body}
         initialScheduledFor={composePrefill?.scheduledFor}
         editingId={composePrefill?.editingId}
+        errorReason={
+          scheduledEmail && (scheduledEmail.status === "failed" || scheduledEmail.status === "bounced")
+            ? scheduledEmail.error
+            : null
+        }
       />
       <RescheduleDialog
         open={rescheduleOpen}

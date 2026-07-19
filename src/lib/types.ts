@@ -54,6 +54,7 @@ export type ComposePrefill = {
   subject: string;
   body: string;
   scheduledFor: Date | null;
+  error?: string | null;
   editingId?: string;
 };
 
@@ -212,6 +213,7 @@ export type DashboardEmail = {
   sent_at: string | null;
   sent_pdf_path: string | null;
   status: "pending" | "sent" | "failed" | "bounced";
+  error: string | null;
 };
 
 export type MtdDailyPoint = {
