@@ -77,18 +77,15 @@ function SkeletonTableRows({ count = 6 }: { count?: number }) {
   );
 }
 
-// Mail-style swipe-left row: drag past half the row width to delete
-// (confirmation follows); anything short of that snaps back closed.
+// Mail-style swipe-left row: drag past a quarter of the row width and the
+// card accelerates off-screen, the row collapses, and onDelete fires
+// (parent shows an undo toast). Short of that it snaps back closed.
 // Axis-locked so vertical list scrolling never fights the swipe.
 function SwipeableRow({
-  open,
-  onOpenChange,
   onDelete,
   onClick,
   children,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   onDelete: () => void;
   onClick: () => void;
   children: React.ReactNode;
@@ -99,30 +96,40 @@ function SwipeableRow({
   const start = useRef<{ x: number; y: number } | null>(null);
   const axis = useRef<"h" | "v" | null>(null);
   const dxRef = useRef(0);
+  const firedRef = useRef(false);
   const rowRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // animate=false suspends the CSS transition so the card tracks the finger 1:1.
-  function moveCard(dx: number, animate: boolean) {
+  function moveCard(dx: number, mode: "drag" | "settle" | "exit") {
     const el = cardRef.current;
     if (!el) return;
-    el.style.transition = animate ? "" : "none";
+    el.style.transition =
+      mode === "drag" ? "none"
+      // Accelerating exit — slight ease at the start, then away.
+      : mode === "exit" ? "transform 170ms cubic-bezier(0.55, 0.085, 0.68, 0.53)"
+      : "";
     el.style.transform = `translateX(${dx}px)`;
     dxRef.current = dx;
   }
 
-  // While awaiting delete confirmation the card sits off-screen; a cancelled
-  // dialog clears `open` and slides it back in.
-  useEffect(() => {
-    const el = cardRef.current;
-    if (!el) return;
-    el.style.transition = "";
-    const dx = open ? -(rowRef.current?.clientWidth ?? 500) : 0;
-    el.style.transform = `translateX(${dx}px)`;
-    dxRef.current = dx;
-  }, [open]);
+  // Card is gone: collapse the vacated space, then hand over to the parent.
+  function exitThenCollapse() {
+    const wrapper = rowRef.current;
+    window.setTimeout(() => {
+      if (!wrapper) {
+        onDelete();
+        return;
+      }
+      wrapper.style.height = `${wrapper.offsetHeight}px`;
+      void wrapper.offsetHeight; // flush so the height transition has a start value
+      wrapper.style.transition = "height 200ms ease-out";
+      wrapper.style.height = "0px";
+      window.setTimeout(onDelete, 210);
+    }, 180);
+  }
 
   function handleTouchStart(e: React.TouchEvent) {
+    if (firedRef.current) return;
     const t = e.touches[0];
     start.current = { x: t.clientX, y: t.clientY };
     axis.current = null;
@@ -140,22 +147,21 @@ function SwipeableRow({
     if (axis.current === "v") return;
     const width = rowRef.current?.clientWidth ?? 360;
     const next = Math.min(0, Math.max(-width, moveX));
-    moveCard(next, false);
+    moveCard(next, "drag");
     // Bails out of re-rendering except on the crossing itself.
     setPastThreshold(next < -width / 4);
   }
 
   function handleTouchEnd() {
+    if (firedRef.current) return;
     if (axis.current === "h") {
       const width = rowRef.current?.clientWidth ?? 360;
       if (dxRef.current < -width / 4) {
-        // Past the threshold: the card carries on off-screen and the delete
-        // confirmation opens; cancelling slides it back in.
-        moveCard(-width, true);
-        onOpenChange(true);
-        onDelete();
+        firedRef.current = true;
+        moveCard(-width, "exit");
+        exitThenCollapse();
       } else {
-        moveCard(0, true);
+        moveCard(0, "settle");
       }
     }
     setPastThreshold(false);
@@ -224,9 +230,8 @@ function EmailsTable({
   showStatus,
   selected,
   onToggle,
-  swipeOpenId,
-  onSwipeOpenChange,
-  onRequestDelete,
+  pendingDeleteIds,
+  onSwipeDelete,
 }: {
   title: string;
   emails: DashboardEmail[];
@@ -236,9 +241,8 @@ function EmailsTable({
   showStatus?: boolean;
   selected: Set<string>;
   onToggle: (id: string) => void;
-  swipeOpenId: string | null;
-  onSwipeOpenChange: (id: string | null) => void;
-  onRequestDelete: (email: DashboardEmail) => void;
+  pendingDeleteIds: Set<string>;
+  onSwipeDelete: (email: DashboardEmail) => void;
 }) {
   return (
     <div>
@@ -254,14 +258,13 @@ function EmailsTable({
           <p className="text-center text-sm text-muted-foreground py-12">{emptyLabel}</p>
         ) : (
           emails.map((email) => {
+            if (pendingDeleteIds.has(email.id)) return null;
             const addresses = email.to_address.split(",").map((s) => s.trim()).filter(Boolean);
             const broken = email.status === "failed" || email.status === "bounced";
             return (
               <SwipeableRow
                 key={email.id}
-                open={swipeOpenId === email.id}
-                onOpenChange={(o) => onSwipeOpenChange(o ? email.id : null)}
-                onDelete={() => onRequestDelete(email)}
+                onDelete={() => onSwipeDelete(email)}
                 onClick={() => onRowClick(email)}
               >
               <div className="flex items-start gap-3 px-4 py-3.5 cursor-pointer">
@@ -387,8 +390,10 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
   const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
-  const [swipeOpenId, setSwipeOpenId] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<DashboardEmail | null>(null);
+  // Swiped-away rows hide immediately; the real deletion runs only after the
+  // undo toast times out (deleteEmails is irreversible — jobs, PDFs).
+  const [pendingDelete, setPendingDelete] = useState<Set<string>>(new Set());
+  const deleteTimers = useRef<Map<string, number>>(new Map());
 
   const loading = !emails;
   const scheduled = emails?.filter((e) => e.status !== "sent") ?? [];
@@ -467,18 +472,39 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
     }
   }
 
-  async function handleSwipeDelete() {
-    if (!confirmDelete) return;
-    setDeleting(true);
-    try {
-      await deleteEmails([confirmDelete.id]);
-      invalidate("emails", "invoices");
-      toast.success("Email deleted");
-    } finally {
-      setDeleting(false);
-      setConfirmDelete(null);
-      setSwipeOpenId(null);
-    }
+  function handleSwipeDelete(email: DashboardEmail) {
+    setPendingDelete((prev) => new Set(prev).add(email.id));
+    const timer = window.setTimeout(async () => {
+      deleteTimers.current.delete(email.id);
+      try {
+        await deleteEmails([email.id]);
+        invalidate("emails", "invoices");
+      } catch {
+        toast.error("Failed to delete email");
+        setPendingDelete((prev) => {
+          const next = new Set(prev);
+          next.delete(email.id);
+          return next;
+        });
+      }
+    }, 4000);
+    deleteTimers.current.set(email.id, timer);
+    toast("Email deleted", {
+      duration: 4000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          const t = deleteTimers.current.get(email.id);
+          if (t) window.clearTimeout(t);
+          deleteTimers.current.delete(email.id);
+          setPendingDelete((prev) => {
+            const next = new Set(prev);
+            next.delete(email.id);
+            return next;
+          });
+        },
+      },
+    });
   }
 
   return (
@@ -516,7 +542,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
       <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
         <div className="px-4 md:px-6 pb-6 pt-1 md:pt-6 mx-auto w-full max-w-6xl flex flex-col gap-0 md:gap-4">
           {!loading && scheduled.length > 0 && (
-            <EmailsTable title="Scheduled" emails={scheduled} onRowClick={handleEmailRowClick} showStatus selected={selected} onToggle={toggleSelected} swipeOpenId={swipeOpenId} onSwipeOpenChange={setSwipeOpenId} onRequestDelete={setConfirmDelete} />
+            <EmailsTable title="Scheduled" emails={scheduled} onRowClick={handleEmailRowClick} showStatus selected={selected} onToggle={toggleSelected} pendingDeleteIds={pendingDelete} onSwipeDelete={handleSwipeDelete} />
           )}
           <EmailsTable
             title="Sent"
@@ -526,29 +552,11 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
             emptyLabel="No sent emails yet."
             selected={selected}
             onToggle={toggleSelected}
-            swipeOpenId={swipeOpenId}
-            onSwipeOpenChange={setSwipeOpenId}
-            onRequestDelete={setConfirmDelete}
+            pendingDeleteIds={pendingDelete}
+            onSwipeDelete={handleSwipeDelete}
           />
         </div>
       </div>
-
-      <AlertDialog open={!!confirmDelete} onOpenChange={(open) => { if (!open) { setConfirmDelete(null); setSwipeOpenId(null); } }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this email?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {confirmDelete?.status === "sent"
-                ? "It will be removed from history along with its archived PDF. This cannot be undone."
-                : "The scheduled email will be cancelled. This cannot be undone."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={handleSwipeDelete} disabled={deleting}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <EmailComposeSheet
         open={composeOpen}
