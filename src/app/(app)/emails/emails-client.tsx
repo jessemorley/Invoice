@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 import type { ComposePrefill, DashboardEmail, InvoiceDetail } from "@/lib/types";
 import { loadScheduledEmail, deleteEmails } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
@@ -30,11 +31,27 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ClientSquircle } from "@/components/client-squircle";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
-import { Paperclip, Pencil } from "lucide-react";
+import { Paperclip, Pencil, Trash2 } from "lucide-react";
 
 function emailDate(email: DashboardEmail): string {
-  const d = new Date(email.status === "sent" && email.sent_at ? email.sent_at : email.scheduled_for);
+  // Bounced rows keep their sent_at — show when the email actually went out.
+  const d = new Date(email.sent_at ?? email.scheduled_for);
   return `${d.toLocaleDateString("en-AU", { month: "short" })} ${d.getDate()}`;
+}
+
+function emailAddresses(email: DashboardEmail): string[] {
+  return email.to_address.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+function emailIsBroken(email: DashboardEmail): boolean {
+  return email.status === "failed" || email.status === "bounced";
+}
+
+function emailSquircleProps(email: DashboardEmail): { name: string; color: string } {
+  return {
+    name: email.client_name ?? email.to_address,
+    color: email.client_name ? (email.client_color ?? "#9ca3af") : "#9ca3af",
+  };
 }
 
 function scheduledLabel(email: DashboardEmail): string {
@@ -75,6 +92,150 @@ function SkeletonTableRows({ count = 6 }: { count?: number }) {
   );
 }
 
+// Mail-style swipe-left row: drag past a quarter of the row width and the
+// card accelerates off-screen, the row collapses, and onDelete fires
+// (parent shows an undo toast). Short of that it snaps back closed.
+// Axis-locked so vertical list scrolling never fights the swipe.
+function SwipeableRow({
+  onDelete,
+  onClick,
+  children,
+}: {
+  onDelete: () => void;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  // Drag position lives in refs and is written straight to the DOM node —
+  // per-frame React renders and layout-triggering styles are what kill 60Hz.
+  const [pastThreshold, setPastThreshold] = useState(false);
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const axis = useRef<"h" | "v" | null>(null);
+  const dxRef = useRef(0);
+  const firedRef = useRef(false);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  function moveCard(dx: number, mode: "drag" | "settle" | "exit") {
+    const el = cardRef.current;
+    if (!el) return;
+    el.style.transition =
+      mode === "drag" ? "none"
+      // Accelerating exit — slight ease at the start, then away.
+      : mode === "exit" ? "transform 115ms cubic-bezier(0.55, 0.085, 0.68, 0.53)"
+      : "";
+    el.style.transform = `translateX(${dx}px)`;
+    dxRef.current = dx;
+  }
+
+  // Card is gone: collapse the vacated space, then hand over to the parent.
+  function exitThenCollapse() {
+    const wrapper = rowRef.current;
+    window.setTimeout(() => {
+      if (!wrapper) {
+        onDelete();
+        return;
+      }
+      wrapper.style.height = `${wrapper.offsetHeight}px`;
+      void wrapper.offsetHeight; // flush so the height transition has a start value
+      wrapper.style.transition = "height 135ms ease-out";
+      wrapper.style.height = "0px";
+      window.setTimeout(onDelete, 145);
+    }, 120);
+  }
+
+  function handleTouchStart(e: React.TouchEvent) {
+    if (firedRef.current) return;
+    const t = e.touches[0];
+    start.current = { x: t.clientX, y: t.clientY };
+    axis.current = null;
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    if (!start.current) return;
+    const t = e.touches[0];
+    const moveX = t.clientX - start.current.x;
+    const moveY = t.clientY - start.current.y;
+    if (!axis.current) {
+      if (Math.abs(moveX) < 8 && Math.abs(moveY) < 8) return;
+      axis.current = Math.abs(moveX) > Math.abs(moveY) ? "h" : "v";
+    }
+    if (axis.current === "v") return;
+    const width = rowRef.current?.clientWidth ?? 360;
+    const next = Math.min(0, Math.max(-width, moveX));
+    moveCard(next, "drag");
+    // Bails out of re-rendering except on the crossing itself.
+    setPastThreshold(next < -width / 4);
+  }
+
+  function handleTouchEnd() {
+    if (firedRef.current) return;
+    if (axis.current === "h") {
+      const width = rowRef.current?.clientWidth ?? 360;
+      if (dxRef.current < -width / 4) {
+        firedRef.current = true;
+        moveCard(-width, "exit");
+        exitThenCollapse();
+      } else {
+        moveCard(0, "settle");
+      }
+    }
+    setPastThreshold(false);
+    start.current = null;
+  }
+
+  function handleClick() {
+    // A horizontal drag ends with a click event — swallow it.
+    if (axis.current === "h") {
+      axis.current = null;
+      return;
+    }
+    onClick();
+  }
+
+  return (
+    <div ref={rowRef} className="relative overflow-hidden">
+      <div
+        aria-hidden
+        className="absolute inset-0 flex items-center justify-end bg-destructive pr-7 text-white"
+      >
+        <Trash2
+          className={cn(
+            "size-5 transition-transform duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)]",
+            pastThreshold ? "scale-125" : "scale-75"
+          )}
+        />
+      </div>
+      <div
+        ref={cardRef}
+        className="swipeable-row relative bg-card touch-pan-y transition-transform duration-200 ease-out"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onClick={handleClick}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function SkeletonMobileRows({ count = 6 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} className="flex items-start gap-3 px-4 py-3.5">
+          <Skeleton className="size-8 rounded-lg shrink-0" />
+          <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-4 w-56 max-w-full" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
 function EmailsTable({
   title,
   emails,
@@ -84,6 +245,8 @@ function EmailsTable({
   showStatus,
   selected,
   onToggle,
+  pendingDeleteIds,
+  onSwipeDelete,
 }: {
   title: string;
   emails: DashboardEmail[];
@@ -93,25 +256,81 @@ function EmailsTable({
   showStatus?: boolean;
   selected: Set<string>;
   onToggle: (id: string) => void;
+  pendingDeleteIds: Set<string>;
+  onSwipeDelete: (email: DashboardEmail) => void;
 }) {
+  const visibleEmails = emails.filter((e) => !pendingDeleteIds.has(e.id));
   return (
     <div>
-      <div className="flex items-center px-4 py-2.5">
+      <div className="flex items-center px-0 md:px-4 py-2.5">
         <span className="text-sm font-medium text-muted-foreground">{title}</span>
       </div>
-      <div className="rounded-lg border overflow-hidden bg-card">
+      {/* Mobile: Mail-style rows, no card chrome. Multi-select stays desktop-only.
+          Full-bleed (-mx-4) so swipe rows reach the viewport edges. */}
+      <div className="md:hidden -mx-4">
+        {loading ? (
+          <SkeletonMobileRows />
+        ) : visibleEmails.length === 0 ? (
+          <p className="text-center text-sm text-muted-foreground py-12">{emptyLabel}</p>
+        ) : (
+          visibleEmails.map((email) => {
+            const addresses = emailAddresses(email);
+            const broken = emailIsBroken(email);
+            return (
+              <SwipeableRow
+                key={email.id}
+                onDelete={() => onSwipeDelete(email)}
+                onClick={() => onRowClick(email)}
+              >
+              <div className="flex items-start gap-3 px-4 py-3.5 cursor-pointer">
+                <ClientSquircle
+                  {...emailSquircleProps(email)}
+                  className="size-8 shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-foreground/90 truncate">{addresses[0]}</span>
+                    {addresses.length > 1 && (
+                      <span className="text-xs text-muted-foreground border rounded-full px-1.5 py-px shrink-0">
+                        +{addresses.length - 1}
+                      </span>
+                    )}
+                    <span className="ml-auto flex items-center gap-1.5 shrink-0">
+                      {email.filename && <Paperclip className="size-3.5 text-muted-foreground" />}
+                      <span className="text-xs text-muted-foreground">{emailDate(email)}</span>
+                    </span>
+                  </div>
+                  <p className="text-xs text-foreground/75 truncate">{email.subject}</p>
+                  <div className="flex items-start gap-2">
+                    <p className="text-xs text-muted-foreground truncate flex-1 min-w-0">
+                      {email.body_text.replace(/\s+/g, " ")}
+                    </p>
+                    {broken && (
+                      <Badge variant="destructive" className="shrink-0">{email.status}</Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+              </SwipeableRow>
+            );
+          })
+        )}
+      </div>
+      <div className="rounded-lg border overflow-hidden bg-card hidden md:block">
       <Table className="table-fixed">
         <TableBody>
           {loading ? (
             <SkeletonTableRows />
-          ) : emails.length === 0 ? (
+          ) : visibleEmails.length === 0 ? (
             <TableRow>
               <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
                 {emptyLabel}
               </TableCell>
             </TableRow>
           ) : (
-            emails.map((email) => (
+            visibleEmails.map((email) => {
+              const addresses = emailAddresses(email);
+              return (
               <TableRow key={email.id} className="cursor-pointer" onClick={() => onRowClick(email)}>
                 <TableCell className="py-3 pl-4 pr-0 w-10" onClick={(e) => e.stopPropagation()}>
                   <Checkbox
@@ -123,23 +342,15 @@ function EmailsTable({
                 <TableCell className="py-3 px-6 w-72">
                   <div className="flex items-center gap-3 min-w-0">
                     <ClientSquircle
-                      name={email.client_name ?? email.to_address}
-                      color={email.client_name ? (email.client_color ?? "#9ca3af") : "#9ca3af"}
+                      {...emailSquircleProps(email)}
                       className="size-[22px] shrink-0"
                     />
-                    {(() => {
-                      const addresses = email.to_address.split(",").map((s) => s.trim()).filter(Boolean);
-                      return (
-                        <>
-                          <span className="text-sm truncate">{addresses[0]}</span>
-                          {addresses.length > 1 && (
-                            <span className="text-xs text-muted-foreground border rounded-full px-1.5 py-px shrink-0">
-                              +{addresses.length - 1}
-                            </span>
-                          )}
-                        </>
-                      );
-                    })()}
+                    <span className="text-sm truncate">{addresses[0]}</span>
+                    {addresses.length > 1 && (
+                      <span className="text-xs text-muted-foreground border rounded-full px-1.5 py-px shrink-0">
+                        +{addresses.length - 1}
+                      </span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell className="py-3 px-6 max-w-0">
@@ -153,9 +364,14 @@ function EmailsTable({
                 </TableCell>
                 {showStatus ? (
                   <TableCell className="py-3 pl-2 pr-6 w-56 text-right whitespace-nowrap">
-                    <Badge variant={email.status === "pending" ? "outline" : "destructive"}>
-                      {email.status === "pending" ? scheduledLabel(email) : email.status}
-                    </Badge>
+                    {email.status === "pending" ? (
+                      <Badge variant="outline">{scheduledLabel(email)}</Badge>
+                    ) : (
+                      <span className="inline-flex items-center gap-2">
+                        <Badge variant="destructive">{email.status}</Badge>
+                        <span className="text-sm text-muted-foreground">{emailDate(email)}</span>
+                      </span>
+                    )}
                   </TableCell>
                 ) : (
                   <TableCell className="py-3 pl-2 pr-6 w-24 text-right whitespace-nowrap">
@@ -163,7 +379,8 @@ function EmailsTable({
                   </TableCell>
                 )}
               </TableRow>
-            ))
+              );
+            })
           )}
         </TableBody>
       </Table>
@@ -182,6 +399,10 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
   const [sentEmail, setSentEmail] = useState<DashboardEmail | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  // Swiped-away rows hide immediately; the real deletion runs only after the
+  // undo toast times out (deleteEmails is irreversible — jobs, PDFs).
+  const [pendingDelete, setPendingDelete] = useState<Set<string>>(new Set());
+  const deleteTimers = useRef<Map<string, number>>(new Map());
 
   const loading = !emails;
   const scheduled = emails?.filter((e) => e.status !== "sent") ?? [];
@@ -201,21 +422,34 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
     return () => window.removeEventListener("dock:new", handler);
   }, []);
 
+  // Pending swipe-deletes are irreversible once they fire (deleteEmails removes
+  // jobs/PDFs) — if the component unmounts mid-undo-window, cancel rather than
+  // let a stale closure delete behind the user's back.
+  useEffect(() => {
+    const timers = deleteTimers.current;
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+      timers.clear();
+    };
+  }, []);
+
   async function handleEmailRowClick(email: DashboardEmail) {
     if (email.status === "sent") {
       setSentEmail(email);
       setSentSheetOpen(true);
       return;
     }
+    const failReason = emailIsBroken(email) ? email.error : null;
     // Free-form emails have no invoice to load — edit directly.
     if (!email.invoice_id) {
       setComposeInvoice(null);
       setComposePrefill({
-        to: email.to_address.split(",").map((s) => s.trim()).filter(Boolean),
+        to: emailAddresses(email),
         subject: email.subject,
         body: email.body_text,
         scheduledFor: new Date(email.scheduled_for),
         editingId: email.id,
+        error: failReason,
       });
       setComposeOpen(true);
       return;
@@ -226,11 +460,12 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
       setComposeBusinessName(result.businessName);
       setComposeUserName(result.userName);
       setComposePrefill({
-        to: email.to_address.split(",").map((s) => s.trim()).filter(Boolean),
+        to: emailAddresses(email),
         subject: email.subject,
         body: email.body_text,
         scheduledFor: new Date(email.scheduled_for),
         editingId: email.id,
+        error: failReason,
       });
       setComposeOpen(true);
     }
@@ -257,8 +492,43 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
     }
   }
 
+  function handleSwipeDelete(email: DashboardEmail) {
+    setPendingDelete((prev) => new Set(prev).add(email.id));
+    const timer = window.setTimeout(async () => {
+      deleteTimers.current.delete(email.id);
+      try {
+        await deleteEmails([email.id]);
+        invalidate("emails", "invoices");
+      } catch {
+        toast.error("Failed to delete email");
+        setPendingDelete((prev) => {
+          const next = new Set(prev);
+          next.delete(email.id);
+          return next;
+        });
+      }
+    }, 4000);
+    deleteTimers.current.set(email.id, timer);
+    toast("Email deleted", {
+      duration: 4000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          const t = deleteTimers.current.get(email.id);
+          if (t) window.clearTimeout(t);
+          deleteTimers.current.delete(email.id);
+          setPendingDelete((prev) => {
+            const next = new Set(prev);
+            next.delete(email.id);
+            return next;
+          });
+        },
+      },
+    });
+  }
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-md:bg-card">
       <PageHeader title="Emails">
         <Button size="sm" className="hidden md:flex" disabled={loading} onClick={openNewEmail}>
           <Pencil className="size-4" />
@@ -290,9 +560,9 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
       </PageHeader>
 
       <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
-        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+        <div className="px-4 md:px-6 pb-6 pt-1 md:pt-6 mx-auto w-full max-w-6xl flex flex-col gap-0 md:gap-4">
           {!loading && scheduled.length > 0 && (
-            <EmailsTable title="Scheduled" emails={scheduled} onRowClick={handleEmailRowClick} showStatus selected={selected} onToggle={toggleSelected} />
+            <EmailsTable title="Scheduled" emails={scheduled} onRowClick={handleEmailRowClick} showStatus selected={selected} onToggle={toggleSelected} pendingDeleteIds={pendingDelete} onSwipeDelete={handleSwipeDelete} />
           )}
           <EmailsTable
             title="Sent"
@@ -302,6 +572,8 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
             emptyLabel="No sent emails yet."
             selected={selected}
             onToggle={toggleSelected}
+            pendingDeleteIds={pendingDelete}
+            onSwipeDelete={handleSwipeDelete}
           />
         </div>
       </div>
@@ -321,6 +593,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
         initialBody={composePrefill?.body}
         initialScheduledFor={composePrefill?.scheduledFor}
         editingId={composePrefill?.editingId}
+        errorReason={composePrefill?.error}
         freeform
       />
       <SentEmailSheet

@@ -151,6 +151,16 @@
   }
 }
 
+/* Swipe-to-delete rows: no text selection or long-press callout while
+   dragging, on touch devices only. */
+@media (pointer: coarse) {
+  .swipeable-row {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
 @keyframes breathe-spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }

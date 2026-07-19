@@ -5,11 +5,10 @@ import type { DashboardEmail } from "@/lib/types";
 import { getSentEmailPdfUrl } from "@/app/(app)/invoices/actions";
 import { formatRelativeTime } from "@/lib/format";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  AdaptiveSheet,
+  AdaptiveSheetContent,
+  AdaptiveSheetTitle,
+} from "@/components/ui/adaptive-sheet";
 import { Paperclip, X } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
@@ -53,11 +52,9 @@ export function SentEmailSheet({ open, onOpenChangeAction, email }: SentEmailShe
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChangeAction}>
-      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
-        <SheetHeader className="sr-only" showCloseButton={false}>
-          <SheetTitle>{email?.invoice_number ? `Sent Email — Invoice ${email.invoice_number}` : "Sent Email"}</SheetTitle>
-        </SheetHeader>
+    <AdaptiveSheet open={open} onOpenChange={onOpenChangeAction}>
+      <AdaptiveSheetContent side="right" className="w-full md:max-w-md flex flex-col gap-0 p-0">
+        <AdaptiveSheetTitle className="sr-only">{email?.invoice_number ? `Sent Email — Invoice ${email.invoice_number}` : "Sent Email"}</AdaptiveSheetTitle>
 
         {email && (
           <>
@@ -137,7 +134,7 @@ export function SentEmailSheet({ open, onOpenChangeAction, email }: SentEmailShe
             </div>
           </>
         )}
-      </SheetContent>
-    </Sheet>
+      </AdaptiveSheetContent>
+    </AdaptiveSheet>
   );
 }

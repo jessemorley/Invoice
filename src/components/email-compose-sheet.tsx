@@ -12,11 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  AdaptiveSheet,
+  AdaptiveSheetContent,
+  AdaptiveSheetTitle,
+} from "@/components/ui/adaptive-sheet";
 import {
   Popover,
   PopoverContent,
@@ -159,9 +158,10 @@ interface ComposeContentProps {
   initialBody?: string;
   initialScheduledFor?: Date | null;
   editingId?: string;
+  errorReason?: string | null;
 }
 
-function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, onClose, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId }: ComposeContentProps) {
+function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, onClose, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId, errorReason }: ComposeContentProps) {
   const [chips, setChips] = useState<string[]>(() =>
     initialTo ?? (invoice?.client.email ? [invoice.client.email] : [])
   );
@@ -268,6 +268,11 @@ function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, on
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+        {errorReason && (
+          <p className="rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2 text-sm text-destructive">
+            {errorReason}
+          </p>
+        )}
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">To</label>
           <EmailChipInput
@@ -366,25 +371,25 @@ interface EmailComposeSheetProps {
   initialBody?: string;
   initialScheduledFor?: Date | null;
   editingId?: string;
+  /** Bounce/failure reason shown as a destructive banner above the form. */
+  errorReason?: string | null;
   /** Render even without an invoice — free-form compose with no PDF attachment. */
   freeform?: boolean;
 }
 
-export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessName, userName, bodyTemplate, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId, freeform }: EmailComposeSheetProps) {
+export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessName, userName, bodyTemplate, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId, errorReason, freeform }: EmailComposeSheetProps) {
   // Mount only while usable: invoice flows clear `invoice` on close, freeform
   // relies on `open` — either way ComposeContent remounts with fresh state.
   if (!invoice && !(freeform && open)) return null;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChangeAction}>
-      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
-        <SheetHeader className="sr-only" showCloseButton={false}>
-          <SheetTitle>
-            {invoice
-              ? (editingId ? `Edit email — Invoice ${invoice.number}` : `Send Invoice ${invoice.number}`)
-              : (editingId ? "Edit email" : "New email")}
-          </SheetTitle>
-        </SheetHeader>
+    <AdaptiveSheet open={open} onOpenChange={onOpenChangeAction}>
+      <AdaptiveSheetContent side="right" className="w-full md:max-w-md flex flex-col gap-0 p-0">
+        <AdaptiveSheetTitle className="sr-only">
+          {invoice
+            ? (editingId ? `Edit email — Invoice ${invoice.number}` : `Send Invoice ${invoice.number}`)
+            : (editingId ? "Edit email" : "New email")}
+        </AdaptiveSheetTitle>
         <ComposeContent
           invoice={invoice}
           businessName={businessName}
@@ -397,8 +402,9 @@ export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessN
           initialBody={initialBody}
           initialScheduledFor={initialScheduledFor}
           editingId={editingId}
+          errorReason={errorReason}
         />
-      </SheetContent>
-    </Sheet>
+      </AdaptiveSheetContent>
+    </AdaptiveSheet>
   );
 }
