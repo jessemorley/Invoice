@@ -2,7 +2,7 @@ import { cacheTag } from "next/cache";
 import { createTokenClient } from "./supabase";
 import { isoWeek, todayInSydney, fyStartYear } from "./format";
 import { lineItemTotal } from "./utils";
-import type { Entry, Invoice, InvoiceDetail, InvoiceEntry, Expense, ExpenseCategory, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate, CalendarDay } from "./types";
+import type { Entry, Invoice, InvoiceDetail, InvoiceEntry, InvoiceEmail, Expense, ExpenseCategory, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate, CalendarDay } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
 
@@ -312,7 +312,7 @@ export async function fetchInvoices(userId: string, token: string, filters: Invo
       total: inv.total,
       status: inv.status,
       email: activeEmail ? {
-        status: activeEmail.status as "pending" | "sent" | "failed",
+        status: activeEmail.status as InvoiceEmail["status"],
         scheduled_for: activeEmail.scheduled_for,
         sent_at: activeEmail.sent_at,
       } : null,
@@ -909,7 +909,7 @@ export async function fetchInvoiceDetail(invoiceId: string, userId: string, toke
 
 export type ScheduledEmail = {
   id: string;
-  status: "pending" | "sent" | "cancelled" | "failed";
+  status: "pending" | "sent" | "cancelled" | "failed" | "bounced";
   to_address: string;
   subject: string;
   body_text: string;

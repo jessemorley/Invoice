@@ -40,23 +40,25 @@ export async function POST(req: Request) {
     .select("user_id, subject, to_address")
     .maybeSingle();
   if (error) return new Response(`db update failed: ${error.message}`, { status: 500 });
+  // No matching sent row (row deleted, already re-sent, or bounce raced the
+  // sent-update): 404 makes Svix retry with backoff, then give up visibly.
+  if (!row) return new Response("no matching sent row", { status: 404 });
 
-  if (row) {
-    // Status changed outside a server action — expire the tag directly
-    // (same pattern as the Inngest function).
-    revalidateTag(CACHE_TAGS.scheduledEmails, { expire: 0 });
-    // Best-effort push notification — never fail the webhook over it.
-    await sendPushToUser(row.user_id, {
-      title: "⚠️ Email bounced",
-      body: `${row.subject} to ${row.to_address} bounced. Tap to re-send.`,
-      url: "/?view=emails",
-      tag: `bounced-${event.data.email_id}`,
-    }).catch((err) => {
-      console.error(
-        JSON.stringify({ event: "bounce_push_failed", email_id: event.data.email_id, error: err?.message })
-      );
-    });
-  }
+  // Status changed outside a server action — expire the tag directly
+  // (same pattern as the Inngest function).
+  revalidateTag(CACHE_TAGS.scheduledEmails, { expire: 0 });
+  revalidateTag(CACHE_TAGS.invoices, { expire: 0 });
+  // Best-effort push notification — never fail the webhook over it.
+  await sendPushToUser(row.user_id, {
+    title: "⚠️ Email bounced",
+    body: `${row.subject} to ${row.to_address} bounced. Tap to re-send.`,
+    url: "/?view=emails",
+    tag: `bounced-${event.data.email_id}`,
+  }).catch((err) => {
+    console.error(
+      JSON.stringify({ event: "bounce_push_failed", email_id: event.data.email_id, error: err?.message })
+    );
+  });
 
   return Response.json({ received: true });
 }

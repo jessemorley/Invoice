@@ -44,7 +44,7 @@ export type Entry = {
 };
 
 export type InvoiceEmail = {
-  status: "pending" | "sent" | "failed";
+  status: "pending" | "sent" | "failed" | "bounced";
   scheduled_for: string;
   sent_at: string | null;
 };
