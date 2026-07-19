@@ -275,7 +275,7 @@ function EmailsTable({
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium truncate">{addresses[0]}</span>
+                    <span className="text-sm font-medium text-foreground/90 truncate">{addresses[0]}</span>
                     {addresses.length > 1 && (
                       <span className="text-xs text-muted-foreground border rounded-full px-1.5 py-px shrink-0">
                         +{addresses.length - 1}
@@ -286,7 +286,7 @@ function EmailsTable({
                       <span className="text-xs text-muted-foreground">{emailDate(email)}</span>
                     </span>
                   </div>
-                  <p className="text-xs truncate">{email.subject}</p>
+                  <p className="text-xs text-foreground/75 truncate">{email.subject}</p>
                   <div className="flex items-start gap-2">
                     <p className="text-xs text-muted-foreground truncate flex-1 min-w-0">
                       {email.body_text.replace(/\s+/g, " ")}
