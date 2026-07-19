@@ -519,6 +519,7 @@ export type Database = {
           id: string
           invoice_id: string | null
           mark_issued: boolean
+          resend_id: string | null
           scheduled_for: string
           sent_at: string | null
           sent_pdf_path: string | null
@@ -537,6 +538,7 @@ export type Database = {
           id?: string
           invoice_id?: string | null
           mark_issued?: boolean
+          resend_id?: string | null
           scheduled_for: string
           sent_at?: string | null
           sent_pdf_path?: string | null
@@ -555,6 +557,7 @@ export type Database = {
           id?: string
           invoice_id?: string | null
           mark_issued?: boolean
+          resend_id?: string | null
           scheduled_for?: string
           sent_at?: string | null
           sent_pdf_path?: string | null

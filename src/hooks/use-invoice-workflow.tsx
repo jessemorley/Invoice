@@ -141,7 +141,7 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
         onOpenChangeAction={setSentEmailOpen}
         email={scheduledEmail && selectedInvoice && scheduledEmail.status !== "cancelled" ? {
           ...scheduledEmail,
-          status: scheduledEmail.status as "pending" | "sent" | "failed",
+          status: scheduledEmail.status as "pending" | "sent" | "failed" | "bounced",
           invoice_id: selectedInvoice.id,
           invoice_number: selectedInvoice.number,
           invoice_status: selectedInvoice.status,

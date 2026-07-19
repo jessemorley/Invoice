@@ -166,7 +166,7 @@ export const sendInvoiceEmail = inngest.createFunction(
       attachments = [{ filename, content: pdfBase64 }];
     }
 
-    await resend.emails.send({
+    const { data: sendData, error: sendError } = await resend.emails.send({
       from: fromAddress,
       to: to_address.split(",").map((e: string) => e.trim()),
       cc: cc_address ? cc_address.split(",").map((e: string) => e.trim()) : undefined,
@@ -175,10 +175,17 @@ export const sendInvoiceEmail = inngest.createFunction(
       text: body_text,
       attachments,
     });
+    // The SDK returns errors instead of throwing — surface them so Inngest retries.
+    if (sendError) throw new Error(`Resend send failed: ${sendError.message}`);
 
     await supabase
       .from("scheduled_emails")
-      .update({ status: "sent", sent_at: new Date().toISOString(), ...(sentPdfPath ? { sent_pdf_path: sentPdfPath } : {}) })
+      .update({
+        status: "sent",
+        sent_at: new Date().toISOString(),
+        resend_id: sendData?.id ?? null,
+        ...(sentPdfPath ? { sent_pdf_path: sentPdfPath } : {}),
+      })
       .eq("id", scheduled_email_id);
     revalidateTag(CACHE_TAGS.scheduledEmails, { expire: 0 });
 
