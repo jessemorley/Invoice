@@ -192,7 +192,7 @@ function SwipeableRow({
       </div>
       <div
         ref={cardRef}
-        className="bg-background touch-pan-y transition-transform duration-200 ease-out"
+        className="relative bg-background touch-pan-y transition-transform duration-200 ease-out"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
