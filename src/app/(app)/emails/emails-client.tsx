@@ -79,7 +79,7 @@ function SkeletonMobileRows({ count = 6 }: { count?: number }) {
   return (
     <>
       {Array.from({ length: count }, (_, i) => (
-        <div key={i} className="flex items-start gap-3 py-2.5">
+        <div key={i} className="flex items-start gap-3 py-3.5">
           <Skeleton className="size-8 rounded-lg shrink-0" />
           <div className="flex-1 flex flex-col gap-1.5 min-w-0">
             <Skeleton className="h-4 w-40" />
@@ -129,7 +129,7 @@ function EmailsTable({
             return (
               <div
                 key={email.id}
-                className="flex items-start gap-3 py-2.5 cursor-pointer active:bg-accent/50"
+                className="flex items-start gap-3 py-3.5 cursor-pointer active:bg-accent/50"
                 onClick={() => onRowClick(email)}
               >
                 <ClientSquircle
