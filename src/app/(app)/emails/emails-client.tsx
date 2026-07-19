@@ -31,7 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ClientSquircle } from "@/components/client-squircle";
 import { EmailComposeSheet } from "@/components/email-compose-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
-import { Paperclip, Pencil } from "lucide-react";
+import { Paperclip, Pencil, Trash2 } from "lucide-react";
 
 function emailDate(email: DashboardEmail): string {
   // Bounced rows keep their sent_at — show when the email actually went out.
@@ -97,6 +97,7 @@ function SwipeableRow({
 }) {
   const [dx, setDx] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const [pastThreshold, setPastThreshold] = useState(false);
   const start = useRef<{ x: number; y: number; base: number } | null>(null);
   const axis = useRef<"h" | "v" | null>(null);
   const rowRef = useRef<HTMLDivElement>(null);
@@ -124,7 +125,9 @@ function SwipeableRow({
     }
     if (axis.current === "v") return;
     const width = rowRef.current?.clientWidth ?? 360;
-    setDx(Math.min(0, Math.max(-width, start.current.base + moveX)));
+    const next = Math.min(0, Math.max(-width, start.current.base + moveX));
+    setDx(next);
+    setPastThreshold(next < -width / 2);
   }
 
   function handleTouchEnd() {
@@ -141,6 +144,7 @@ function SwipeableRow({
         setDx(0);
       }
     }
+    setPastThreshold(false);
     start.current = null;
   }
 
@@ -157,10 +161,15 @@ function SwipeableRow({
     <div ref={rowRef} className="relative overflow-hidden">
       <div
         aria-hidden
-        className="absolute inset-y-0 right-0 flex items-center justify-start bg-destructive text-sm font-medium text-white"
-        style={{ width: Math.max(SWIPE_BTN_WIDTH, -dx), paddingLeft: 19 }}
+        className="absolute inset-y-0 right-0 flex items-center justify-end bg-red-600 pr-7 text-white"
+        style={{ width: Math.max(SWIPE_BTN_WIDTH, -dx) }}
       >
-        Delete
+        <Trash2
+          className={cn(
+            "size-5 transition-transform duration-100",
+            pastThreshold ? "scale-125" : "scale-75"
+          )}
+        />
       </div>
       <div
         className={cn("bg-background touch-pan-y", !dragging && "transition-transform duration-200")}
