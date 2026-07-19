@@ -12,11 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  AdaptiveSheet,
+  AdaptiveSheetContent,
+  AdaptiveSheetTitle,
+} from "@/components/ui/adaptive-sheet";
 import {
   Popover,
   PopoverContent,
@@ -376,15 +375,13 @@ export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessN
   if (!invoice && !(freeform && open)) return null;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChangeAction}>
-      <SheetContent side="right" className="w-full sm:max-w-md flex flex-col gap-0 p-0">
-        <SheetHeader className="sr-only" showCloseButton={false}>
-          <SheetTitle>
-            {invoice
-              ? (editingId ? `Edit email — Invoice ${invoice.number}` : `Send Invoice ${invoice.number}`)
-              : (editingId ? "Edit email" : "New email")}
-          </SheetTitle>
-        </SheetHeader>
+    <AdaptiveSheet open={open} onOpenChange={onOpenChangeAction}>
+      <AdaptiveSheetContent side="right" className="w-full md:max-w-md flex flex-col gap-0 p-0">
+        <AdaptiveSheetTitle className="sr-only">
+          {invoice
+            ? (editingId ? `Edit email — Invoice ${invoice.number}` : `Send Invoice ${invoice.number}`)
+            : (editingId ? "Edit email" : "New email")}
+        </AdaptiveSheetTitle>
         <ComposeContent
           invoice={invoice}
           businessName={businessName}
@@ -398,7 +395,7 @@ export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessN
           initialScheduledFor={initialScheduledFor}
           editingId={editingId}
         />
-      </SheetContent>
-    </Sheet>
+      </AdaptiveSheetContent>
+    </AdaptiveSheet>
   );
 }
