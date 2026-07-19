@@ -77,8 +77,6 @@ function SkeletonTableRows({ count = 6 }: { count?: number }) {
   );
 }
 
-const SWIPE_BTN_WIDTH = 80;
-
 // Mail-style swipe-left row: drag past half the row width to delete
 // (confirmation follows); anything short of that snaps back closed.
 // Axis-locked so vertical list scrolling never fights the swipe.
@@ -95,24 +93,39 @@ function SwipeableRow({
   onClick: () => void;
   children: React.ReactNode;
 }) {
-  const [dx, setDx] = useState(0);
-  const [dragging, setDragging] = useState(false);
+  // Drag position lives in refs and is written straight to the DOM node —
+  // per-frame React renders and layout-triggering styles are what kill 60Hz.
   const [pastThreshold, setPastThreshold] = useState(false);
-  const start = useRef<{ x: number; y: number; base: number } | null>(null);
+  const start = useRef<{ x: number; y: number } | null>(null);
   const axis = useRef<"h" | "v" | null>(null);
+  const dxRef = useRef(0);
   const rowRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // animate=false suspends the CSS transition so the card tracks the finger 1:1.
+  function moveCard(dx: number, animate: boolean) {
+    const el = cardRef.current;
+    if (!el) return;
+    el.style.transition = animate ? "" : "none";
+    el.style.transform = `translateX(${dx}px)`;
+    dxRef.current = dx;
+  }
 
   // While awaiting delete confirmation the card sits off-screen; a cancelled
   // dialog clears `open` and slides it back in.
   useEffect(() => {
-    setDx(open ? -(rowRef.current?.clientWidth ?? 500) : 0);
+    const el = cardRef.current;
+    if (!el) return;
+    el.style.transition = "";
+    const dx = open ? -(rowRef.current?.clientWidth ?? 500) : 0;
+    el.style.transform = `translateX(${dx}px)`;
+    dxRef.current = dx;
   }, [open]);
 
   function handleTouchStart(e: React.TouchEvent) {
     const t = e.touches[0];
-    start.current = { x: t.clientX, y: t.clientY, base: 0 };
+    start.current = { x: t.clientX, y: t.clientY };
     axis.current = null;
-    setDragging(true);
   }
 
   function handleTouchMove(e: React.TouchEvent) {
@@ -126,23 +139,23 @@ function SwipeableRow({
     }
     if (axis.current === "v") return;
     const width = rowRef.current?.clientWidth ?? 360;
-    const next = Math.min(0, Math.max(-width, start.current.base + moveX));
-    setDx(next);
+    const next = Math.min(0, Math.max(-width, moveX));
+    moveCard(next, false);
+    // Bails out of re-rendering except on the crossing itself.
     setPastThreshold(next < -width / 4);
   }
 
   function handleTouchEnd() {
-    setDragging(false);
     if (axis.current === "h") {
       const width = rowRef.current?.clientWidth ?? 360;
-      if (dx < -width / 4) {
+      if (dxRef.current < -width / 4) {
         // Past the threshold: the card carries on off-screen and the delete
         // confirmation opens; cancelling slides it back in.
-        setDx(-width);
+        moveCard(-width, true);
         onOpenChange(true);
         onDelete();
       } else {
-        setDx(0);
+        moveCard(0, true);
       }
     }
     setPastThreshold(false);
@@ -162,8 +175,7 @@ function SwipeableRow({
     <div ref={rowRef} className="relative overflow-hidden">
       <div
         aria-hidden
-        className="absolute inset-y-0 right-0 flex items-center justify-end bg-destructive pr-7 text-white"
-        style={{ width: Math.max(SWIPE_BTN_WIDTH, -dx) }}
+        className="absolute inset-0 flex items-center justify-end bg-destructive pr-7 text-white"
       >
         <Trash2
           className={cn(
@@ -173,8 +185,8 @@ function SwipeableRow({
         />
       </div>
       <div
-        className={cn("bg-background touch-pan-y", !dragging && "transition-transform duration-200 ease-out")}
-        style={{ transform: `translateX(${dx}px)` }}
+        ref={cardRef}
+        className="bg-background touch-pan-y transition-transform duration-200 ease-out"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
