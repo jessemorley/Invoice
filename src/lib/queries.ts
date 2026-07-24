@@ -678,9 +678,9 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
     })
     .reduce((sum, e) => sum + e.base_amount + e.bonus_amount, 0);
 
-  const outstanding = invoices.filter(
-    (inv) => inv.status === "draft" || inv.status === "issued"
-  );
+  const outstanding = invoices
+    .filter((inv) => inv.status === "draft" || inv.status === "issued")
+    .sort((a, b) => (a.due_date ?? "9999-99-99").localeCompare(b.due_date ?? "9999-99-99"));
 
   // Build 52-week earnings chart: previous 52 complete ISO weeks vs same weeks prior year.
   // Prior-year equivalent = shift back exactly 52 weeks (same ISO week number, one year prior).
