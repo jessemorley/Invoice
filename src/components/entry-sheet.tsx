@@ -68,7 +68,7 @@ function defaultForm(entry: Entry | null, client: Client | null): FormState {
       workflow_type: entry.workflow_type ?? "Apparel",
       batch_lines: entry.batch_lines?.length
         ? entry.batch_lines
-        : [{ workflow: entry.workflow_type ?? "Batch A", skus: entry.skus ?? 0 }],
+        : [{ workflow: entry.workflow_type && entry.workflow_type !== "Product" ? entry.workflow_type : "Batch A", skus: entry.skus ?? 0 }],
       brand: entry.brand ?? "",
       skus: entry.skus ?? null,
       label: entry.label || entry.description || "",
@@ -236,7 +236,10 @@ export function EntrySheet({
       setVisibleDate(next.date);
       setError(null);
     });
-  }, [open, entry, clients, startTransition]);
+    // `clients` intentionally excluded: a background refetch (e.g. tab focus) must not
+    // clobber in-progress edits while the sheet is already open
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, entry, startTransition]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -267,7 +270,7 @@ export function EntrySheet({
     [clientWorkflowSet]
   );
 
-  const isProductWorkflow = PRODUCT_WORKFLOWS.includes(form.workflow_type);
+  const isProductWorkflow = form.workflow_type === "Product" || PRODUCT_WORKFLOWS.includes(form.workflow_type);
   const topWorkflow: "Apparel" | "Product" | "Own Brand" = isProductWorkflow
     ? "Product"
     : (form.workflow_type as "Apparel" | "Own Brand");
@@ -279,7 +282,7 @@ export function EntrySheet({
       set("workflow_type", w);
       set("batch_lines", [{ workflow: w, skus: form.skus ?? 0 }]);
     } else {
-      set("workflow_type", v);
+      setForm((prev) => ({ ...prev, workflow_type: v, skus: null }));
     }
   }
 
@@ -327,7 +330,7 @@ export function EntrySheet({
       date: form.date,
       billing_type: billingType,
       day_type: billingType === "day_rate" ? form.day_type : null,
-      workflow_type: billingType === "day_rate" ? (isProductMode ? form.batch_lines[0].workflow : form.workflow_type) : null,
+      workflow_type: billingType === "day_rate" ? (isMultiBatch ? "Product" : isProductMode ? form.batch_lines[0].workflow : form.workflow_type) : null,
       batch_lines: billingType === "day_rate" && isMultiBatch ? form.batch_lines : null,
       skus: isProductMode ? batchTotalSkus : (billingType === "day_rate" && needsSkus) || billingType === "manual" ? form.skus : null,
       brand: billingType === "day_rate" && needsBrand ? form.brand || null : null,
