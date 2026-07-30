@@ -244,6 +244,7 @@ export type Database = {
       entries: {
         Row: {
           base_amount: number
+          batch_lines: Json | null
           billing_type_snapshot: Database["public"]["Enums"]["billing_type"]
           bonus_amount: number
           brand: string | null
@@ -257,8 +258,8 @@ export type Database = {
           hours_worked: number | null
           id: string
           invoice_id: string | null
-          role: string | null
           label: string | null
+          role: string | null
           skus: number | null
           start_time: string | null
           super_amount: number
@@ -268,6 +269,7 @@ export type Database = {
         }
         Insert: {
           base_amount?: number
+          batch_lines?: Json | null
           billing_type_snapshot: Database["public"]["Enums"]["billing_type"]
           bonus_amount?: number
           brand?: string | null
@@ -281,8 +283,8 @@ export type Database = {
           hours_worked?: number | null
           id?: string
           invoice_id?: string | null
-          role?: string | null
           label?: string | null
+          role?: string | null
           skus?: number | null
           start_time?: string | null
           super_amount?: number
@@ -292,6 +294,7 @@ export type Database = {
         }
         Update: {
           base_amount?: number
+          batch_lines?: Json | null
           billing_type_snapshot?: Database["public"]["Enums"]["billing_type"]
           bonus_amount?: number
           brand?: string | null
@@ -305,8 +308,8 @@ export type Database = {
           hours_worked?: number | null
           id?: string
           invoice_id?: string | null
-          role?: string | null
           label?: string | null
+          role?: string | null
           skus?: number | null
           start_time?: string | null
           super_amount?: number
@@ -508,6 +511,66 @@ export type Database = {
           },
         ]
       }
+      payg_instalments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          label: string | null
+          paid_date: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          label?: string | null
+          paid_date: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          label?: string | null
+          paid_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       scheduled_emails: {
         Row: {
           bcc_address: string | null
@@ -576,66 +639,11 @@ export type Database = {
           },
         ]
       }
-      payg_instalments: {
-        Row: {
-          amount: number
-          created_at: string
-          id: string
-          label: string | null
-          paid_date: string
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          id?: string
-          label?: string | null
-          paid_date: string
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          id?: string
-          label?: string | null
-          paid_date?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      push_subscriptions: {
-        Row: {
-          auth: string
-          created_at: string
-          endpoint: string
-          id: string
-          p256dh: string
-          user_agent: string | null
-          user_id: string
-        }
-        Insert: {
-          auth: string
-          created_at?: string
-          endpoint: string
-          id?: string
-          p256dh: string
-          user_agent?: string | null
-          user_id: string
-        }
-        Update: {
-          auth?: string
-          created_at?: string
-          endpoint?: string
-          id?: string
-          p256dh?: string
-          user_agent?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_preferences: {
         Row: {
           bcc_self: boolean
+          followup_email_template: string | null
+          invoice_email_template: string | null
           mark_as_issued_on_send: boolean
           user_id: string
           weekly_invoice_reminder: boolean
@@ -643,6 +651,8 @@ export type Database = {
         }
         Insert: {
           bcc_self?: boolean
+          followup_email_template?: string | null
+          invoice_email_template?: string | null
           mark_as_issued_on_send?: boolean
           user_id: string
           weekly_invoice_reminder?: boolean
@@ -650,6 +660,8 @@ export type Database = {
         }
         Update: {
           bcc_self?: boolean
+          followup_email_template?: string | null
+          invoice_email_template?: string | null
           mark_as_issued_on_send?: boolean
           user_id?: string
           weekly_invoice_reminder?: boolean
