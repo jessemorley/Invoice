@@ -21,6 +21,7 @@ export type EntryFormData = {
   billing_type: BillingType;
   day_type: DayType | null;
   workflow_type: string | null;
+  batch_lines: { workflow: string; skus: number }[] | null;
   skus: number | null;
   brand: string | null;
   label: string | null;
@@ -46,6 +47,7 @@ export async function updateEntry(id: string, data: EntryFormData) {
       billing_type_snapshot: data.billing_type,
       day_type: data.day_type,
       workflow_type: data.workflow_type,
+      batch_lines: data.batch_lines,
       skus: data.skus,
       brand: data.brand ?? null,
       label: data.label ?? null,
@@ -77,6 +79,7 @@ export async function createEntry(data: EntryFormData) {
     billing_type_snapshot: data.billing_type,
     day_type: data.day_type,
     workflow_type: data.workflow_type,
+    batch_lines: data.batch_lines,
     skus: data.skus,
     brand: data.brand ?? null,
     label: data.label ?? null,

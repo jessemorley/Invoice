@@ -25,6 +25,7 @@ export type Entry = {
   description: string | null;
   role: string | null;
   workflow_type: string | null;
+  batch_lines: { workflow: string; skus: number }[] | null;
   billing_type: BillingType;
   day_type?: DayType | null;
   hours?: number | null;
@@ -148,6 +149,7 @@ export type InvoiceEntry = {
   billing_type: BillingType;
   day_type: DayType | null;
   workflow_type: string | null;
+  batch_lines: { workflow: string; skus: number }[] | null;
   brand: string | null;
   label: string | null;
   role: string | null;

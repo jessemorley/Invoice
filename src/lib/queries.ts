@@ -62,6 +62,7 @@ export async function fetchEntryById(userId: string, entryId: string, token: str
     description: data.description,
     role: data.role,
     workflow_type: data.workflow_type,
+    batch_lines: data.batch_lines as Entry["batch_lines"],
     billing_type: data.billing_type_snapshot,
     day_type: data.day_type,
     hours: data.hours_worked,
@@ -120,6 +121,7 @@ export async function fetchEntries(userId: string, token: string, before?: strin
       description: e.description,
       role: e.role,
       workflow_type: e.workflow_type,
+      batch_lines: e.batch_lines as Entry["batch_lines"],
       billing_type: e.billing_type_snapshot,
       day_type: e.day_type,
       hours: e.hours_worked,
@@ -386,7 +388,7 @@ export async function fetchSuggestedInvoiceEntries(
   const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("entries")
-    .select("id, date, description, billing_type_snapshot, day_type, workflow_type, brand, label, role, skus, hours_worked, start_time, finish_time, break_minutes, base_amount, bonus_amount, super_amount, total_amount")
+    .select("id, date, description, billing_type_snapshot, day_type, workflow_type, batch_lines, brand, label, role, skus, hours_worked, start_time, finish_time, break_minutes, base_amount, bonus_amount, super_amount, total_amount")
     .eq("user_id", userId)
     .eq("client_id", clientId)
     .is("invoice_id", null)
@@ -403,6 +405,7 @@ export async function fetchSuggestedInvoiceEntries(
       billing_type: e.billing_type_snapshot as InvoiceEntry["billing_type"],
       day_type: e.day_type as InvoiceEntry["day_type"],
       workflow_type: e.workflow_type,
+      batch_lines: e.batch_lines as InvoiceEntry["batch_lines"],
       brand: e.brand,
       label: e.label,
       role: e.role,
@@ -678,9 +681,9 @@ export async function fetchDashboardData(userId: string, entries: DashboardEntry
     })
     .reduce((sum, e) => sum + e.base_amount + e.bonus_amount, 0);
 
-  const outstanding = invoices.filter(
-    (inv) => inv.status === "draft" || inv.status === "issued"
-  );
+  const outstanding = invoices
+    .filter((inv) => inv.status === "draft" || inv.status === "issued")
+    .sort((a, b) => (a.due_date ?? "9999-99-99").localeCompare(b.due_date ?? "9999-99-99"));
 
   // Build 52-week earnings chart: previous 52 complete ISO weeks vs same weeks prior year.
   // Prior-year equivalent = shift back exactly 52 weeks (same ISO week number, one year prior).
@@ -835,7 +838,7 @@ export async function fetchInvoiceDetail(invoiceId: string, userId: string, toke
     .select(`
       *,
       clients (id, name, color, address, suburb, email, abn, contact_name, entry_label, pays_super, super_rate, show_super_on_invoice, rate_hourly),
-      entries (id, date, description, billing_type_snapshot, day_type, workflow_type, brand, label, role, skus, hours_worked, start_time, finish_time, break_minutes, base_amount, bonus_amount, super_amount, total_amount),
+      entries (id, date, description, billing_type_snapshot, day_type, workflow_type, batch_lines, brand, label, role, skus, hours_worked, start_time, finish_time, break_minutes, base_amount, bonus_amount, super_amount, total_amount),
       invoice_line_items (id, invoice_id, description, quantity, amount, sort_order, details)
     `)
     .eq("id", invoiceId)
@@ -849,7 +852,7 @@ export async function fetchInvoiceDetail(invoiceId: string, userId: string, toke
   const entries = (data.entries ?? []).map((e: {
     id: string; date: string; description: string | null;
     billing_type_snapshot: string; day_type: string | null;
-    workflow_type: string | null; brand: string | null;
+    workflow_type: string | null; batch_lines: unknown; brand: string | null;
     label: string | null; role: string | null; skus: number | null;
     hours_worked: number | null; start_time: string | null;
     finish_time: string | null; break_minutes: number | null;
@@ -861,6 +864,7 @@ export async function fetchInvoiceDetail(invoiceId: string, userId: string, toke
     billing_type: e.billing_type_snapshot as InvoiceDetail["entries"][0]["billing_type"],
     day_type: e.day_type as InvoiceDetail["entries"][0]["day_type"],
     workflow_type: e.workflow_type,
+    batch_lines: e.batch_lines as InvoiceDetail["entries"][0]["batch_lines"],
     brand: e.brand,
     label: e.label,
     role: e.role,

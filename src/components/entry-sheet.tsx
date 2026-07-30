@@ -6,7 +6,7 @@ import type { Entry, Client, WorkflowRate, BillingType } from "@/lib/types";
 import { createEntry, updateEntry, deleteEntry } from "@/app/(app)/entries/actions";
 import { invalidate } from "@/lib/invalidate";
 import type { EntryFormData } from "@/app/(app)/entries/actions";
-import { calcDayRate, calcHourly, calcManual, formatDuration } from "@/lib/entry-calc";
+import { calcDayRate, calcBatchBonus, calcHourly, calcManual, formatDuration } from "@/lib/entry-calc";
 import { formatAUD } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,7 @@ type FormState = {
   date: string;
   day_type: "full" | "half";
   workflow_type: string;
+  batch_lines: { workflow: string; skus: number }[];
   brand: string;
   skus: number | null;
   label: string;
@@ -65,6 +66,9 @@ function defaultForm(entry: Entry | null, client: Client | null): FormState {
       date: entry.date,
       day_type: (entry.day_type as "full" | "half") ?? "full",
       workflow_type: entry.workflow_type ?? "Apparel",
+      batch_lines: entry.batch_lines?.length
+        ? entry.batch_lines
+        : [{ workflow: entry.workflow_type && entry.workflow_type !== "Product" ? entry.workflow_type : "Batch A", skus: entry.skus ?? 0 }],
       brand: entry.brand ?? "",
       skus: entry.skus ?? null,
       label: entry.label || entry.description || "",
@@ -85,6 +89,7 @@ function defaultForm(entry: Entry | null, client: Client | null): FormState {
     date: TODAY,
     day_type: "full",
     workflow_type: "Apparel",
+    batch_lines: [{ workflow: "Batch A", skus: 0 }],
     brand: "",
     skus: null,
     label: "",
@@ -107,7 +112,7 @@ function applyClientDefaults(client: Client): Partial<FormState> {
     };
   }
   if (client.billing_type === "day_rate") {
-    return { day_type: "full", workflow_type: "Apparel" };
+    return { day_type: "full", workflow_type: "Apparel", batch_lines: [{ workflow: "Batch A", skus: 0 }] };
   }
   return { manual_amount: 0, skus: null };
 }
@@ -231,7 +236,10 @@ export function EntrySheet({
       setVisibleDate(next.date);
       setError(null);
     });
-  }, [open, entry, clients, startTransition]);
+    // `clients` intentionally excluded: a background refetch (e.g. tab focus) must not
+    // clobber in-progress edits while the sheet is already open
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, entry, startTransition]);
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -262,7 +270,7 @@ export function EntrySheet({
     [clientWorkflowSet]
   );
 
-  const isProductWorkflow = PRODUCT_WORKFLOWS.includes(form.workflow_type);
+  const isProductWorkflow = form.workflow_type === "Product" || PRODUCT_WORKFLOWS.includes(form.workflow_type);
   const topWorkflow: "Apparel" | "Product" | "Own Brand" = isProductWorkflow
     ? "Product"
     : (form.workflow_type as "Apparel" | "Own Brand");
@@ -270,32 +278,61 @@ export function EntrySheet({
   function handleTopWorkflow(v: string) {
     if (!v) return;
     if (v === "Product") {
-      set("workflow_type", productSubOptions[0] ?? "Batch A");
+      // batch_lines is left as-is so re-selecting Product after a detour to
+      // Apparel/Own Brand restores whatever the user had already entered
+      set("workflow_type", "Product");
     } else {
-      set("workflow_type", v);
+      setForm((prev) => ({ ...prev, workflow_type: v, skus: null }));
     }
   }
+
+  function setBatchLine(index: number, patch: Partial<{ workflow: string; skus: number }>) {
+    setForm((prev) => ({
+      ...prev,
+      batch_lines: prev.batch_lines.map((line, i) => (i === index ? { ...line, ...patch } : line)),
+    }));
+  }
+
+  function addBatchLine() {
+    const used = new Set(form.batch_lines.map((l) => l.workflow));
+    const next = productSubOptions.find((w) => !used.has(w)) ?? productSubOptions[0] ?? "Batch A";
+    setForm((prev) => ({ ...prev, batch_lines: [...prev.batch_lines, { workflow: next, skus: 0 }] }));
+  }
+
+  function removeBatchLine(index: number) {
+    setForm((prev) => ({ ...prev, batch_lines: prev.batch_lines.filter((_, i) => i !== index) }));
+  }
+
+  const isProductMode = topWorkflow === "Product";
+  const isMultiBatch = isProductMode && form.batch_lines.length > 1;
 
   const calcResult = useMemo(() => {
     if (!selectedClient) return null;
     if (billingType === "day_rate") {
-      return calcDayRate(selectedClient, form.day_type, form.workflow_type, form.skus, workflowRates);
+      if (isMultiBatch) {
+        return calcBatchBonus(selectedClient, form.batch_lines, workflowRates);
+      }
+      const workflow = isProductMode ? form.batch_lines[0].workflow : form.workflow_type;
+      const skus = isProductMode ? form.batch_lines[0].skus : form.skus;
+      return calcDayRate(selectedClient, form.day_type, workflow, skus, workflowRates);
     }
     if (billingType === "hourly") {
       return calcHourly(selectedClient, form.start_time, form.finish_time, form.break_minutes, form.role);
     }
     return calcManual(form.manual_amount, form.skus, selectedClient);
-  }, [selectedClient, billingType, form, workflowRates]);
+  }, [selectedClient, billingType, form, workflowRates, isProductMode, isMultiBatch]);
 
   function buildPayload(): EntryFormData {
     const calc = calcResult ?? { base: 0, bonus: 0, superAmt: 0, total: 0, hoursWorked: null };
+    const batchTotalSkus = form.batch_lines.reduce((sum, l) => sum + (l.skus || 0), 0);
     return {
       client_id: form.client_id,
       date: form.date,
       billing_type: billingType,
       day_type: billingType === "day_rate" ? form.day_type : null,
-      workflow_type: billingType === "day_rate" ? form.workflow_type : null,
-      skus: (billingType === "day_rate" && needsSkus) || billingType === "manual" ? form.skus : null,
+      workflow_type: billingType === "day_rate" ? (isProductMode ? "Product" : form.workflow_type) : null,
+      batch_lines: billingType === "day_rate" && isProductMode ? form.batch_lines : null,
+      skus: isProductMode ? batchTotalSkus : (billingType === "day_rate" && needsSkus) || billingType === "manual" ? form.skus : null,
       brand: billingType === "day_rate" && needsBrand ? form.brand || null : null,
       label: showEntryLabel || billingType === "manual" ? form.label || null : null,
       description: showDescription ? form.description || null : null,
@@ -524,15 +561,6 @@ export function EntrySheet({
                       { value: "Own Brand", label: "Own Brand" },
                     ]}
                   />
-                  {topWorkflow === "Product" && productSubOptions.length > 0 && (
-                    <SegmentedControl
-                      value={form.workflow_type}
-                      onValueChange={(v) => set("workflow_type", v)}
-                      options={productSubOptions.map((opt) => ({ value: opt, label: opt }))}
-                      className="mt-1"
-                      itemClassName="text-xs"
-                    />
-                  )}
                 </Field>
               )}
 
@@ -548,8 +576,61 @@ export function EntrySheet({
                 </Field>
               )}
 
-              {/* SKUs */}
-              {needsSkus && (
+              {/* Product batch lines */}
+              {topWorkflow === "Product" && productSubOptions.length > 0 && (
+                <Field label="Batches">
+                  <div className="flex flex-col gap-3">
+                    {form.batch_lines.map((line, i) => (
+                      <div key={i} className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-2">
+                          <SegmentedControl
+                            value={line.workflow}
+                            onValueChange={(v) => setBatchLine(i, { workflow: v })}
+                            options={productSubOptions.map((opt) => ({ value: opt, label: opt }))}
+                            className="flex-1"
+                            itemClassName="text-xs"
+                          />
+                          {form.batch_lines.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 shrink-0"
+                              onClick={() => removeBatchLine(i)}
+                            >
+                              <X className="size-4" />
+                            </Button>
+                          )}
+                        </div>
+                        <Input
+                          type="number"
+                          min={0}
+                          className="text-sm"
+                          value={line.skus || ""}
+                          onChange={(e) =>
+                            setBatchLine(i, { skus: e.target.value === "" ? 0 : parseInt(e.target.value, 10) })
+                          }
+                          placeholder="SKUs"
+                        />
+                      </div>
+                    ))}
+                    {form.batch_lines.length < productSubOptions.length && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="self-start"
+                        onClick={addBatchLine}
+                      >
+                        <Plus className="size-4" /> Add batch
+                      </Button>
+                    )}
+                  </div>
+                </Field>
+              )}
+
+              {/* SKUs (Apparel) */}
+              {needsSkus && topWorkflow !== "Product" && (
                 <Field label="SKUs">
                   <Input
                     type="number"

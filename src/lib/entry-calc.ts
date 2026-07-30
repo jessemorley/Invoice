@@ -60,6 +60,30 @@ export function calcDayRate(
   return { base, bonus, superAmt, total: subtotal + superAmt, hoursWorked: null };
 }
 
+export function calcBatchBonus(
+  client: Client,
+  lines: { workflow: string; skus: number }[],
+  workflowRates: WorkflowRate[]
+): CalcResult {
+  const base = client.rate_full_day ?? 0;
+
+  let pct = 0;
+  let maxBonus = 0;
+  for (const line of lines) {
+    const rate = workflowRates.find(
+      (r) => r.client_id === client.id && r.workflow === line.workflow
+    );
+    if (!rate) continue;
+    pct += (line.skus / rate.upper_limit_skus) * 100;
+    maxBonus = rate.max_bonus;
+  }
+  const bonus = (Math.min(pct, 100) / 100) * maxBonus;
+
+  const subtotal = base + bonus;
+  const superAmt = client.pays_super ? subtotal * (client.super_rate || 0.12) : 0;
+  return { base, bonus, superAmt, total: subtotal + superAmt, hoursWorked: null };
+}
+
 export function calcHourly(
   client: Client,
   startStr: string,

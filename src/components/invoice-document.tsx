@@ -174,6 +174,7 @@ function buildRows(entries: Entry[], lineItems: LineItem[]): RowData[] {
 
 function entryDescription(entry: Entry): string {
   if (entry.billing_type === "day_rate") {
+    if (entry.batch_lines?.length) return entry.batch_lines.map((l) => l.workflow).join(" + ");
     if (entry.workflow_type === "Own Brand") return entry.brand ?? "Own Brand";
     if (entry.workflow_type) return entry.workflow_type;
     return "Creative Assist";
@@ -223,7 +224,9 @@ function EntryRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
 }
 
 function SkuBonusRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
-  const label = entry.skus != null
+  const label = entry.batch_lines?.length
+    ? `  + SKU bonus (${entry.batch_lines.map((l) => `${l.skus} ${l.workflow}`).join(" + ")})`
+    : entry.skus != null
     ? `  + SKU bonus (${entry.skus} SKUs)`
     : `  + bonus`;
   return (
