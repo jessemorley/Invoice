@@ -576,37 +576,39 @@ export function EntrySheet({
               {/* Product batch lines */}
               {topWorkflow === "Product" && productSubOptions.length > 0 && (
                 <Field label="Batches">
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-3">
                     {form.batch_lines.map((line, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <SegmentedControl
-                          value={line.workflow}
-                          onValueChange={(v) => setBatchLine(i, { workflow: v })}
-                          options={productSubOptions.map((opt) => ({ value: opt, label: opt }))}
-                          className="flex-1"
-                          itemClassName="text-xs"
-                        />
+                      <div key={i} className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-2">
+                          <SegmentedControl
+                            value={line.workflow}
+                            onValueChange={(v) => setBatchLine(i, { workflow: v })}
+                            options={productSubOptions.map((opt) => ({ value: opt, label: opt }))}
+                            className="flex-1"
+                            itemClassName="text-xs"
+                          />
+                          {form.batch_lines.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 shrink-0"
+                              onClick={() => removeBatchLine(i)}
+                            >
+                              <X className="size-4" />
+                            </Button>
+                          )}
+                        </div>
                         <Input
                           type="number"
                           min={0}
-                          className="text-sm w-20"
+                          className="text-sm"
                           value={line.skus || ""}
                           onChange={(e) =>
                             setBatchLine(i, { skus: e.target.value === "" ? 0 : parseInt(e.target.value, 10) })
                           }
                           placeholder="SKUs"
                         />
-                        {form.batch_lines.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="size-8 shrink-0"
-                            onClick={() => removeBatchLine(i)}
-                          >
-                            <X className="size-4" />
-                          </Button>
-                        )}
                       </div>
                     ))}
                     {form.batch_lines.length < productSubOptions.length && (
