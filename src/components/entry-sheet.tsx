@@ -278,9 +278,9 @@ export function EntrySheet({
   function handleTopWorkflow(v: string) {
     if (!v) return;
     if (v === "Product") {
-      const w = productSubOptions[0] ?? "Batch A";
-      set("workflow_type", w);
-      set("batch_lines", [{ workflow: w, skus: form.skus ?? 0 }]);
+      // batch_lines is left as-is so re-selecting Product after a detour to
+      // Apparel/Own Brand restores whatever the user had already entered
+      set("workflow_type", "Product");
     } else {
       setForm((prev) => ({ ...prev, workflow_type: v, skus: null }));
     }
@@ -330,8 +330,8 @@ export function EntrySheet({
       date: form.date,
       billing_type: billingType,
       day_type: billingType === "day_rate" ? form.day_type : null,
-      workflow_type: billingType === "day_rate" ? (isMultiBatch ? "Product" : isProductMode ? form.batch_lines[0].workflow : form.workflow_type) : null,
-      batch_lines: billingType === "day_rate" && isMultiBatch ? form.batch_lines : null,
+      workflow_type: billingType === "day_rate" ? (isProductMode ? "Product" : form.workflow_type) : null,
+      batch_lines: billingType === "day_rate" && isProductMode ? form.batch_lines : null,
       skus: isProductMode ? batchTotalSkus : (billingType === "day_rate" && needsSkus) || billingType === "manual" ? form.skus : null,
       brand: billingType === "day_rate" && needsBrand ? form.brand || null : null,
       label: showEntryLabel || billingType === "manual" ? form.label || null : null,
