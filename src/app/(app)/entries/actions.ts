@@ -79,6 +79,7 @@ export async function createEntry(data: EntryFormData) {
     billing_type_snapshot: data.billing_type,
     day_type: data.day_type,
     workflow_type: data.workflow_type,
+    batch_lines: data.batch_lines,
     skus: data.skus,
     brand: data.brand ?? null,
     label: data.label ?? null,
