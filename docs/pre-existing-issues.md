@@ -27,6 +27,15 @@ When you hit one of these during a task, do **not** fix it inline — that bloat
 - Symptom: all 6 tests fail with `TypeError: window.matchMedia is not a function` thrown from `src/hooks/use-mobile.ts:9`. `SentEmailSheet` now renders via `AdaptiveSheet`, which uses the mobile-detection hook; the vitest setup has no `matchMedia` polyfill/mock.
 - Likely fix: add a `window.matchMedia` mock to the vitest setup file (or this test's `beforeEach`).
 
+### Follow-up: fix the test suite after PR #91 merges
+
+- Raised: 2026-08-07 (during feature/email-cc-invoice-notes-v2)
+- Scope: the three entries above. Confirmed still failing on a clean tree — `npm test` reports **3 failed files / 10 failed tests**, unchanged by PR #91. Deliberately left alone to keep that PR scoped; do this on its own branch off `main` once it lands.
+- These are two unrelated causes, despite always appearing together in the output:
+  1. **`matchMedia` (10 failed tests, 2 files)** — `sent-email-sheet.test.tsx` (6/6) and `floating-dock.test.tsx` (4/15). One `window.matchMedia` stub in the vitest setup fixes both files at once. Note `floating-dock`'s 4 failures are listed above as stale dock expectations; verify whether they are genuinely stale or just masked by the `matchMedia` throw — fix the stub first, then re-check.
+  2. **`tax-estimate.test.ts` (0 tests, 1 failed file)** — contributes to the failed-*file* count but not the failed-*test* count. It is a script of bare top-level `approx()` calls with no `describe`/`it`, so vitest collects nothing. The assertions are real (tax brackets, Medicare shade-in, HECS) but never execute, so the tax logic is effectively uncovered. Wrap in `describe`/`it` with `expect`.
+- Why it matters: with 10 tests always red, a genuine regression is invisible — there is no clean baseline to compare against.
+
 ## Resolved
 
 ### lint warning: unused `Label` import — src/components/client-sheet.tsx:29
@@ -76,11 +85,3 @@ When you hit one of these during a task, do **not** fix it inline — that bloat
 - Rule: `@typescript-eslint/no-unused-vars`
 - Symptom: `scheduled_for` was destructured from the event payload but never used inside the function body.
 - Fix: removed the unused destructure entry. The schedule time is consumed at enqueue time via Inngest's `ts:` field, so the handler never needed it.
-
-### test failures: `window.matchMedia is not a function` — src/hooks/use-mobile.ts:9
-
-- First noted: 2026-08-07
-- Status: open
-- Symptom: `npm test` reports 3 failed test files / 10 failed tests. Every failure traces to `use-mobile.ts:9` calling `window.matchMedia`, which jsdom does not implement.
-- Verified pre-existing: reproduces identically (10 failed / 27 passed) on a clean tree with all working changes stashed, so it is unrelated to any in-flight feature work.
-- Fix: stub `window.matchMedia` in the vitest setup file (`matches: false`, no-op `addEventListener`/`removeEventListener`), or swap `use-mobile` to a `ResizeObserver`/`innerWidth` implementation. Not fixed inline to keep feature diffs clean.
