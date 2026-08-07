@@ -60,6 +60,7 @@ export async function createInvoice(clientId: string): Promise<Invoice> {
     total: inv.total,
     client: { id: c.id, name: c.name, color: c.color ?? "#9ca3af", billing_type: c.billing_type as Invoice["client"]["billing_type"] },
     email: null,
+    notes: null,
   };
 }
 

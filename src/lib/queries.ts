@@ -223,7 +223,7 @@ export async function fetchOutstandingInvoices(userId: string, token: string): P
 
   const { data, error } = await supabase
     .from("invoices")
-    .select("id, invoice_number, issued_date, due_date, paid_date, subtotal, super_amount, total, status, clients(id, name, billing_type, color)")
+    .select("id, invoice_number, issued_date, due_date, paid_date, subtotal, super_amount, total, status, notes, clients(id, name, billing_type, color)")
     .eq("user_id", userId)
     .in("status", ["draft", "issued"]);
 
@@ -243,6 +243,7 @@ export async function fetchOutstandingInvoices(userId: string, token: string): P
       total: inv.total,
       status: inv.status as InvoiceStatus,
       email: null,
+      notes: inv.notes ?? null,
     };
   });
 }
@@ -318,6 +319,7 @@ export async function fetchInvoices(userId: string, token: string, filters: Invo
         scheduled_for: activeEmail.scheduled_for,
         sent_at: activeEmail.sent_at,
       } : null,
+      notes: inv.notes ?? null,
     };
   });
 }
