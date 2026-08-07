@@ -568,7 +568,11 @@ export function InvoiceSheet({
                     {entry.hours_worked != null && (
                       <span className="tabular-nums text-muted-foreground shrink-0">{entry.hours_worked}h</span>
                     )}
-                    <span className="tabular-nums shrink-0">{formatAUD(entry.base_amount)}</span>
+                    {/* Bonuses (SKU or Own Brand markup) fold into the line amount —
+                        the PDF breaks SKU bonuses out separately, the sheet doesn't. */}
+                    <span className="tabular-nums shrink-0">
+                      {formatAUD(entry.base_amount + entry.bonus_amount)}
+                    </span>
                   </button>
                 ))}
                 {effectiveInvoiceDetail.line_items.map((item) => (
