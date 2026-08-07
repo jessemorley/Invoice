@@ -90,6 +90,11 @@ const s = StyleSheet.create({
   totalsValue: { textAlign: "right" },
   totalsLabelBold: {},
   totalsValueBold: { textAlign: "right" },
+
+  // Notes — pushed to the foot of the page by marginTop: "auto"
+  notesSection: { marginTop: "auto", paddingTop: 40 },
+  notesLabel: { fontSize: 7.5, color: "#555555", marginBottom: 3 },
+  notesBody: { fontSize: 9, color: "#555555", lineHeight: 1.4 },
 });
 
 function fmtAmount(n: number): string {
@@ -394,6 +399,14 @@ export function InvoiceDocument({ invoice, business }: Props) {
             <Text style={s.totalsValueBold}>{fmtAmount(showSuper ? invoice.total : invoice.subtotal)}</Text>
           </View>
         </View>
+
+        {/* Notes — foot of the page */}
+        {invoice.notes ? (
+          <View style={s.notesSection}>
+            <Text style={s.notesLabel}>Notes</Text>
+            <Text style={s.notesBody}>{invoice.notes}</Text>
+          </View>
+        ) : null}
       </Page>
     </Document>
   );

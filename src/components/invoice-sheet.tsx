@@ -10,6 +10,7 @@ import type { InvoiceFormData } from "@/app/(app)/invoices/actions";
 import { ClientPicker, ClientSearchInput } from "@/components/client-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import type { ScheduledEmail } from "@/lib/queries";
 import { Download, Mail, Plus, Trash2, CalendarClock, Send, X, MoreHorizontal } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
@@ -611,6 +612,17 @@ export function InvoiceSheet({
               </span>
             </div>
           </div>
+          </div>
+
+          {/* Notes — rendered at the foot of the PDF */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">Notes</label>
+            <Textarea
+              value={form!.notes}
+              onChange={(e) => set("notes", e.target.value)}
+              placeholder="Optional — shown at the bottom of the invoice"
+              className="min-h-20 text-sm"
+            />
           </div>
 
           <div className="flex gap-2 flex-wrap">
