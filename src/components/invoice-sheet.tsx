@@ -626,7 +626,6 @@ export function InvoiceSheet({
                 autoFocus={!form!.notes}
                 value={form!.notes}
                 onChange={(e) => set("notes", e.target.value)}
-                placeholder="Optional — shown at the bottom of the invoice"
                 className="min-h-20 text-sm"
               />
             </div>
