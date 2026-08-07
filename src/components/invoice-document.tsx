@@ -178,7 +178,9 @@ function buildRows(entries: Entry[], lineItems: LineItem[]): RowData[] {
 
 function entryDescription(entry: Entry): string {
   if (entry.billing_type === "day_rate") {
-    if (entry.batch_lines?.length) return entry.batch_lines.map((l) => l.workflow).join(" + ");
+    // ponytail: batch_lines deliberately not named here — internal batch labels
+    // ("Batch A") are not shown to the client, and the sheet is the source of
+    // truth for this line. Keep in sync with entryDescription in invoice-sheet.tsx.
     if (entry.workflow_type === "Own Brand") return entry.brand ?? "Own Brand";
     if (entry.workflow_type) return entry.workflow_type;
     return "Creative Assist";
@@ -229,9 +231,9 @@ function EntryRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
 
 function SkuBonusRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
   const label = entry.batch_lines?.length
-    ? `  + SKU bonus (${entry.batch_lines.map((l) => `${l.skus} ${l.workflow}`).join(" + ")})`
+    ? `  + KPI bonus (${entry.batch_lines.map((l) => `${l.skus} ${l.workflow}`).join(" + ")})`
     : entry.skus != null
-    ? `  + SKU bonus (${entry.skus} SKUs)`
+    ? `  + KPI bonus (${entry.skus} SKUs)`
     : `  + bonus`;
   return (
     <View style={s.tableRow}>
