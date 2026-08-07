@@ -5,6 +5,7 @@ import type { ComposePrefill, Invoice, InvoiceDetail } from "@/lib/types";
 import type { ScheduledEmail } from "@/lib/queries";
 import { loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
+import { stripSelfBcc } from "@/lib/merge-bcc";
 import { DEFAULT_FOLLOWUP_TEMPLATE, invoiceTemplateVars, renderEmailTemplate } from "@/lib/email-templates";
 import { InvoiceSheet } from "@/components/invoice-sheet";
 import { SentEmailSheet } from "@/components/sent-email-sheet";
@@ -22,6 +23,8 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
   const [businessName, setBusinessName] = useState("");
   const [userName, setUserName] = useState("");
   const [invoiceTemplate, setInvoiceTemplate] = useState<string | null>(null);
+  // Set when the bcc_self preference is on; hidden from the BCC field on edit.
+  const [selfBccAddress, setSelfBccAddress] = useState<string | null>(null);
   const [sentEmailOpen, setSentEmailOpen] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
   const [composePrefill, setComposePrefill] = useState<ComposePrefill | null>(null);
@@ -42,6 +45,7 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
       setBusinessName(result.businessName);
       setUserName(result.userName);
       setInvoiceTemplate(result.invoiceTemplate);
+      setSelfBccAddress(result.selfBccAddress);
     });
   }
 
@@ -64,6 +68,7 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
       setBusinessName(result.businessName);
       setUserName(result.userName);
       setInvoiceTemplate(result.invoiceTemplate);
+      setSelfBccAddress(result.selfBccAddress);
       const detail = result.invoiceDetail;
       if (!detail) return;
       setComposePrefill({
@@ -92,7 +97,7 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
     setComposePrefill({
       to: scheduledEmail.to_address.split(",").map((s) => s.trim()).filter(Boolean),
       cc: (scheduledEmail.cc_address ?? "").split(",").map((s) => s.trim()).filter(Boolean),
-      bcc: (scheduledEmail.bcc_address ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+      bcc: stripSelfBcc(scheduledEmail.bcc_address, selfBccAddress),
       subject: scheduledEmail.subject,
       body: scheduledEmail.body_text,
       scheduledFor: new Date(scheduledEmail.scheduled_for),

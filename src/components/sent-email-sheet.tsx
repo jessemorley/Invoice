@@ -85,6 +85,20 @@ export function SentEmailSheet({ open, onOpenChangeAction, email }: SentEmailShe
                 <span className="text-sm">{email.to_address}</span>
               </div>
 
+              {email.cc_address && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">CC</span>
+                  <span className="text-sm">{email.cc_address}</span>
+                </div>
+              )}
+
+              {email.bcc_address && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">BCC</span>
+                  <span className="text-sm">{email.bcc_address}</span>
+                </div>
+              )}
+
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Subject</span>
                 <span className="text-sm">{email.subject}</span>

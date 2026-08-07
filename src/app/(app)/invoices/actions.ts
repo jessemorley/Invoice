@@ -233,6 +233,13 @@ export async function loadEntrySheetData(entryId: string) {
   return { entry, clients, workflowRates };
 }
 
+/** The address bcc_self auto-adds, so compose forms can hide it. Null when off. */
+export async function loadSelfBccAddress(): Promise<string | null> {
+  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  const userPrefs = await fetchUserPreferences(userId, token);
+  return userPrefs?.bcc_self ? (await getAuthUser()).email ?? null : null;
+}
+
 export async function loadScheduledEmail(invoiceId: string) {
   const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
   const [scheduledEmail, invoiceDetail, businessDetails, userPrefs] = await Promise.all([
@@ -248,6 +255,8 @@ export async function loadScheduledEmail(invoiceId: string) {
     userName: businessDetails?.name ?? "",
     invoiceTemplate: userPrefs?.invoice_email_template ?? null,
     followupTemplate: userPrefs?.followup_email_template ?? null,
+    // Lets the compose form hide the auto-added self-BCC from the BCC field.
+    selfBccAddress: userPrefs?.bcc_self ? (await getAuthUser()).email ?? null : null,
   };
 }
 
@@ -472,16 +481,19 @@ export async function deleteEmails(ids: string[]): Promise<void> {
 }
 
 export async function updateScheduledEmail(scheduledEmailId: string, data: EmailFormData): Promise<void> {
-  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const [supabase, userId, token] = await Promise.all([createClient(), getAuthUserId(), getAuthToken()]);
+
+  // The form is seeded with the self-BCC stripped out, so re-merge it here —
+  // otherwise editing an email would quietly drop the bcc_self preference.
+  const userPrefs = await fetchUserPreferences(userId, token);
+  const selfBcc = userPrefs?.bcc_self ? (await getAuthUser()).email ?? null : null;
 
   const { data: row, error } = await supabase
     .from("scheduled_emails")
     .update({
       to_address: data.to,
-      // The edit form is seeded from the stored values (self-BCC included), so
-      // these are written back as-is — re-merging would duplicate the self-BCC.
       cc_address: data.cc?.trim() || null,
-      bcc_address: data.bcc?.trim() || null,
+      bcc_address: mergeBcc(data.bcc, selfBcc),
       subject: data.subject,
       body_text: data.body_text,
       scheduled_for: data.scheduled_for,

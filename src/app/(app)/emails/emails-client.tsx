@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { ComposePrefill, DashboardEmail, InvoiceDetail } from "@/lib/types";
-import { loadScheduledEmail, deleteEmails } from "@/app/(app)/invoices/actions";
+import { loadScheduledEmail, loadSelfBccAddress, deleteEmails } from "@/app/(app)/invoices/actions";
+import { stripSelfBcc } from "@/lib/merge-bcc";
 import { invalidate } from "@/lib/invalidate";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
@@ -446,11 +447,12 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
     const failReason = emailIsBroken(email) ? email.error : null;
     // Free-form emails have no invoice to load — edit directly.
     if (!email.invoice_id) {
+      const selfBcc = await loadSelfBccAddress();
       setComposeInvoice(null);
       setComposePrefill({
         to: emailAddresses(email),
         cc: splitAddresses(email.cc_address),
-        bcc: splitAddresses(email.bcc_address),
+        bcc: stripSelfBcc(email.bcc_address, selfBcc),
         subject: email.subject,
         body: email.body_text,
         scheduledFor: new Date(email.scheduled_for),
@@ -468,7 +470,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
       setComposePrefill({
         to: emailAddresses(email),
         cc: splitAddresses(email.cc_address),
-        bcc: splitAddresses(email.bcc_address),
+        bcc: stripSelfBcc(email.bcc_address, result.selfBccAddress),
         subject: email.subject,
         body: email.body_text,
         scheduledFor: new Date(email.scheduled_for),
