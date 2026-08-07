@@ -8,6 +8,7 @@ import { fetchUninvoicedGroups, fetchSuggestedInvoiceEntries, fetchScheduledEmai
 import { inngest } from "@/lib/inngest";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
 import { computeDueDate, lineItemTotal } from "@/lib/utils";
+import { mergeBcc } from "@/lib/merge-bcc";
 
 export async function createInvoice(clientId: string): Promise<Invoice> {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
@@ -59,6 +60,7 @@ export async function createInvoice(clientId: string): Promise<Invoice> {
     total: inv.total,
     client: { id: c.id, name: c.name, color: c.color ?? "#9ca3af", billing_type: c.billing_type as Invoice["client"]["billing_type"] },
     email: null,
+    notes: null,
   };
 }
 
@@ -208,6 +210,8 @@ export async function deleteInvoice(id: string) {
 
 export type EmailFormData = {
   to: string;
+  cc?: string;
+  bcc?: string;
   subject: string;
   body_text: string;
   scheduled_for: string;
@@ -229,6 +233,13 @@ export async function loadEntrySheetData(entryId: string) {
   return { entry, clients, workflowRates };
 }
 
+/** The address bcc_self auto-adds, so compose forms can hide it. Null when off. */
+export async function loadSelfBccAddress(): Promise<string | null> {
+  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  const userPrefs = await fetchUserPreferences(userId, token);
+  return userPrefs?.bcc_self ? (await getAuthUser()).email ?? null : null;
+}
+
 export async function loadScheduledEmail(invoiceId: string) {
   const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
   const [scheduledEmail, invoiceDetail, businessDetails, userPrefs] = await Promise.all([
@@ -244,6 +255,8 @@ export async function loadScheduledEmail(invoiceId: string) {
     userName: businessDetails?.name ?? "",
     invoiceTemplate: userPrefs?.invoice_email_template ?? null,
     followupTemplate: userPrefs?.followup_email_template ?? null,
+    // Lets the compose form hide the auto-added self-BCC from the BCC field.
+    selfBccAddress: userPrefs?.bcc_self ? (await getAuthUser()).email ?? null : null,
   };
 }
 
@@ -303,7 +316,9 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
   const filename = businessName
     ? `${businessName} Invoice ${inv.invoice_number}.pdf`
     : `Invoice ${inv.invoice_number}.pdf`;
-  const bccAddress = userPrefs?.bcc_self ? (await getAuthUser()).email : null;
+  const selfBcc = userPrefs?.bcc_self ? (await getAuthUser()).email ?? null : null;
+  const bccAddress = mergeBcc(data.bcc, selfBcc);
+  const ccAddress = data.cc?.trim() || null;
   const markIssued = userPrefs?.mark_as_issued_on_send ?? false;
 
   const { data: row, error } = await supabase.from("scheduled_emails").insert({
@@ -314,6 +329,7 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
     body_text: data.body_text,
     scheduled_for: data.scheduled_for,
     filename,
+    cc_address: ccAddress,
     bcc_address: bccAddress,
     mark_issued: markIssued,
     status: "pending",
@@ -334,7 +350,7 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
       user_id: userId,
       invoice_id: invoiceId,
       to_address: data.to,
-      cc_address: null,
+      cc_address: ccAddress,
       bcc_address: bccAddress,
       subject: data.subject,
       body_text: data.body_text,
@@ -353,7 +369,9 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
 export async function scheduleFreeEmail(data: EmailFormData): Promise<{ id: string }> {
   const [supabase, userId, token] = await Promise.all([createClient(), getAuthUserId(), getAuthToken()]);
   const userPrefs = await fetchUserPreferences(userId, token);
-  const bccAddress = userPrefs?.bcc_self ? (await getAuthUser()).email : null;
+  const selfBcc = userPrefs?.bcc_self ? (await getAuthUser()).email ?? null : null;
+  const bccAddress = mergeBcc(data.bcc, selfBcc);
+  const ccAddress = data.cc?.trim() || null;
 
   const { data: row, error } = await supabase.from("scheduled_emails").insert({
     user_id: userId,
@@ -363,6 +381,7 @@ export async function scheduleFreeEmail(data: EmailFormData): Promise<{ id: stri
     body_text: data.body_text,
     scheduled_for: data.scheduled_for,
     filename: null,
+    cc_address: ccAddress,
     bcc_address: bccAddress,
     mark_issued: false,
     status: "pending",
@@ -377,7 +396,7 @@ export async function scheduleFreeEmail(data: EmailFormData): Promise<{ id: stri
       user_id: userId,
       invoice_id: null,
       to_address: data.to,
-      cc_address: null,
+      cc_address: ccAddress,
       bcc_address: bccAddress,
       subject: data.subject,
       body_text: data.body_text,
@@ -462,12 +481,19 @@ export async function deleteEmails(ids: string[]): Promise<void> {
 }
 
 export async function updateScheduledEmail(scheduledEmailId: string, data: EmailFormData): Promise<void> {
-  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const [supabase, userId, token] = await Promise.all([createClient(), getAuthUserId(), getAuthToken()]);
+
+  // The form is seeded with the self-BCC stripped out, so re-merge it here —
+  // otherwise editing an email would quietly drop the bcc_self preference.
+  const userPrefs = await fetchUserPreferences(userId, token);
+  const selfBcc = userPrefs?.bcc_self ? (await getAuthUser()).email ?? null : null;
 
   const { data: row, error } = await supabase
     .from("scheduled_emails")
     .update({
       to_address: data.to,
+      cc_address: data.cc?.trim() || null,
+      bcc_address: mergeBcc(data.bcc, selfBcc),
       subject: data.subject,
       body_text: data.body_text,
       scheduled_for: data.scheduled_for,

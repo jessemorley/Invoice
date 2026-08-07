@@ -10,8 +10,9 @@ import type { InvoiceFormData } from "@/app/(app)/invoices/actions";
 import { ClientPicker, ClientSearchInput } from "@/components/client-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import type { ScheduledEmail } from "@/lib/queries";
-import { Download, Mail, Plus, Trash2, CalendarClock, Send, X, MoreHorizontal } from "lucide-react";
+import { Download, Mail, Plus, Trash2, CalendarClock, Send, X, MoreHorizontal, StickyNote } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import {
   DropdownMenu,
@@ -260,6 +261,9 @@ export function InvoiceSheet({
   type SheetView = "client-pick" | "invoice" | "add-line-item" | { mode: "edit-line-item"; item: NonNullable<InvoiceDetail["line_items"][0]> };
   const [view, setView] = useState<SheetView>(invoice ? "invoice" : "client-pick");
   const [clientQuery, setClientQuery] = useState("");
+  // Notes are rarely used, so the field stays behind a button — but an invoice
+  // that already has notes must show them without a click.
+  const [showNotes, setShowNotes] = useState(Boolean(invoice?.notes));
   const [createdInvoice, setCreatedInvoice] = useState<Invoice | null>(null);
   const [localInvoiceDetail, setLocalInvoiceDetail] = useState<InvoiceDetail | null>(null);
 
@@ -273,6 +277,7 @@ export function InvoiceSheet({
     setCreatedInvoice(null);
     setLocalInvoiceDetail(null);
     setView(invoice ? "invoice" : "client-pick");
+    setShowNotes(Boolean(invoice?.notes));
     setClientQuery("");
     setEditingNumber(false);
     setNumberDraft("");
@@ -613,11 +618,30 @@ export function InvoiceSheet({
           </div>
           </div>
 
+          {/* Notes — rendered at the foot of the PDF */}
+          {showNotes && (
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Notes</label>
+              <Textarea
+                autoFocus={!form!.notes}
+                value={form!.notes}
+                onChange={(e) => set("notes", e.target.value)}
+                className="min-h-20 text-sm"
+              />
+            </div>
+          )}
+
           <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownload} disabled={isDownloading}>
               {isDownloading ? <Spinner data-icon="inline-start" /> : <Download className="size-3.5" />}
               {isDownloading ? "Generating…" : "Download PDF"}
             </Button>
+            {!showNotes && (
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowNotes(true)}>
+                <StickyNote className="size-3.5" />
+                Notes
+              </Button>
+            )}
             {(!scheduledEmail || scheduledEmail.status === "cancelled") && (
               <Button variant="outline" size="sm" className="gap-1.5" onClick={onSendClick}>
                 <Mail className="size-3.5" />

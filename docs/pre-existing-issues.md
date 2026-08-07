@@ -27,6 +27,15 @@ When you hit one of these during a task, do **not** fix it inline — that bloat
 - Symptom: all 6 tests fail with `TypeError: window.matchMedia is not a function` thrown from `src/hooks/use-mobile.ts:9`. `SentEmailSheet` now renders via `AdaptiveSheet`, which uses the mobile-detection hook; the vitest setup has no `matchMedia` polyfill/mock.
 - Likely fix: add a `window.matchMedia` mock to the vitest setup file (or this test's `beforeEach`).
 
+### Follow-up: fix the test suite after PR #91 merges
+
+- Raised: 2026-08-07 (during feature/email-cc-invoice-notes-v2)
+- Scope: the three entries above. Confirmed still failing on a clean tree — `npm test` reports **3 failed files / 10 failed tests**, unchanged by PR #91. Deliberately left alone to keep that PR scoped; do this on its own branch off `main` once it lands.
+- These are two unrelated causes, despite always appearing together in the output:
+  1. **`matchMedia` (10 failed tests, 2 files)** — `sent-email-sheet.test.tsx` (6/6) and `floating-dock.test.tsx` (4/15). One `window.matchMedia` stub in the vitest setup fixes both files at once. Note `floating-dock`'s 4 failures are listed above as stale dock expectations; verify whether they are genuinely stale or just masked by the `matchMedia` throw — fix the stub first, then re-check.
+  2. **`tax-estimate.test.ts` (0 tests, 1 failed file)** — contributes to the failed-*file* count but not the failed-*test* count. It is a script of bare top-level `approx()` calls with no `describe`/`it`, so vitest collects nothing. The assertions are real (tax brackets, Medicare shade-in, HECS) but never execute, so the tax logic is effectively uncovered. Wrap in `describe`/`it` with `expect`.
+- Why it matters: with 10 tests always red, a genuine regression is invisible — there is no clean baseline to compare against.
+
 ## Resolved
 
 ### lint warning: unused `Label` import — src/components/client-sheet.tsx:29

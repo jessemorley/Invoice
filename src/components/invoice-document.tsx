@@ -90,6 +90,10 @@ const s = StyleSheet.create({
   totalsValue: { textAlign: "right" },
   totalsLabelBold: {},
   totalsValueBold: { textAlign: "right" },
+
+  // Notes — pushed to the foot of the page by marginTop: "auto"
+  notesSection: { marginTop: "auto", paddingTop: 40 },
+  notesBody: { fontSize: 10 },
 });
 
 function fmtAmount(n: number): string {
@@ -317,7 +321,10 @@ export function InvoiceDocument({ invoice, business }: Props) {
           </View>
           <View style={s.addressBlock}>
             <Text style={s.addressLine}>{client.name}</Text>
-            <Text style={s.addressLine}>{client.email}</Text>
+            {/* ABN identifies the client on a tax invoice; email is the fallback. */}
+            {client.abn
+              ? <Text style={s.addressLine}>ABN {client.abn}</Text>
+              : client.email ? <Text style={s.addressLine}>{client.email}</Text> : null}
             {client.address ? <Text style={s.addressLine}>{client.address}</Text> : null}
             {client.suburb ? <Text style={s.addressLine}>{client.suburb}</Text> : null}
           </View>
@@ -394,6 +401,13 @@ export function InvoiceDocument({ invoice, business }: Props) {
             <Text style={s.totalsValueBold}>{fmtAmount(showSuper ? invoice.total : invoice.subtotal)}</Text>
           </View>
         </View>
+
+        {/* Notes — foot of the page */}
+        {invoice.notes ? (
+          <View style={s.notesSection}>
+            <Text style={s.notesBody}>{invoice.notes}</Text>
+          </View>
+        ) : null}
       </Page>
     </Document>
   );

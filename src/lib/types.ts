@@ -52,6 +52,8 @@ export type InvoiceEmail = {
 
 export type ComposePrefill = {
   to: string[];
+  cc?: string[];
+  bcc?: string[];
   subject: string;
   body: string;
   scheduledFor: Date | null;
@@ -71,7 +73,9 @@ export type Invoice = {
   total: number;
   status: InvoiceStatus;
   email: InvoiceEmail | null;
-  notes?: string | null;
+  // Required, not optional — an optional field silently reads as undefined
+  // wherever a query forgets to map it, which is how notes went missing here.
+  notes: string | null;
 };
 
 export type Expense = {
@@ -208,6 +212,8 @@ export type DashboardEmail = {
   client_name: string | null;
   client_color: string | null;
   to_address: string;
+  cc_address: string | null;
+  bcc_address: string | null;
   subject: string;
   body_text: string;
   filename: string | null;

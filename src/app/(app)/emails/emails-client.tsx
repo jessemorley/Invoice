@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { ComposePrefill, DashboardEmail, InvoiceDetail } from "@/lib/types";
-import { loadScheduledEmail, deleteEmails } from "@/app/(app)/invoices/actions";
+import { loadScheduledEmail, loadSelfBccAddress, deleteEmails } from "@/app/(app)/invoices/actions";
+import { stripSelfBcc } from "@/lib/merge-bcc";
 import { invalidate } from "@/lib/invalidate";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
@@ -39,8 +40,12 @@ function emailDate(email: DashboardEmail): string {
   return `${d.toLocaleDateString("en-AU", { month: "short" })} ${d.getDate()}`;
 }
 
+function splitAddresses(value: string | null): string[] {
+  return (value ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+}
+
 function emailAddresses(email: DashboardEmail): string[] {
-  return email.to_address.split(",").map((s) => s.trim()).filter(Boolean);
+  return splitAddresses(email.to_address);
 }
 
 function emailIsBroken(email: DashboardEmail): boolean {
@@ -442,9 +447,12 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
     const failReason = emailIsBroken(email) ? email.error : null;
     // Free-form emails have no invoice to load — edit directly.
     if (!email.invoice_id) {
+      const selfBcc = await loadSelfBccAddress();
       setComposeInvoice(null);
       setComposePrefill({
         to: emailAddresses(email),
+        cc: splitAddresses(email.cc_address),
+        bcc: stripSelfBcc(email.bcc_address, selfBcc),
         subject: email.subject,
         body: email.body_text,
         scheduledFor: new Date(email.scheduled_for),
@@ -461,6 +469,8 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
       setComposeUserName(result.userName);
       setComposePrefill({
         to: emailAddresses(email),
+        cc: splitAddresses(email.cc_address),
+        bcc: stripSelfBcc(email.bcc_address, result.selfBccAddress),
         subject: email.subject,
         body: email.body_text,
         scheduledFor: new Date(email.scheduled_for),
@@ -589,6 +599,8 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
         userName={composeUserName}
         onSent={() => { setComposeInvoice(null); setComposePrefill(null); }}
         initialTo={composePrefill?.to}
+        initialCc={composePrefill?.cc}
+        initialBcc={composePrefill?.bcc}
         initialSubject={composePrefill?.subject}
         initialBody={composePrefill?.body}
         initialScheduledFor={composePrefill?.scheduledFor}
