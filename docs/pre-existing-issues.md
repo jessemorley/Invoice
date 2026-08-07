@@ -76,3 +76,11 @@ When you hit one of these during a task, do **not** fix it inline — that bloat
 - Rule: `@typescript-eslint/no-unused-vars`
 - Symptom: `scheduled_for` was destructured from the event payload but never used inside the function body.
 - Fix: removed the unused destructure entry. The schedule time is consumed at enqueue time via Inngest's `ts:` field, so the handler never needed it.
+
+### test failures: `window.matchMedia is not a function` — src/hooks/use-mobile.ts:9
+
+- First noted: 2026-08-07
+- Status: open
+- Symptom: `npm test` reports 3 failed test files / 10 failed tests. Every failure traces to `use-mobile.ts:9` calling `window.matchMedia`, which jsdom does not implement.
+- Verified pre-existing: reproduces identically (10 failed / 27 passed) on a clean tree with all working changes stashed, so it is unrelated to any in-flight feature work.
+- Fix: stub `window.matchMedia` in the vitest setup file (`matches: false`, no-op `addEventListener`/`removeEventListener`), or swap `use-mobile` to a `ResizeObserver`/`innerWidth` implementation. Not fixed inline to keep feature diffs clean.
