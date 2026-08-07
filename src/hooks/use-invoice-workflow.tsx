@@ -91,6 +91,8 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
     composeReturnRef.current = true;
     setComposePrefill({
       to: scheduledEmail.to_address.split(",").map((s) => s.trim()).filter(Boolean),
+      cc: (scheduledEmail.cc_address ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+      bcc: (scheduledEmail.bcc_address ?? "").split(",").map((s) => s.trim()).filter(Boolean),
       subject: scheduledEmail.subject,
       body: scheduledEmail.body_text,
       scheduledFor: new Date(scheduledEmail.scheduled_for),
@@ -162,6 +164,8 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
         bodyTemplate={invoiceTemplate}
         onSent={() => { composeSentRef.current = true; invalidate("invoices"); }}
         initialTo={composePrefill?.to}
+        initialCc={composePrefill?.cc}
+        initialBcc={composePrefill?.bcc}
         initialSubject={composePrefill?.subject}
         initialBody={composePrefill?.body}
         initialScheduledFor={composePrefill?.scheduledFor}

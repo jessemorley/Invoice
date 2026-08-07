@@ -39,8 +39,12 @@ function emailDate(email: DashboardEmail): string {
   return `${d.toLocaleDateString("en-AU", { month: "short" })} ${d.getDate()}`;
 }
 
+function splitAddresses(value: string | null): string[] {
+  return (value ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+}
+
 function emailAddresses(email: DashboardEmail): string[] {
-  return email.to_address.split(",").map((s) => s.trim()).filter(Boolean);
+  return splitAddresses(email.to_address);
 }
 
 function emailIsBroken(email: DashboardEmail): boolean {
@@ -445,6 +449,8 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
       setComposeInvoice(null);
       setComposePrefill({
         to: emailAddresses(email),
+        cc: splitAddresses(email.cc_address),
+        bcc: splitAddresses(email.bcc_address),
         subject: email.subject,
         body: email.body_text,
         scheduledFor: new Date(email.scheduled_for),
@@ -461,6 +467,8 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
       setComposeUserName(result.userName);
       setComposePrefill({
         to: emailAddresses(email),
+        cc: splitAddresses(email.cc_address),
+        bcc: splitAddresses(email.bcc_address),
         subject: email.subject,
         body: email.body_text,
         scheduledFor: new Date(email.scheduled_for),
@@ -589,6 +597,8 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
         userName={composeUserName}
         onSent={() => { setComposeInvoice(null); setComposePrefill(null); }}
         initialTo={composePrefill?.to}
+        initialCc={composePrefill?.cc}
+        initialBcc={composePrefill?.bcc}
         initialSubject={composePrefill?.subject}
         initialBody={composePrefill?.body}
         initialScheduledFor={composePrefill?.scheduledFor}

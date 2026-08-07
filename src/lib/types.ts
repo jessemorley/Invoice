@@ -52,6 +52,8 @@ export type InvoiceEmail = {
 
 export type ComposePrefill = {
   to: string[];
+  cc?: string[];
+  bcc?: string[];
   subject: string;
   body: string;
   scheduledFor: Date | null;
@@ -208,6 +210,8 @@ export type DashboardEmail = {
   client_name: string | null;
   client_color: string | null;
   to_address: string;
+  cc_address: string | null;
+  bcc_address: string | null;
   subject: string;
   body_text: string;
   filename: string | null;

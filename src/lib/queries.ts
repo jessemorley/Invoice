@@ -614,7 +614,7 @@ export async function fetchAllEmails(userId: string, token: string): Promise<Das
   const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("scheduled_emails")
-    .select("id, invoice_id, to_address, subject, body_text, filename, scheduled_for, sent_at, sent_pdf_path, status, error, invoices(invoice_number, status, clients(name, color))")
+    .select("id, invoice_id, to_address, cc_address, bcc_address, subject, body_text, filename, scheduled_for, sent_at, sent_pdf_path, status, error, invoices(invoice_number, status, clients(name, color))")
     .eq("user_id", userId)
     .in("status", ["pending", "failed", "bounced", "sent"])
     .order("status", { ascending: true })
@@ -636,6 +636,8 @@ export async function fetchAllEmails(userId: string, token: string): Promise<Das
       client_name: client?.name ?? null,
       client_color: client?.color ?? null,
       to_address: row.to_address,
+      cc_address: row.cc_address ?? null,
+      bcc_address: row.bcc_address ?? null,
       subject: row.subject,
       body_text: row.body_text,
       filename: row.filename,
@@ -916,6 +918,8 @@ export type ScheduledEmail = {
   id: string;
   status: "pending" | "sent" | "cancelled" | "failed" | "bounced";
   to_address: string;
+  cc_address: string | null;
+  bcc_address: string | null;
   subject: string;
   body_text: string;
   filename: string;
@@ -929,7 +933,7 @@ export async function fetchScheduledEmailForInvoice(invoiceId: string, userId: s
   const supabase = createTokenClient(token);
   const { data, error } = await supabase
     .from("scheduled_emails")
-    .select("id, status, to_address, subject, body_text, filename, scheduled_for, sent_at, sent_pdf_path, error")
+    .select("id, status, to_address, cc_address, bcc_address, subject, body_text, filename, scheduled_for, sent_at, sent_pdf_path, error")
     .eq("invoice_id", invoiceId)
     .eq("user_id", userId)
     .neq("status", "cancelled")
@@ -942,6 +946,8 @@ export async function fetchScheduledEmailForInvoice(invoiceId: string, userId: s
     id: data.id,
     status: data.status as ScheduledEmail["status"],
     to_address: data.to_address,
+    cc_address: data.cc_address ?? null,
+    bcc_address: data.bcc_address ?? null,
     subject: data.subject,
     body_text: data.body_text,
     // Invoice-scoped emails always carry a filename; null only occurs on free-form rows.

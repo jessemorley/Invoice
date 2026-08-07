@@ -154,6 +154,8 @@ interface ComposeContentProps {
   onClose: () => void;
   onSent: () => void;
   initialTo?: string[];
+  initialCc?: string[];
+  initialBcc?: string[];
   initialSubject?: string;
   initialBody?: string;
   initialScheduledFor?: Date | null;
@@ -161,11 +163,18 @@ interface ComposeContentProps {
   errorReason?: string | null;
 }
 
-function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, onClose, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId, errorReason }: ComposeContentProps) {
+function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, onClose, onSent, initialTo, initialCc, initialBcc, initialSubject, initialBody, initialScheduledFor, editingId, errorReason }: ComposeContentProps) {
   const [chips, setChips] = useState<string[]>(() =>
     initialTo ?? (invoice?.client.email ? [invoice.client.email] : [])
   );
   const [chipInput, setChipInput] = useState("");
+  const [ccChips, setCcChips] = useState<string[]>(() => initialCc ?? []);
+  const [ccInput, setCcInput] = useState("");
+  const [bccChips, setBccChips] = useState<string[]>(() => initialBcc ?? []);
+  const [bccInput, setBccInput] = useState("");
+  // Revealed by the CC / BCC toggles, or already open when seeded with values.
+  const [showCc, setShowCc] = useState(() => (initialCc?.length ?? 0) > 0);
+  const [showBcc, setShowBcc] = useState(() => (initialBcc?.length ?? 0) > 0);
   const [subject, setSubject] = useState(initialSubject ?? (invoice ? `Invoice ${invoice.number}` : ""));
   const [body, setBody] = useState(() => initialBody ?? (invoice ? defaultBody(invoice, businessName, userName, bodyTemplate) : ""));
   const [scheduledFor, setScheduledFor] = useState<Date | null>(initialScheduledFor ?? null);
@@ -181,16 +190,39 @@ function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, on
     }
   }, [chipInput]);
 
+  const confirmCcInput = useCallback(() => {
+    const val = ccInput.trim().replace(/,$/, "").trim();
+    if (val) {
+      setCcChips((prev) => [...prev, val]);
+      setCcInput("");
+    }
+  }, [ccInput]);
+
+  const confirmBccInput = useCallback(() => {
+    const val = bccInput.trim().replace(/,$/, "").trim();
+    if (val) {
+      setBccChips((prev) => [...prev, val]);
+      setBccInput("");
+    }
+  }, [bccInput]);
+
   const validChips = chips.filter(isValidEmail);
   const hasValidRecipient = validChips.length > 0 || (chipInput.trim() && isValidEmail(chipInput.trim()));
 
-  function handleSubmit(overrideDate?: Date | null) {
-    const allChips = [...chips];
-    const pendingVal = chipInput.trim().replace(/,$/, "").trim();
-    if (pendingVal) allChips.push(pendingVal);
+  // Fold any half-typed value in before filtering, so a send doesn't drop it.
+  function collectValid(chipList: string[], pending: string): string[] {
+    const all = [...chipList];
+    const val = pending.trim().replace(/,$/, "").trim();
+    if (val) all.push(val);
+    return all.filter(isValidEmail);
+  }
 
-    const validRecipients = allChips.filter(isValidEmail);
+  function handleSubmit(overrideDate?: Date | null) {
+    const validRecipients = collectValid(chips, chipInput);
     if (validRecipients.length === 0) return;
+
+    const validCc = collectValid(ccChips, ccInput);
+    const validBcc = collectValid(bccChips, bccInput);
 
     const sendAt = overrideDate !== undefined ? overrideDate : scheduledFor;
 
@@ -200,6 +232,8 @@ function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, on
         const resolvedSendAt = sendAt ?? new Date();
         const data: EmailFormData = {
           to: validRecipients.join(", "),
+          cc: validCc.join(", "),
+          bcc: validBcc.join(", "),
           subject,
           body_text: body,
           scheduled_for: resolvedSendAt.toISOString(),
@@ -274,7 +308,31 @@ function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, on
           </p>
         )}
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium">To</label>
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">To</label>
+            <div className="flex items-center gap-2 text-sm">
+              <button
+                type="button"
+                onClick={() => setShowCc((v) => !v)}
+                className={cn(
+                  "font-medium transition-colors hover:text-foreground",
+                  showCc ? "text-foreground" : "text-muted-foreground"
+                )}
+              >
+                CC
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowBcc((v) => !v)}
+                className={cn(
+                  "font-medium transition-colors hover:text-foreground",
+                  showBcc ? "text-foreground" : "text-muted-foreground"
+                )}
+              >
+                BCC
+              </button>
+            </div>
+          </div>
           <EmailChipInput
             chips={chips}
             input={chipInput}
@@ -283,6 +341,32 @@ function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, on
             onConfirmInput={confirmChipInput}
           />
         </div>
+
+        {showCc && (
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">CC</label>
+            <EmailChipInput
+              chips={ccChips}
+              input={ccInput}
+              onChipsChange={setCcChips}
+              onInputChange={setCcInput}
+              onConfirmInput={confirmCcInput}
+            />
+          </div>
+        )}
+
+        {showBcc && (
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">BCC</label>
+            <EmailChipInput
+              chips={bccChips}
+              input={bccInput}
+              onChipsChange={setBccChips}
+              onInputChange={setBccInput}
+              onConfirmInput={confirmBccInput}
+            />
+          </div>
+        )}
 
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">Subject</label>
@@ -367,6 +451,8 @@ interface EmailComposeSheetProps {
   bodyTemplate?: string | null;
   onSent: () => void;
   initialTo?: string[];
+  initialCc?: string[];
+  initialBcc?: string[];
   initialSubject?: string;
   initialBody?: string;
   initialScheduledFor?: Date | null;
@@ -377,7 +463,7 @@ interface EmailComposeSheetProps {
   freeform?: boolean;
 }
 
-export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessName, userName, bodyTemplate, onSent, initialTo, initialSubject, initialBody, initialScheduledFor, editingId, errorReason, freeform }: EmailComposeSheetProps) {
+export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessName, userName, bodyTemplate, onSent, initialTo, initialCc, initialBcc, initialSubject, initialBody, initialScheduledFor, editingId, errorReason, freeform }: EmailComposeSheetProps) {
   // Mount only while usable: invoice flows clear `invoice` on close, freeform
   // relies on `open` — either way ComposeContent remounts with fresh state.
   if (!invoice && !(freeform && open)) return null;
@@ -398,6 +484,8 @@ export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessN
           onClose={() => onOpenChangeAction(false)}
           onSent={onSent}
           initialTo={initialTo}
+          initialCc={initialCc}
+          initialBcc={initialBcc}
           initialSubject={initialSubject}
           initialBody={initialBody}
           initialScheduledFor={initialScheduledFor}
