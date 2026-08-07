@@ -82,10 +82,10 @@ describe("Plus button", () => {
     expect(screen.getByRole("button", { name: /new/i })).toBeDisabled();
   });
 
-  it("is present but disabled when active view is clients", () => {
+  it("is enabled when active view is clients", () => {
     mockView = "clients";
     renderDock();
-    expect(screen.getByRole("button", { name: /new/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /new/i })).not.toBeDisabled();
   });
 
   it("is present but disabled when active view is settings", () => {
@@ -131,7 +131,7 @@ describe("uninvoicedCount badge", () => {
 describe("overflow menu", () => {
   it("is hidden on mount", () => {
     renderDock();
-    expect(screen.queryByRole("button", { name: /dashboard/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^clients$/i })).not.toBeInTheDocument();
   });
 
   it("shows secondary nav items after menu button tap", async () => {
@@ -148,19 +148,19 @@ describe("overflow menu", () => {
     const user = userEvent.setup();
     renderDock();
     await user.click(screen.getByRole("button", { name: /menu/i }));
-    expect(screen.getByRole("button", { name: /dashboard/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^clients$/i })).toBeInTheDocument();
     // Click the overlay (the fixed inset-0 div behind the menu)
     const overlay = document.querySelector("[data-testid='menu-overlay']") as HTMLElement;
     await user.click(overlay);
-    expect(screen.queryByRole("button", { name: /dashboard/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^clients$/i })).not.toBeInTheDocument();
   });
 
   it("calls setView and closes menu when a secondary item is tapped", async () => {
     const user = userEvent.setup();
     renderDock();
     await user.click(screen.getByRole("button", { name: /menu/i }));
-    await user.click(screen.getByRole("button", { name: /dashboard/i }));
-    expect(mockSetView).toHaveBeenCalledWith("dashboard");
-    expect(screen.queryByRole("button", { name: /dashboard/i })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /^clients$/i }));
+    expect(mockSetView).toHaveBeenCalledWith("clients");
+    expect(screen.queryByRole("button", { name: /^clients$/i })).not.toBeInTheDocument();
   });
 });

@@ -10,33 +10,20 @@ When you hit one of these during a task, do **not** fix it inline — that bloat
 
 ## Open
 
-### test failures: floating-dock.test.tsx expects pre-redesign dock behavior (4 tests)
-
-- First noted: 2026-07-19 (during feature/emails-view)
-- Symptom: `npm test` fails 4 tests on clean `main` — "Plus is disabled when view is clients" (Plus is now enabled for clients via `DOCK_NEW_VIEWS`), and three overflow-menu tests that expect a "Dashboard" button inside the popover (Dashboard is now a primary tab, not a menu item). Tests describe an older dock layout.
-- Likely fix: update the test's `PRIMARY_TABS`/`SECONDARY_TABS`/`DOCK_NEW_VIEWS` expectations to match the current dock.
-
-### test suite broken: src/lib/tax-estimate.test.ts — "No test suite found in file"
-
-- First noted: 2026-07-19 (during feature/emails-view)
-- Symptom: vitest reports the file contains no test suite; the whole file fails to load/collect.
-
-### test failures: sent-email-sheet.test.tsx — window.matchMedia is not a function (6 tests)
-
-- First noted: 2026-07-19 (during feature/emails-mobile-view)
-- Symptom: all 6 tests fail with `TypeError: window.matchMedia is not a function` thrown from `src/hooks/use-mobile.ts:9`. `SentEmailSheet` now renders via `AdaptiveSheet`, which uses the mobile-detection hook; the vitest setup has no `matchMedia` polyfill/mock.
-- Likely fix: add a `window.matchMedia` mock to the vitest setup file (or this test's `beforeEach`).
-
-### Follow-up: fix the test suite after PR #91 merges
-
-- Raised: 2026-08-07 (during feature/email-cc-invoice-notes-v2)
-- Scope: the three entries above. Confirmed still failing on a clean tree — `npm test` reports **3 failed files / 10 failed tests**, unchanged by PR #91. Deliberately left alone to keep that PR scoped; do this on its own branch off `main` once it lands.
-- These are two unrelated causes, despite always appearing together in the output:
-  1. **`matchMedia` (10 failed tests, 2 files)** — `sent-email-sheet.test.tsx` (6/6) and `floating-dock.test.tsx` (4/15). One `window.matchMedia` stub in the vitest setup fixes both files at once. Note `floating-dock`'s 4 failures are listed above as stale dock expectations; verify whether they are genuinely stale or just masked by the `matchMedia` throw — fix the stub first, then re-check.
-  2. **`tax-estimate.test.ts` (0 tests, 1 failed file)** — contributes to the failed-*file* count but not the failed-*test* count. It is a script of bare top-level `approx()` calls with no `describe`/`it`, so vitest collects nothing. The assertions are real (tax brackets, Medicare shade-in, HECS) but never execute, so the tax logic is effectively uncovered. Wrap in `describe`/`it` with `expect`.
-- Why it matters: with 10 tests always red, a genuine regression is invisible — there is no clean baseline to compare against.
+(none)
 
 ## Resolved
+
+### test suite broken: matchMedia missing, stale dock expectations, tax-estimate collecting 0 tests (14 tests / 3 files)
+
+- First noted: 2026-07-19 (during feature/emails-view and feature/emails-mobile-view)
+- Resolved: 2026-08-07 (fix/vitest-suite)
+- Symptom: `npm test` failed 3 files / 14 tests total on clean `main` (10 failed tests + 1 file collecting 0 tests): `sent-email-sheet.test.tsx` (6/6, `window.matchMedia is not a function` from `src/hooks/use-mobile.ts`), `floating-dock.test.tsx` (4/15, stale expectations from a pre-redesign dock layout), and `tax-estimate.test.ts` (bare top-level `approx()` calls with no `describe`/`it`, so vitest collected nothing).
+- Fix:
+  1. Added a `window.matchMedia` stub to `src/test/setup.ts` — fixed `sent-email-sheet.test.tsx` and unmasked the real state of `floating-dock.test.tsx`.
+  2. Confirmed the 4 `floating-dock` failures were genuinely stale (not just masked): "Plus disabled when view is clients" (Plus is now enabled for clients via `DOCK_NEW_VIEWS`) and three overflow-menu tests asserting on a "Dashboard" button in the popover (Dashboard is now a primary tab, not a secondary/menu item). Updated the assertions to match current behavior — clients-view Plus is now asserted enabled, and the menu tests use "Clients" (a real secondary item) instead of "Dashboard".
+  3. Wrapped `tax-estimate.test.ts` in `describe`/`it` with `expect` so the tax bracket/Medicare/HECS assertions actually execute.
+- Verified: `npx vitest run` → 6 files / 50 tests passing. `npm run lint` and `npm run build` clean.
 
 ### lint warning: unused `Label` import — src/components/client-sheet.tsx:29
 
