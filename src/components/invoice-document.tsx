@@ -231,9 +231,9 @@ function EntryRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
 
 function SkuBonusRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
   const label = entry.batch_lines?.length
-    ? `  + SKU bonus (${entry.batch_lines.map((l) => `${l.skus} ${l.workflow}`).join(" + ")})`
+    ? `  + KPI bonus (${entry.batch_lines.map((l) => `${l.skus} ${l.workflow}`).join(" + ")})`
     : entry.skus != null
-    ? `  + SKU bonus (${entry.skus} SKUs)`
+    ? `  + KPI bonus (${entry.skus} SKUs)`
     : `  + bonus`;
   return (
     <View style={s.tableRow}>
