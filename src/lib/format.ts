@@ -36,6 +36,25 @@ export function fyDateRange(startYear: number): { from: string; to: string } {
   return { from: `${startYear}-07-01`, to: `${startYear + 1}-06-30` };
 }
 
+// Weekdays (Mon–Fri) from the FY start through `today` (capped at FY end) with
+// no entry logged — the default guess for hours/days worked from home.
+export function fyWeekdaysWithoutEntries(
+  startYear: number,
+  entryDates: ReadonlySet<string>,
+  today: string
+): number {
+  const { from, to } = fyDateRange(startYear);
+  const end = today < to ? today : to;
+  let count = 0;
+  for (const d = new Date(from + "T00:00:00Z"); ; d.setUTCDate(d.getUTCDate() + 1)) {
+    const dateStr = d.toISOString().slice(0, 10);
+    if (dateStr > end) break;
+    const dow = d.getUTCDay();
+    if (dow >= 1 && dow <= 5 && !entryDates.has(dateStr)) count++;
+  }
+  return count;
+}
+
 export function formatDate(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
   const dow = d.toLocaleDateString("en-AU", { weekday: "short" });

@@ -1,6 +1,6 @@
 import { cacheTag } from "next/cache";
 import { createTokenClient } from "./supabase";
-import { isoWeek, todayInSydney, fyStartYear } from "./format";
+import { isoWeek, todayInSydney, fyStartYear, fyWeekdaysWithoutEntries } from "./format";
 import { lineItemTotal } from "./utils";
 import { expensePool, type ExpensePool } from "./mock-data";
 import type { Entry, Invoice, InvoiceDetail, InvoiceEntry, InvoiceEmail, Expense, ExpenseCategory, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate, CalendarDay } from "./types";
@@ -466,6 +466,7 @@ export type TaxFyTotals = {
   paygInstalments: PaygInstalment[];
   paygPaid: number;
   wfhHours: number;
+  weekdaysWithoutEntries: number;
 };
 
 // Australian FY runs Jul→Jun; chart shows all 12 months in that order.
@@ -477,24 +478,27 @@ export async function fetchTaxData(userId: string, token: string): Promise<TaxFy
   cacheTag(CACHE_TAGS.invoices);
   cacheTag(CACHE_TAGS.expenses);
   cacheTag(CACHE_TAGS.payg);
+  cacheTag(CACHE_TAGS.entries);
   const supabase = createTokenClient(token);
 
-  const [invoicesRes, expensesRes, paygRes, wfhRes] = await Promise.all([
+  const [invoicesRes, expensesRes, paygRes, wfhRes, entriesRes] = await Promise.all([
     supabase.from("invoices").select("paid_date, total, clients(id, name, billing_type, color)").eq("user_id", userId).not("paid_date", "is", null),
     supabase.from("expenses").select("date, amount, category").eq("user_id", userId),
     supabase.from("payg_instalments").select("id, paid_date, amount, label").eq("user_id", userId),
     supabase.from("wfh_hours").select("fy_start_year, hours").eq("user_id", userId),
+    supabase.from("entries").select("date").eq("user_id", userId),
   ]);
   if (invoicesRes.error) throw new Error(`fetchTaxData: ${invoicesRes.error.message}`);
   if (expensesRes.error) throw new Error(`fetchTaxData: ${expensesRes.error.message}`);
   if (paygRes.error) throw new Error(`fetchTaxData: ${paygRes.error.message}`);
   if (wfhRes.error) throw new Error(`fetchTaxData: ${wfhRes.error.message}`);
+  if (entriesRes.error) throw new Error(`fetchTaxData: ${entriesRes.error.message}`);
 
   const byFy = new Map<number, TaxFyTotals & { incomeByClientId: Map<string, TaxClientIncome> }>();
   const get = (startYear: number) => {
     let fy = byFy.get(startYear);
     if (!fy) {
-      fy = { startYear, income: 0, expenditure: 0, expenditureByPool: {}, incomeByClient: [], incomeByClientId: new Map(), monthly: FY_MONTH_LABELS.map((month) => ({ month, revenue: 0, expenses: 0 })), paygInstalments: [], paygPaid: 0, wfhHours: 0 };
+      fy = { startYear, income: 0, expenditure: 0, expenditureByPool: {}, incomeByClient: [], incomeByClientId: new Map(), monthly: FY_MONTH_LABELS.map((month) => ({ month, revenue: 0, expenses: 0 })), paygInstalments: [], paygPaid: 0, wfhHours: 0, weekdaysWithoutEntries: 0 };
       byFy.set(startYear, fy);
     }
     return fy;
@@ -531,11 +535,24 @@ export async function fetchTaxData(userId: string, token: string): Promise<TaxFy
     fy.paygPaid += p.amount;
   }
 
+  // Weekdays with no entry logged, per FY — seeds the WFH hours input.
+  const today = todayInSydney();
+  get(fyStartYear(new Date(today + "T00:00:00"))); // current FY exists even with no data yet
+  const entryDatesByFy = new Map<number, Set<string>>();
+  for (const e of entriesRes.data ?? []) {
+    const startYear = fyStartYear(new Date(e.date + "T00:00:00"));
+    get(startYear);
+    let dates = entryDatesByFy.get(startYear);
+    if (!dates) entryDatesByFy.set(startYear, (dates = new Set()));
+    dates.add(e.date);
+  }
+
   return Array.from(byFy.values())
     .map((fy) => ({
       ...fy,
       incomeByClient: Array.from(fy.incomeByClientId.values()).sort((a, b) => b.income - a.income),
       paygInstalments: fy.paygInstalments.sort((a, b) => a.paid_date.localeCompare(b.paid_date)),
+      weekdaysWithoutEntries: fyWeekdaysWithoutEntries(fy.startYear, entryDatesByFy.get(fy.startYear) ?? new Set(), today),
     }))
     .sort((a, b) => b.startYear - a.startYear);
 }

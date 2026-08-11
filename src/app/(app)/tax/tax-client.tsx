@@ -76,6 +76,8 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const [newDate, setNewDate] = useState(() => new Date().toLocaleDateString("en-CA"));
   const [newAmount, setNewAmount] = useState("");
   const [chartMode, setChartMode] = useState<"monthly" | "split">("monthly");
+  // null = untouched → input shows saved hours, or the weekdays-without-entries seed.
+  const [wfhDraft, setWfhDraft] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const addInstalment = () => {
@@ -85,16 +87,6 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
       await createPaygInstalment({ paid_date: newDate, amount, label: null });
       invalidate("payg");
       setNewAmount("");
-    });
-  };
-
-  const saveWfhHours = (value: string) => {
-    const hours = value.trim() === "" ? 0 : Number(value);
-    if (!Number.isFinite(hours) || hours < 0) return;
-    if (hours === (fyTotals?.find((f) => f.startYear === selected)?.wfhHours ?? 0)) return;
-    startTransition(async () => {
-      await setWfhHours(selected, hours);
-      invalidate("payg");
     });
   };
 
@@ -117,7 +109,23 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   // WFH fixed-rate deduction reduces taxable income alongside expenses.
   const wfhHours = selectedTotals?.wfhHours ?? 0;
   const wfhRate = wfhFixedRate(selected);
-  const wfhDeduction = wfhRate ? wfhHours * wfhRate : 0;
+  // Calculated seed: weekdays with no entry logged × 8h/day, used until a value is saved.
+  const weekdaysWithoutEntries = selectedTotals?.weekdaysWithoutEntries ?? 0;
+  const wfhSeedHours = weekdaysWithoutEntries * 8;
+  const wfhValue = wfhDraft ?? String(wfhHours || wfhSeedHours || "");
+  const wfhParsed = wfhValue.trim() === "" ? 0 : Number(wfhValue);
+  const wfhValid = Number.isFinite(wfhParsed) && wfhParsed >= 0;
+  const wfhSaveable = wfhValid && wfhParsed !== wfhHours;
+  // Estimates preview live from the input; Save persists. Invalid input falls back to saved.
+  const wfhDeduction = wfhRate ? (wfhValid ? wfhParsed : wfhHours) * wfhRate : 0;
+  const saveWfhHours = () => {
+    if (!wfhSaveable) return;
+    startTransition(async () => {
+      await setWfhHours(selected, wfhParsed);
+      invalidate("payg");
+      setWfhDraft(null);
+    });
+  };
   const net = income - expenditure - wfhDeduction;
   const tax = taxEstimate(net);
   const afterTax = net - tax.total;
@@ -162,7 +170,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
       <PageHeader title="Tax" />
       <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
         <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
-          <Select value={String(selected)} onValueChange={(v) => setSelected(Number(v))}>
+          <Select value={String(selected)} onValueChange={(v) => { setSelected(Number(v)); setWfhDraft(null); }}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -389,21 +397,35 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                   <label htmlFor="wfh-hours" className="text-sm text-muted-foreground">
                     Hours worked from home
                   </label>
-                  <Input
-                    id="wfh-hours"
-                    key={`${selected}-${wfhHours}`}
-                    type="number"
-                    min={0}
-                    step="0.5"
-                    inputMode="decimal"
-                    defaultValue={wfhHours || ""}
-                    placeholder="0"
-                    disabled={pending}
-                    className="w-28 text-right tabular-nums"
-                    onBlur={(e) => saveWfhHours(e.target.value)}
-                  />
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Input
+                      id="wfh-hours"
+                      type="number"
+                      min={0}
+                      step="0.5"
+                      inputMode="decimal"
+                      value={wfhValue}
+                      onChange={(e) => setWfhDraft(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") saveWfhHours(); }}
+                      placeholder="0"
+                      disabled={pending}
+                      className="w-28 text-right tabular-nums"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => setWfhDraft(String(wfhSeedHours))}
+                      disabled={pending || wfhParsed === wfhSeedHours}
+                    >
+                      Calculate
+                    </Button>
+                    <Button onClick={saveWfhHours} disabled={pending || !wfhSaveable}>
+                      {pending ? <Spinner className="size-4" /> : "Save"}
+                    </Button>
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground px-3">
+                  {weekdaysWithoutEntries > 0 &&
+                    `Calculate fills ${weekdaysWithoutEntries} weekdays with no entry logged × 8 h = ${wfhSeedHours} h. `}
                   Covers electricity, gas, internet, phone and stationery — don&apos;t claim those
                   separately. Depreciation on gear, repairs and cleaning are still claimable. Keep a
                   record of every hour worked from home.
