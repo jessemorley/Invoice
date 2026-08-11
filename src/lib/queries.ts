@@ -2,6 +2,7 @@ import { cacheTag } from "next/cache";
 import { createTokenClient } from "./supabase";
 import { isoWeek, todayInSydney, fyStartYear } from "./format";
 import { lineItemTotal } from "./utils";
+import { expensePool, type ExpensePool } from "./mock-data";
 import type { Entry, Invoice, InvoiceDetail, InvoiceEntry, InvoiceEmail, Expense, ExpenseCategory, DashboardData, DashboardEmail, ClientRef, WeeklyEarning, MtdDailyPoint, InvoiceStatus, InvoiceRef, Client, WorkflowRate, CalendarDay } from "./types";
 
 const CLIENT_COLOR_FALLBACK = "#9ca3af";
@@ -459,11 +460,12 @@ export type TaxFyTotals = {
   startYear: number;
   income: number;
   expenditure: number;
-  expenditureByCategory: Partial<Record<ExpenseCategory, number>>;
+  expenditureByPool: Partial<Record<ExpensePool, Partial<Record<ExpenseCategory, number>>>>;
   incomeByClient: TaxClientIncome[];
   monthly: TaxMonthTotals[];
   paygInstalments: PaygInstalment[];
   paygPaid: number;
+  wfhHours: number;
 };
 
 // Australian FY runs Jul→Jun; chart shows all 12 months in that order.
@@ -477,20 +479,22 @@ export async function fetchTaxData(userId: string, token: string): Promise<TaxFy
   cacheTag(CACHE_TAGS.payg);
   const supabase = createTokenClient(token);
 
-  const [invoicesRes, expensesRes, paygRes] = await Promise.all([
+  const [invoicesRes, expensesRes, paygRes, wfhRes] = await Promise.all([
     supabase.from("invoices").select("paid_date, total, clients(id, name, billing_type, color)").eq("user_id", userId).not("paid_date", "is", null),
     supabase.from("expenses").select("date, amount, category").eq("user_id", userId),
     supabase.from("payg_instalments").select("id, paid_date, amount, label").eq("user_id", userId),
+    supabase.from("wfh_hours").select("fy_start_year, hours").eq("user_id", userId),
   ]);
   if (invoicesRes.error) throw new Error(`fetchTaxData: ${invoicesRes.error.message}`);
   if (expensesRes.error) throw new Error(`fetchTaxData: ${expensesRes.error.message}`);
   if (paygRes.error) throw new Error(`fetchTaxData: ${paygRes.error.message}`);
+  if (wfhRes.error) throw new Error(`fetchTaxData: ${wfhRes.error.message}`);
 
   const byFy = new Map<number, TaxFyTotals & { incomeByClientId: Map<string, TaxClientIncome> }>();
   const get = (startYear: number) => {
     let fy = byFy.get(startYear);
     if (!fy) {
-      fy = { startYear, income: 0, expenditure: 0, expenditureByCategory: {}, incomeByClient: [], incomeByClientId: new Map(), monthly: FY_MONTH_LABELS.map((month) => ({ month, revenue: 0, expenses: 0 })), paygInstalments: [], paygPaid: 0 };
+      fy = { startYear, income: 0, expenditure: 0, expenditureByPool: {}, incomeByClient: [], incomeByClientId: new Map(), monthly: FY_MONTH_LABELS.map((month) => ({ month, revenue: 0, expenses: 0 })), paygInstalments: [], paygPaid: 0, wfhHours: 0 };
       byFy.set(startYear, fy);
     }
     return fy;
@@ -514,7 +518,12 @@ export async function fetchTaxData(userId: string, token: string): Promise<TaxFy
     const fy = get(fyStartYear(date));
     fy.expenditure += exp.amount;
     fy.monthly[fyMonthIndex(date)].expenses += exp.amount;
-    fy.expenditureByCategory[exp.category] = (fy.expenditureByCategory[exp.category] ?? 0) + exp.amount;
+    const pool = expensePool(exp.category, exp.amount);
+    const byCategory = (fy.expenditureByPool[pool] ??= {});
+    byCategory[exp.category] = (byCategory[exp.category] ?? 0) + exp.amount;
+  }
+  for (const w of wfhRes.data ?? []) {
+    get(w.fy_start_year).wfhHours = w.hours;
   }
   for (const p of paygRes.data ?? []) {
     const fy = get(fyStartYear(new Date(p.paid_date + "T00:00:00")));
