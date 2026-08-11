@@ -669,6 +669,30 @@ export type Database = {
         }
         Relationships: []
       }
+      wfh_hours: {
+        Row: {
+          created_at: string
+          fy_start_year: number
+          hours: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fy_start_year: number
+          hours: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fy_start_year?: number
+          hours?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

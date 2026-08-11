@@ -23,6 +23,15 @@ export function fyLabel(startYear: number): string {
   return `FY${String(startYear + 1).slice(2)}`;
 }
 
+// ATO working-from-home fixed rate (PCG 2023/1), by FY start year.
+// 70c from FY25 (2024-25); 67c for FY23 and FY24. Earlier years used a different
+// method entirely, so they get no fixed-rate estimate.
+export function wfhFixedRate(startYear: number): number | null {
+  if (startYear >= 2024) return 0.7;
+  if (startYear >= 2022) return 0.67;
+  return null;
+}
+
 export function fyDateRange(startYear: number): { from: string; to: string } {
   return { from: `${startYear}-07-01`, to: `${startYear + 1}-06-30` };
 }

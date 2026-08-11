@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from "react";
 import type { TaxFyTotals } from "@/lib/queries";
-import { formatAUD, formatDateShort, fyLabel, fyStartYear } from "@/lib/format";
+import { formatAUD, formatDateShort, fyLabel, fyStartYear, wfhFixedRate } from "@/lib/format";
 import { taxEstimate } from "@/lib/tax-estimate";
-import { createPaygInstalment, deletePaygInstalment } from "@/app/(app)/tax/actions";
+import { createPaygInstalment, deletePaygInstalment, setWfhHours } from "@/app/(app)/tax/actions";
 import { invalidate } from "@/lib/invalidate";
-import { EXPENSE_CATEGORY_LABELS, EXPENSE_CATEGORY_COLORS } from "@/lib/mock-data";
+import { EXPENSE_CATEGORY_LABELS, EXPENSE_CATEGORY_COLORS, EXPENSE_POOL_LABELS } from "@/lib/mock-data";
 import type { ExpenseCategory } from "@/lib/types";
 import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
@@ -88,6 +88,16 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
     });
   };
 
+  const saveWfhHours = (value: string) => {
+    const hours = value.trim() === "" ? 0 : Number(value);
+    if (!Number.isFinite(hours) || hours < 0) return;
+    if (hours === (fyTotals?.find((f) => f.startYear === selected)?.wfhHours ?? 0)) return;
+    startTransition(async () => {
+      await setWfhHours(selected, hours);
+      invalidate("payg");
+    });
+  };
+
   const removeInstalment = (id: string) => {
     startTransition(async () => {
       await deletePaygInstalment(id);
@@ -104,7 +114,11 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const selectedTotals = fyTotals.find((f) => f.startYear === selected);
   const income = selectedTotals?.income ?? 0;
   const expenditure = selectedTotals?.expenditure ?? 0;
-  const net = income - expenditure;
+  // WFH fixed-rate deduction reduces taxable income alongside expenses.
+  const wfhHours = selectedTotals?.wfhHours ?? 0;
+  const wfhRate = wfhFixedRate(selected);
+  const wfhDeduction = wfhRate ? wfhHours * wfhRate : 0;
+  const net = income - expenditure - wfhDeduction;
   const tax = taxEstimate(net);
   const afterTax = net - tax.total;
   const paygInstalments = selectedTotals?.paygInstalments ?? [];
@@ -134,9 +148,14 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const incomeByClient = selectedTotals?.incomeByClient ?? [];
   const topClients = incomeByClient.slice(0, 4);
   const otherClientsIncome = incomeByClient.slice(4).reduce((sum, c) => sum + c.income, 0);
-  const categoryBreakdown = Object.entries(selectedTotals?.expenditureByCategory ?? {}).sort(
-    ([, a], [, b]) => b - a
-  );
+  const pools = (["depreciation", "other"] as const)
+    .map((pool) => {
+      const categories = Object.entries(selectedTotals?.expenditureByPool?.[pool] ?? {}).sort(
+        ([, a], [, b]) => b - a
+      );
+      return { pool, categories, total: categories.reduce((sum, [, amt]) => sum + amt, 0) };
+    })
+    .filter((p) => p.categories.length > 0);
 
   return (
     <div className="flex flex-col h-full">
@@ -164,6 +183,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                 <CardTitle className="text-4xl tabular-nums">{formatAUD(net)}</CardTitle>
                 <p className="text-xs text-muted-foreground pt-1">
                   Revenue {formatAUD(income)} − expenses {formatAUD(expenditure)}
+                  {wfhDeduction > 0 && ` − WFH ${formatAUD(wfhDeduction)}`}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -316,30 +336,81 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                 <CardTitle className="text-sm font-medium">Expenses</CardTitle>
                 <CardDescription className="tabular-nums">{formatAUD(expenditure)}</CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col gap-2">
-                {categoryBreakdown.map(([category, amount]) => (
-                  <div
-                    key={category}
-                    className="flex items-center justify-between py-2 px-3 rounded-lg border border-border"
-                  >
-                    <span
-                      className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                      style={{
-                        backgroundColor: `${EXPENSE_CATEGORY_COLORS[category as ExpenseCategory]}22`,
-                        color: EXPENSE_CATEGORY_COLORS[category as ExpenseCategory],
-                      }}
-                    >
-                      {EXPENSE_CATEGORY_LABELS[category as ExpenseCategory]}
-                    </span>
-                    <span className="text-sm tabular-nums shrink-0 ml-2">−{formatAUD(amount)}</span>
+              <CardContent className="flex flex-col gap-4">
+                {pools.map(({ pool, categories, total }) => (
+                  <div key={pool} className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between px-1">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {EXPENSE_POOL_LABELS[pool]}
+                      </span>
+                      <span className="text-xs tabular-nums text-muted-foreground shrink-0 ml-2">
+                        −{formatAUD(total)}
+                      </span>
+                    </div>
+                    {categories.map(([category, amount]) => (
+                      <div
+                        key={category}
+                        className="flex items-center justify-between py-2 px-3 rounded-lg border border-border"
+                      >
+                        <span
+                          className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                          style={{
+                            backgroundColor: `${EXPENSE_CATEGORY_COLORS[category as ExpenseCategory]}22`,
+                            color: EXPENSE_CATEGORY_COLORS[category as ExpenseCategory],
+                          }}
+                        >
+                          {EXPENSE_CATEGORY_LABELS[category as ExpenseCategory]}
+                        </span>
+                        <span className="text-sm tabular-nums shrink-0 ml-2">−{formatAUD(amount)}</span>
+                      </div>
+                    ))}
                   </div>
                 ))}
-                {categoryBreakdown.length === 0 && (
+                {pools.length === 0 && (
                   <p className="text-sm text-muted-foreground px-3 py-2">No expenses recorded.</p>
                 )}
               </CardContent>
             </Card>
           </div>
+
+          {/* Tier 3a2 — Working from home (ATO fixed-rate method) */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Working from home</CardTitle>
+              <CardDescription className="tabular-nums">
+                {wfhRate
+                  ? `${formatAUD(wfhDeduction)} deduction — fixed rate ${Math.round(wfhRate * 100)}c/hr`
+                  : `No fixed rate applies to ${fyLabel(selected)}`}
+              </CardDescription>
+            </CardHeader>
+            {wfhRate && (
+              <CardContent className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-3 py-2 px-3 rounded-lg border border-border">
+                  <label htmlFor="wfh-hours" className="text-sm text-muted-foreground">
+                    Hours worked from home
+                  </label>
+                  <Input
+                    id="wfh-hours"
+                    key={`${selected}-${wfhHours}`}
+                    type="number"
+                    min={0}
+                    step="0.5"
+                    inputMode="decimal"
+                    defaultValue={wfhHours || ""}
+                    placeholder="0"
+                    disabled={pending}
+                    className="w-28 text-right tabular-nums"
+                    onBlur={(e) => saveWfhHours(e.target.value)}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground px-3">
+                  Covers electricity, gas, internet, phone and stationery — don&apos;t claim those
+                  separately. Depreciation on gear, repairs and cleaning are still claimable. Keep a
+                  record of every hour worked from home.
+                </p>
+              </CardContent>
+            )}
+          </Card>
 
           {/* Tier 3b — Tax estimate breakdown */}
           <Card>

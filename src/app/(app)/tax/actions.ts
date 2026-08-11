@@ -31,6 +31,21 @@ export async function createPaygInstalment(data: PaygInstalmentFormData): Promis
   return row.id;
 }
 
+export async function setWfhHours(fyStartYear: number, hours: number) {
+  if (!Number.isFinite(hours) || hours < 0) throw new Error("setWfhHours: hours must be zero or more");
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+  const { error } = await supabase
+    .from("wfh_hours")
+    .upsert(
+      { user_id: userId, fy_start_year: fyStartYear, hours, updated_at: new Date().toISOString() },
+      { onConflict: "user_id,fy_start_year" },
+    );
+
+  if (error) throw new Error(`setWfhHours: ${error.message}`);
+  updateTag(CACHE_TAGS.payg);
+  refresh();
+}
+
 export async function deletePaygInstalment(id: string) {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
   const { error } = await supabase
