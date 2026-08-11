@@ -116,8 +116,9 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const wfhParsed = wfhValue.trim() === "" ? 0 : Number(wfhValue);
   const wfhValid = Number.isFinite(wfhParsed) && wfhParsed >= 0;
   const wfhSaveable = wfhValid && wfhParsed !== wfhHours;
-  // Estimates preview live from the input; Save persists. Invalid input falls back to saved.
-  const wfhDeduction = wfhRate ? (wfhValid ? wfhParsed : wfhHours) * wfhRate : 0;
+  // Tax-view-only deduction: joins the expense totals here but is never a stored
+  // expense row. Uses saved hours only — the input applies on Add/Update.
+  const wfhDeduction = wfhRate ? wfhHours * wfhRate : 0;
   const saveWfhHours = () => {
     if (!wfhSaveable) return;
     startTransition(async () => {
@@ -126,7 +127,8 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
       setWfhDraft(null);
     });
   };
-  const net = income - expenditure - wfhDeduction;
+  const totalExpenses = expenditure + wfhDeduction;
+  const net = income - totalExpenses;
   const tax = taxEstimate(net);
   const afterTax = net - tax.total;
   const paygInstalments = selectedTotals?.paygInstalments ?? [];
@@ -158,12 +160,15 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const otherClientsIncome = incomeByClient.slice(4).reduce((sum, c) => sum + c.income, 0);
   const pools = (["depreciation", "other"] as const)
     .map((pool) => {
-      const categories = Object.entries(selectedTotals?.expenditureByPool?.[pool] ?? {}).sort(
-        ([, a], [, b]) => b - a
-      );
+      const categories = Object.entries(selectedTotals?.expenditureByPool?.[pool] ?? {});
+      // WFH fixed-rate deduction joins the immediate-deduction pool, tax view only.
+      if (pool === "other" && wfhDeduction > 0) categories.push(["wfh", wfhDeduction]);
+      categories.sort(([, a], [, b]) => b - a);
       return { pool, categories, total: categories.reduce((sum, [, amt]) => sum + amt, 0) };
     })
     .filter((p) => p.categories.length > 0);
+  const categoryLabel = (c: string) => (c === "wfh" ? "Working from home" : EXPENSE_CATEGORY_LABELS[c as ExpenseCategory]);
+  const categoryColor = (c: string) => (c === "wfh" ? "#64748b" : EXPENSE_CATEGORY_COLORS[c as ExpenseCategory]);
 
   return (
     <div className="flex flex-col h-full">
@@ -190,8 +195,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                 <CardDescription>Net profit</CardDescription>
                 <CardTitle className="text-4xl tabular-nums">{formatAUD(net)}</CardTitle>
                 <p className="text-xs text-muted-foreground pt-1">
-                  Revenue {formatAUD(income)} − expenses {formatAUD(expenditure)}
-                  {wfhDeduction > 0 && ` − WFH ${formatAUD(wfhDeduction)}`}
+                  Revenue {formatAUD(income)} − expenses {formatAUD(totalExpenses)}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -342,7 +346,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm font-medium">Expenses</CardTitle>
-                <CardDescription className="tabular-nums">{formatAUD(expenditure)}</CardDescription>
+                <CardDescription className="tabular-nums">{formatAUD(totalExpenses)}</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
                 {pools.map(({ pool, categories, total }) => (
@@ -363,11 +367,11 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                         <span
                           className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
                           style={{
-                            backgroundColor: `${EXPENSE_CATEGORY_COLORS[category as ExpenseCategory]}22`,
-                            color: EXPENSE_CATEGORY_COLORS[category as ExpenseCategory],
+                            backgroundColor: `${categoryColor(category)}22`,
+                            color: categoryColor(category),
                           }}
                         >
-                          {EXPENSE_CATEGORY_LABELS[category as ExpenseCategory]}
+                          {categoryLabel(category)}
                         </span>
                         <span className="text-sm tabular-nums shrink-0 ml-2">−{formatAUD(amount)}</span>
                       </div>
@@ -419,7 +423,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                       Calculate
                     </Button>
                     <Button onClick={saveWfhHours} disabled={pending || !wfhSaveable}>
-                      {pending ? <Spinner className="size-4" /> : "Save"}
+                      {pending ? <Spinner className="size-4" /> : wfhHours > 0 ? "Update" : "Add"}
                     </Button>
                   </div>
                 </div>
