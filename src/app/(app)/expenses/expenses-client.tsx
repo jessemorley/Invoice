@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Expense, ExpenseCategory } from "@/lib/types";
 import { EXPENSE_CATEGORY_LABELS, EXPENSE_CATEGORY_COLORS } from "@/lib/mock-data";
-import { formatAUD, formatDateShort } from "@/lib/format";
+import { formatAUD, formatDateShort, fyLabel, fyStartYear } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -41,7 +41,7 @@ import { Paperclip, Plus, Receipt, Search } from "lucide-react";
 
 type SortKey = "date" | "category" | "amount";
 type SortDir = "asc" | "desc";
-type Timeframe = "all-time" | "this-week" | "this-month" | "last-month" | "this-year";
+type Timeframe = "all-time" | `${number}`;
 
 function gstAmount(expense: Expense): string | null {
   if (!expense.gst_included) return null;
@@ -65,26 +65,7 @@ function ReceiptChip({ path }: { path: string }) {
 
 function inTimeframe(date: string, timeframe: Timeframe): boolean {
   if (timeframe === "all-time") return true;
-  const d = new Date(date + "T00:00:00");
-  const now = new Date();
-  if (timeframe === "this-week") {
-    const day = now.getDay();
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - ((day + 6) % 7));
-    weekStart.setHours(0, 0, 0, 0);
-    return d >= weekStart;
-  }
-  if (timeframe === "this-month") {
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  }
-  if (timeframe === "last-month") {
-    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    return d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear();
-  }
-  if (timeframe === "this-year") {
-    return d.getFullYear() === now.getFullYear();
-  }
-  return true;
+  return fyStartYear(new Date(date + "T00:00:00")) === Number(timeframe);
 }
 
 function ExpenseCard({ expense, onClick }: { expense: Expense; onClick: () => void }) {
@@ -232,6 +213,11 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
     }
   }
 
+  // FYs with expenses, plus the current FY even if it has none yet
+  const startYears = Array.from(
+    new Set([fyStartYear(new Date()), ...expenses.map((e) => fyStartYear(new Date(e.date + "T00:00:00")))]),
+  ).sort((a, b) => b - a);
+
   const filtered = expenses.filter((exp) => {
     if (search && !exp.description.toLowerCase().includes(search.toLowerCase())) return false;
     if (!inTimeframe(exp.date, timeframe)) return false;
@@ -277,14 +263,15 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
           <div className="border-b px-4 py-2 flex gap-2">
             <Select value={timeframe} onValueChange={(v) => setTimeframe(v as Timeframe)}>
               <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
-                <SelectValue placeholder="Timeframe" />
+                <SelectValue placeholder="Financial year" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all-time">All time</SelectItem>
-                <SelectItem value="this-week">This week</SelectItem>
-                <SelectItem value="this-month">This month</SelectItem>
-                <SelectItem value="last-month">Last month</SelectItem>
-                <SelectItem value="this-year">This year</SelectItem>
+                {startYears.map((y) => (
+                  <SelectItem key={y} value={String(y)}>
+                    {fyLabel(y)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select value={category} onValueChange={(v) => setCategory(v as ExpenseCategory | "all-categories")}>
@@ -320,14 +307,15 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
             </div>
             <Select value={timeframe} onValueChange={(v) => setTimeframe(v as Timeframe)}>
               <SelectTrigger className="w-36">
-                <SelectValue placeholder="Timeframe" />
+                <SelectValue placeholder="Financial year" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all-time">All time</SelectItem>
-                <SelectItem value="this-week">This week</SelectItem>
-                <SelectItem value="this-month">This month</SelectItem>
-                <SelectItem value="last-month">Last month</SelectItem>
-                <SelectItem value="this-year">This year</SelectItem>
+                {startYears.map((y) => (
+                  <SelectItem key={y} value={String(y)}>
+                    {fyLabel(y)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select value={category} onValueChange={(v) => setCategory(v as ExpenseCategory | "all-categories")}>
