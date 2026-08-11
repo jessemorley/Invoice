@@ -210,8 +210,10 @@ export function ExpenseSheet({
             <Input
               type="date"
               className="text-sm"
-              value={form.date}
-              onChange={(e) => set("date", e.target.value)}
+              // See DateTimeInput: typing emits "" until the date is complete.
+              defaultValue={form.date}
+              key={form.date}
+              onChange={(e) => { if (e.target.value) set("date", e.target.value); }}
             />
           </div>
 

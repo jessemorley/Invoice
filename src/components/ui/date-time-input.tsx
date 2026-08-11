@@ -19,8 +19,11 @@ export function DateTimeInput({
         id={id}
         type={type}
         className="w-full bg-transparent outline-none text-sm text-foreground"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+        // Uncontrolled: typing emits "" until every segment is filled, so a
+        // controlled value would fight the user mid-entry and clear the field.
+        defaultValue={value}
+        key={value}
+        onChange={(e) => { if (e.target.value) onChange(e.target.value) }}
       />
     </div>
   )

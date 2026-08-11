@@ -84,16 +84,25 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
     const amount = Number(newAmount);
     if (!newDate || !Number.isFinite(amount) || amount <= 0) return;
     startTransition(async () => {
-      await createPaygInstalment({ paid_date: newDate, amount, label: null });
-      invalidate("payg");
-      setNewAmount("");
+      try {
+        await createPaygInstalment({ paid_date: newDate, amount, label: null });
+        invalidate("payg");
+        setNewAmount("");
+      } catch (err) {
+        // startTransition swallows rejections — without this the button silently no-ops.
+        console.error("createPaygInstalment failed", err);
+      }
     });
   };
 
   const removeInstalment = (id: string) => {
     startTransition(async () => {
-      await deletePaygInstalment(id);
-      invalidate("payg");
+      try {
+        await deletePaygInstalment(id);
+        invalidate("payg");
+      } catch (err) {
+        console.error("deletePaygInstalment failed", err);
+      }
     });
   };
 
@@ -507,8 +516,11 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                 <div className="flex items-center gap-2 pt-1">
                   <Input
                     type="date"
-                    value={newDate}
-                    onChange={(e) => setNewDate(e.target.value)}
+                    // Typing emits "" until all 3 segments are complete — only commit
+                    // real values, or a half-typed date would wipe the committed one.
+                    defaultValue={newDate}
+                    key={newDate}
+                    onChange={(e) => { if (e.target.value) setNewDate(e.target.value); }}
                     className="w-auto"
                   />
                   <Input
@@ -522,7 +534,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                     onKeyDown={(e) => { if (e.key === "Enter") addInstalment(); }}
                     className="flex-1"
                   />
-                  <Button onClick={addInstalment} disabled={pending || !newAmount}>
+                  <Button onClick={addInstalment} disabled={pending || !newAmount || !newDate}>
                     {pending ? <Spinner className="size-4" /> : "Add"}
                   </Button>
                 </div>
