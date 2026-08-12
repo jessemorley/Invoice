@@ -10,7 +10,19 @@ When you hit one of these during a task, do **not** fix it inline — that bloat
 
 ## Open
 
-(none)
+### cookie-based `createClient()` inside server actions — src/app/(app)/tax/actions.ts:15,35
+
+- First noted: 2026-08-12
+- Rule: CLAUDE.md auth pattern ("Never use the cookie-based `createClient()` inside server actions")
+- Symptom: `createPaygInstalment` and `deletePaygInstalment` call `createClient()` from `@/lib/supabase-server` rather than `getAuth()` + `createTokenClient(token)`.
+- Fix: not attempted. Confirmed present on `main`. `setWfhHours` (added in the WFH branch) follows the same local convention for consistency; converting the whole file is a separate change. Worth grepping other server actions for the same pattern before fixing — the sweep may be the real task.
+
+### type error: `cc_address` optional vs nullable — src/components/sent-email-sheet.test.tsx:16
+
+- First noted: 2026-08-12
+- Rule: `tsc` TS2322
+- Symptom: test fixture builds `cc_address` as `string | null | undefined`, but `DashboardEmail` declares `string | null`. Surfaces under `npx tsc --noEmit`; `npm run build` does not fail because test files are excluded from the build's type-check.
+- Fix: not attempted. Confirmed present on `main` (unrelated to the FY expense filters / WFH deduction work). Either widen `DashboardEmail.cc_address` to optional or make the fixture supply an explicit `null`.
 
 ## Resolved
 
@@ -72,17 +84,3 @@ When you hit one of these during a task, do **not** fix it inline — that bloat
 - Rule: `@typescript-eslint/no-unused-vars`
 - Symptom: `scheduled_for` was destructured from the event payload but never used inside the function body.
 - Fix: removed the unused destructure entry. The schedule time is consumed at enqueue time via Inngest's `ts:` field, so the handler never needed it.
-
-### type error: `cc_address` optional vs nullable — src/components/sent-email-sheet.test.tsx:16
-
-- First noted: 2026-08-12
-- Rule: `tsc` TS2322
-- Symptom: test fixture builds `cc_address` as `string | null | undefined`, but `DashboardEmail` declares `string | null`. Surfaces under `npx tsc --noEmit`; `npm run build` does not fail because test files are excluded from the build's type-check.
-- Fix: not attempted. Confirmed present on `main` (unrelated to the FY expense filters / WFH deduction work). Either widen `DashboardEmail.cc_address` to optional or make the fixture supply an explicit `null`.
-
-### cookie-based `createClient()` inside server actions — src/app/(app)/tax/actions.ts:15,35
-
-- First noted: 2026-08-12
-- Rule: CLAUDE.md auth pattern ("Never use the cookie-based `createClient()` inside server actions")
-- Symptom: `createPaygInstalment` and `deletePaygInstalment` call `createClient()` from `@/lib/supabase-server` rather than `getAuth()` + `createTokenClient(token)`.
-- Fix: not attempted. Confirmed present on `main`. `setWfhHours` (added in the WFH branch) follows the same local convention for consistency; converting the whole file is a separate change.
