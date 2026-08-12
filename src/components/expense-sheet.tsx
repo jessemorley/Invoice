@@ -11,6 +11,7 @@ import {
   deleteReceipt,
 } from "@/app/(app)/expenses/actions";
 import type { ExpenseFormData } from "@/app/(app)/expenses/actions";
+import { invalidate } from "@/lib/invalidate";
 import { formatAUD, formatDateShort } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -150,6 +151,7 @@ export function ExpenseSheet({
             setIsUploading(false);
           }
         }
+        invalidate("expenses");
         onOpenChangeAction(false);
       } catch (e) {
         setIsUploading(false);
@@ -164,6 +166,7 @@ export function ExpenseSheet({
     startDeleteTransition(async () => {
       try {
         await deleteExpense(expense.id);
+        invalidate("expenses");
         onOpenChangeAction(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");
