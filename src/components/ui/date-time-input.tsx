@@ -19,10 +19,9 @@ export function DateTimeInput({
         id={id}
         type={type}
         className="w-full bg-transparent outline-none text-sm text-foreground"
-        // Uncontrolled: typing emits "" until every segment is filled, so a
-        // controlled value would fight the user mid-entry and clear the field.
-        defaultValue={value}
-        key={value}
+        // The browser reports "" on every keystroke until all segments are
+        // filled — committing that would wipe the date as the user types.
+        value={value}
         onChange={(e) => { if (e.target.value) onChange(e.target.value) }}
       />
     </div>

@@ -518,8 +518,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                     type="date"
                     // Typing emits "" until all 3 segments are complete — only commit
                     // real values, or a half-typed date would wipe the committed one.
-                    defaultValue={newDate}
-                    key={newDate}
+                    value={newDate}
                     onChange={(e) => { if (e.target.value) setNewDate(e.target.value); }}
                     className="w-auto"
                   />
