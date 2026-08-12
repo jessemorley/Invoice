@@ -418,7 +418,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
             </CardHeader>
             {wfhRate && (
               <CardContent className="flex flex-col gap-2">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 py-2 px-3 rounded-lg border border-border">
                   <label htmlFor="wfh-hours" className="text-sm text-muted-foreground">
                     Hours worked from home
                   </label>
@@ -449,7 +449,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                     </Button>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground px-3">
                   {weekdaysWithoutEntries > 0 &&
                     `Calculate fills ${weekdaysWithoutEntries} weekdays with no entry logged × 8 h = ${wfhSeedHours} h. `}
                   Covers electricity, gas, internet, phone and stationery.
