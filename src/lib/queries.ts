@@ -465,7 +465,8 @@ export type TaxFyTotals = {
   monthly: TaxMonthTotals[];
   paygInstalments: PaygInstalment[];
   paygPaid: number;
-  wfhHours: number;
+  // null = never saved (UI falls back to the calculated seed); 0 is a real saved value.
+  wfhHours: number | null;
   weekdaysWithoutEntries: number;
 };
 
@@ -498,7 +499,7 @@ export async function fetchTaxData(userId: string, token: string): Promise<TaxFy
   const get = (startYear: number) => {
     let fy = byFy.get(startYear);
     if (!fy) {
-      fy = { startYear, income: 0, expenditure: 0, expenditureByPool: {}, incomeByClient: [], incomeByClientId: new Map(), monthly: FY_MONTH_LABELS.map((month) => ({ month, revenue: 0, expenses: 0 })), paygInstalments: [], paygPaid: 0, wfhHours: 0, weekdaysWithoutEntries: 0 };
+      fy = { startYear, income: 0, expenditure: 0, expenditureByPool: {}, incomeByClient: [], incomeByClientId: new Map(), monthly: FY_MONTH_LABELS.map((month) => ({ month, revenue: 0, expenses: 0 })), paygInstalments: [], paygPaid: 0, wfhHours: null, weekdaysWithoutEntries: 0 };
       byFy.set(startYear, fy);
     }
     return fy;
@@ -541,7 +542,6 @@ export async function fetchTaxData(userId: string, token: string): Promise<TaxFy
   const entryDatesByFy = new Map<number, Set<string>>();
   for (const e of entriesRes.data ?? []) {
     const startYear = fyStartYear(new Date(e.date + "T00:00:00"));
-    get(startYear);
     let dates = entryDatesByFy.get(startYear);
     if (!dates) entryDatesByFy.set(startYear, (dates = new Set()));
     dates.add(e.date);

@@ -15,6 +15,7 @@ import { invalidate } from "@/lib/invalidate";
 import { formatAUD, formatDateShort } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateTimeInput } from "@/components/ui/date-time-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
@@ -210,14 +211,7 @@ export function ExpenseSheet({
           {/* Date */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">Date</label>
-            <Input
-              type="date"
-              className="text-sm"
-              // Controlled, but ignore the empty values the browser reports on
-              // every keystroke until all three segments are filled.
-              value={form.date}
-              onChange={(e) => { if (e.target.value) set("date", e.target.value); }}
-            />
+            <DateTimeInput type="date" value={form.date} onChange={(v) => set("date", v)} />
           </div>
 
           {/* Category */}

@@ -21,8 +21,10 @@ export function DateTimeInput({
         className="w-full bg-transparent outline-none text-sm text-foreground"
         // The browser reports "" on every keystroke until all segments are
         // filled — committing that would wipe the date as the user types.
+        // badInput distinguishes that half-typed state from a genuine clear,
+        // which must still commit "" (e.g. un-setting an invoice's paid_date).
         value={value}
-        onChange={(e) => { if (e.target.value) onChange(e.target.value) }}
+        onChange={(e) => { if (e.target.value || !e.target.validity.badInput) onChange(e.target.value) }}
       />
     </div>
   )

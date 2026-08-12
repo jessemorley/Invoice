@@ -58,7 +58,7 @@ type EmailsState = DashboardEmail[] | null;
 
 // Which views need to re-fetch when a given tag is invalidated
 const TAG_TO_VIEWS: Record<InvalidationTag, ViewId[]> = {
-  entries:  ["entries", "dashboard", "invoices"],
+  entries:  ["entries", "dashboard", "invoices", "tax"],
   invoices: ["invoices", "dashboard", "tax", "emails"],
   clients:  ["clients", "entries", "invoices"],
   expenses: ["expenses", "dashboard", "tax"],

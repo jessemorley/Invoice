@@ -116,24 +116,29 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const income = selectedTotals?.income ?? 0;
   const expenditure = selectedTotals?.expenditure ?? 0;
   // WFH fixed-rate deduction reduces taxable income alongside expenses.
-  const wfhHours = selectedTotals?.wfhHours ?? 0;
+  // null = never saved; a saved 0 is a real value and must not fall back to the seed.
+  const wfhHours = selectedTotals?.wfhHours ?? null;
   const wfhRate = wfhFixedRate(selected);
   // Calculated seed: weekdays with no entry logged × 8h/day, used until a value is saved.
   const weekdaysWithoutEntries = selectedTotals?.weekdaysWithoutEntries ?? 0;
   const wfhSeedHours = weekdaysWithoutEntries * 8;
-  const wfhValue = wfhDraft ?? String(wfhHours || wfhSeedHours || "");
+  const wfhValue = wfhDraft ?? String(wfhHours ?? wfhSeedHours ?? "");
   const wfhParsed = wfhValue.trim() === "" ? 0 : Number(wfhValue);
   const wfhValid = Number.isFinite(wfhParsed) && wfhParsed >= 0;
   const wfhSaveable = wfhValid && wfhParsed !== wfhHours;
   // Tax-view-only deduction: joins the expense totals here but is never a stored
   // expense row. Uses saved hours only — the input applies on Add/Update.
-  const wfhDeduction = wfhRate ? wfhHours * wfhRate : 0;
+  const wfhDeduction = wfhRate ? (wfhHours ?? 0) * wfhRate : 0;
   const saveWfhHours = () => {
     if (!wfhSaveable) return;
     startTransition(async () => {
-      await setWfhHours(selected, wfhParsed);
-      invalidate("payg");
-      setWfhDraft(null);
+      try {
+        await setWfhHours(selected, wfhParsed);
+        invalidate("payg");
+        setWfhDraft(null);
+      } catch (err) {
+        console.error("setWfhHours failed", err);
+      }
     });
   };
   const totalExpenses = expenditure + wfhDeduction;
@@ -445,7 +450,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                       Calculate
                     </Button>
                     <Button className="shrink-0" onClick={saveWfhHours} disabled={pending || !wfhSaveable}>
-                      {pending ? <Spinner className="size-4" /> : wfhHours > 0 ? "Update" : "Add"}
+                      {pending ? <Spinner className="size-4" /> : wfhHours !== null ? "Update" : "Add"}
                     </Button>
                   </div>
                 </div>
