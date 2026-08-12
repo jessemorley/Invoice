@@ -10,13 +10,6 @@ When you hit one of these during a task, do **not** fix it inline — that bloat
 
 ## Open
 
-### cookie-based `createClient()` inside server actions — src/app/(app)/tax/actions.ts:15,35
-
-- First noted: 2026-08-12
-- Rule: CLAUDE.md auth pattern ("Never use the cookie-based `createClient()` inside server actions")
-- Symptom: `createPaygInstalment` and `deletePaygInstalment` call `createClient()` from `@/lib/supabase-server` rather than `getAuth()` + `createTokenClient(token)`.
-- Fix: not attempted. Confirmed present on `main`. `setWfhHours` (added in the WFH branch) follows the same local convention for consistency; converting the whole file is a separate change. Worth grepping other server actions for the same pattern before fixing — the sweep may be the real task.
-
 ### type error: `cc_address` optional vs nullable — src/components/sent-email-sheet.test.tsx:16
 
 - First noted: 2026-08-12
@@ -25,6 +18,16 @@ When you hit one of these during a task, do **not** fix it inline — that bloat
 - Fix: not attempted. Confirmed present on `main` (unrelated to the FY expense filters / WFH deduction work). Either widen `DashboardEmail.cc_address` to optional or make the fixture supply an explicit `null`.
 
 ## Resolved
+
+### cookie-based `createClient()` inside server actions — not a defect, doc was wrong
+
+- First noted: 2026-08-12
+- Resolved: 2026-08-12 (invalid — CLAUDE.md amended instead)
+- Rule: CLAUDE.md auth pattern ("Never use the cookie-based `createClient()` inside server actions")
+- Symptom: `src/app/(app)/tax/actions.ts` used `createClient()` rather than `getAuth()` + `createTokenClient(token)`.
+- Finding: the sweep showed all 8 server action files use the cookie client — ~45 call sites across clients, entries, expenses, invoices, settings, tax. `createTokenClient` appears **only** in `src/lib/queries.ts`. Both clients are anon-key clients carrying the user's JWT, so both respect the `auth.uid()` RLS policies; neither is service-role. `getAuth()` is itself built on `createClient()` (`src/lib/auth.ts:5`), so the documented pattern does not avoid the cookie client — it just extracts the token from one. The rule described a pattern that never applied to actions or routes, and converting ~45 sites would have been a no-op diff.
+- Fix: rewrote the CLAUDE.md "Auth pattern" section to state the real rule (cookie client in actions/routes, token client in `"use cache"` functions, because `cookies()` is unavailable there). No source files changed.
+- Follow-up (not done): `src/app/(app)/invoices/actions.ts:107,304,370,484` call `createClient()` + `getAuthUserId()` + `getAuthToken()`, constructing three cookie clients per request where one `getAuth()` would do. Minor redundancy, separate change.
 
 ### test suite broken: matchMedia missing, stale dock expectations, tax-estimate collecting 0 tests (14 tests / 3 files)
 

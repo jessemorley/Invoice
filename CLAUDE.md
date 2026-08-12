@@ -32,14 +32,21 @@ Queries in `src/lib/queries.ts` use Next.js `"use cache"` + `cacheTag(CACHE_TAGS
 
 ## Auth pattern
 
-All server actions and API routes call `getAuth()` from `src/lib/auth.ts`, which returns `{ userId, token }`. The `token` (JWT) is passed to `createTokenClient(token)` from `src/lib/supabase.ts` to create a per-request Supabase client that respects RLS policies.
+Both Supabase clients are anon-key clients carrying the user's JWT, so **both respect RLS** — the `own rows` policies in `supabase/migrations/` key off `auth.uid()` either way. Neither is a service-role client. Pick based on whether `cookies()` is reachable:
+
+**Server actions and API routes** — use the cookie client from `src/lib/supabase-server.ts`, paired with an auth helper from `src/lib/auth.ts`:
 
 ```ts
-const { userId, token } = await getAuth();
+const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+```
+
+**`"use cache"` query functions** (`src/lib/queries.ts`) — cannot call `cookies()`, so they take the JWT and build a token client:
+
+```ts
 const supabase = createTokenClient(token);
 ```
 
-Never use the cookie-based `createClient()` (from `src/lib/supabase-server.ts`) inside server actions — that is only for auth checks in middleware/layout.
+`getAuth()` returns `{ userId, token }` in one call and is the better choice when an action needs both (e.g. to hand the token to a PDF route) — it builds one cookie client instead of the two or three that separate `getAuthUserId()` / `getAuthToken()` calls each construct.
 
 ## Background email jobs (Inngest)
 

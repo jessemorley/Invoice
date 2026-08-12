@@ -2,13 +2,13 @@
 
 import { updateTag, refresh } from "next/cache";
 import { createClient } from "@/lib/supabase-server";
-import { getAuthUserId, getAuthToken } from "@/lib/auth";
+import { getAuth, getAuthUserId, getAuthToken } from "@/lib/auth";
 import type { BillingType, DayType } from "@/lib/types";
 import { fetchEntries, fetchFullClients, fetchWorkflowRates, CACHE_TAGS } from "@/lib/queries";
 import type { Entry } from "@/lib/types";
 
 export async function loadEarlierEntries(before: string): Promise<Entry[]> {
-  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  const { userId, token } = await getAuth();
   const d = new Date(before + "T00:00:00");
   d.setDate(d.getDate() - 1);
   const newBefore = d.toISOString().slice(0, 10);
@@ -120,7 +120,7 @@ export async function revalidateEntries() {
 }
 
 export async function fetchClients() {
-  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  const { userId, token } = await getAuth();
   return fetchFullClients(userId, token);
 }
 

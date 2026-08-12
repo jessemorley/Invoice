@@ -3,7 +3,7 @@
 import { updateTag, refresh } from "next/cache";
 import { createClient } from "@/lib/supabase-server";
 import { createTokenClient } from "@/lib/supabase";
-import { getAuth, getAuthUserId, getAuthToken, getAuthUser } from "@/lib/auth";
+import { getAuth, getAuthUserId, getAuthUser } from "@/lib/auth";
 import { fetchUninvoicedGroups, fetchSuggestedInvoiceEntries, fetchScheduledEmailForInvoice, fetchBusinessDetails, fetchInvoiceDetail, fetchFullClients, fetchWorkflowRates, fetchEntryById, fetchUserPreferences, CACHE_TAGS } from "@/lib/queries";
 import { inngest } from "@/lib/inngest";
 import type { Invoice, InvoiceStatus } from "@/lib/types";
@@ -65,7 +65,7 @@ export async function createInvoice(clientId: string): Promise<Invoice> {
 }
 
 export async function loadInvoiceDetail(invoiceId: string) {
-  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  const { userId, token } = await getAuth();
   return fetchInvoiceDetail(invoiceId, userId, token);
 }
 
@@ -85,12 +85,12 @@ export type InvoiceFormData = {
 };
 
 export async function loadUninvoicedGroups() {
-  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  const { userId, token } = await getAuth();
   return fetchUninvoicedGroups(userId, token);
 }
 
 export async function loadSuggestedInvoiceEntries(clientId: string, isoWeek: string) {
-  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  const { userId, token } = await getAuth();
   return fetchSuggestedInvoiceEntries(userId, token, clientId, isoWeek);
 }
 
@@ -104,7 +104,7 @@ export type GeneratedInvoice = {
 };
 
 export async function generateInvoices(groupKeys: string[]): Promise<{ created: number; invoices: GeneratedInvoice[] }> {
-  const [supabase, userId, token] = await Promise.all([createClient(), getAuthUserId(), getAuthToken()]);
+  const [supabase, { userId, token }] = await Promise.all([createClient(), getAuth()]);
   const groups = await fetchUninvoicedGroups(userId, token);
   const selected = groups.filter((g) => groupKeys.includes(g.key));
 
@@ -224,7 +224,7 @@ export type RescheduleData = {
 };
 
 export async function loadEntrySheetData(entryId: string) {
-  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  const { userId, token } = await getAuth();
   const [entry, clients, workflowRates] = await Promise.all([
     fetchEntryById(userId, entryId, token),
     fetchFullClients(userId, token),
@@ -235,13 +235,13 @@ export async function loadEntrySheetData(entryId: string) {
 
 /** The address bcc_self auto-adds, so compose forms can hide it. Null when off. */
 export async function loadSelfBccAddress(): Promise<string | null> {
-  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  const { userId, token } = await getAuth();
   const userPrefs = await fetchUserPreferences(userId, token);
   return userPrefs?.bcc_self ? (await getAuthUser()).email ?? null : null;
 }
 
 export async function loadScheduledEmail(invoiceId: string) {
-  const [userId, token] = await Promise.all([getAuthUserId(), getAuthToken()]);
+  const { userId, token } = await getAuth();
   const [scheduledEmail, invoiceDetail, businessDetails, userPrefs] = await Promise.all([
     fetchScheduledEmailForInvoice(invoiceId, userId, token),
     fetchInvoiceDetail(invoiceId, userId, token),
@@ -301,7 +301,7 @@ async function stampIssuedDate(
 }
 
 export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormData): Promise<{ id: string }> {
-  const [supabase, userId, token] = await Promise.all([createClient(), getAuthUserId(), getAuthToken()]);
+  const [supabase, { userId, token }] = await Promise.all([createClient(), getAuth()]);
 
   const [invResult, business, userPrefs] = await Promise.all([
     supabase.from("invoices").select("invoice_number").eq("id", invoiceId).eq("user_id", userId).single(),
@@ -367,7 +367,7 @@ export async function scheduleInvoiceEmail(invoiceId: string, data: EmailFormDat
 }
 
 export async function scheduleFreeEmail(data: EmailFormData): Promise<{ id: string }> {
-  const [supabase, userId, token] = await Promise.all([createClient(), getAuthUserId(), getAuthToken()]);
+  const [supabase, { userId, token }] = await Promise.all([createClient(), getAuth()]);
   const userPrefs = await fetchUserPreferences(userId, token);
   const selfBcc = userPrefs?.bcc_self ? (await getAuthUser()).email ?? null : null;
   const bccAddress = mergeBcc(data.bcc, selfBcc);
@@ -481,7 +481,7 @@ export async function deleteEmails(ids: string[]): Promise<void> {
 }
 
 export async function updateScheduledEmail(scheduledEmailId: string, data: EmailFormData): Promise<void> {
-  const [supabase, userId, token] = await Promise.all([createClient(), getAuthUserId(), getAuthToken()]);
+  const [supabase, { userId, token }] = await Promise.all([createClient(), getAuth()]);
 
   // The form is seeded with the self-BCC stripped out, so re-merge it here —
   // otherwise editing an email would quietly drop the bcc_self preference.
