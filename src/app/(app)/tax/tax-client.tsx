@@ -152,9 +152,9 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const monthly = selectedTotals?.monthly ?? [];
   const hasMonthlyData = monthly.some((m) => m.revenue > 0 || m.expenses > 0);
 
-  // 100%-stacked bar: how net profit splits into gross profit + each tax component.
+  // 100%-stacked bar: how net profit splits into after-tax profit + each tax component.
   const splitConfig = {
-    afterTax: { label: "Gross profit", color: "var(--chart-1)" },
+    afterTax: { label: "After tax", color: "var(--chart-1)" },
     incomeTax: { label: "Income tax", color: "var(--chart-3)" },
     medicareLevy: { label: "Medicare levy", color: "var(--chart-4)" },
     hecs: { label: "HECS/HELP", color: "var(--chart-5)" },
@@ -197,15 +197,12 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
             </SelectContent>
           </Select>
 
-          {/* Tier 1 — Hero: net profit + toggleable chart (monthly bars / profit-tax split) */}
+          {/* Tier 1 — Hero: revenue + toggleable chart (monthly bars / profit-tax split) */}
           <Card>
             <CardHeader className="flex flex-row items-start justify-between gap-2">
               <div>
-                <CardDescription>Net profit</CardDescription>
-                <CardTitle className="text-4xl tabular-nums">{formatAUD(net)}</CardTitle>
-                <p className="text-xs text-muted-foreground pt-1">
-                  Revenue {formatAUD(income)} − expenses {formatAUD(totalExpenses)}
-                </p>
+                <CardDescription>Revenue</CardDescription>
+                <CardTitle className="text-4xl tabular-nums">{formatAUD(income)}</CardTitle>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-xs text-muted-foreground">{fyLabel(selected)}</span>
@@ -297,8 +294,11 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
               {/* Stat tiles. ponytail: plain bordered divs, not a StatTile component — 3 usages, one file */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="rounded-xl border border-border p-4 flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground">Estimated gross profit</span>
-                  <span className="text-2xl tabular-nums text-success">{formatAUD(afterTax)}</span>
+                  <span className="text-xs text-muted-foreground">Net profit</span>
+                  <span className="text-2xl tabular-nums text-success">{formatAUD(net)}</span>
+                  <span className="text-xs text-muted-foreground">
+                    Less expenses {formatAUD(totalExpenses)}
+                  </span>
                 </div>
                 <div className="rounded-xl border border-border p-4 flex flex-col gap-1">
                   <span className="text-xs text-muted-foreground">Estimated tax</span>
@@ -372,29 +372,31 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
                 {pools.map(({ pool, categories, total }) => (
-                  <div key={pool} className="flex flex-col divide-y divide-border">
+                  <div key={pool} className="flex flex-col">
                     <div className="flex items-center justify-between pb-1.5">
                       <span className="text-sm font-medium">{EXPENSE_POOL_LABELS[pool]}</span>
                       <span className="text-sm font-medium tabular-nums shrink-0 ml-2">
                         −{formatAUD(total)}
                       </span>
                     </div>
-                    {categories.map(([category, amount]) => (
-                      <div key={category} className="flex items-center justify-between py-2">
-                        <span
-                          className="inline-flex items-center rounded-full px-2 py-0.5 text-xs"
-                          style={{
-                            backgroundColor: `${categoryColor(category)}18`,
-                            color: categoryColor(category),
-                          }}
-                        >
-                          {categoryLabel(category)}
-                        </span>
-                        <span className="text-xs tabular-nums text-muted-foreground shrink-0 ml-2">
-                          −{formatAUD(amount)}
-                        </span>
-                      </div>
-                    ))}
+                    <div className="flex flex-col divide-y divide-border">
+                      {categories.map(([category, amount]) => (
+                        <div key={category} className="flex items-center justify-between py-2">
+                          <span
+                            className="inline-flex items-center rounded-full px-2 py-0.5 text-xs"
+                            style={{
+                              backgroundColor: `${categoryColor(category)}18`,
+                              color: categoryColor(category),
+                            }}
+                          >
+                            {categoryLabel(category)}
+                          </span>
+                          <span className="text-xs tabular-nums text-muted-foreground shrink-0 ml-2">
+                            −{formatAUD(amount)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
                 {pools.length === 0 && (
