@@ -344,12 +344,9 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                 <CardTitle className="text-sm font-medium">Revenue</CardTitle>
                 <CardDescription className="tabular-nums">{formatAUD(income)}</CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col gap-2">
+              <CardContent className="flex flex-col divide-y divide-border">
                 {topClients.map(({ client, income: clientIncome }) => (
-                  <div
-                    key={client.id}
-                    className="flex items-center justify-between py-2 px-3 rounded-lg border border-border"
-                  >
+                  <div key={client.id} className="flex items-center justify-between py-2.5">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <ClientSquircle name={client.name} color={client.color} className="size-[22px] shrink-0" />
                       <span className="text-sm text-muted-foreground truncate">{client.name}</span>
@@ -358,13 +355,13 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                   </div>
                 ))}
                 {otherClientsIncome > 0 && (
-                  <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">
+                  <div className="flex items-center justify-between py-2.5">
                     <span className="text-sm text-muted-foreground">Other clients</span>
                     <span className="text-sm tabular-nums shrink-0 ml-2">{formatAUD(otherClientsIncome)}</span>
                   </div>
                 )}
                 {topClients.length === 0 && (
-                  <p className="text-sm text-muted-foreground px-3 py-2">No revenue recorded.</p>
+                  <p className="text-sm text-muted-foreground py-2">No revenue recorded.</p>
                 )}
               </CardContent>
             </Card>
@@ -375,8 +372,8 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
                 {pools.map(({ pool, categories, total }) => (
-                  <div key={pool} className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between px-1">
+                  <div key={pool} className="flex flex-col divide-y divide-border">
+                    <div className="flex items-center justify-between pb-1.5">
                       <span className="text-xs font-medium text-muted-foreground">
                         {EXPENSE_POOL_LABELS[pool]}
                       </span>
@@ -385,10 +382,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                       </span>
                     </div>
                     {categories.map(([category, amount]) => (
-                      <div
-                        key={category}
-                        className="flex items-center justify-between py-2 px-3 rounded-lg border border-border"
-                      >
+                      <div key={category} className="flex items-center justify-between py-2.5">
                         <span
                           className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
                           style={{
@@ -404,7 +398,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                   </div>
                 ))}
                 {pools.length === 0 && (
-                  <p className="text-sm text-muted-foreground px-3 py-2">No expenses recorded.</p>
+                  <p className="text-sm text-muted-foreground py-2">No expenses recorded.</p>
                 )}
               </CardContent>
             </Card>
