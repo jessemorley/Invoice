@@ -341,8 +341,8 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-                <CardDescription className="tabular-nums">{formatAUD(income)}</CardDescription>
+                <CardDescription>Revenue</CardDescription>
+                <CardTitle className="text-2xl tabular-nums">{formatAUD(income)}</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col divide-y divide-border">
                 {topClients.map(({ client, income: clientIncome }) => (
@@ -367,32 +367,32 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-medium">Expenses</CardTitle>
-                <CardDescription className="tabular-nums">{formatAUD(totalExpenses)}</CardDescription>
+                <CardDescription>Expenses</CardDescription>
+                <CardTitle className="text-2xl tabular-nums">{formatAUD(totalExpenses)}</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
                 {pools.map(({ pool, categories, total }) => (
                   <div key={pool} className="flex flex-col divide-y divide-border">
                     <div className="flex items-center justify-between pb-1.5">
-                      <span className="text-xs font-medium text-muted-foreground">
-                        {EXPENSE_POOL_LABELS[pool]}
-                      </span>
-                      <span className="text-xs tabular-nums text-muted-foreground shrink-0 ml-2">
+                      <span className="text-sm font-medium">{EXPENSE_POOL_LABELS[pool]}</span>
+                      <span className="text-sm font-medium tabular-nums shrink-0 ml-2">
                         −{formatAUD(total)}
                       </span>
                     </div>
                     {categories.map(([category, amount]) => (
-                      <div key={category} className="flex items-center justify-between py-2.5">
+                      <div key={category} className="flex items-center justify-between py-2">
                         <span
-                          className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                          className="inline-flex items-center rounded-full px-2 py-0.5 text-xs"
                           style={{
-                            backgroundColor: `${categoryColor(category)}22`,
+                            backgroundColor: `${categoryColor(category)}18`,
                             color: categoryColor(category),
                           }}
                         >
                           {categoryLabel(category)}
                         </span>
-                        <span className="text-sm tabular-nums shrink-0 ml-2">−{formatAUD(amount)}</span>
+                        <span className="text-xs tabular-nums text-muted-foreground shrink-0 ml-2">
+                          −{formatAUD(amount)}
+                        </span>
                       </div>
                     ))}
                   </div>
