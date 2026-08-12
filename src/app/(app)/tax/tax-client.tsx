@@ -303,6 +303,22 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                 <div className="rounded-xl border border-border p-4 flex flex-col gap-1">
                   <span className="text-xs text-muted-foreground">Estimated tax</span>
                   <span className="text-2xl tabular-nums">{formatAUD(tax.total)}</span>
+                  <dl className="text-xs text-muted-foreground flex flex-col gap-0.5 pt-1">
+                    <div className="flex justify-between gap-2">
+                      <dt>Income tax</dt>
+                      <dd className="tabular-nums">{formatAUD(tax.incomeTax)}</dd>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <dt>Medicare levy</dt>
+                      <dd className="tabular-nums">{formatAUD(tax.medicareLevy)}</dd>
+                    </div>
+                    {tax.hecs > 0 && (
+                      <div className="flex justify-between gap-2">
+                        <dt>HECS/HELP</dt>
+                        <dd className="tabular-nums">{formatAUD(tax.hecs)}</dd>
+                      </div>
+                    )}
+                  </dl>
                 </div>
                 <div className="rounded-xl border border-border p-4 flex flex-col gap-1">
                   <span className="text-xs text-muted-foreground">
@@ -406,11 +422,11 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
             </CardHeader>
             {wfhRate && (
               <CardContent className="flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-3 py-2 px-3 rounded-lg border border-border">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
                   <label htmlFor="wfh-hours" className="text-sm text-muted-foreground">
                     Hours worked from home
                   </label>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2">
                     <Input
                       id="wfh-hours"
                       type="number"
@@ -422,64 +438,28 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                       onKeyDown={(e) => { if (e.key === "Enter") saveWfhHours(); }}
                       placeholder="0"
                       disabled={pending}
-                      className="w-28 text-right tabular-nums"
+                      className="flex-1 sm:flex-none sm:w-28 min-w-0 text-right tabular-nums"
                     />
                     <Button
                       variant="outline"
+                      className="shrink-0"
                       onClick={() => setWfhDraft(String(wfhSeedHours))}
                       disabled={pending || wfhParsed === wfhSeedHours}
                     >
                       Calculate
                     </Button>
-                    <Button onClick={saveWfhHours} disabled={pending || !wfhSaveable}>
+                    <Button className="shrink-0" onClick={saveWfhHours} disabled={pending || !wfhSaveable}>
                       {pending ? <Spinner className="size-4" /> : wfhHours > 0 ? "Update" : "Add"}
                     </Button>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground px-3">
+                <p className="text-xs text-muted-foreground">
                   {weekdaysWithoutEntries > 0 &&
                     `Calculate fills ${weekdaysWithoutEntries} weekdays with no entry logged × 8 h = ${wfhSeedHours} h. `}
-                  Covers electricity, gas, internet, phone and stationery — don&apos;t claim those
-                  separately. Depreciation on gear, repairs and cleaning are still claimable. Keep a
-                  record of every hour worked from home.
+                  Covers electricity, gas, internet, phone and stationery.
                 </p>
               </CardContent>
             )}
-          </Card>
-
-          {/* Tier 3b — Tax estimate breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Tax estimate</CardTitle>
-              <CardDescription className="tabular-nums">{formatAUD(tax.total)} total</CardDescription>
-              {selected !== currentStartYear && (
-                <p className="text-xs text-muted-foreground pt-1">
-                  Calculated using current tax brackets, not {fyLabel(selected)}&apos;s — may not match brackets in force that year.
-                </p>
-              )}
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">
-                <span className="text-sm text-muted-foreground">Income tax</span>
-                <span className="text-sm tabular-nums shrink-0 ml-2">−{formatAUD(tax.incomeTax)}</span>
-              </div>
-              <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">
-                <span className="text-sm text-muted-foreground">Medicare levy</span>
-                <span className="text-sm tabular-nums shrink-0 ml-2">−{formatAUD(tax.medicareLevy)}</span>
-              </div>
-              {tax.hecs > 0 && (
-                <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">
-                  <span className="text-sm text-muted-foreground">HECS/HELP</span>
-                  <span className="text-sm tabular-nums shrink-0 ml-2">−{formatAUD(tax.hecs)}</span>
-                </div>
-              )}
-              {paygPaid > 0 && (
-                <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">
-                  <span className="text-sm text-muted-foreground">PAYG instalments paid</span>
-                  <span className="text-sm tabular-nums shrink-0 ml-2">+{formatAUD(paygPaid)}</span>
-                </div>
-              )}
-            </CardContent>
           </Card>
 
           {/* Tier 4 — PAYG instalments (data entry, demoted) */}
