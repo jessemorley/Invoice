@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from "react";
 import type { TaxFyTotals } from "@/lib/queries";
-import { formatAUD, formatDateShort, fyLabel, fyStartYear } from "@/lib/format";
+import { formatAUD, formatDateShort, fyLabel, fyStartYear, wfhFixedRate } from "@/lib/format";
 import { taxEstimate } from "@/lib/tax-estimate";
-import { createPaygInstalment, deletePaygInstalment } from "@/app/(app)/tax/actions";
+import { createPaygInstalment, deletePaygInstalment, setWfhHours } from "@/app/(app)/tax/actions";
 import { invalidate } from "@/lib/invalidate";
-import { EXPENSE_CATEGORY_LABELS, EXPENSE_CATEGORY_COLORS } from "@/lib/mock-data";
+import { EXPENSE_CATEGORY_LABELS, EXPENSE_CATEGORY_COLORS, EXPENSE_POOL_LABELS } from "@/lib/mock-data";
 import type { ExpenseCategory } from "@/lib/types";
 import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
@@ -76,22 +76,33 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const [newDate, setNewDate] = useState(() => new Date().toLocaleDateString("en-CA"));
   const [newAmount, setNewAmount] = useState("");
   const [chartMode, setChartMode] = useState<"monthly" | "split">("monthly");
+  // null = untouched → input shows saved hours, or the weekdays-without-entries seed.
+  const [wfhDraft, setWfhDraft] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const addInstalment = () => {
     const amount = Number(newAmount);
     if (!newDate || !Number.isFinite(amount) || amount <= 0) return;
     startTransition(async () => {
-      await createPaygInstalment({ paid_date: newDate, amount, label: null });
-      invalidate("payg");
-      setNewAmount("");
+      try {
+        await createPaygInstalment({ paid_date: newDate, amount, label: null });
+        invalidate("payg");
+        setNewAmount("");
+      } catch (err) {
+        // startTransition swallows rejections — without this the button silently no-ops.
+        console.error("createPaygInstalment failed", err);
+      }
     });
   };
 
   const removeInstalment = (id: string) => {
     startTransition(async () => {
-      await deletePaygInstalment(id);
-      invalidate("payg");
+      try {
+        await deletePaygInstalment(id);
+        invalidate("payg");
+      } catch (err) {
+        console.error("deletePaygInstalment failed", err);
+      }
     });
   };
 
@@ -104,7 +115,34 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const selectedTotals = fyTotals.find((f) => f.startYear === selected);
   const income = selectedTotals?.income ?? 0;
   const expenditure = selectedTotals?.expenditure ?? 0;
-  const net = income - expenditure;
+  // WFH fixed-rate deduction reduces taxable income alongside expenses.
+  // null = never saved; a saved 0 is a real value and must not fall back to the seed.
+  const wfhHours = selectedTotals?.wfhHours ?? null;
+  const wfhRate = wfhFixedRate(selected);
+  // Calculated seed: weekdays with no entry logged × 8h/day, used until a value is saved.
+  const weekdaysWithoutEntries = selectedTotals?.weekdaysWithoutEntries ?? 0;
+  const wfhSeedHours = weekdaysWithoutEntries * 8;
+  const wfhValue = wfhDraft ?? String(wfhHours ?? wfhSeedHours ?? "");
+  const wfhParsed = wfhValue.trim() === "" ? 0 : Number(wfhValue);
+  const wfhValid = Number.isFinite(wfhParsed) && wfhParsed >= 0;
+  const wfhSaveable = wfhValid && wfhParsed !== wfhHours;
+  // Tax-view-only deduction: joins the expense totals here but is never a stored
+  // expense row. Uses saved hours only — the input applies on Add/Update.
+  const wfhDeduction = wfhRate ? (wfhHours ?? 0) * wfhRate : 0;
+  const saveWfhHours = () => {
+    if (!wfhSaveable) return;
+    startTransition(async () => {
+      try {
+        await setWfhHours(selected, wfhParsed);
+        invalidate("payg");
+        setWfhDraft(null);
+      } catch (err) {
+        console.error("setWfhHours failed", err);
+      }
+    });
+  };
+  const totalExpenses = expenditure + wfhDeduction;
+  const net = income - totalExpenses;
   const tax = taxEstimate(net);
   const afterTax = net - tax.total;
   const paygInstalments = selectedTotals?.paygInstalments ?? [];
@@ -119,9 +157,9 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const monthly = selectedTotals?.monthly ?? [];
   const hasMonthlyData = monthly.some((m) => m.revenue > 0 || m.expenses > 0);
 
-  // 100%-stacked bar: how net profit splits into gross profit + each tax component.
+  // 100%-stacked bar: how net profit splits into after-tax profit + each tax component.
   const splitConfig = {
-    afterTax: { label: "Gross profit", color: "var(--chart-1)" },
+    afterTax: { label: "After tax", color: "var(--chart-1)" },
     incomeTax: { label: "Income tax", color: "var(--chart-3)" },
     medicareLevy: { label: "Medicare levy", color: "var(--chart-4)" },
     hecs: { label: "HECS/HELP", color: "var(--chart-5)" },
@@ -134,16 +172,24 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const incomeByClient = selectedTotals?.incomeByClient ?? [];
   const topClients = incomeByClient.slice(0, 4);
   const otherClientsIncome = incomeByClient.slice(4).reduce((sum, c) => sum + c.income, 0);
-  const categoryBreakdown = Object.entries(selectedTotals?.expenditureByCategory ?? {}).sort(
-    ([, a], [, b]) => b - a
-  );
+  const pools = (["depreciation", "other"] as const)
+    .map((pool) => {
+      const categories = Object.entries(selectedTotals?.expenditureByPool?.[pool] ?? {});
+      // WFH fixed-rate deduction joins the immediate-deduction pool, tax view only.
+      if (pool === "other" && wfhDeduction > 0) categories.push(["wfh", wfhDeduction]);
+      categories.sort(([, a], [, b]) => b - a);
+      return { pool, categories, total: categories.reduce((sum, [, amt]) => sum + amt, 0) };
+    })
+    .filter((p) => p.categories.length > 0);
+  const categoryLabel = (c: string) => (c === "wfh" ? "Working from home" : EXPENSE_CATEGORY_LABELS[c as ExpenseCategory]);
+  const categoryColor = (c: string) => (c === "wfh" ? "#64748b" : EXPENSE_CATEGORY_COLORS[c as ExpenseCategory]);
 
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Tax" />
       <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
         <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
-          <Select value={String(selected)} onValueChange={(v) => setSelected(Number(v))}>
+          <Select value={String(selected)} onValueChange={(v) => { setSelected(Number(v)); setWfhDraft(null); }}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -156,15 +202,12 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
             </SelectContent>
           </Select>
 
-          {/* Tier 1 — Hero: net profit + toggleable chart (monthly bars / profit-tax split) */}
+          {/* Tier 1 — Hero: revenue + toggleable chart (monthly bars / profit-tax split) */}
           <Card>
             <CardHeader className="flex flex-row items-start justify-between gap-2">
               <div>
-                <CardDescription>Net profit</CardDescription>
-                <CardTitle className="text-4xl tabular-nums">{formatAUD(net)}</CardTitle>
-                <p className="text-xs text-muted-foreground pt-1">
-                  Revenue {formatAUD(income)} − expenses {formatAUD(expenditure)}
-                </p>
+                <CardDescription>Revenue</CardDescription>
+                <CardTitle className="text-4xl tabular-nums">{formatAUD(income)}</CardTitle>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-xs text-muted-foreground">{fyLabel(selected)}</span>
@@ -256,12 +299,31 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
               {/* Stat tiles. ponytail: plain bordered divs, not a StatTile component — 3 usages, one file */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="rounded-xl border border-border p-4 flex flex-col gap-1">
-                  <span className="text-xs text-muted-foreground">Estimated gross profit</span>
-                  <span className="text-2xl tabular-nums text-success">{formatAUD(afterTax)}</span>
+                  <span className="text-xs text-muted-foreground">Net profit</span>
+                  <span className="text-2xl tabular-nums text-success">{formatAUD(net)}</span>
+                  <span className="text-xs text-muted-foreground">
+                    Less expenses {formatAUD(totalExpenses)}
+                  </span>
                 </div>
                 <div className="rounded-xl border border-border p-4 flex flex-col gap-1">
                   <span className="text-xs text-muted-foreground">Estimated tax</span>
                   <span className="text-2xl tabular-nums">{formatAUD(tax.total)}</span>
+                  <dl className="text-xs text-muted-foreground flex flex-col gap-0.5 pt-1">
+                    <div className="flex justify-between gap-2">
+                      <dt>Income tax</dt>
+                      <dd className="tabular-nums">{formatAUD(tax.incomeTax)}</dd>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <dt>Medicare levy</dt>
+                      <dd className="tabular-nums">{formatAUD(tax.medicareLevy)}</dd>
+                    </div>
+                    {tax.hecs > 0 && (
+                      <div className="flex justify-between gap-2">
+                        <dt>HECS/HELP</dt>
+                        <dd className="tabular-nums">{formatAUD(tax.hecs)}</dd>
+                      </div>
+                    )}
+                  </dl>
                 </div>
                 <div className="rounded-xl border border-border p-4 flex flex-col gap-1">
                   <span className="text-xs text-muted-foreground">
@@ -284,15 +346,12 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-                <CardDescription className="tabular-nums">{formatAUD(income)}</CardDescription>
+                <CardDescription>Revenue</CardDescription>
+                <CardTitle className="text-2xl tabular-nums">{formatAUD(income)}</CardTitle>
               </CardHeader>
-              <CardContent className="flex flex-col gap-2">
+              <CardContent className="flex flex-col divide-y divide-border">
                 {topClients.map(({ client, income: clientIncome }) => (
-                  <div
-                    key={client.id}
-                    className="flex items-center justify-between py-2 px-3 rounded-lg border border-border"
-                  >
+                  <div key={client.id} className="flex items-center justify-between py-2.5">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <ClientSquircle name={client.name} color={client.color} className="size-[22px] shrink-0" />
                       <span className="text-sm text-muted-foreground truncate">{client.name}</span>
@@ -301,79 +360,107 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                   </div>
                 ))}
                 {otherClientsIncome > 0 && (
-                  <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">
+                  <div className="flex items-center justify-between py-2.5">
                     <span className="text-sm text-muted-foreground">Other clients</span>
                     <span className="text-sm tabular-nums shrink-0 ml-2">{formatAUD(otherClientsIncome)}</span>
                   </div>
                 )}
                 {topClients.length === 0 && (
-                  <p className="text-sm text-muted-foreground px-3 py-2">No revenue recorded.</p>
+                  <p className="text-sm text-muted-foreground py-2">No revenue recorded.</p>
                 )}
               </CardContent>
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-medium">Expenses</CardTitle>
-                <CardDescription className="tabular-nums">{formatAUD(expenditure)}</CardDescription>
+                <CardDescription>Expenses</CardDescription>
+                <CardTitle className="text-2xl tabular-nums">{formatAUD(totalExpenses)}</CardTitle>
               </CardHeader>
-              <CardContent className="flex flex-col gap-2">
-                {categoryBreakdown.map(([category, amount]) => (
-                  <div
-                    key={category}
-                    className="flex items-center justify-between py-2 px-3 rounded-lg border border-border"
-                  >
-                    <span
-                      className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                      style={{
-                        backgroundColor: `${EXPENSE_CATEGORY_COLORS[category as ExpenseCategory]}22`,
-                        color: EXPENSE_CATEGORY_COLORS[category as ExpenseCategory],
-                      }}
-                    >
-                      {EXPENSE_CATEGORY_LABELS[category as ExpenseCategory]}
-                    </span>
-                    <span className="text-sm tabular-nums shrink-0 ml-2">−{formatAUD(amount)}</span>
+              <CardContent className="flex flex-col gap-4">
+                {pools.map(({ pool, categories, total }) => (
+                  <div key={pool} className="flex flex-col">
+                    <div className="flex items-center justify-between pb-1.5">
+                      <span className="text-sm font-medium">{EXPENSE_POOL_LABELS[pool]}</span>
+                      <span className="text-sm font-medium tabular-nums shrink-0 ml-2">
+                        −{formatAUD(total)}
+                      </span>
+                    </div>
+                    <div className="flex flex-col divide-y divide-border">
+                      {categories.map(([category, amount]) => (
+                        <div key={category} className="flex items-center justify-between py-2">
+                          <span
+                            className="inline-flex items-center rounded-full px-2 py-0.5 text-xs"
+                            style={{
+                              backgroundColor: `${categoryColor(category)}18`,
+                              color: categoryColor(category),
+                            }}
+                          >
+                            {categoryLabel(category)}
+                          </span>
+                          <span className="text-xs tabular-nums text-muted-foreground shrink-0 ml-2">
+                            −{formatAUD(amount)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
-                {categoryBreakdown.length === 0 && (
-                  <p className="text-sm text-muted-foreground px-3 py-2">No expenses recorded.</p>
+                {pools.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-2">No expenses recorded.</p>
                 )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Tier 3b — Tax estimate breakdown */}
+          {/* Tier 3a2 — Working from home (ATO fixed-rate method) */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Tax estimate</CardTitle>
-              <CardDescription className="tabular-nums">{formatAUD(tax.total)} total</CardDescription>
-              {selected !== currentStartYear && (
-                <p className="text-xs text-muted-foreground pt-1">
-                  Calculated using current tax brackets, not {fyLabel(selected)}&apos;s — may not match brackets in force that year.
-                </p>
-              )}
+              <CardTitle className="text-sm font-medium">Working from home</CardTitle>
+              <CardDescription className="tabular-nums">
+                {wfhRate
+                  ? `${formatAUD(wfhDeduction)} deduction — fixed rate ${Math.round(wfhRate * 100)}c/hr`
+                  : `No fixed rate applies to ${fyLabel(selected)}`}
+              </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">
-                <span className="text-sm text-muted-foreground">Income tax</span>
-                <span className="text-sm tabular-nums shrink-0 ml-2">−{formatAUD(tax.incomeTax)}</span>
-              </div>
-              <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">
-                <span className="text-sm text-muted-foreground">Medicare levy</span>
-                <span className="text-sm tabular-nums shrink-0 ml-2">−{formatAUD(tax.medicareLevy)}</span>
-              </div>
-              {tax.hecs > 0 && (
-                <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">
-                  <span className="text-sm text-muted-foreground">HECS/HELP</span>
-                  <span className="text-sm tabular-nums shrink-0 ml-2">−{formatAUD(tax.hecs)}</span>
+            {wfhRate && (
+              <CardContent className="flex flex-col gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 py-2 px-3 rounded-lg border border-border">
+                  <label htmlFor="wfh-hours" className="text-sm text-muted-foreground">
+                    Hours worked from home
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="wfh-hours"
+                      type="number"
+                      min={0}
+                      step="0.5"
+                      inputMode="decimal"
+                      value={wfhValue}
+                      onChange={(e) => setWfhDraft(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") saveWfhHours(); }}
+                      placeholder="0"
+                      disabled={pending}
+                      className="flex-1 sm:flex-none sm:w-28 min-w-0 text-right tabular-nums"
+                    />
+                    <Button
+                      variant="outline"
+                      className="shrink-0"
+                      onClick={() => setWfhDraft(String(wfhSeedHours))}
+                      disabled={pending || wfhParsed === wfhSeedHours}
+                    >
+                      Calculate
+                    </Button>
+                    <Button className="shrink-0" onClick={saveWfhHours} disabled={pending || !wfhSaveable}>
+                      {pending ? <Spinner className="size-4" /> : wfhHours !== null ? "Update" : "Add"}
+                    </Button>
+                  </div>
                 </div>
-              )}
-              {paygPaid > 0 && (
-                <div className="flex items-center justify-between py-2 px-3 rounded-lg border border-border">
-                  <span className="text-sm text-muted-foreground">PAYG instalments paid</span>
-                  <span className="text-sm tabular-nums shrink-0 ml-2">+{formatAUD(paygPaid)}</span>
-                </div>
-              )}
-            </CardContent>
+                <p className="text-xs text-muted-foreground px-3">
+                  {weekdaysWithoutEntries > 0 &&
+                    `Calculate fills ${weekdaysWithoutEntries} weekdays with no entry logged × 8 h = ${wfhSeedHours} h. `}
+                  Covers electricity, gas, internet, phone and stationery.
+                </p>
+              </CardContent>
+            )}
           </Card>
 
           {/* Tier 4 — PAYG instalments (data entry, demoted) */}
@@ -410,8 +497,10 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                 <div className="flex items-center gap-2 pt-1">
                   <Input
                     type="date"
+                    // Typing emits "" until all 3 segments are complete — only commit
+                    // real values, or a half-typed date would wipe the committed one.
                     value={newDate}
-                    onChange={(e) => setNewDate(e.target.value)}
+                    onChange={(e) => { if (e.target.value) setNewDate(e.target.value); }}
                     className="w-auto"
                   />
                   <Input
@@ -425,7 +514,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                     onKeyDown={(e) => { if (e.key === "Enter") addInstalment(); }}
                     className="flex-1"
                   />
-                  <Button onClick={addInstalment} disabled={pending || !newAmount}>
+                  <Button onClick={addInstalment} disabled={pending || !newAmount || !newDate}>
                     {pending ? <Spinner className="size-4" /> : "Add"}
                   </Button>
                 </div>

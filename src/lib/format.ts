@@ -23,8 +23,36 @@ export function fyLabel(startYear: number): string {
   return `FY${String(startYear + 1).slice(2)}`;
 }
 
+// ATO working-from-home fixed rate (PCG 2023/1), by FY start year.
+// 70c from FY25 (2024-25); 67c for FY23 and FY24. Earlier years used a different
+// method entirely, so they get no fixed-rate estimate.
+export function wfhFixedRate(startYear: number): number | null {
+  if (startYear >= 2024) return 0.7;
+  if (startYear >= 2022) return 0.67;
+  return null;
+}
+
 export function fyDateRange(startYear: number): { from: string; to: string } {
   return { from: `${startYear}-07-01`, to: `${startYear + 1}-06-30` };
+}
+
+// Weekdays (Mon–Fri) from the FY start through `today` (capped at FY end) with
+// no entry logged — the default guess for hours/days worked from home.
+export function fyWeekdaysWithoutEntries(
+  startYear: number,
+  entryDates: ReadonlySet<string>,
+  today: string
+): number {
+  const { from, to } = fyDateRange(startYear);
+  const end = today < to ? today : to;
+  let count = 0;
+  for (const d = new Date(from + "T00:00:00Z"); ; d.setUTCDate(d.getUTCDate() + 1)) {
+    const dateStr = d.toISOString().slice(0, 10);
+    if (dateStr > end) break;
+    const dow = d.getUTCDay();
+    if (dow >= 1 && dow <= 5 && !entryDates.has(dateStr)) count++;
+  }
+  return count;
 }
 
 export function formatDate(dateStr: string): string {
