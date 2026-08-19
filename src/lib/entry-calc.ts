@@ -73,9 +73,11 @@ export function calcBatchBonus(
     const rate = workflowRates.find(
       (r) => r.client_id === client.id && r.workflow === line.workflow
     );
-    if (!rate) continue;
+    if (!rate || !rate.upper_limit_skus) continue;
     pct += (line.skus / rate.upper_limit_skus) * 100;
-    maxBonus = rate.max_bonus;
+    // largest cap across the mixed lines — Apparel and Model Shot can carry
+    // different max_bonus values, so "last line wins" would pick one arbitrarily
+    maxBonus = Math.max(maxBonus, rate.max_bonus);
   }
   const bonus = (Math.min(pct, 100) / 100) * maxBonus;
 

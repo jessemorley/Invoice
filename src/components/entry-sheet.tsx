@@ -66,6 +66,9 @@ function defaultForm(entry: Entry | null, client: Client | null): FormState {
       date: entry.date,
       day_type: (entry.day_type as "full" | "half") ?? "full",
       workflow_type: entry.workflow_type ?? "Apparel",
+      // Entries saved before batch_lines existed carry their count in `skus` with a real
+      // workflow name in workflow_type — rebuild a single line from those so they reopen
+      // with the SKUs against the right workflow rather than a fabricated "Batch A".
       batch_lines: entry.batch_lines?.length
         ? entry.batch_lines
         : [{ workflow: entry.workflow_type && entry.workflow_type !== "Product" ? entry.workflow_type : "Batch A", skus: entry.skus ?? 0 }],
@@ -195,6 +198,9 @@ function SummaryPanel({
 // ── Main component ────────────────────────────────────────────────────────────
 
 const PRODUCT_WORKFLOWS = ["Batch A", "Batch B", "Batch C", "Batch D", "Flatlay", "Model Shot"];
+// Apparel days split across Apparel and Model Shot work; both reuse the batch_lines
+// mechanism so the day's bonus caps once instead of per-entry.
+const APPAREL_WORKFLOWS = ["Apparel", "Model Shot"];
 
 export function EntrySheet({
   open,
@@ -270,6 +276,11 @@ export function EntrySheet({
     [clientWorkflowSet]
   );
 
+  const apparelSubOptions = useMemo(
+    () => APPAREL_WORKFLOWS.filter((w) => clientWorkflowSet.has(w)),
+    [clientWorkflowSet]
+  );
+
   const isProductWorkflow = form.workflow_type === "Product" || PRODUCT_WORKFLOWS.includes(form.workflow_type);
   const topWorkflow: "Apparel" | "Product" | "Own Brand" = isProductWorkflow
     ? "Product"
@@ -277,13 +288,25 @@ export function EntrySheet({
 
   function handleTopWorkflow(v: string) {
     if (!v) return;
-    if (v === "Product") {
-      // batch_lines is left as-is so re-selecting Product after a detour to
-      // Apparel/Own Brand restores whatever the user had already entered
-      set("workflow_type", "Product");
-    } else {
-      setForm((prev) => ({ ...prev, workflow_type: v, skus: null }));
-    }
+    // Product and Apparel share one batch_lines array, so switching between them seeds
+    // the new mode's default line. Own Brand has no SKU fields and leaves them alone.
+    // ponytail: a detour through the other mode discards its lines; separate arrays per
+    // mode if that turns out to matter in practice.
+    setForm((prev) => {
+      if (v === "Own Brand") return { ...prev, workflow_type: v, skus: null };
+      const defaults = v === "Product" ? productSubOptions : apparelSubOptions;
+      const belongs = v === "Product" ? PRODUCT_WORKFLOWS : APPAREL_WORKFLOWS;
+      // already showing this mode's lines (e.g. re-selecting Product) — keep them
+      const keep = prev.batch_lines.every((l) => belongs.includes(l.workflow));
+      return {
+        ...prev,
+        workflow_type: v,
+        skus: null,
+        batch_lines: keep
+          ? prev.batch_lines
+          : [{ workflow: defaults[0] ?? belongs[0], skus: 0 }],
+      };
+    });
   }
 
   function setBatchLine(index: number, patch: Partial<{ workflow: string; skus: number }>) {
@@ -293,9 +316,16 @@ export function EntrySheet({
     }));
   }
 
+  const isProductMode = topWorkflow === "Product";
+  const isApparelMode = topWorkflow === "Apparel";
+  // workflows selectable on the lines for whichever mode is showing
+  const subOptions = isProductMode ? productSubOptions : apparelSubOptions;
+  // Own Brand has no SKU lines at all
+  const usesBatchLines = (isProductMode || isApparelMode) && subOptions.length > 0;
+
   function addBatchLine() {
     const used = new Set(form.batch_lines.map((l) => l.workflow));
-    const next = productSubOptions.find((w) => !used.has(w)) ?? productSubOptions[0] ?? "Batch A";
+    const next = subOptions.find((w) => !used.has(w)) ?? subOptions[0] ?? "Batch A";
     setForm((prev) => ({ ...prev, batch_lines: [...prev.batch_lines, { workflow: next, skus: 0 }] }));
   }
 
@@ -303,8 +333,7 @@ export function EntrySheet({
     setForm((prev) => ({ ...prev, batch_lines: prev.batch_lines.filter((_, i) => i !== index) }));
   }
 
-  const isProductMode = topWorkflow === "Product";
-  const isMultiBatch = isProductMode && form.batch_lines.length > 1;
+  const isMultiBatch = usesBatchLines && form.batch_lines.length > 1;
 
   const calcResult = useMemo(() => {
     if (!selectedClient) return null;
@@ -312,15 +341,16 @@ export function EntrySheet({
       if (isMultiBatch) {
         return calcBatchBonus(selectedClient, form.batch_lines, workflowRates);
       }
-      const workflow = isProductMode ? form.batch_lines[0].workflow : form.workflow_type;
-      const skus = isProductMode ? form.batch_lines[0].skus : form.skus;
+      // single line keeps the per-workflow KPI/incentive-rate formula
+      const workflow = usesBatchLines ? form.batch_lines[0].workflow : form.workflow_type;
+      const skus = usesBatchLines ? form.batch_lines[0].skus : form.skus;
       return calcDayRate(selectedClient, form.day_type, workflow, skus, workflowRates);
     }
     if (billingType === "hourly") {
       return calcHourly(selectedClient, form.start_time, form.finish_time, form.break_minutes, form.role);
     }
     return calcManual(form.manual_amount, form.skus, selectedClient);
-  }, [selectedClient, billingType, form, workflowRates, isProductMode, isMultiBatch]);
+  }, [selectedClient, billingType, form, workflowRates, usesBatchLines, isMultiBatch]);
 
   function buildPayload(): EntryFormData {
     const calc = calcResult ?? { base: 0, bonus: 0, superAmt: 0, total: 0, hoursWorked: null };
@@ -330,9 +360,11 @@ export function EntrySheet({
       date: form.date,
       billing_type: billingType,
       day_type: billingType === "day_rate" ? form.day_type : null,
+      // Product collapses its batch names into "Product"; Apparel keeps its own name.
+      // Either way the per-workflow split lives in batch_lines.
       workflow_type: billingType === "day_rate" ? (isProductMode ? "Product" : form.workflow_type) : null,
-      batch_lines: billingType === "day_rate" && isProductMode ? form.batch_lines : null,
-      skus: isProductMode ? batchTotalSkus : (billingType === "day_rate" && needsSkus) || billingType === "manual" ? form.skus : null,
+      batch_lines: billingType === "day_rate" && usesBatchLines ? form.batch_lines : null,
+      skus: usesBatchLines ? batchTotalSkus : (billingType === "day_rate" && needsSkus) || billingType === "manual" ? form.skus : null,
       brand: billingType === "day_rate" && needsBrand ? form.brand || null : null,
       label: showEntryLabel || billingType === "manual" ? form.label || null : null,
       description: showDescription ? form.description || null : null,
@@ -576,9 +608,9 @@ export function EntrySheet({
                 </Field>
               )}
 
-              {/* Product batch lines */}
-              {topWorkflow === "Product" && productSubOptions.length > 0 && (
-                <Field label="Batches">
+              {/* SKU lines — batches for Product, Apparel/Model Shot for Apparel */}
+              {usesBatchLines && (
+                <Field label={isProductMode ? "Batches" : "SKUs"}>
                   <div className="flex flex-col gap-3">
                     {form.batch_lines.map((line, i) => (
                       <div key={i} className="flex flex-col gap-1.5">
@@ -586,7 +618,7 @@ export function EntrySheet({
                           <SegmentedControl
                             value={line.workflow}
                             onValueChange={(v) => setBatchLine(i, { workflow: v })}
-                            options={productSubOptions.map((opt) => ({ value: opt, label: opt }))}
+                            options={subOptions.map((opt) => ({ value: opt, label: opt }))}
                             className="flex-1"
                             itemClassName="text-xs"
                           />
@@ -614,7 +646,7 @@ export function EntrySheet({
                         />
                       </div>
                     ))}
-                    {form.batch_lines.length < productSubOptions.length && (
+                    {form.batch_lines.length < subOptions.length && (
                       <Button
                         type="button"
                         variant="outline"
@@ -622,15 +654,15 @@ export function EntrySheet({
                         className="self-start"
                         onClick={addBatchLine}
                       >
-                        <Plus className="size-4" /> Add batch
+                        <Plus className="size-4" /> {isProductMode ? "Add batch" : "Add workflow"}
                       </Button>
                     )}
                   </div>
                 </Field>
               )}
 
-              {/* SKUs (Apparel) */}
-              {needsSkus && topWorkflow !== "Product" && (
+              {/* Fallback SKU field — a day_rate workflow with no configured rate rows */}
+              {needsSkus && !usesBatchLines && (
                 <Field label="SKUs">
                   <Input
                     type="number"
