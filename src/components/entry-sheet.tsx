@@ -143,15 +143,14 @@ function Field({
   );
 }
 
-// Progress toward the day's SKU bonus. Full bar = upper limit (max bonus);
-// the tick marks the KPI, below which no bonus is earned.
-// ponytail: two divs rather than a Progress dependency — the KPI tick needs
-// absolute positioning the primitive doesn't expose anyway.
-function SkuProgress({ skus, kpi, upperLimit }: { skus: number; kpi: number; upperLimit: number }) {
-  if (!upperLimit) return null;
-  const pct = Math.min((skus / upperLimit) * 100, 100);
-  const kpiPct = Math.min((kpi / upperLimit) * 100, 100);
-  const atMax = skus >= upperLimit;
+// Progress toward the day's SKU bonus, plotted as a share of max bonus — the
+// same quantity the summary shows in dollars, so the two can never disagree.
+// No KPI tick: on a bonus axis the threshold is always zero, i.e. the left edge.
+// ponytail: two divs rather than a Progress dependency for one bar.
+function SkuProgress({ bonus, maxBonus }: { bonus: number; maxBonus: number }) {
+  if (!maxBonus) return null;
+  const pct = Math.min((bonus / maxBonus) * 100, 100);
+  const atMax = bonus >= maxBonus;
 
   return (
     <div className="px-4 pt-1.5 flex flex-col gap-1">
@@ -159,23 +158,14 @@ function SkuProgress({ skus, kpi, upperLimit }: { skus: number; kpi: number; upp
         <div
           className={cn(
             "h-full rounded-full transition-all",
-            atMax ? "bg-emerald-500" : skus >= kpi ? "bg-primary" : "bg-muted-foreground/40"
+            atMax ? "bg-emerald-500" : bonus > 0 ? "bg-primary" : "bg-muted-foreground/40"
           )}
           style={{ width: `${pct}%` }}
         />
-        {kpiPct < 100 && (
-          <div
-            className="absolute inset-y-0 w-0.5 bg-background"
-            style={{ left: `${kpiPct}%` }}
-            aria-hidden
-          />
-        )}
       </div>
       <div className="flex justify-between text-[11px] text-muted-foreground tabular-nums">
-        <span>{skus} SKUs</span>
-        <span>
-          KPI {kpi} · max {upperLimit}
-        </span>
+        <span>{Math.round(pct)}% of bonus</span>
+        <span>{formatAUD(bonus)} / {formatAUD(maxBonus)}</span>
       </div>
     </div>
   );
@@ -394,26 +384,21 @@ export function EntrySheet({
     return calcManual(form.manual_amount, form.skus, selectedClient);
   }, [selectedClient, billingType, form, workflowRates, usesBatchLines, isMultiBatch, filledLines, subOptions]);
 
-  // Bar figures. A single workflow shows its own KPI/upper limit; mixed lines are
-  // summed so the bar tracks calcBatchBonus, which works in share-of-limit terms.
+  // Bar figures. The fill is the bonus the summary already shows, as a share of
+  // this day's max bonus — never a parallel SKU calculation, which would drift
+  // from the real formula the moment two lines weight SKUs differently.
   const skuProgress = useMemo(() => {
     if (!selectedClient || billingType !== "day_rate" || !usesBatchLines) return null;
-    if (form.day_type !== "full") return null;
-    const rates = filledLines
-      .map((l) => ({
-        line: l,
-        rate: workflowRates.find(
-          (r) => r.client_id === selectedClient.id && r.workflow === l.workflow
-        ),
-      }))
-      .filter((x): x is { line: typeof x.line; rate: WorkflowRate } => !!x.rate);
-    if (!rates.length) return null;
-    return {
-      skus: rates.reduce((sum, x) => sum + x.line.skus, 0),
-      kpi: rates.reduce((sum, x) => sum + x.rate.kpi, 0),
-      upperLimit: rates.reduce((sum, x) => sum + x.rate.upper_limit_skus, 0),
-    };
-  }, [selectedClient, billingType, usesBatchLines, form.day_type, filledLines, workflowRates]);
+    if (form.day_type !== "full" || !calcResult) return null;
+    const maxBonus = filledLines.reduce((max, l) => {
+      const rate = workflowRates.find(
+        (r) => r.client_id === selectedClient.id && r.workflow === l.workflow
+      );
+      return rate ? Math.max(max, rate.max_bonus) : max;
+    }, 0);
+    if (!maxBonus || !filledLines.length) return null;
+    return { bonus: calcResult.bonus, maxBonus };
+  }, [selectedClient, billingType, usesBatchLines, form.day_type, filledLines, workflowRates, calcResult]);
 
   function buildPayload(): EntryFormData {
     const calc = calcResult ?? { base: 0, bonus: 0, superAmt: 0, total: 0, hoursWorked: null };
@@ -837,12 +822,8 @@ export function EntrySheet({
           )}
 
           {/* SKU progress toward the bonus */}
-          {skuProgress && skuProgress.skus > 0 && (
-            <SkuProgress
-              skus={skuProgress.skus}
-              kpi={skuProgress.kpi}
-              upperLimit={skuProgress.upperLimit}
-            />
+          {skuProgress && (
+            <SkuProgress bonus={skuProgress.bonus} maxBonus={skuProgress.maxBonus} />
           )}
 
           {/* Summary */}
