@@ -95,6 +95,18 @@ describe("calcBatchBonus — Apparel day split across Apparel and Model Shot", (
     expect(result.bonus).toBe(MAX_BONUS);
   });
 
+  it("is unaffected by blank rows, which the sheet filters out before costing", () => {
+    const lines = [
+      { workflow: "Apparel", skus: 54 },
+      { workflow: "Model Shot", skus: 0 },
+    ];
+    const filled = lines.filter((l) => l.skus > 0);
+    expect(calcBatchBonus(client, filled, RATES).bonus).toBeCloseTo(
+      calcBatchBonus(client, lines, RATES).bonus,
+      6
+    );
+  });
+
   it("adds super when the client pays it", () => {
     const superClient = { ...client, pays_super: true, super_rate: 0.12 } as Client;
     const result = calcBatchBonus(superClient, [{ workflow: "Apparel", skus: 92 }], RATES);

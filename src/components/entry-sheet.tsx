@@ -143,6 +143,44 @@ function Field({
   );
 }
 
+// Progress toward the day's SKU bonus. Full bar = upper limit (max bonus);
+// the tick marks the KPI, below which no bonus is earned.
+// ponytail: two divs rather than a Progress dependency — the KPI tick needs
+// absolute positioning the primitive doesn't expose anyway.
+function SkuProgress({ skus, kpi, upperLimit }: { skus: number; kpi: number; upperLimit: number }) {
+  if (!upperLimit) return null;
+  const pct = Math.min((skus / upperLimit) * 100, 100);
+  const kpiPct = Math.min((kpi / upperLimit) * 100, 100);
+  const atMax = skus >= upperLimit;
+
+  return (
+    <div className="px-4 pt-1.5 flex flex-col gap-1">
+      <div className="relative h-2 w-full rounded-full bg-muted overflow-hidden">
+        <div
+          className={cn(
+            "h-full rounded-full transition-all",
+            atMax ? "bg-emerald-500" : skus >= kpi ? "bg-primary" : "bg-muted-foreground/40"
+          )}
+          style={{ width: `${pct}%` }}
+        />
+        {kpiPct < 100 && (
+          <div
+            className="absolute inset-y-0 w-0.5 bg-background"
+            style={{ left: `${kpiPct}%` }}
+            aria-hidden
+          />
+        )}
+      </div>
+      <div className="flex justify-between text-[11px] text-muted-foreground tabular-nums">
+        <span>{skus} SKUs</span>
+        <span>
+          KPI {kpi} · max {upperLimit}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function SummaryPanel({
   client,
   calc,
@@ -298,26 +336,15 @@ export function EntrySheet({
     // mode if that turns out to matter in practice.
     setForm((prev) => {
       if (v === "Own Brand") return { ...prev, workflow_type: v, skus: null };
-      const defaults = v === "Product" ? productSubOptions : apparelSubOptions;
       const belongs = v === "Product" ? PRODUCT_WORKFLOWS : APPAREL_WORKFLOWS;
-      // already showing this mode's lines (e.g. re-selecting Product) — keep them
-      const keep = prev.batch_lines.every((l) => belongs.includes(l.workflow));
       return {
         ...prev,
         workflow_type: v,
         skus: null,
-        batch_lines: keep
-          ? prev.batch_lines
-          : [{ workflow: defaults[0] ?? belongs[0], skus: 0 }],
+        // rows come from subOptions, so only this mode's entered amounts need keeping
+        batch_lines: prev.batch_lines.filter((l) => belongs.includes(l.workflow)),
       };
     });
-  }
-
-  function setBatchLine(index: number, patch: Partial<{ workflow: string; skus: number }>) {
-    setForm((prev) => ({
-      ...prev,
-      batch_lines: prev.batch_lines.map((line, i) => (i === index ? { ...line, ...patch } : line)),
-    }));
   }
 
   const isProductMode = topWorkflow === "Product";
@@ -327,38 +354,70 @@ export function EntrySheet({
   // Own Brand has no SKU lines at all
   const usesBatchLines = (isProductMode || isApparelMode) && subOptions.length > 0;
 
-  function addBatchLine() {
-    const used = new Set(form.batch_lines.map((l) => l.workflow));
-    const next = subOptions.find((w) => !used.has(w)) ?? subOptions[0] ?? "Batch A";
-    setForm((prev) => ({ ...prev, batch_lines: [...prev.batch_lines, { workflow: next, skus: 0 }] }));
+  function skusFor(workflow: string) {
+    return form.batch_lines.find((l) => l.workflow === workflow)?.skus ?? 0;
   }
 
-  function removeBatchLine(index: number) {
-    setForm((prev) => ({ ...prev, batch_lines: prev.batch_lines.filter((_, i) => i !== index) }));
+  function setWorkflowSkus(workflow: string, skus: number) {
+    setForm((prev) => {
+      const existing = prev.batch_lines.some((l) => l.workflow === workflow);
+      return {
+        ...prev,
+        batch_lines: existing
+          ? prev.batch_lines.map((l) => (l.workflow === workflow ? { ...l, skus } : l))
+          : [...prev.batch_lines, { workflow, skus }],
+      };
+    });
   }
 
-  const isMultiBatch = usesBatchLines && form.batch_lines.length > 1;
+  // only lines carrying SKUs are saved or costed — a blank row is not a batch
+  const filledLines = useMemo(
+    () => form.batch_lines.filter((l) => subOptions.includes(l.workflow) && l.skus > 0),
+    [form.batch_lines, subOptions]
+  );
+  const isMultiBatch = usesBatchLines && filledLines.length > 1;
 
   const calcResult = useMemo(() => {
     if (!selectedClient) return null;
     if (billingType === "day_rate") {
       if (isMultiBatch) {
-        return calcBatchBonus(selectedClient, form.batch_lines, workflowRates);
+        return calcBatchBonus(selectedClient, filledLines, workflowRates);
       }
       // single line keeps the per-workflow KPI/incentive-rate formula
-      const workflow = usesBatchLines ? form.batch_lines[0].workflow : form.workflow_type;
-      const skus = usesBatchLines ? form.batch_lines[0].skus : form.skus;
+      const workflow = usesBatchLines ? filledLines[0]?.workflow ?? subOptions[0] : form.workflow_type;
+      const skus = usesBatchLines ? filledLines[0]?.skus ?? null : form.skus;
       return calcDayRate(selectedClient, form.day_type, workflow, skus, workflowRates);
     }
     if (billingType === "hourly") {
       return calcHourly(selectedClient, form.start_time, form.finish_time, form.break_minutes, form.role);
     }
     return calcManual(form.manual_amount, form.skus, selectedClient);
-  }, [selectedClient, billingType, form, workflowRates, usesBatchLines, isMultiBatch]);
+  }, [selectedClient, billingType, form, workflowRates, usesBatchLines, isMultiBatch, filledLines, subOptions]);
+
+  // Bar figures. A single workflow shows its own KPI/upper limit; mixed lines are
+  // summed so the bar tracks calcBatchBonus, which works in share-of-limit terms.
+  const skuProgress = useMemo(() => {
+    if (!selectedClient || billingType !== "day_rate" || !usesBatchLines) return null;
+    if (form.day_type !== "full") return null;
+    const rates = filledLines
+      .map((l) => ({
+        line: l,
+        rate: workflowRates.find(
+          (r) => r.client_id === selectedClient.id && r.workflow === l.workflow
+        ),
+      }))
+      .filter((x): x is { line: typeof x.line; rate: WorkflowRate } => !!x.rate);
+    if (!rates.length) return null;
+    return {
+      skus: rates.reduce((sum, x) => sum + x.line.skus, 0),
+      kpi: rates.reduce((sum, x) => sum + x.rate.kpi, 0),
+      upperLimit: rates.reduce((sum, x) => sum + x.rate.upper_limit_skus, 0),
+    };
+  }, [selectedClient, billingType, usesBatchLines, form.day_type, filledLines, workflowRates]);
 
   function buildPayload(): EntryFormData {
     const calc = calcResult ?? { base: 0, bonus: 0, superAmt: 0, total: 0, hoursWorked: null };
-    const batchTotalSkus = form.batch_lines.reduce((sum, l) => sum + (l.skus || 0), 0);
+    const batchTotalSkus = filledLines.reduce((sum, l) => sum + l.skus, 0);
     return {
       client_id: form.client_id,
       date: form.date,
@@ -367,7 +426,7 @@ export function EntrySheet({
       // Product collapses its batch names into "Product"; Apparel keeps its own name.
       // Either way the per-workflow split lives in batch_lines.
       workflow_type: billingType === "day_rate" ? (isProductMode ? "Product" : form.workflow_type) : null,
-      batch_lines: billingType === "day_rate" && usesBatchLines ? form.batch_lines : null,
+      batch_lines: billingType === "day_rate" && usesBatchLines ? filledLines : null,
       skus: usesBatchLines ? batchTotalSkus : (billingType === "day_rate" && needsSkus) || billingType === "manual" ? form.skus : null,
       brand: billingType === "day_rate" && needsBrand ? form.brand || null : null,
       label: showEntryLabel || billingType === "manual" ? form.label || null : null,
@@ -612,55 +671,29 @@ export function EntrySheet({
                 </Field>
               )}
 
-              {/* SKU lines — batches for Product, Apparel/Model Shot for Apparel */}
+              {/* One row per workflow — name left, SKU field right. A row left blank
+                  contributes nothing, so there is no add/remove step. */}
               {usesBatchLines && (
                 <Field label="Batches">
-                  <div className="flex flex-col gap-3">
-                    {form.batch_lines.map((line, i) => (
-                      <div key={i} className="flex flex-col gap-1.5">
-                        <div className="flex items-center gap-2">
-                          <SegmentedControl
-                            value={line.workflow}
-                            onValueChange={(v) => setBatchLine(i, { workflow: v })}
-                            options={subOptions.map((opt) => ({ value: opt, label: opt }))}
-                            className="flex-1"
-                            itemClassName="text-xs"
-                          />
-                          {form.batch_lines.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="size-8 shrink-0"
-                              onClick={() => removeBatchLine(i)}
-                            >
-                              <X className="size-4" />
-                            </Button>
-                          )}
-                        </div>
+                  <div className="flex flex-col gap-2">
+                    {subOptions.map((workflow) => (
+                      <div key={workflow} className="flex items-center gap-3">
+                        <span className="flex-1 text-sm">{workflow}</span>
                         <Input
                           type="number"
                           min={0}
-                          className="text-sm"
-                          value={line.skus || ""}
+                          className="text-sm w-24"
+                          value={skusFor(workflow) || ""}
                           onChange={(e) =>
-                            setBatchLine(i, { skus: e.target.value === "" ? 0 : parseInt(e.target.value, 10) })
+                            setWorkflowSkus(
+                              workflow,
+                              e.target.value === "" ? 0 : parseInt(e.target.value, 10)
+                            )
                           }
                           placeholder="SKUs"
                         />
                       </div>
                     ))}
-                    {form.batch_lines.length < subOptions.length && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="self-start"
-                        onClick={addBatchLine}
-                      >
-                        <Plus className="size-4" /> Add batch
-                      </Button>
-                    )}
                   </div>
                 </Field>
               )}
@@ -801,6 +834,15 @@ export function EntrySheet({
 
               {error && <p className="text-sm text-destructive">{error}</p>}
             </div>
+          )}
+
+          {/* SKU progress toward the bonus */}
+          {skuProgress && skuProgress.skus > 0 && (
+            <SkuProgress
+              skus={skuProgress.skus}
+              kpi={skuProgress.kpi}
+              upperLimit={skuProgress.upperLimit}
+            />
           )}
 
           {/* Summary */}
