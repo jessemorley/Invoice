@@ -197,7 +197,7 @@ function SummaryPanel({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-const PRODUCT_WORKFLOWS = ["Batch A", "Batch B", "Batch C", "Batch D", "Flatlay", "Model Shot"];
+const PRODUCT_WORKFLOWS = ["Batch A", "Batch B", "Batch C", "Batch D", "Flatlay"];
 // Apparel days split across Apparel and Model Shot work; both reuse the batch_lines
 // mechanism so the day's bonus caps once instead of per-entry.
 const APPAREL_WORKFLOWS = ["Apparel", "Model Shot"];
@@ -282,9 +282,13 @@ export function EntrySheet({
   );
 
   const isProductWorkflow = form.workflow_type === "Product" || PRODUCT_WORKFLOWS.includes(form.workflow_type);
+  // Anything that isn't Product or Own Brand sits under Apparel — including entries saved
+  // as "Model Shot" back when it was a Product batch, which now belongs to Apparel.
   const topWorkflow: "Apparel" | "Product" | "Own Brand" = isProductWorkflow
     ? "Product"
-    : (form.workflow_type as "Apparel" | "Own Brand");
+    : form.workflow_type === "Own Brand"
+    ? "Own Brand"
+    : "Apparel";
 
   function handleTopWorkflow(v: string) {
     if (!v) return;
@@ -428,7 +432,7 @@ export function EntrySheet({
   const showDayType = billingType === "day_rate";
   const showWorkflow = billingType === "day_rate" && form.day_type === "full" && clientWorkflowSet.size > 0;
   const needsBrand = billingType === "day_rate" && form.workflow_type === "Own Brand";
-  const needsSkus = billingType === "day_rate" && (form.workflow_type === "Apparel" || isProductWorkflow);
+  const needsSkus = billingType === "day_rate" && topWorkflow !== "Own Brand";
   const showEntryLabel = billingType === "hourly" && !!selectedClient?.entry_label;
   // manual entries reuse label as the "Item" label, matching hourly's label-as-label pattern
   const showItem = billingType === "manual";
@@ -610,7 +614,7 @@ export function EntrySheet({
 
               {/* SKU lines — batches for Product, Apparel/Model Shot for Apparel */}
               {usesBatchLines && (
-                <Field label={isProductMode ? "Batches" : "SKUs"}>
+                <Field label="Batches">
                   <div className="flex flex-col gap-3">
                     {form.batch_lines.map((line, i) => (
                       <div key={i} className="flex flex-col gap-1.5">
@@ -654,7 +658,7 @@ export function EntrySheet({
                         className="self-start"
                         onClick={addBatchLine}
                       >
-                        <Plus className="size-4" /> {isProductMode ? "Add batch" : "Add workflow"}
+                        <Plus className="size-4" /> Add batch
                       </Button>
                     )}
                   </div>
