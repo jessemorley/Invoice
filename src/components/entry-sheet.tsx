@@ -436,18 +436,14 @@ export function EntrySheet({
     const maxBonus = Math.max(...rated.map((x) => x.rate.max_bonus));
     if (!maxBonus) return null;
 
-    // Progress toward KPI, in the same share-of-limit space calcBatchBonus works in.
-    // Each line contributes skus/upper, and "at KPI" is the average of the lines' own
-    // kpi/upper, so a single line reduces exactly to skus/kpi and a mixed day is
-    // measured against the same yardstick rather than a newly invented one.
-    let share = 0;
-    let kpiSum = 0;
-    for (const { line, rate } of rated) {
-      share += line.skus / rate.upper_limit_skus;
-      kpiSum += rate.kpi / rate.upper_limit_skus;
-    }
-    const kpiLine = kpiSum / rated.length;
-    const toKpi = kpiLine > 0 ? share / kpiLine : 0;
+    // Progress toward KPI, measured the way the bonus is: each line against its own
+    // KPI, averaged so a single line reduces exactly to skus/kpi and a mixed day is
+    // held to the same yardstick. Above KPI the fill switches to bonus earned.
+    const toKpi =
+      rated.reduce(
+        (sum, x) => sum + (x.rate.kpi > 0 ? Math.min(x.line.skus / x.rate.kpi, 1) : 1),
+        0
+      ) / rated.length;
 
     return { bonus: calcResult.bonus, maxBonus, toKpi };
   }, [selectedClient, billingType, usesBatchLines, form.day_type, filledLines, workflowRates, calcResult]);

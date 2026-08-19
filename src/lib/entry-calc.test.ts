@@ -30,7 +30,7 @@ const client = {
 } as Client;
 
 describe("calcBatchBonus — Apparel day split across Apparel and Model Shot", () => {
-  it("sums each line's share of its own upper limit: 54 Apparel + 48 Model Shot", () => {
+  it("pays nothing when every line is below its own KPI: 54 Apparel + 48 Model Shot", () => {
     const result = calcBatchBonus(
       client,
       [
@@ -39,17 +39,48 @@ describe("calcBatchBonus — Apparel day split across Apparel and Model Shot", (
       ],
       RATES
     );
-
-    // 54/92 = 58.6957%, 48/139 = 34.5324% → 93.2280% of max_bonus
-    const pct = (54 / 92) * 100 + (48 / 139) * 100;
-    expect(pct).toBeCloseTo(93.228, 3);
-
+    // 54 < KPI 84 and 48 < KPI 126 — neither line has reached its threshold
+    expect(result.bonus).toBe(0);
     expect(result.base).toBe(350);
+    expect(result.total).toBe(350);
+  });
+
+  it("pays nothing for a sub-KPI line, however many workflows are present", () => {
+    // the bug this guards: measuring raw SKUs against the upper limit paid from the
+    // first SKU, so adding one Model Shot SKU to a sub-KPI Apparel day earned $22.46
+    const result = calcBatchBonus(
+      client,
+      [
+        { workflow: "Apparel", skus: 51 },
+        { workflow: "Model Shot", skus: 1 },
+      ],
+      RATES
+    );
+    expect(result.bonus).toBe(0);
+  });
+
+  it("sums each line's share of its own KPI-to-limit band", () => {
+    const result = calcBatchBonus(
+      client,
+      [
+        { workflow: "Apparel", skus: 88 },
+        { workflow: "Model Shot", skus: 132 },
+      ],
+      RATES
+    );
+    // Apparel 4/8 of its band = 50%, Model Shot 6/13 = 46.15% → 96.15%
+    const pct = (4 / 8) * 100 + (6 / 13) * 100;
     expect(result.bonus).toBeCloseTo((pct / 100) * MAX_BONUS, 6);
-    expect(result.bonus).toBeCloseTo(37.2912, 4);
-    // under the cap — the linear path, not the clamp
     expect(result.bonus).toBeLessThan(MAX_BONUS);
-    expect(result.total).toBeCloseTo(350 + 37.2912, 4);
+  });
+
+  it("agrees with calcDayRate when only one line is present", () => {
+    for (const skus of [80, 84, 86, 88, 92, 120]) {
+      expect(
+        calcBatchBonus(client, [{ workflow: "Apparel", skus }], RATES).bonus,
+        `${skus} SKUs`
+      ).toBeCloseTo(calcDayRate(client, "full", "Apparel", skus, RATES).bonus, 6);
+    }
   });
 
   it("caps the combined bonus at max_bonus once, rather than per line", () => {
@@ -97,7 +128,7 @@ describe("calcBatchBonus — Apparel day split across Apparel and Model Shot", (
 
   it("is unaffected by blank rows, which the sheet filters out before costing", () => {
     const lines = [
-      { workflow: "Apparel", skus: 54 },
+      { workflow: "Apparel", skus: 88 },
       { workflow: "Model Shot", skus: 0 },
     ];
     const filled = lines.filter((l) => l.skus > 0);

@@ -67,17 +67,29 @@ export function calcBatchBonus(
 ): CalcResult {
   const base = client.rate_full_day ?? 0;
 
+  // Each workflow pays nothing up to its KPI, then earns across the band from KPI
+  // to its upper limit — a band worth the full max_bonus in every workflow's rates.
+  // A line therefore contributes its share of ITS OWN band, and the shares sum so a
+  // day split across workflows caps once. Measuring raw SKUs against the upper limit
+  // instead would pay from the first SKU and skip the KPI the single-line formula
+  // enforces, so 51 Apparel + 1 Model Shot would earn a bonus on a sub-KPI day.
   let pct = 0;
   let maxBonus = 0;
   for (const line of lines) {
     const rate = workflowRates.find(
       (r) => r.client_id === client.id && r.workflow === line.workflow
     );
-    if (!rate || !rate.upper_limit_skus) continue;
-    pct += (line.skus / rate.upper_limit_skus) * 100;
+    if (!rate) continue;
     // largest cap across the mixed lines — Apparel and Model Shot can carry
     // different max_bonus values, so "last line wins" would pick one arbitrarily
     maxBonus = Math.max(maxBonus, rate.max_bonus);
+    if (rate.is_flat_bonus) {
+      pct += 100;
+      continue;
+    }
+    const band = rate.upper_limit_skus - rate.kpi;
+    if (band <= 0) continue;
+    pct += (Math.max(line.skus - rate.kpi, 0) / band) * 100;
   }
   const bonus = (Math.min(pct, 100) / 100) * maxBonus;
 
