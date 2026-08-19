@@ -151,11 +151,11 @@ function Field({
 // tracks bonus earned. The mark sits exactly on that seam — 100% of KPI, 0% of
 // bonus — which is the point the day starts paying extra.
 //
-// Mixed lines have no KPI threshold at all: calcBatchBonus ramps linearly from
-// zero, so `kpiPct` is null there and the whole bar is bonus.
+// One formula covers single and mixed lines alike, so adding a second batch never
+// changes what the bar means. See `skuProgress` for the threshold itself.
 // ponytail: two divs rather than a Progress dependency — the mark needs absolute
 // positioning the primitive doesn't expose anyway.
-const KPI_MARK = 45;
+const KPI_MARK = 86.2;
 
 function SkuProgress({
   bonus,
@@ -164,15 +164,12 @@ function SkuProgress({
 }: {
   bonus: number;
   maxBonus: number;
-  toKpi: number | null;
+  toKpi: number;
 }) {
   if (!maxBonus) return null;
   const bonusPct = Math.min(bonus / maxBonus, 1);
-  // no KPI stage (mixed lines) — the bar is bonus end to end
   const fill =
-    toKpi == null
-      ? bonusPct * 100
-      : bonus > 0
+    bonus > 0
       ? KPI_MARK + bonusPct * (100 - KPI_MARK)
       : Math.min(toKpi, 1) * KPI_MARK;
   const atMax = bonus >= maxBonus;
@@ -187,17 +184,15 @@ function SkuProgress({
           )}
           style={{ width: `${fill}%` }}
         />
-        {toKpi != null && (
-          <div
-            className="absolute inset-y-0 w-0.5 bg-background"
-            style={{ left: `${KPI_MARK}%` }}
-            aria-hidden
-          />
-        )}
+        <div
+          className="absolute inset-y-0 w-0.5 bg-background"
+          style={{ left: `${KPI_MARK}%` }}
+          aria-hidden
+        />
       </div>
       <div className="flex justify-between text-[11px] text-muted-foreground tabular-nums">
         <span>
-          {toKpi != null && bonus === 0
+          {bonus === 0
             ? `${Math.round(Math.min(toKpi, 1) * 100)}% of KPI`
             : `${Math.round(bonusPct * 100)}% of bonus`}
         </span>
@@ -435,14 +430,25 @@ export function EntrySheet({
           (r) => r.client_id === selectedClient.id && r.workflow === l.workflow
         ),
       }))
-      .filter((x): x is { line: typeof x.line; rate: WorkflowRate } => !!x.rate);
+      .filter((x): x is { line: typeof x.line; rate: WorkflowRate } => !!x.rate)
+      .filter((x) => x.rate.upper_limit_skus > 0);
     if (!rated.length) return null;
     const maxBonus = Math.max(...rated.map((x) => x.rate.max_bonus));
     if (!maxBonus) return null;
-    // Only a single workflow has a KPI threshold — calcBatchBonus ramps from zero,
-    // so mixed lines have no "100% of KPI" point to mark.
-    const only = rated.length === 1 ? rated[0] : null;
-    const toKpi = only && only.rate.kpi > 0 ? only.line.skus / only.rate.kpi : null;
+
+    // Progress toward KPI, in the same share-of-limit space calcBatchBonus works in.
+    // Each line contributes skus/upper, and "at KPI" is the average of the lines' own
+    // kpi/upper, so a single line reduces exactly to skus/kpi and a mixed day is
+    // measured against the same yardstick rather than a newly invented one.
+    let share = 0;
+    let kpiSum = 0;
+    for (const { line, rate } of rated) {
+      share += line.skus / rate.upper_limit_skus;
+      kpiSum += rate.kpi / rate.upper_limit_skus;
+    }
+    const kpiLine = kpiSum / rated.length;
+    const toKpi = kpiLine > 0 ? share / kpiLine : 0;
+
     return { bonus: calcResult.bonus, maxBonus, toKpi };
   }, [selectedClient, billingType, usesBatchLines, form.day_type, filledLines, workflowRates, calcResult]);
 
