@@ -29,53 +29,56 @@ const client = {
   super_rate: 0.12,
 } as Client;
 
-describe("calcBatchBonus — Apparel day split across Apparel and Model Shot", () => {
-  it("pays nothing when every line is below its own KPI: 54 Apparel + 48 Model Shot", () => {
-    const result = calcBatchBonus(
-      client,
-      [
-        { workflow: "Apparel", skus: 54 },
-        { workflow: "Model Shot", skus: 48 },
-      ],
-      RATES
-    );
-    // 54 < KPI 84 and 48 < KPI 126 — neither line has reached its threshold
-    expect(result.bonus).toBe(0);
-    expect(result.base).toBe(350);
-    expect(result.total).toBe(350);
+describe("calcBatchBonus — one KPI shared across workflows", () => {
+  it("counts each SKU as a fraction of its own workflow's KPI", () => {
+    // 42 Apparel (half of 84) + 63 Model Shot (half of 126) = exactly one day's KPI
+    expect(calcBatchBonus(client, [
+      { workflow: "Apparel", skus: 42 },
+      { workflow: "Model Shot", skus: 63 },
+    ], RATES).bonus).toBe(0);
   });
 
-  it("pays nothing for a sub-KPI line, however many workflows are present", () => {
-    // the bug this guards: measuring raw SKUs against the upper limit paid from the
-    // first SKU, so adding one Model Shot SKU to a sub-KPI Apparel day earned $22.46
-    const result = calcBatchBonus(
-      client,
-      [
-        { workflow: "Apparel", skus: 51 },
-        { workflow: "Model Shot", skus: 1 },
-      ],
-      RATES
-    );
-    expect(result.bonus).toBe(0);
+  it("pays the surplus SKUs at their own rate: 84 Apparel + 1 Model Shot = $3.08", () => {
+    // Apparel alone meets KPI, so the single Model Shot SKU is pure surplus
+    const result = calcBatchBonus(client, [
+      { workflow: "Apparel", skus: 84 },
+      { workflow: "Model Shot", skus: 1 },
+    ], RATES);
+    expect(result.bonus).toBeCloseTo(3.08, 6);
   });
 
-  it("sums each line's share of its own KPI-to-limit band", () => {
-    const result = calcBatchBonus(
-      client,
-      [
-        { workflow: "Apparel", skus: 88 },
-        { workflow: "Model Shot", skus: 132 },
-      ],
-      RATES
+  it("charges the KPI gap first: 54 Apparel + 48 Model Shot = $9.24", () => {
+    // 54 Apparel is 64.29% of KPI; closing the 35.71% gap takes 45 Model Shot SKUs,
+    // leaving 3 surplus at $3.08
+    const result = calcBatchBonus(client, [
+      { workflow: "Apparel", skus: 54 },
+      { workflow: "Model Shot", skus: 48 },
+    ], RATES);
+    expect(result.bonus).toBeCloseTo(3 * 3.08, 6);
+    expect(result.bonus).toBeCloseTo(9.24, 6);
+  });
+
+  it("pays nothing until the shared KPI is met", () => {
+    // 51/84 + 1/126 = 61.5% of a day
+    expect(calcBatchBonus(client, [
+      { workflow: "Apparel", skus: 51 },
+      { workflow: "Model Shot", skus: 1 },
+    ], RATES).bonus).toBe(0);
+  });
+
+  it("does not depend on the order the rows were filled in", () => {
+    const lines = [
+      { workflow: "Apparel", skus: 54 },
+      { workflow: "Model Shot", skus: 48 },
+    ];
+    expect(calcBatchBonus(client, lines, RATES).bonus).toBeCloseTo(
+      calcBatchBonus(client, [...lines].reverse(), RATES).bonus,
+      9
     );
-    // Apparel 4/8 of its band = 50%, Model Shot 6/13 = 46.15% → 96.15%
-    const pct = (4 / 8) * 100 + (6 / 13) * 100;
-    expect(result.bonus).toBeCloseTo((pct / 100) * MAX_BONUS, 6);
-    expect(result.bonus).toBeLessThan(MAX_BONUS);
   });
 
   it("agrees with calcDayRate when only one line is present", () => {
-    for (const skus of [80, 84, 86, 88, 92, 120]) {
+    for (const skus of [0, 40, 84, 86, 88, 92, 120]) {
       expect(
         calcBatchBonus(client, [{ workflow: "Apparel", skus }], RATES).bonus,
         `${skus} SKUs`
@@ -84,14 +87,10 @@ describe("calcBatchBonus — Apparel day split across Apparel and Model Shot", (
   });
 
   it("caps the combined bonus at max_bonus once, rather than per line", () => {
-    const result = calcBatchBonus(
-      client,
-      [
-        { workflow: "Apparel", skus: 92 },
-        { workflow: "Model Shot", skus: 139 },
-      ],
-      RATES
-    );
+    const result = calcBatchBonus(client, [
+      { workflow: "Apparel", skus: 92 },
+      { workflow: "Model Shot", skus: 139 },
+    ], RATES);
     expect(result.bonus).toBe(MAX_BONUS);
   });
 
@@ -100,42 +99,27 @@ describe("calcBatchBonus — Apparel day split across Apparel and Model Shot", (
       { ...rate("Apparel", 84, 92, 5.0), max_bonus: 60 },
       { ...rate("Model Shot", 126, 139, 3.08), max_bonus: 20 },
     ];
-    const result = calcBatchBonus(
-      client,
-      [
-        { workflow: "Apparel", skus: 92 },
-        { workflow: "Model Shot", skus: 139 },
-      ],
-      mixed
-    );
+    const result = calcBatchBonus(client, [
+      { workflow: "Apparel", skus: 92 },
+      { workflow: "Model Shot", skus: 139 },
+    ], mixed);
     expect(result.bonus).toBe(60);
   });
 
   it("ignores lines whose workflow has no rate row, and never divides by zero", () => {
     const withZero = [...RATES, rate("Broken", 0, 0, 0)];
-    const result = calcBatchBonus(
-      client,
-      [
-        { workflow: "Apparel", skus: 92 },
-        { workflow: "Unknown", skus: 500 },
-        { workflow: "Broken", skus: 500 },
-      ],
-      withZero
-    );
+    const result = calcBatchBonus(client, [
+      { workflow: "Apparel", skus: 92 },
+      { workflow: "Unknown", skus: 500 },
+      { workflow: "Broken", skus: 500 },
+    ], withZero);
     expect(Number.isFinite(result.bonus)).toBe(true);
     expect(result.bonus).toBe(MAX_BONUS);
   });
 
-  it("is unaffected by blank rows, which the sheet filters out before costing", () => {
-    const lines = [
-      { workflow: "Apparel", skus: 88 },
-      { workflow: "Model Shot", skus: 0 },
-    ];
-    const filled = lines.filter((l) => l.skus > 0);
-    expect(calcBatchBonus(client, filled, RATES).bonus).toBeCloseTo(
-      calcBatchBonus(client, lines, RATES).bonus,
-      6
-    );
+  it("pays a flat-bonus workflow in full", () => {
+    const flat = [{ ...rate("Apparel", 84, 92, 5.0), is_flat_bonus: true }];
+    expect(calcBatchBonus(client, [{ workflow: "Apparel", skus: 1 }], flat).bonus).toBe(MAX_BONUS);
   });
 
   it("adds super when the client pays it", () => {

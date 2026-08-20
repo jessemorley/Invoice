@@ -436,14 +436,14 @@ export function EntrySheet({
     const maxBonus = Math.max(...rated.map((x) => x.rate.max_bonus));
     if (!maxBonus) return null;
 
-    // Progress toward KPI, measured the way the bonus is: each line against its own
-    // KPI, averaged so a single line reduces exactly to skus/kpi and a mixed day is
-    // held to the same yardstick. Above KPI the fill switches to bonus earned.
-    const toKpi =
-      rated.reduce(
-        (sum, x) => sum + (x.rate.kpi > 0 ? Math.min(x.line.skus / x.rate.kpi, 1) : 1),
-        0
-      ) / rated.length;
+    // Progress toward the day's single shared KPI, summed the same way the bonus
+    // measures it: each SKU is a fraction of its own workflow's KPI, so the shares
+    // add up. Averaging them instead would read 84 Apparel + 1 Model Shot as half a
+    // day when Apparel alone has already met the KPI.
+    const toKpi = rated.reduce(
+      (sum, x) => sum + (x.rate.kpi > 0 ? x.line.skus / x.rate.kpi : 0),
+      0
+    );
 
     return { bonus: calcResult.bonus, maxBonus, toKpi };
   }, [selectedClient, billingType, usesBatchLines, form.day_type, filledLines, workflowRates, calcResult]);

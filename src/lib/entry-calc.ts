@@ -67,31 +67,57 @@ export function calcBatchBonus(
 ): CalcResult {
   const base = client.rate_full_day ?? 0;
 
-  // Each workflow pays nothing up to its KPI, then earns across the band from KPI
-  // to its upper limit — a band worth the full max_bonus in every workflow's rates.
-  // A line therefore contributes its share of ITS OWN band, and the shares sum so a
-  // day split across workflows caps once. Measuring raw SKUs against the upper limit
-  // instead would pay from the first SKU and skip the KPI the single-line formula
-  // enforces, so 51 Apparel + 1 Model Shot would earn a bonus on a sub-KPI day.
-  let pct = 0;
-  let maxBonus = 0;
-  for (const line of lines) {
-    const rate = workflowRates.find(
-      (r) => r.client_id === client.id && r.workflow === line.workflow
-    );
-    if (!rate) continue;
-    // largest cap across the mixed lines — Apparel and Model Shot can carry
-    // different max_bonus values, so "last line wins" would pick one arbitrarily
-    maxBonus = Math.max(maxBonus, rate.max_bonus);
-    if (rate.is_flat_bonus) {
-      pct += 100;
+  // A mixed day owes ONE KPI between its workflows, and each SKU counts as a
+  // fraction of its own workflow's KPI — 1 Apparel is 1/84, 1 Model Shot is 1/126 —
+  // so the shares are commensurable and add up. The duty is met once they reach 1;
+  // 42 Apparel + 63 Model Shot is exactly a full day.
+  //
+  // Past that point the leftover SKUs are the bonus, each paid at its own workflow's
+  // incentive rate (that rate being max_bonus spread over the SKUs from KPI to the
+  // upper limit). So 84 Apparel + 1 Model Shot earns the single surplus Model Shot
+  // SKU at $3.08, and for 54 Apparel + 48 Model Shot the 45 Model Shot SKUs that
+  // close Apparel's KPI gap earn nothing while the remaining 3 pay $3.08 each.
+  //
+  // The KPI duty is charged to the highest-rate SKUs first. That is what makes
+  // Apparel the base being "topped up" by Model Shot, and it keeps the result
+  // independent of the order the rows happen to be filled in.
+  const rated = lines
+    .map((line) => ({
+      line,
+      rate: workflowRates.find(
+        (r) => r.client_id === client.id && r.workflow === line.workflow
+      ),
+    }))
+    .filter((x): x is { line: (typeof lines)[number]; rate: WorkflowRate } => !!x.rate);
+
+  const maxBonus = rated.reduce((max, x) => Math.max(max, x.rate.max_bonus), 0);
+
+  // flat-bonus workflows pay out in full without reference to SKUs or KPI
+  if (rated.some((x) => x.rate.is_flat_bonus)) {
+    const subtotal = base + maxBonus;
+    const superAmt = client.pays_super ? subtotal * (client.super_rate || 0.12) : 0;
+    return { base, bonus: maxBonus, superAmt, total: subtotal + superAmt, hoursWorked: null };
+  }
+
+  let owed = 1;
+  let bonus = 0;
+  for (const { line, rate } of [...rated].sort(
+    (a, b) => b.rate.incentive_rate_per_sku - a.rate.incentive_rate_per_sku
+  )) {
+    if (rate.kpi <= 0) continue;
+    const share = line.skus / rate.kpi;
+    if (share <= owed) {
+      owed -= share;
       continue;
     }
-    const band = rate.upper_limit_skus - rate.kpi;
-    if (band <= 0) continue;
-    pct += (Math.max(line.skus - rate.kpi, 0) / band) * 100;
+    // the SKUs from this line that finished the KPI earn nothing; the rest are surplus
+    bonus += (line.skus - owed * rate.kpi) * rate.incentive_rate_per_sku;
+    owed = 0;
   }
-  const bonus = (Math.min(pct, 100) / 100) * maxBonus;
+  // still short of a full day's KPI — no bonus at all
+  if (owed > 0) bonus = 0;
+
+  bonus = Math.min(bonus, maxBonus);
 
   const subtotal = base + bonus;
   const superAmt = client.pays_super ? subtotal * (client.super_rate || 0.12) : 0;
