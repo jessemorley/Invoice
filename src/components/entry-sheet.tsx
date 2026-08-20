@@ -168,37 +168,40 @@ function SkuProgress({
 }) {
   if (!maxBonus) return null;
   const bonusPct = Math.min(bonus / maxBonus, 1);
-  const fill =
-    bonus > 0
-      ? KPI_MARK + bonusPct * (100 - KPI_MARK)
-      : Math.min(toKpi, 1) * KPI_MARK;
+  const earning = bonus > 0;
   const atMax = bonus >= maxBonus;
+  const fill = earning
+    ? KPI_MARK + bonusPct * (100 - KPI_MARK)
+    : Math.min(toKpi, 1) * KPI_MARK;
 
   return (
-    <div className="px-4 pt-1.5 flex flex-col gap-1">
-      <div className="relative h-2 w-full rounded-full bg-muted overflow-hidden">
+    <div className="flex flex-col gap-2">
+      <div className="flex justify-between text-sm">
+        <span className="text-muted-foreground">
+          {earning ? "Bonus" : "To KPI"}
+        </span>
+        <span className="font-medium tabular-nums">
+          {earning
+            ? `${formatAUD(bonus)} / ${formatAUD(maxBonus)}`
+            : `${Math.round(Math.min(toKpi, 1) * 100)}%`}
+        </span>
+      </div>
+      <div className="relative h-1 w-full rounded-full bg-muted">
         <div
           className={cn(
-            "h-full rounded-full transition-all",
-            atMax ? "bg-emerald-500" : bonus > 0 ? "bg-primary" : "bg-muted-foreground/40"
+            "h-full rounded-full transition-all duration-300",
+            atMax ? "bg-emerald-500" : earning ? "bg-primary" : "bg-muted-foreground/40"
           )}
           style={{ width: `${fill}%` }}
         />
+        {/* KPI seam. Cut in the card colour, not a fixed line colour — the fill is
+            near-black in light mode and near-white in dark, so only the card behind
+            the bar contrasts with it in both themes. */}
         <div
-          className="absolute inset-y-0 w-0.5 bg-background"
+          className="absolute inset-y-[-2px] w-0.5 rounded-full bg-card"
           style={{ left: `${KPI_MARK}%` }}
           aria-hidden
         />
-      </div>
-      <div className="flex justify-between text-[11px] text-muted-foreground tabular-nums">
-        <span>
-          {bonus === 0
-            ? `${Math.round(Math.min(toKpi, 1) * 100)}% of KPI`
-            : `${Math.round(bonusPct * 100)}% of bonus`}
-        </span>
-        <span>
-          {formatAUD(bonus)} / {formatAUD(maxBonus)}
-        </span>
       </div>
     </div>
   );
@@ -209,37 +212,48 @@ function SummaryPanel({
   calc,
   billingType,
   rawMins,
+  progress,
 }: {
   client: Client;
   calc: { base: number; bonus: number; superAmt: number; total: number } | null;
   billingType: BillingType;
   rawMins?: number;
+  progress?: React.ReactNode;
 }) {
   if (!calc) return null;
+
+  // Split Base out from Total only when something can add to it — a bonus, or the
+  // progress bar promising one. Otherwise Base and Total are the same number twice.
+  const showBreakdown = calc.bonus > 0 || !!progress;
 
   return (
     <div className="px-4 py-1.5">
       <Card className="py-3 gap-0">
         <CardContent className="px-4 flex flex-col gap-1.5">
+          {progress}
+          {progress && <Separator />}
           {billingType === "hourly" && rawMins != null && (
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Duration</span>
               <span className="font-medium">{formatDuration(rawMins)}</span>
             </div>
           )}
-          {calc.bonus > 0 && (
-            <>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Base</span>
-                <span className="font-medium">{formatAUD(calc.base)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Bonus</span>
-                <span className="font-medium">{formatAUD(calc.bonus)}</span>
-              </div>
-            </>
+          {/* Base is always earned, so it shows whether or not the day cleared KPI.
+              Bonus only joins it once there is one. */}
+          {showBreakdown && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Base</span>
+              <span className="font-medium">{formatAUD(calc.base)}</span>
+            </div>
           )}
-          {((billingType === "hourly" && rawMins != null) || calc.bonus > 0) && <Separator />}
+          {/* No Bonus row when the bar is up — it already reads "$x / $max" above. */}
+          {calc.bonus > 0 && !progress && (
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Bonus</span>
+              <span className="font-medium">{formatAUD(calc.bonus)}</span>
+            </div>
+          )}
+          {((billingType === "hourly" && rawMins != null) || showBreakdown) && <Separator />}
           <div className="flex justify-between text-sm font-semibold">
             <span>Total</span>
             <span>{formatAUD(calc.base + calc.bonus)}</span>
@@ -708,14 +722,18 @@ export function EntrySheet({
                   contributes nothing, so there is no add/remove step. */}
               {usesBatchLines && (
                 <Field label="Batches">
-                  <div className="flex flex-col gap-2">
+                  <div className="rounded-lg border divide-y">
                     {subOptions.map((workflow) => (
-                      <div key={workflow} className="flex items-center gap-3">
+                      <div
+                        key={workflow}
+                        className="flex items-center gap-3 pl-3 pr-1.5 py-1"
+                      >
                         <span className="flex-1 text-sm">{workflow}</span>
                         <Input
                           type="number"
+                          inputMode="numeric"
                           min={0}
-                          className="text-sm w-24"
+                          className="text-sm w-20 h-8 border-0 bg-transparent text-right tabular-nums shadow-none focus-visible:ring-1 dark:bg-transparent"
                           value={skusFor(workflow) || ""}
                           onChange={(e) =>
                             setWorkflowSkus(
@@ -723,7 +741,7 @@ export function EntrySheet({
                               e.target.value === "" ? 0 : parseInt(e.target.value, 10)
                             )
                           }
-                          placeholder="SKUs"
+                          placeholder="0"
                         />
                       </div>
                     ))}
@@ -869,22 +887,22 @@ export function EntrySheet({
             </div>
           )}
 
-          {/* SKU progress toward the bonus */}
-          {skuProgress && (
-            <SkuProgress
-              bonus={skuProgress.bonus}
-              maxBonus={skuProgress.maxBonus}
-              toKpi={skuProgress.toKpi}
-            />
-          )}
-
-          {/* Summary */}
+          {/* Summary — the SKU bar rides inside it, above the money it explains */}
           {selectedClient && calcResult && (
             <SummaryPanel
               client={selectedClient}
               calc={calcResult}
               billingType={billingType}
               rawMins={rawMins}
+              progress={
+                skuProgress && (
+                  <SkuProgress
+                    bonus={skuProgress.bonus}
+                    maxBonus={skuProgress.maxBonus}
+                    toKpi={skuProgress.toKpi}
+                  />
+                )
+              }
             />
           )}
 
