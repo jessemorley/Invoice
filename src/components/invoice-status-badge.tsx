@@ -12,28 +12,13 @@ const NEUTRAL = "#9ca3af";
 export function InvoiceStatusBadge({
   number,
   status,
-  tinted = false,
   className,
 }: {
   number: string;
   status: InvoiceStatus | "draft";
-  /** Colour the whole chip by status instead of showing a neutral pill with a status dot. */
-  tinted?: boolean;
   className?: string;
 }) {
   const statusColor = INVOICE_STATUS_COLOR[status] ?? NEUTRAL;
-
-  if (tinted) {
-    // Matches the expense category tags: solid tint, no border.
-    return (
-      <span
-        className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium shrink-0", className)}
-        style={{ color: statusColor, backgroundColor: `${statusColor}22` }}
-      >
-        {number}
-      </span>
-    );
-  }
 
   return (
     <span
