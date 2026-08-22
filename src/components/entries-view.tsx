@@ -18,7 +18,7 @@ import { ViewHeader } from "@/components/view-header";
 import { Check, Plus, RefreshCw, Search } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { ClientSquircle } from "@/components/client-squircle";
-import { InvoiceStatusBadge, INVOICE_STATUS_COLOR } from "@/components/invoice-status-badge";
+import { InvoiceStatusBadge } from "@/components/invoice-status-badge";
 
 type ViewMode = "invoice" | "week" | "none";
 
@@ -132,13 +132,16 @@ function SkeletonRow() {
   return (
     <>
       {/* Mobile */}
-      <div className="md:hidden flex items-center gap-3 px-4 py-2.5 border-r-2 border-transparent">
+      <div className="md:hidden flex items-center gap-3 px-4 py-3">
         <Skeleton className="size-8 rounded-lg shrink-0" />
         <div className="flex-1 min-w-0 flex flex-col gap-1.5">
           <Skeleton className="h-3 w-32" />
           <Skeleton className="h-3 w-20" />
         </div>
-        <Skeleton className="h-3 w-16 shrink-0" />
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-4 w-14 rounded-full" />
+        </div>
       </div>
       {/* Desktop — size-7 squircle drives row height to match the real row */}
       <div className="hidden md:flex items-center gap-3 px-4 py-3">
@@ -213,10 +216,7 @@ function EntryRow({
       onClick={() => onEdit(entry)}
     >
       {/* Mobile */}
-      <div
-        className={`md:hidden flex items-center gap-3 px-4 py-2.5 border-r-2 ${isFuture ? "opacity-70" : ""}`}
-        style={{ borderRightColor: `${INVOICE_STATUS_COLOR[entry.invoice?.status ?? "draft"]}99` }}
-      >
+      <div className={`md:hidden flex items-center gap-3 px-4 py-3 ${isFuture ? "opacity-70" : ""}`}>
         <ClientSquircle name={entry.client.name} color={entry.client.color} className="size-8" />
         <div className="flex-1 min-w-0">
           {showClient ? (
@@ -245,9 +245,17 @@ function EntryRow({
             </>
           )}
         </div>
-        <span className="text-sm tabular-nums text-foreground shrink-0">
-          {formatAUD(total)}
-        </span>
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <span className="text-sm tabular-nums text-foreground">
+            {formatAUD(total)}
+          </span>
+          <InvoiceStatusBadge
+            number={entry.invoice?.number ?? "Draft"}
+            status={entry.invoice?.status ?? "draft"}
+            tinted
+            className="px-1.5 py-0 text-[10px]"
+          />
+        </div>
       </div>
 
       {/* Desktop */}
