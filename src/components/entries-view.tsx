@@ -28,6 +28,23 @@ const VIEW_MODE_LABELS: Record<ViewMode, string> = {
   none: "No grouping",
 };
 
+function DateTile({ date }: { date: string }) {
+  const d = new Date(date + "T00:00:00");
+  return (
+    <span
+      className="inline-flex flex-col items-center justify-center gap-0.5 shrink-0 size-9 border bg-muted/40 leading-none"
+      style={{ borderRadius: "25%" }}
+    >
+      <span className="text-[8px] uppercase text-muted-foreground tracking-wide">
+        {d.toLocaleDateString("en-AU", { weekday: "short" })}
+      </span>
+      <span className="text-[13px] font-semibold text-foreground tabular-nums">
+        {d.getDate()}
+      </span>
+    </span>
+  );
+}
+
 function EntryInvoiceBadge({ invoice }: { invoice: InvoiceRef | null | undefined }) {
   return (
     <InvoiceStatusBadge
@@ -99,7 +116,17 @@ function financialYearWeekLabel(isoWeek: string): string {
   const fyWeek1Monday = new Date(fyJul1);
   fyWeek1Monday.setDate(fyJul1.getDate() - ((fyJul1.getDay() + 6) % 7));
   const weekNum = Math.round((monday.getTime() - fyWeek1Monday.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
-  return `Week ${weekNum}`;
+
+  // A week can straddle two months, so name both when it does.
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  // en-AU renders September as "Sept"; trim so every month is three letters.
+  const month = (d: Date) => d.toLocaleDateString("en-AU", { month: "short" }).slice(0, 3);
+  const span = monday.getMonth() === sunday.getMonth()
+    ? month(monday)
+    : `${month(monday)}–${month(sunday)}`;
+
+  return `Week ${weekNum} · ${span}`;
 }
 
 function groupByWeek(entries: Entry[]): WeekGroup[] {
@@ -133,7 +160,7 @@ function SkeletonRow() {
     <>
       {/* Mobile */}
       <div className="md:hidden flex items-center gap-3 px-4 py-3">
-        <Skeleton className="size-8 rounded-lg shrink-0" />
+        <Skeleton className="size-9 shrink-0" style={{ borderRadius: "25%" }} />
         <div className="flex-1 min-w-0 flex flex-col gap-1.5">
           <Skeleton className="h-3 w-32" />
           <Skeleton className="h-3 w-20" />
@@ -217,22 +244,16 @@ function EntryRow({
     >
       {/* Mobile */}
       <div className={`md:hidden flex items-center gap-3 px-4 py-3 ${isFuture ? "opacity-70" : ""}`}>
-        <ClientSquircle name={entry.client.name} color={entry.client.color} className="size-8" />
+        <DateTile date={entry.date} />
         <div className="flex-1 min-w-0">
           {showClient ? (
             <>
               <span className="text-sm font-medium text-foreground truncate block">
                 {entry.client.name}
               </span>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-                  {formatDate(entry.date)}
-                </span>
-                <span className="text-xs text-muted-foreground shrink-0">·</span>
-                <span className="text-xs text-muted-foreground truncate">
-                  {description}
-                </span>
-              </div>
+              <span className="text-xs text-muted-foreground truncate block mt-0.5">
+                {description}
+              </span>
             </>
           ) : (
             <>
