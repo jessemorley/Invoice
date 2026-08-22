@@ -18,7 +18,7 @@ import { ViewHeader } from "@/components/view-header";
 import { Check, Plus, RefreshCw, Search } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { ClientSquircle } from "@/components/client-squircle";
-import { InvoiceStatusBadge } from "@/components/invoice-status-badge";
+import { InvoiceStatusBadge, INVOICE_STATUS_COLOR } from "@/components/invoice-status-badge";
 
 type ViewMode = "invoice" | "week" | "none";
 
@@ -132,7 +132,7 @@ function SkeletonRow() {
   return (
     <>
       {/* Mobile */}
-      <div className="md:hidden flex items-center gap-3 px-4 py-2.5">
+      <div className="md:hidden flex items-center gap-3 px-4 py-2.5 border-r-2 border-transparent">
         <Skeleton className="size-8 rounded-lg shrink-0" />
         <div className="flex-1 min-w-0 flex flex-col gap-1.5">
           <Skeleton className="h-3 w-32" />
@@ -213,7 +213,10 @@ function EntryRow({
       onClick={() => onEdit(entry)}
     >
       {/* Mobile */}
-      <div className={`md:hidden flex items-center gap-3 px-4 py-2.5 ${isFuture ? "opacity-70" : ""}`}>
+      <div
+        className={`md:hidden flex items-center gap-3 px-4 py-2.5 border-r-2 ${isFuture ? "opacity-70" : ""}`}
+        style={{ borderRightColor: `${INVOICE_STATUS_COLOR[entry.invoice?.status ?? "draft"]}99` }}
+      >
         <ClientSquircle name={entry.client.name} color={entry.client.color} className="size-8" />
         <div className="flex-1 min-w-0">
           {showClient ? (
