@@ -163,7 +163,7 @@ function SkeletonRow() {
         </div>
         <div className="flex flex-col items-end gap-1.5 shrink-0">
           <Skeleton className="h-3 w-16" />
-          <Skeleton className="h-4 w-14 rounded-full" />
+          <Skeleton className="h-4 w-16 rounded-full" />
         </div>
       </div>
       {/* Desktop — size-7 squircle drives row height to match the real row */}
@@ -234,8 +234,10 @@ function EntryRow({
   const isFuture = entry.date > todayInSydney();
 
   return (
-    <div
-      className="hover:bg-accent/50 transition-colors cursor-pointer"
+    <button
+      type="button"
+      // A real button so iOS applies :active on tap; a div would not flash.
+      className="w-full text-left block hover:bg-accent/50 active:bg-accent/60 transition-colors duration-75 cursor-pointer [-webkit-tap-highlight-color:transparent]"
       onClick={() => onEdit(entry)}
     >
       {/* Mobile */}
@@ -244,9 +246,16 @@ function EntryRow({
         <div className="flex-1 min-w-0">
           {showClient ? (
             <>
-              <span className="text-sm font-medium text-foreground truncate block">
-                {entry.client.name}
-              </span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <ClientSquircle
+                  name={entry.client.name}
+                  color={entry.client.color}
+                  className="size-5 text-[8px]"
+                />
+                <span className="text-sm font-medium text-foreground truncate">
+                  {entry.client.name}
+                </span>
+              </div>
               <span className="text-xs text-muted-foreground truncate block mt-0.5">
                 {description}
               </span>
@@ -269,8 +278,7 @@ function EntryRow({
           <InvoiceStatusBadge
             number={entry.invoice?.number ?? "Draft"}
             status={entry.invoice?.status ?? "draft"}
-            tinted
-            className="px-1.5 py-0 text-[10px]"
+            className="gap-1 px-1.5 py-0 text-[10px]"
           />
         </div>
       </div>
@@ -325,7 +333,7 @@ function EntryRow({
           </span>
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 
