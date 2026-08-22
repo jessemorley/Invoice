@@ -155,7 +155,7 @@ function SkeletonRow() {
   return (
     <>
       {/* Mobile */}
-      <div className="md:hidden flex items-center gap-3 px-4 py-3">
+      <div className="md:hidden flex items-center gap-3 px-3 py-3">
         <Skeleton className="w-9 h-11 rounded-lg shrink-0" />
         <div className="flex-1 min-w-0 flex flex-col gap-1.5">
           <Skeleton className="h-3 w-32" />
@@ -239,7 +239,7 @@ function EntryRow({
       onClick={() => onEdit(entry)}
     >
       {/* Mobile */}
-      <div className={`md:hidden flex items-center gap-3 px-4 py-3 ${isFuture ? "opacity-70" : ""}`}>
+      <div className={`md:hidden flex items-center gap-3 px-3 py-3 ${isFuture ? "opacity-70" : ""}`}>
         <DateTile date={entry.date} />
         <div className="flex-1 min-w-0">
           {showClient ? (
