@@ -30,17 +30,13 @@ const VIEW_MODE_LABELS: Record<ViewMode, string> = {
 
 function DateTile({ date }: { date: string }) {
   const d = new Date(date + "T00:00:00");
+  // Styled to match the entry sheet's DateCardPicker cards, scaled down for the row.
   return (
-    <span
-      className="inline-flex flex-col items-center justify-center gap-0.5 shrink-0 size-9 border bg-muted/40 leading-none"
-      style={{ borderRadius: "25%" }}
-    >
-      <span className="text-[8px] uppercase text-muted-foreground tracking-wide">
+    <span className="inline-flex w-9 shrink-0 flex-col items-center gap-0.5 rounded-lg border border-input py-1.5 leading-none dark:bg-input/30">
+      <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
         {d.toLocaleDateString("en-AU", { weekday: "short" })}
       </span>
-      <span className="text-[13px] font-semibold text-foreground tabular-nums">
-        {d.getDate()}
-      </span>
+      <span className="text-sm font-semibold tabular-nums">{d.getDate()}</span>
     </span>
   );
 }
@@ -160,7 +156,7 @@ function SkeletonRow() {
     <>
       {/* Mobile */}
       <div className="md:hidden flex items-center gap-3 px-4 py-3">
-        <Skeleton className="size-9 shrink-0" style={{ borderRadius: "25%" }} />
+        <Skeleton className="w-9 h-11 rounded-lg shrink-0" />
         <div className="flex-1 min-w-0 flex flex-col gap-1.5">
           <Skeleton className="h-3 w-32" />
           <Skeleton className="h-3 w-20" />
