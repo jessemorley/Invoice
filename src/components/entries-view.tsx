@@ -28,15 +28,11 @@ const VIEW_MODE_LABELS: Record<ViewMode, string> = {
   none: "No grouping",
 };
 
-function DateTile({ date, color }: { date: string; color: string }) {
+function DateTile({ date }: { date: string }) {
   const d = new Date(date + "T00:00:00");
   // Styled after the entry sheet's DateCardPicker cards, scaled down for the row.
-  // The outline carries the client colour, standing in for the client squircle.
   return (
-    <span
-      className="inline-flex w-9 shrink-0 flex-col items-center gap-0.5 rounded-lg border py-1.5 leading-none"
-      style={{ borderColor: `${color}55`, backgroundColor: `${color}1a` }}
-    >
+    <span className="inline-flex w-9 shrink-0 flex-col items-center gap-0.5 rounded-lg bg-muted py-1.5 leading-none dark:bg-input/30">
       <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
         {d.toLocaleDateString("en-AU", { weekday: "short" })}
       </span>
@@ -159,8 +155,8 @@ function SkeletonRow() {
   return (
     <>
       {/* Mobile */}
-      <div className="md:hidden flex items-center gap-3 px-3 py-3">
-        <Skeleton className="w-9 h-11 rounded-lg shrink-0" />
+      <div className="md:hidden flex items-center gap-3 px-3 py-3 border-l-2 border-transparent">
+        <Skeleton className="w-9 h-10 rounded-lg shrink-0" />
         <div className="flex-1 min-w-0 flex flex-col gap-1.5">
           <Skeleton className="h-3 w-32" />
           <Skeleton className="h-3 w-20" />
@@ -245,8 +241,11 @@ function EntryRow({
       onClick={() => onEdit(entry)}
     >
       {/* Mobile */}
-      <div className={`md:hidden flex items-center gap-3 px-3 py-3 ${isFuture ? "opacity-70" : ""}`}>
-        <DateTile date={entry.date} color={entry.client.color} />
+      <div
+        className={`md:hidden flex items-center gap-3 px-3 py-3 border-l-2 ${isFuture ? "opacity-70" : ""}`}
+        style={{ borderLeftColor: entry.client.color }}
+      >
+        <DateTile date={entry.date} />
         <div className="flex-1 min-w-0">
           {showClient ? (
             <>
@@ -415,7 +414,14 @@ function InvoiceView({
       {visible.map((group) => (
         <div key={group.key} className="flex flex-col">
           <ClientWeekGroupHeader group={group} />
-          <div className="rounded-xl border overflow-hidden bg-card">
+          <div
+            className="rounded-xl border overflow-hidden bg-card"
+            // Inner glow in the client colour. A background-image layer, not an inset
+            // box-shadow: bg-card sits on this same element and would paint over that.
+            style={{
+              backgroundImage: `radial-gradient(ellipse 100% 100% at 50% 50%, ${group.clientColor}00 40%, ${group.clientColor}45 100%)`,
+            }}
+          >
               {group.entries.map((entry, i) => (
                 <div key={entry.id}>
                   {i > 0 && <Separator />}
