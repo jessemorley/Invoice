@@ -418,7 +418,7 @@ export function EntrySheet({
     if (!selectedClient) return null;
     if (billingType === "day_rate") {
       if (isMultiBatch) {
-        return calcBatchBonus(selectedClient, filledLines, workflowRates);
+        return calcBatchBonus(selectedClient, filledLines, workflowRates, form.day_type);
       }
       // single line keeps the per-workflow KPI/incentive-rate formula
       const workflow = usesBatchLines ? filledLines[0]?.workflow ?? subOptions[0] : form.workflow_type;
@@ -470,9 +470,11 @@ export function EntrySheet({
       date: form.date,
       billing_type: billingType,
       day_type: billingType === "day_rate" ? form.day_type : null,
-      // Product collapses its batch names into "Product"; Apparel keeps its own name.
+      // Product collapses its batch names into "Product"; Apparel saves the mode name
+      // rather than form state, so a legacy "Model Shot" entry re-saves as "Apparel"
+      // instead of printing a different invoice description than an identical fresh day.
       // Either way the per-workflow split lives in batch_lines.
-      workflow_type: billingType === "day_rate" ? (isProductMode ? "Product" : form.workflow_type) : null,
+      workflow_type: billingType === "day_rate" ? (isProductMode ? "Product" : isApparelMode ? "Apparel" : form.workflow_type) : null,
       batch_lines: billingType === "day_rate" && usesBatchLines ? filledLines : null,
       skus: usesBatchLines ? batchTotalSkus : (billingType === "day_rate" && needsSkus) || billingType === "manual" ? form.skus : null,
       brand: billingType === "day_rate" && needsBrand ? form.brand || null : null,
