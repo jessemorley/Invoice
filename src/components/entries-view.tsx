@@ -18,7 +18,7 @@ import { ViewHeader } from "@/components/view-header";
 import { Check, Plus, RefreshCw, Search } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { ClientSquircle } from "@/components/client-squircle";
-import { InvoiceStatusBadge } from "@/components/invoice-status-badge";
+import { InvoiceStatusBadge, INVOICE_STATUS_COLOR } from "@/components/invoice-status-badge";
 
 type ViewMode = "invoice" | "week" | "none";
 
@@ -28,11 +28,15 @@ const VIEW_MODE_LABELS: Record<ViewMode, string> = {
   none: "No grouping",
 };
 
-function DateTile({ date }: { date: string }) {
+function DateTile({ date, color }: { date: string; color: string }) {
   const d = new Date(date + "T00:00:00");
-  // Styled to match the entry sheet's DateCardPicker cards, scaled down for the row.
+  // Styled after the entry sheet's DateCardPicker cards, scaled down for the row.
+  // The outline carries the client colour, standing in for the client squircle.
   return (
-    <span className="inline-flex w-9 shrink-0 flex-col items-center gap-0.5 rounded-lg border border-input py-1.5 leading-none dark:bg-input/30">
+    <span
+      className="inline-flex w-9 shrink-0 flex-col items-center gap-0.5 rounded-lg border py-1.5 leading-none"
+      style={{ borderColor: `${color}55`, backgroundColor: `${color}1a` }}
+    >
       <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
         {d.toLocaleDateString("en-AU", { weekday: "short" })}
       </span>
@@ -161,9 +165,9 @@ function SkeletonRow() {
           <Skeleton className="h-3 w-32" />
           <Skeleton className="h-3 w-20" />
         </div>
-        <div className="flex flex-col items-end gap-1.5 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
+          <Skeleton className="size-1.5 rounded-full" />
           <Skeleton className="h-3 w-16" />
-          <Skeleton className="h-4 w-16 rounded-full" />
         </div>
       </div>
       {/* Desktop — size-7 squircle drives row height to match the real row */}
@@ -242,20 +246,13 @@ function EntryRow({
     >
       {/* Mobile */}
       <div className={`md:hidden flex items-center gap-3 px-3 py-3 ${isFuture ? "opacity-70" : ""}`}>
-        <DateTile date={entry.date} />
+        <DateTile date={entry.date} color={entry.client.color} />
         <div className="flex-1 min-w-0">
           {showClient ? (
             <>
-              <div className="flex items-center gap-1.5 min-w-0">
-                <ClientSquircle
-                  name={entry.client.name}
-                  color={entry.client.color}
-                  className="size-5 text-[8px]"
-                />
-                <span className="text-sm font-medium text-foreground truncate">
-                  {entry.client.name}
-                </span>
-              </div>
+              <span className="text-sm font-medium text-foreground truncate block">
+                {entry.client.name}
+              </span>
               <span className="text-xs text-muted-foreground truncate block mt-0.5">
                 {description}
               </span>
@@ -271,15 +268,14 @@ function EntryRow({
             </>
           )}
         </div>
-        <div className="flex flex-col items-end gap-1.5 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
+          <span
+            className="size-1.5 rounded-full shrink-0"
+            style={{ backgroundColor: INVOICE_STATUS_COLOR[entry.invoice?.status ?? "draft"] }}
+          />
           <span className="text-sm tabular-nums text-foreground">
             {formatAUD(total)}
           </span>
-          <InvoiceStatusBadge
-            number={entry.invoice?.number ?? "Draft"}
-            status={entry.invoice?.status ?? "draft"}
-            className="gap-1 px-1.5 py-0 text-[10px]"
-          />
         </div>
       </div>
 
