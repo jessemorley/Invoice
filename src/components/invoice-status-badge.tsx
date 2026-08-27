@@ -2,9 +2,10 @@ import type { InvoiceStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export const INVOICE_STATUS_COLOR: Record<string, string> = {
-  draft: "#9ca3af",
-  issued: "#f97316",
-  paid: "#22c55e",
+  uninvoiced: "#9aa3b2",
+  draft: "#5aa2e0",
+  issued: "#f08c33",
+  paid: "#1ab98a",
 };
 
 const NEUTRAL = "#9ca3af";

@@ -32,7 +32,7 @@ function DateTile({ date }: { date: string }) {
   const d = new Date(date + "T00:00:00");
   // Styled after the entry sheet's DateCardPicker cards, scaled down for the row.
   return (
-    <span className="inline-flex w-7 shrink-0 flex-col items-center gap-0.5 rounded-lg bg-muted py-1.5 leading-none dark:bg-input/30">
+    <span className="inline-flex w-9 shrink-0 flex-col items-center gap-0.5 rounded-lg bg-muted py-1.5 leading-none dark:bg-input/30">
       <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
         {d.toLocaleDateString("en-AU", { weekday: "short" })}
       </span>
@@ -231,8 +231,8 @@ function EntryRow({
   const description = entry.label || entry.description || entry.workflow_type;
   const total = entry.base_amount + entry.bonus_amount;
   const isFuture = entry.date > todayInSydney();
-  const status = entry.invoice?.status ?? "draft";
-  const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+  const status = entry.invoice?.status ?? "uninvoiced";
+  const chipLabel = entry.invoice?.number ?? "Draft";
 
   return (
     <button
@@ -270,16 +270,14 @@ function EntryRow({
             <span className="text-sm tabular-nums text-foreground">
               {formatAUD(total)}
             </span>
-            <span className="flex items-center gap-1.5">
-              <span
-                className="rounded-full px-1.5 py-px text-[10px] font-medium leading-4"
-                style={{
-                  color: INVOICE_STATUS_COLOR[status],
-                  backgroundColor: `${INVOICE_STATUS_COLOR[status]}1a`,
-                }}
-              >
-                {statusLabel}
-              </span>
+            <span
+              className="rounded-full px-1.5 py-px text-[10px] font-medium leading-4 tabular-nums"
+              style={{
+                color: INVOICE_STATUS_COLOR[status],
+                backgroundColor: `${INVOICE_STATUS_COLOR[status]}1a`,
+              }}
+            >
+              {chipLabel}
             </span>
           </div>
         </div>
