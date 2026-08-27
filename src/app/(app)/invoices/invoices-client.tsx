@@ -180,19 +180,19 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
             className="size-2.5 rounded-full"
             style={{ backgroundColor: INVOICE_STATUS_COLOR[invoice.status] }}
           />
-          <span className="text-[13px] font-medium text-foreground">{STATUS_LABEL[invoice.status]}</span>
+          <span className="text-sm font-medium text-foreground">{STATUS_LABEL[invoice.status]}</span>
           {invoice.issued_date && (
-            <span className="text-[13px] text-muted-foreground">{formatDateShort(invoice.issued_date)}</span>
+            <span className="text-sm text-muted-foreground">{formatDateShort(invoice.issued_date)}</span>
           )}
         </span>
       </div>
       <div className="flex items-center gap-2 border-t dark:border-white/15 bg-black px-3 py-2.5">
-        <span className="flex min-w-0 items-center gap-1.5 rounded-full border pl-1 pr-2 py-0.5">
-          <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-4 rounded-full text-[7px]" />
-          <span className="text-[13px] text-foreground truncate">{invoice.client.name}</span>
+        <span className="flex min-w-0 items-center gap-1.5 rounded-full border py-1 pl-[5px] pr-2.5">
+          <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-5 rounded-full text-[8px]" />
+          <span className="text-sm text-foreground truncate">{invoice.client.name}</span>
         </span>
         {invoice.entry_count > 0 && (
-          <span className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-foreground shrink-0">
+          <span className="flex items-center gap-1 text-sm text-foreground shrink-0">
             <FileClock className="size-4 shrink-0 opacity-70" />
             {invoice.entry_count}
           </span>
@@ -200,7 +200,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
         {email && (
           <span
             className={cn(
-              "flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs shrink-0",
+              "flex items-center gap-1 text-sm shrink-0",
               email.destructive ? "text-destructive" : "text-foreground"
             )}
           >
@@ -208,7 +208,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
             {email.text}
           </span>
         )}
-        <span className="ml-auto text-[13px] tabular-nums text-foreground shrink-0">{formatAUD(invoice.subtotal)}</span>
+        <span className="ml-auto text-sm tabular-nums text-foreground shrink-0">{formatAUD(invoice.subtotal)}</span>
       </div>
     </div>
   );
@@ -224,19 +224,19 @@ function SuggestedInvoiceCard({ group }: { group: SuggestedInvoice }) {
             className="size-2.5 rounded-full"
             style={{ backgroundColor: group.ready ? "#3b82f6" : "#9ca3af" }}
           />
-          <span className="text-[13px] font-medium text-foreground">{group.ready ? "Ready" : "In progress"}</span>
+          <span className="text-sm font-medium text-foreground">{group.ready ? "Ready" : "In progress"}</span>
         </span>
       </div>
       <div className="flex items-center gap-2 border-t border-dashed dark:border-white/15 bg-black px-3 py-2.5">
-        <span className="flex min-w-0 items-center gap-1.5 rounded-full border pl-1 pr-2 py-0.5">
-          <ClientSquircle name={group.clientName} color={group.clientColor} className="size-4 rounded-full text-[7px]" />
-          <span className="text-[13px] text-foreground truncate">{group.clientName}</span>
+        <span className="flex min-w-0 items-center gap-1.5 rounded-full border py-1 pl-[5px] pr-2.5">
+          <ClientSquircle name={group.clientName} color={group.clientColor} className="size-5 rounded-full text-[8px]" />
+          <span className="text-sm text-foreground truncate">{group.clientName}</span>
         </span>
-        <span className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-foreground shrink-0">
+        <span className="flex items-center gap-1 text-sm text-foreground shrink-0">
           <FileClock className="size-4 shrink-0 opacity-70" />
           {group.entryCount}
         </span>
-        <span className="ml-auto text-[13px] tabular-nums text-foreground shrink-0">{formatAUD(group.subtotal)}</span>
+        <span className="ml-auto text-sm tabular-nums text-foreground shrink-0">{formatAUD(group.subtotal)}</span>
       </div>
     </div>
   );
