@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { ClientSquircle } from "@/components/client-squircle";
 import { InvoiceStatusBadge, INVOICE_STATUS_COLOR } from "@/components/invoice-status-badge";
-import { revalidateInvoices, loadEntrySheetData, generateInvoices, updateInvoiceStatus } from "./actions";
+import { revalidateInvoices, loadEntrySheetData, updateInvoiceStatus } from "./actions";
 import { invalidate } from "@/lib/invalidate";
 import { useInvoiceWorkflow } from "@/hooks/use-invoice-workflow";
 import type { Invoice, InvoiceEmail, InvoiceStatus, Entry, Client, WorkflowRate } from "@/lib/types";
@@ -16,7 +16,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import {
   Select,
@@ -177,37 +176,34 @@ function emailStatus(email: InvoiceEmail | null): { text: string; icon: typeof S
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
   const email = emailStatus(invoice.email);
   return (
-    <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
-      <div className={cn("flex flex-col w-16 shrink-0", !email && "self-center")}>
-        <span className="text-sm font-medium text-foreground tabular-nums truncate">{invoice.number}</span>
-        {email && (
-          <span
-            className={cn(
-              "flex items-center gap-1 text-xs mt-0.5",
-              email.destructive ? "text-destructive" : "text-muted-foreground"
-            )}
-          >
-            <email.icon className="size-3 shrink-0" />
-            {email.text}
-          </span>
-        )}
-      </div>
-      <div className="flex flex-1 min-w-0 items-center gap-2">
-        <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-8" />
-        <div className="min-w-0">
-          <span className="text-sm text-foreground truncate block">{invoice.client.name}</span>
-          <span className="text-xs text-muted-foreground mt-0.5 block">
-            {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
-          </span>
-        </div>
+    <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
+      <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-8" />
+      <div className="flex-1 min-w-0">
+        <span className="flex items-center gap-1.5 min-w-0">
+          <span className="text-sm font-medium text-foreground tabular-nums truncate">{invoice.number}</span>
+          {email && (
+            <span
+              className={cn(
+                "flex items-center gap-1 text-xs shrink-0",
+                email.destructive ? "text-destructive" : "text-muted-foreground"
+              )}
+            >
+              <email.icon className="size-3 shrink-0" />
+              {email.text}
+            </span>
+          )}
+        </span>
+        <span className="text-xs text-muted-foreground truncate block mt-0.5">{invoice.client.name}</span>
       </div>
       <div className="flex flex-col items-end gap-0.5 shrink-0">
         <span className="text-sm tabular-nums text-foreground">{formatAUD(invoice.subtotal)}</span>
-        <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <span
-            className="size-1.5 rounded-full shrink-0"
-            style={{ backgroundColor: INVOICE_STATUS_COLOR[invoice.status] }}
-          />
+        <span
+          className="rounded-full px-1.5 py-px text-[10px] font-medium leading-4"
+          style={{
+            color: INVOICE_STATUS_COLOR[invoice.status],
+            backgroundColor: `${INVOICE_STATUS_COLOR[invoice.status]}1a`,
+          }}
+        >
           {STATUS_LABEL[invoice.status]}
         </span>
       </div>
@@ -215,19 +211,9 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
   );
 }
 
-function SuggestedInvoiceCard({ group, creating, onCreate }: { group: SuggestedInvoice; creating: boolean; onCreate: () => void }) {
+function SuggestedInvoiceCard({ group }: { group: SuggestedInvoice }) {
   return (
     <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer opacity-70">
-      <div className="flex w-16 shrink-0 items-center">
-        <Button
-          variant="outline"
-          size="xs"
-          disabled={creating}
-          onClick={(e) => { e.stopPropagation(); onCreate(); }}
-        >
-          {creating ? <Spinner /> : "Create"}
-        </Button>
-      </div>
       <div className="flex flex-1 min-w-0 items-center gap-2">
         <ClientSquircle name={group.clientName} color={group.clientColor} className="size-8" />
         <div className="min-w-0">
@@ -239,11 +225,13 @@ function SuggestedInvoiceCard({ group, creating, onCreate }: { group: SuggestedI
       </div>
       <div className="flex flex-col items-end gap-0.5 shrink-0">
         <span className="text-sm tabular-nums text-foreground">{formatAUD(group.subtotal)}</span>
-        <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <span
-            className="size-1.5 rounded-full shrink-0"
-            style={{ backgroundColor: group.ready ? "#3b82f6" : "#9ca3af" }}
-          />
+        <span
+          className="rounded-full px-1.5 py-px text-[10px] font-medium leading-4"
+          style={{
+            color: group.ready ? "#3b82f6" : "#9ca3af",
+            backgroundColor: `${group.ready ? "#3b82f6" : "#9ca3af"}1a`,
+          }}
+        >
           {group.ready ? "Ready" : "In progress"}
         </span>
       </div>
@@ -344,7 +332,6 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
   const [suggestedOpen, setSuggestedOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<SuggestedInvoice | null>(null);
-  const [creatingKey, setCreatingKey] = useState<string | null>(null);
   const entryReturnRef = useRef<"invoice" | "suggested">("invoice");
   const [entrySheetOpen, setEntrySheetOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
@@ -453,19 +440,6 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       email: null,
       notes: null,
     });
-  }
-
-  async function handleQuickCreate(group: SuggestedInvoice) {
-    setCreatingKey(group.key);
-    try {
-      const { invoices } = await generateInvoices([group.key]);
-      invalidate("invoices", "entries");
-      if (invoices[0]) handleSuggestedCreated(invoices[0], group);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to create invoice");
-    } finally {
-      setCreatingKey(null);
-    }
   }
 
   function handleEntryClick(entryId: string, from: "invoice" | "suggested" = "invoice") {
@@ -706,11 +680,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                 onClick={() => { setSelectedGroup(g); setSuggestedOpen(true); }}
               >
                 <CardContent className="p-0">
-                  <SuggestedInvoiceCard
-                    group={g}
-                    creating={creatingKey === g.key}
-                    onCreate={() => handleQuickCreate(g)}
-                  />
+                  <SuggestedInvoiceCard group={g} />
                 </CardContent>
               </Card>
             ))}
