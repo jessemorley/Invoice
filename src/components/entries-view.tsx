@@ -32,7 +32,7 @@ function DateTile({ date }: { date: string }) {
   const d = new Date(date + "T00:00:00");
   // Styled after the entry sheet's DateCardPicker cards, scaled down for the row.
   return (
-    <span className="inline-flex w-9 shrink-0 flex-col items-center gap-0.5 rounded-lg bg-muted py-1.5 leading-none dark:bg-white/[0.04]">
+    <span className="inline-flex w-9 shrink-0 flex-col items-center gap-0.5 rounded-lg bg-muted py-1.5 leading-none dark:bg-black">
       <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
         {d.toLocaleDateString("en-AU", { weekday: "short" })}
       </span>
@@ -245,15 +245,15 @@ function EntryRow({
         <DateTile date={entry.date} />
         <div className="flex-1 min-w-0">
           {showClient ? (
-            <span className="flex min-w-0 items-center gap-2">
-              <span className="flex min-w-0 shrink items-center gap-1.5 rounded-full border py-1 pl-[5px] pr-2.5">
+            <>
+              <span className="flex min-w-0 w-fit items-center gap-1.5 rounded-full border py-1 pl-[5px] pr-2.5">
                 <ClientSquircle name={entry.client.name} color={entry.client.color} className="size-5 rounded-full text-[8px]" />
                 <span className="text-[13px] text-foreground truncate">{entry.client.name}</span>
               </span>
-              <span className="text-[13px] text-muted-foreground truncate">
+              <span className="text-[13px] text-muted-foreground truncate block mt-0.5">
                 {description}
               </span>
-            </span>
+            </>
           ) : (
             <>
               <span className="text-sm font-medium text-foreground truncate block">
