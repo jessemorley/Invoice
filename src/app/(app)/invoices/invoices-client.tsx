@@ -176,6 +176,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
       <div className="flex items-center justify-between gap-3 bg-card px-4 py-3 transition-colors hover:bg-accent/50">
         <span className="text-[13px] text-foreground tabular-nums truncate">Invoice {invoice.number}</span>
         <span className="flex items-center gap-2 shrink-0">
+          <span className="text-[13px] tabular-nums text-muted-foreground">{formatAUD(invoice.subtotal)}</span>
           <span
             className="size-2.5 rounded-full"
             style={{ backgroundColor: INVOICE_STATUS_COLOR[invoice.status] }}
@@ -188,6 +189,12 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
           <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-4 text-[7px]" />
           <span className="text-[13px] text-foreground truncate">{invoice.client.name}</span>
         </span>
+        {invoice.entry_count > 0 && (
+          <span className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground shrink-0">
+            <FileClock className="size-3 shrink-0" />
+            {invoice.entry_count} {invoice.entry_count === 1 ? "entry" : "entries"}
+          </span>
+        )}
         {email && (
           <span
             className={cn(
@@ -199,11 +206,8 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
             {email.text}
           </span>
         )}
-        <span className="ml-auto flex items-center gap-2 shrink-0">
-          <span className="text-[13px] tabular-nums text-foreground">{formatAUD(invoice.subtotal)}</span>
-          <span className="text-[13px] text-muted-foreground">
-            {invoice.issued_date ? formatDateShort(invoice.issued_date) : ""}
-          </span>
+        <span className="ml-auto text-[13px] text-muted-foreground shrink-0">
+          {invoice.issued_date ? formatDateShort(invoice.issued_date) : ""}
         </span>
       </div>
     </div>
@@ -216,6 +220,7 @@ function SuggestedInvoiceCard({ group }: { group: SuggestedInvoice }) {
       <div className="flex items-center justify-between gap-3 bg-card px-4 py-3 transition-colors hover:bg-accent/50">
         <span className="text-[13px] text-foreground truncate">Invoice {group.dateRange}</span>
         <span className="flex items-center gap-2 shrink-0">
+          <span className="text-[13px] tabular-nums text-muted-foreground">{formatAUD(group.subtotal)}</span>
           <span
             className="size-2.5 rounded-full"
             style={{ backgroundColor: group.ready ? "#3b82f6" : "#9ca3af" }}
@@ -231,9 +236,6 @@ function SuggestedInvoiceCard({ group }: { group: SuggestedInvoice }) {
         <span className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground shrink-0">
           <FileClock className="size-3 shrink-0" />
           {group.entryCount} {group.entryCount === 1 ? "entry" : "entries"}
-        </span>
-        <span className="ml-auto flex items-center gap-2 shrink-0">
-          <span className="text-[13px] tabular-nums text-foreground">{formatAUD(group.subtotal)}</span>
         </span>
       </div>
     </div>
@@ -430,6 +432,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       status: "draft",
       email: null,
       notes: null,
+      entry_count: group?.entryCount ?? 0,
     });
   }
 

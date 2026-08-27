@@ -245,6 +245,7 @@ export async function fetchOutstandingInvoices(userId: string, token: string): P
       status: inv.status as InvoiceStatus,
       email: null,
       notes: inv.notes ?? null,
+      entry_count: 0,
     };
   });
 }
@@ -279,7 +280,7 @@ export async function fetchInvoices(userId: string, token: string, filters: Invo
 
   let query = supabase
     .from("invoices")
-    .select("*, clients(id, name, billing_type, color), scheduled_emails(status, scheduled_for, sent_at)")
+    .select("*, clients(id, name, billing_type, color), scheduled_emails(status, scheduled_for, sent_at), entries(count)")
     .eq("user_id", userId);
 
   if (status && status !== "all") query = query.eq("status", status);
@@ -321,6 +322,7 @@ export async function fetchInvoices(userId: string, token: string, filters: Invo
         sent_at: activeEmail.sent_at,
       } : null,
       notes: inv.notes ?? null,
+      entry_count: (inv.entries as Array<{ count: number }> | null)?.[0]?.count ?? 0,
     };
   });
 }
