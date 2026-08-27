@@ -52,7 +52,7 @@ import { InvoiceSheet } from "@/components/invoice-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
 import { SuggestedInvoiceSheet } from "@/components/suggested-invoice-sheet";
 import { EntrySheet } from "@/components/entry-sheet";
-import { Calendar, ChevronDown, Clock, FileClock, FileText, MailWarning, Plus, RefreshCw, Search, Send } from "lucide-react";
+import { ChevronDown, Clock, FileClock, FileText, MailWarning, Plus, RefreshCw, Search, Send } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
 
@@ -174,21 +174,16 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
   return (
     <div className="rounded-xl border dark:border-white/15 overflow-hidden cursor-pointer">
       <div className="flex items-center justify-between gap-3 bg-card px-3 py-3 transition-colors hover:bg-accent/50">
-        <span className="flex min-w-0 items-center gap-2">
-          <span className="text-[13px] text-foreground tabular-nums truncate">Invoice {invoice.number}</span>
-          {invoice.issued_date && (
-            <span className="flex items-center gap-1 text-[13px] text-muted-foreground shrink-0">
-              <Calendar className="size-3.5 shrink-0 opacity-70" />
-              {formatDateShort(invoice.issued_date)}
-            </span>
-          )}
-        </span>
+        <span className="text-sm font-medium text-foreground tabular-nums truncate">Invoice {invoice.number}</span>
         <span className="flex items-center gap-2 shrink-0">
           <span
             className="size-2.5 rounded-full"
             style={{ backgroundColor: INVOICE_STATUS_COLOR[invoice.status] }}
           />
           <span className="text-[13px] font-medium text-foreground">{STATUS_LABEL[invoice.status]}</span>
+          {invoice.issued_date && (
+            <span className="text-[13px] text-muted-foreground">{formatDateShort(invoice.issued_date)}</span>
+          )}
         </span>
       </div>
       <div className="flex items-center gap-2 border-t dark:border-white/15 bg-black px-3 py-2.5">
@@ -199,7 +194,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
         {invoice.entry_count > 0 && (
           <span className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-foreground shrink-0">
             <FileClock className="size-4 shrink-0 opacity-70" />
-            {invoice.entry_count} {invoice.entry_count === 1 ? "entry" : "entries"}
+            {invoice.entry_count}
           </span>
         )}
         {email && (
@@ -223,7 +218,7 @@ function SuggestedInvoiceCard({ group }: { group: SuggestedInvoice }) {
   return (
     <div className="rounded-xl border border-dashed dark:border-white/15 overflow-hidden cursor-pointer opacity-70">
       <div className="flex items-center justify-between gap-3 bg-card px-3 py-3 transition-colors hover:bg-accent/50">
-        <span className="text-[13px] text-foreground truncate">Invoice {group.dateRange}</span>
+        <span className="text-sm font-medium text-foreground truncate">Invoice {group.dateRange}</span>
         <span className="flex items-center gap-2 shrink-0">
           <span
             className="size-2.5 rounded-full"
@@ -239,7 +234,7 @@ function SuggestedInvoiceCard({ group }: { group: SuggestedInvoice }) {
         </span>
         <span className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-foreground shrink-0">
           <FileClock className="size-4 shrink-0 opacity-70" />
-          {group.entryCount} {group.entryCount === 1 ? "entry" : "entries"}
+          {group.entryCount}
         </span>
         <span className="ml-auto text-[13px] tabular-nums text-foreground shrink-0">{formatAUD(group.subtotal)}</span>
       </div>

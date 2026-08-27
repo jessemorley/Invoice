@@ -3,8 +3,8 @@ import { cn } from "@/lib/utils";
 
 export const INVOICE_STATUS_COLOR: Record<string, string> = {
   uninvoiced: "#9aa3b2",
-  draft: "#5aa2e0",
-  issued: "#f08c33",
+  draft: "#9aa3b2",
+  issued: "#5aa2e0",
   paid: "#1ab98a",
 };
 
