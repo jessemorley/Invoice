@@ -25,11 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import {
   Empty,
   EmptyHeader,
   EmptyMedia,
@@ -57,7 +52,7 @@ import { InvoiceSheet } from "@/components/invoice-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
 import { SuggestedInvoiceSheet } from "@/components/suggested-invoice-sheet";
 import { EntrySheet } from "@/components/entry-sheet";
-import { ChevronDown, Clock, FileText, MailWarning, Plus, RefreshCw, Search, Send } from "lucide-react";
+import { ChevronDown, Clock, FileClock, FileText, MailWarning, Plus, RefreshCw, Search, Send } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
 
@@ -177,35 +172,38 @@ function emailStatus(email: InvoiceEmail | null): { text: string; icon: typeof S
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
   const email = emailStatus(invoice.email);
   return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
-      <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-8" />
-      <div className="flex-1 min-w-0">
-        <span className="flex items-center gap-1.5 min-w-0">
-          <span className="text-sm font-medium text-foreground tabular-nums truncate">{invoice.number}</span>
-          {email && (
-            <span
-              className={cn(
-                "flex items-center gap-1 text-xs shrink-0",
-                email.destructive ? "text-destructive" : "text-muted-foreground"
-              )}
-            >
-              <email.icon className="size-3 shrink-0" />
-              {email.text}
-            </span>
-          )}
+    <div className="rounded-xl border dark:border-white/15 overflow-hidden cursor-pointer">
+      <div className="flex items-center justify-between gap-3 bg-card px-4 py-3 transition-colors hover:bg-accent/50">
+        <span className="text-[13px] text-foreground tabular-nums truncate">Invoice {invoice.number}</span>
+        <span className="flex items-center gap-2 shrink-0">
+          <span
+            className="size-2.5 rounded-full"
+            style={{ backgroundColor: INVOICE_STATUS_COLOR[invoice.status] }}
+          />
+          <span className="text-[13px] font-medium text-foreground">{STATUS_LABEL[invoice.status]}</span>
         </span>
-        <span className="text-xs text-muted-foreground truncate block mt-0.5">{invoice.client.name}</span>
       </div>
-      <div className="flex flex-col items-end gap-0.5 shrink-0">
-        <span className="text-sm tabular-nums text-foreground">{formatAUD(invoice.subtotal)}</span>
-        <span
-          className="rounded-full px-1.5 py-px text-[10px] font-medium leading-4"
-          style={{
-            color: INVOICE_STATUS_COLOR[invoice.status],
-            backgroundColor: `${INVOICE_STATUS_COLOR[invoice.status]}1a`,
-          }}
-        >
-          {STATUS_LABEL[invoice.status]}
+      <div className="flex items-center gap-2 border-t dark:border-white/15 bg-black px-4 py-2.5">
+        <span className="flex min-w-0 items-center gap-1.5">
+          <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-4 text-[7px]" />
+          <span className="text-[13px] text-foreground truncate">{invoice.client.name}</span>
+        </span>
+        {email && (
+          <span
+            className={cn(
+              "flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs shrink-0",
+              email.destructive ? "text-destructive" : "text-muted-foreground"
+            )}
+          >
+            <email.icon className="size-3 shrink-0" />
+            {email.text}
+          </span>
+        )}
+        <span className="ml-auto flex items-center gap-2 shrink-0">
+          <span className="text-[13px] tabular-nums text-foreground">{formatAUD(invoice.subtotal)}</span>
+          <span className="text-[13px] text-muted-foreground">
+            {invoice.issued_date ? formatDateShort(invoice.issued_date) : ""}
+          </span>
         </span>
       </div>
     </div>
@@ -214,26 +212,28 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
 
 function SuggestedInvoiceCard({ group }: { group: SuggestedInvoice }) {
   return (
-    <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer opacity-70">
-      <div className="flex flex-1 min-w-0 items-center gap-2">
-        <ClientSquircle name={group.clientName} color={group.clientColor} className="size-8" />
-        <div className="min-w-0">
-          <span className="text-sm text-foreground truncate block">{group.clientName}</span>
-          <span className="text-xs text-muted-foreground mt-0.5 block truncate">
-            {group.dateRange} · {group.entryCount} {group.entryCount === 1 ? "entry" : "entries"}
-          </span>
-        </div>
+    <div className="rounded-xl border border-dashed dark:border-white/15 overflow-hidden cursor-pointer opacity-70">
+      <div className="flex items-center justify-between gap-3 bg-card px-4 py-3 transition-colors hover:bg-accent/50">
+        <span className="text-[13px] text-foreground truncate">Invoice {group.dateRange}</span>
+        <span className="flex items-center gap-2 shrink-0">
+          <span
+            className="size-2.5 rounded-full"
+            style={{ backgroundColor: group.ready ? "#3b82f6" : "#9ca3af" }}
+          />
+          <span className="text-[13px] font-medium text-foreground">{group.ready ? "Ready" : "In progress"}</span>
+        </span>
       </div>
-      <div className="flex flex-col items-end gap-0.5 shrink-0">
-        <span className="text-sm tabular-nums text-foreground">{formatAUD(group.subtotal)}</span>
-        <span
-          className="rounded-full px-1.5 py-px text-[10px] font-medium leading-4"
-          style={{
-            color: group.ready ? "#3b82f6" : "#9ca3af",
-            backgroundColor: `${group.ready ? "#3b82f6" : "#9ca3af"}1a`,
-          }}
-        >
-          {group.ready ? "Ready" : "In progress"}
+      <div className="flex items-center gap-2 border-t border-dashed dark:border-white/15 bg-black px-4 py-2.5">
+        <span className="flex min-w-0 items-center gap-1.5">
+          <ClientSquircle name={group.clientName} color={group.clientColor} className="size-4 text-[7px]" />
+          <span className="text-[13px] text-foreground truncate">{group.clientName}</span>
+        </span>
+        <span className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground shrink-0">
+          <FileClock className="size-3 shrink-0" />
+          {group.entryCount} {group.entryCount === 1 ? "entry" : "entries"}
+        </span>
+        <span className="ml-auto flex items-center gap-2 shrink-0">
+          <span className="text-[13px] tabular-nums text-foreground">{formatAUD(group.subtotal)}</span>
         </span>
       </div>
     </div>
@@ -264,20 +264,17 @@ function SkeletonTableRows({ count = 8 }: { count?: number }) {
 
 function SkeletonMobileCards({ count = 6 }: { count?: number }) {
   return (
-    <div className="px-4 py-4 flex flex-col">
+    <div className="px-4 py-4 flex flex-col gap-3">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i}>
-          {i > 0 && <Separator />}
-          <div className="flex items-center gap-3 px-4 py-3">
-            <Skeleton className="size-8 rounded-[30%] shrink-0" />
-            <div className="flex-1 flex flex-col gap-1.5">
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="h-3 w-20" />
-            </div>
-            <div className="flex flex-col items-end gap-1.5 shrink-0">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="h-5 w-14 rounded-full" />
-            </div>
+        <div key={i} className="rounded-xl border dark:border-white/15 overflow-hidden">
+          <div className="flex items-center justify-between bg-card px-4 py-3">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+          <div className="flex items-center gap-2 border-t dark:border-white/15 bg-black px-4 py-2.5">
+            <Skeleton className="h-5 w-28 rounded-full" />
+            <Skeleton className="h-5 w-14 rounded-full" />
+            <Skeleton className="ml-auto h-3 w-12" />
           </div>
         </div>
       ))}
@@ -668,15 +665,9 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         {!loading && suggested.length > 0 && (
           <div className="px-4 pt-4 flex flex-col gap-3">
             {suggested.map((g) => (
-              <Card
-                key={g.key}
-                className="py-0 border-dashed"
-                onClick={() => { setSelectedGroup(g); setSuggestedOpen(true); }}
-              >
-                <CardContent className="p-0">
-                  <SuggestedInvoiceCard group={g} />
-                </CardContent>
-              </Card>
+              <div key={g.key} onClick={() => { setSelectedGroup(g); setSuggestedOpen(true); }}>
+                <SuggestedInvoiceCard group={g} />
+              </div>
             ))}
           </div>
         )}
@@ -691,10 +682,9 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             </EmptyHeader>
           </Empty>
         ) : (
-          <div className="px-4 py-4 pb-28 flex flex-col">
-            {visibleInvoices.map((inv, i) => (
+          <div className="px-4 py-4 pb-28 flex flex-col gap-3">
+            {visibleInvoices.map((inv) => (
               <div key={inv.id} onClick={() => openInvoice(inv)}>
-                {i > 0 && <Separator />}
                 <InvoiceCard invoice={inv} />
               </div>
             ))}

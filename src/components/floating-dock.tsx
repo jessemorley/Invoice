@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LayoutDashboard, FileText, Receipt, Mail, Users, Wallet, Landmark, Settings, Plus, Menu, X } from "lucide-react";
+import { LayoutDashboard, FileClock, Receipt, Mail, Users, Wallet, Landmark, Settings, Plus, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveView, type ViewId } from "@/components/active-view-context";
 
 const PRIMARY_TABS: { view: ViewId; icon: React.ComponentType<{ className?: string; strokeWidth?: number }>; label: string }[] = [
   { view: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { view: "entries", icon: FileText, label: "Entries" },
+  { view: "entries", icon: FileClock, label: "Entries" },
   { view: "invoices", icon: Receipt, label: "Invoices" },
 ];
 
