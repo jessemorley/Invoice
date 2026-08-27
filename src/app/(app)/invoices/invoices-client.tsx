@@ -173,7 +173,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
   const email = emailStatus(invoice.email);
   return (
     <div className="rounded-xl border dark:border-white/15 overflow-hidden cursor-pointer">
-      <div className="flex items-center justify-between gap-3 bg-card px-4 py-3 transition-colors hover:bg-accent/50">
+      <div className="flex items-center justify-between gap-3 bg-card px-3 py-3 transition-colors hover:bg-accent/50">
         <span className="text-[13px] text-foreground tabular-nums truncate">Invoice {invoice.number}</span>
         <span className="flex items-center gap-2 shrink-0">
           <span className="text-[13px] tabular-nums text-muted-foreground">{formatAUD(invoice.subtotal)}</span>
@@ -184,25 +184,25 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
           <span className="text-[13px] font-medium text-foreground">{STATUS_LABEL[invoice.status]}</span>
         </span>
       </div>
-      <div className="flex items-center gap-2 border-t dark:border-white/15 bg-black px-4 py-2.5">
-        <span className="flex min-w-0 items-center gap-1.5">
-          <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-4 text-[7px]" />
+      <div className="flex items-center gap-2 border-t dark:border-white/15 bg-black px-3 py-2.5">
+        <span className="flex min-w-0 items-center gap-1.5 rounded-full border pl-1 pr-2 py-0.5">
+          <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-4 rounded-full text-[7px]" />
           <span className="text-[13px] text-foreground truncate">{invoice.client.name}</span>
         </span>
         {invoice.entry_count > 0 && (
-          <span className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground shrink-0">
-            <FileClock className="size-3 shrink-0" />
+          <span className="flex items-center gap-1 text-xs text-foreground shrink-0">
+            <FileClock className="size-4 shrink-0 opacity-70" />
             {invoice.entry_count} {invoice.entry_count === 1 ? "entry" : "entries"}
           </span>
         )}
         {email && (
           <span
             className={cn(
-              "flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs shrink-0",
-              email.destructive ? "text-destructive" : "text-muted-foreground"
+              "flex items-center gap-1 text-xs shrink-0",
+              email.destructive ? "text-destructive" : "text-foreground"
             )}
           >
-            <email.icon className="size-3 shrink-0" />
+            <email.icon className="size-4 shrink-0 opacity-70" />
             {email.text}
           </span>
         )}
@@ -217,7 +217,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
 function SuggestedInvoiceCard({ group }: { group: SuggestedInvoice }) {
   return (
     <div className="rounded-xl border border-dashed dark:border-white/15 overflow-hidden cursor-pointer opacity-70">
-      <div className="flex items-center justify-between gap-3 bg-card px-4 py-3 transition-colors hover:bg-accent/50">
+      <div className="flex items-center justify-between gap-3 bg-card px-3 py-3 transition-colors hover:bg-accent/50">
         <span className="text-[13px] text-foreground truncate">Invoice {group.dateRange}</span>
         <span className="flex items-center gap-2 shrink-0">
           <span className="text-[13px] tabular-nums text-muted-foreground">{formatAUD(group.subtotal)}</span>
@@ -228,13 +228,13 @@ function SuggestedInvoiceCard({ group }: { group: SuggestedInvoice }) {
           <span className="text-[13px] font-medium text-foreground">{group.ready ? "Ready" : "In progress"}</span>
         </span>
       </div>
-      <div className="flex items-center gap-2 border-t border-dashed dark:border-white/15 bg-black px-4 py-2.5">
-        <span className="flex min-w-0 items-center gap-1.5">
-          <ClientSquircle name={group.clientName} color={group.clientColor} className="size-4 text-[7px]" />
+      <div className="flex items-center gap-2 border-t border-dashed dark:border-white/15 bg-black px-3 py-2.5">
+        <span className="flex min-w-0 items-center gap-1.5 rounded-full border pl-1 pr-2 py-0.5">
+          <ClientSquircle name={group.clientName} color={group.clientColor} className="size-4 rounded-full text-[7px]" />
           <span className="text-[13px] text-foreground truncate">{group.clientName}</span>
         </span>
-        <span className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground shrink-0">
-          <FileClock className="size-3 shrink-0" />
+        <span className="flex items-center gap-1 text-xs text-foreground shrink-0">
+          <FileClock className="size-4 shrink-0 opacity-70" />
           {group.entryCount} {group.entryCount === 1 ? "entry" : "entries"}
         </span>
       </div>
@@ -269,11 +269,11 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
     <div className="px-4 py-4 flex flex-col gap-3">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="rounded-xl border dark:border-white/15 overflow-hidden">
-          <div className="flex items-center justify-between bg-card px-4 py-3">
+          <div className="flex items-center justify-between bg-card px-3 py-3">
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-4 w-20" />
           </div>
-          <div className="flex items-center gap-2 border-t dark:border-white/15 bg-black px-4 py-2.5">
+          <div className="flex items-center gap-2 border-t dark:border-white/15 bg-black px-3 py-2.5">
             <Skeleton className="h-5 w-28 rounded-full" />
             <Skeleton className="h-5 w-14 rounded-full" />
             <Skeleton className="ml-auto h-3 w-12" />
