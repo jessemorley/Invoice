@@ -32,7 +32,7 @@ function DateTile({ date }: { date: string }) {
   const d = new Date(date + "T00:00:00");
   // Styled after the entry sheet's DateCardPicker cards, scaled down for the row.
   return (
-    <span className="inline-flex w-7 shrink-0 flex-col items-center gap-0.5 py-1.5 leading-none">
+    <span className="inline-flex w-7 shrink-0 flex-col items-center gap-0.5 rounded-lg bg-muted py-1.5 leading-none dark:bg-input/30">
       <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
         {d.toLocaleDateString("en-AU", { weekday: "short" })}
       </span>
@@ -155,14 +155,13 @@ function SkeletonRow() {
   return (
     <>
       {/* Mobile */}
-      <div className="md:hidden flex items-center gap-3 px-3 py-3 border-l-2 border-transparent">
+      <div className="md:hidden flex items-center gap-3 px-3 py-3">
         <Skeleton className="w-9 h-8 rounded-lg shrink-0" />
         <div className="flex-1 min-w-0 flex flex-col gap-1.5">
           <Skeleton className="h-3 w-32" />
           <Skeleton className="h-3 w-20" />
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Skeleton className="size-1.5 rounded-full" />
           <Skeleton className="h-3 w-16" />
         </div>
       </div>
@@ -196,7 +195,7 @@ function SkeletonCard({ rows = 3 }: { rows?: number }) {
   return (
     <div className="flex flex-col">
       <SkeletonGroupHeader />
-      <div className="rounded-xl border overflow-hidden bg-[color-mix(in_oklab,var(--card),white_3%)]">
+      <div className="rounded-2xl border overflow-hidden bg-card">
           {Array.from({ length: rows }).map((_, i) => (
             <div key={i}>
               {i > 0 && <Separator />}
@@ -232,6 +231,8 @@ function EntryRow({
   const description = entry.label || entry.description || entry.workflow_type;
   const total = entry.base_amount + entry.bonus_amount;
   const isFuture = entry.date > todayInSydney();
+  const status = entry.invoice?.status ?? "draft";
+  const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
 
   return (
     <button
@@ -241,30 +242,17 @@ function EntryRow({
       onClick={() => onEdit(entry)}
     >
       {/* Mobile */}
-      <div
-        className={`md:hidden flex items-center gap-3 px-3 py-3 border-l-2 border-transparent ${isFuture ? "opacity-70" : ""}`}
-        // ponytail: client colour edge hidden for now — restore borderLeftColor: entry.client.color
-
-      >
+      <div className={`md:hidden flex items-center gap-3 px-3 py-3 ${isFuture ? "opacity-70" : ""}`}>
         <DateTile date={entry.date} />
         <div className="flex-1 min-w-0">
           {showClient ? (
             <>
-              <div className="flex items-center gap-2 min-w-0">
-                <ClientSquircle
-                  name={entry.client.name}
-                  color={entry.client.color}
-                  className="size-8"
-                />
-                <div className="min-w-0 flex-1">
-                  <span className="text-sm font-medium text-foreground truncate block">
-                    {entry.client.name}
-                  </span>
-                  <span className="text-xs text-muted-foreground truncate block mt-0.5">
-                    {description}
-                  </span>
-                </div>
-              </div>
+              <span className="text-sm font-medium text-foreground truncate block">
+                {entry.client.name}
+              </span>
+              <span className="text-xs text-muted-foreground truncate block mt-0.5">
+                {description}
+              </span>
             </>
           ) : (
             <>
@@ -278,13 +266,22 @@ function EntryRow({
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span
-            className="size-1.5 rounded-full shrink-0"
-            style={{ backgroundColor: INVOICE_STATUS_COLOR[entry.invoice?.status ?? "draft"] }}
-          />
-          <span className="text-sm tabular-nums text-foreground">
-            {formatAUD(total)}
-          </span>
+          <div className="flex flex-col items-end">
+            <span className="text-sm tabular-nums text-foreground">
+              {formatAUD(total)}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span
+                className="rounded-full px-1.5 py-px text-[10px] font-medium leading-4"
+                style={{
+                  color: INVOICE_STATUS_COLOR[status],
+                  backgroundColor: `${INVOICE_STATUS_COLOR[status]}1a`,
+                }}
+              >
+                {statusLabel}
+              </span>
+            </span>
+          </div>
         </div>
       </div>
 
@@ -424,14 +421,7 @@ function InvoiceView({
       {visible.map((group) => (
         <div key={group.key} className="flex flex-col">
           <ClientWeekGroupHeader group={group} />
-          <div
-            className="rounded-xl border overflow-hidden bg-[color-mix(in_oklab,var(--card),white_3%)]"
-            // Inner glow in the client colour. A background-image layer, not an inset
-            // box-shadow: bg-card sits on this same element and would paint over that.
-            style={{
-              backgroundImage: `radial-gradient(ellipse 100% 100% at 50% 50%, ${group.clientColor}00 40%, ${group.clientColor}45 100%)`,
-            }}
-          >
+          <div className="rounded-2xl border overflow-hidden bg-card">
               {group.entries.map((entry, i) => (
                 <div key={entry.id}>
                   {i > 0 && <Separator />}
@@ -470,7 +460,7 @@ function WeekView({
       {visible.map((group) => (
         <div key={group.key} className="flex flex-col">
           <WeekGroupHeader group={group} />
-          <div className="rounded-xl border overflow-hidden bg-[color-mix(in_oklab,var(--card),white_3%)]">
+          <div className="rounded-2xl border overflow-hidden bg-card">
               {group.entries.map((entry, i) => (
                 <div key={entry.id}>
                   {i > 0 && <Separator />}
@@ -508,7 +498,7 @@ function ListView({
 
   return (
     <div>
-      <div className="rounded-xl border overflow-hidden bg-[color-mix(in_oklab,var(--card),white_3%)]">
+      <div className="rounded-2xl border overflow-hidden bg-card">
           {visible.map((entry, i) => (
             <div key={entry.id}>
               {i > 0 && <Separator />}
@@ -667,7 +657,7 @@ export function EntriesView({
             }}
           />
         </div>
-        <div className="px-4 md:px-6 pt-4 pb-6 md:py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
+        <div className="px-3 md:px-6 pt-4 pb-6 md:py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
           {/* Desktop filter row */}
           <div className="hidden md:flex items-center gap-3">
             <div className="relative flex-1 min-w-48">
