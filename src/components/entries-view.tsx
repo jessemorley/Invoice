@@ -32,7 +32,7 @@ function DateTile({ date }: { date: string }) {
   const d = new Date(date + "T00:00:00");
   // Styled after the entry sheet's DateCardPicker cards, scaled down for the row.
   return (
-    <span className="inline-flex w-9 shrink-0 flex-col items-center gap-0.5 rounded-lg bg-muted py-1.5 leading-none dark:bg-input/30">
+    <span className="inline-flex h-8 w-9 shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-input bg-muted leading-none dark:bg-input/30">
       <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
         {d.toLocaleDateString("en-AU", { weekday: "short" })}
       </span>
@@ -156,7 +156,7 @@ function SkeletonRow() {
     <>
       {/* Mobile */}
       <div className="md:hidden flex items-center gap-3 px-3 py-3 border-l-2 border-transparent">
-        <Skeleton className="w-9 h-10 rounded-lg shrink-0" />
+        <Skeleton className="w-9 h-8 rounded-lg shrink-0" />
         <div className="flex-1 min-w-0 flex flex-col gap-1.5">
           <Skeleton className="h-3 w-32" />
           <Skeleton className="h-3 w-20" />
@@ -242,19 +242,29 @@ function EntryRow({
     >
       {/* Mobile */}
       <div
-        className={`md:hidden flex items-center gap-3 px-3 py-3 border-l-2 ${isFuture ? "opacity-70" : ""}`}
-        style={{ borderLeftColor: entry.client.color }}
+        className={`md:hidden flex items-center gap-3 px-3 py-3 border-l-2 border-transparent ${isFuture ? "opacity-70" : ""}`}
+        // ponytail: client colour edge hidden for now — restore borderLeftColor: entry.client.color
+
       >
         <DateTile date={entry.date} />
         <div className="flex-1 min-w-0">
           {showClient ? (
             <>
-              <span className="text-sm font-medium text-foreground truncate block">
-                {entry.client.name}
-              </span>
-              <span className="text-xs text-muted-foreground truncate block mt-0.5">
-                {description}
-              </span>
+              <div className="flex items-center gap-2 min-w-0">
+                <ClientSquircle
+                  name={entry.client.name}
+                  color={entry.client.color}
+                  className="size-8"
+                />
+                <div className="min-w-0 flex-1">
+                  <span className="text-sm font-medium text-foreground truncate block">
+                    {entry.client.name}
+                  </span>
+                  <span className="text-xs text-muted-foreground truncate block mt-0.5">
+                    {description}
+                  </span>
+                </div>
+              </div>
             </>
           ) : (
             <>
