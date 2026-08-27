@@ -174,33 +174,33 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
   return (
     <div className="rounded-xl border dark:border-white/15 overflow-hidden cursor-pointer">
       <div className="flex items-center justify-between gap-3 bg-card px-3 py-3 transition-colors hover:bg-accent/50">
-        <span className="text-sm font-medium text-foreground tabular-nums truncate">Invoice {invoice.number}</span>
+        <span className="text-[13px] font-medium text-foreground tabular-nums truncate">Invoice {invoice.number}</span>
         <span className="flex items-center gap-2 shrink-0">
           <span
             className="size-2.5 rounded-full"
             style={{ backgroundColor: INVOICE_STATUS_COLOR[invoice.status] }}
           />
-          <span className="text-sm font-medium text-foreground">{STATUS_LABEL[invoice.status]}</span>
+          <span className="text-[13px] font-medium text-foreground">{STATUS_LABEL[invoice.status]}</span>
           {invoice.issued_date && (
-            <span className="text-sm text-muted-foreground">{formatDateShort(invoice.issued_date)}</span>
+            <span className="text-[13px] text-muted-foreground">{formatDateShort(invoice.issued_date)}</span>
           )}
         </span>
       </div>
       <div className="flex items-center gap-2 border-t dark:border-white/15 bg-black px-3 py-2.5">
         <span className="flex min-w-0 items-center gap-1.5 rounded-full border py-1 pl-[5px] pr-2.5">
           <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-5 rounded-full text-[8px]" />
-          <span className="text-sm text-foreground truncate">{invoice.client.name}</span>
+          <span className="text-[13px] text-foreground truncate">{invoice.client.name}</span>
         </span>
         {invoice.entry_count > 0 && (
-          <span className="flex items-center gap-1 text-sm text-foreground shrink-0">
+          <span className="flex items-center gap-1 text-[13px] text-foreground shrink-0">
             <FileClock className="size-4 shrink-0 opacity-70" />
-            {invoice.entry_count}
+            {invoice.entry_count} {invoice.entry_count === 1 ? "entry" : "entries"}
           </span>
         )}
         {email && (
           <span
             className={cn(
-              "flex items-center gap-1 text-sm shrink-0",
+              "flex items-center gap-1 text-[13px] shrink-0",
               email.destructive ? "text-destructive" : "text-foreground"
             )}
           >
@@ -208,7 +208,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
             {email.text}
           </span>
         )}
-        <span className="ml-auto text-sm tabular-nums text-foreground shrink-0">{formatAUD(invoice.subtotal)}</span>
+        <span className="ml-auto text-[13px] tabular-nums text-foreground shrink-0">{formatAUD(invoice.subtotal)}</span>
       </div>
     </div>
   );
@@ -218,25 +218,25 @@ function SuggestedInvoiceCard({ group }: { group: SuggestedInvoice }) {
   return (
     <div className="rounded-xl border border-dashed dark:border-white/15 overflow-hidden cursor-pointer opacity-70">
       <div className="flex items-center justify-between gap-3 bg-card px-3 py-3 transition-colors hover:bg-accent/50">
-        <span className="text-sm font-medium text-foreground truncate">Invoice {group.dateRange}</span>
+        <span className="text-[13px] font-medium text-foreground truncate">Invoice {group.dateRange}</span>
         <span className="flex items-center gap-2 shrink-0">
           <span
             className="size-2.5 rounded-full"
             style={{ backgroundColor: group.ready ? "#3b82f6" : "#9ca3af" }}
           />
-          <span className="text-sm font-medium text-foreground">{group.ready ? "Ready" : "In progress"}</span>
+          <span className="text-[13px] font-medium text-foreground">{group.ready ? "Ready" : "In progress"}</span>
         </span>
       </div>
       <div className="flex items-center gap-2 border-t border-dashed dark:border-white/15 bg-black px-3 py-2.5">
         <span className="flex min-w-0 items-center gap-1.5 rounded-full border py-1 pl-[5px] pr-2.5">
           <ClientSquircle name={group.clientName} color={group.clientColor} className="size-5 rounded-full text-[8px]" />
-          <span className="text-sm text-foreground truncate">{group.clientName}</span>
+          <span className="text-[13px] text-foreground truncate">{group.clientName}</span>
         </span>
-        <span className="flex items-center gap-1 text-sm text-foreground shrink-0">
+        <span className="flex items-center gap-1 text-[13px] text-foreground shrink-0">
           <FileClock className="size-4 shrink-0 opacity-70" />
-          {group.entryCount}
+          {group.entryCount} {group.entryCount === 1 ? "entry" : "entries"}
         </span>
-        <span className="ml-auto text-sm tabular-nums text-foreground shrink-0">{formatAUD(group.subtotal)}</span>
+        <span className="ml-auto text-[13px] tabular-nums text-foreground shrink-0">{formatAUD(group.subtotal)}</span>
       </div>
     </div>
   );
@@ -266,7 +266,7 @@ function SkeletonTableRows({ count = 8 }: { count?: number }) {
 
 function SkeletonMobileCards({ count = 6 }: { count?: number }) {
   return (
-    <div className="px-4 py-4 flex flex-col gap-4">
+    <div className="px-3 py-4 flex flex-col gap-4">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="rounded-xl border dark:border-white/15 overflow-hidden">
           <div className="flex items-center justify-between bg-card px-3 py-3">
@@ -578,7 +578,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                     <TableCell className="py-3 px-6">
                       <InvoiceStatusBadge number={inv.number} status={inv.status} />
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground py-3 px-6">
+                    <TableCell className="text-[13px] text-muted-foreground py-3 px-6">
                       {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
                     </TableCell>
                     <TableCell className="py-3 px-6">
@@ -666,7 +666,8 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         </div>
         {/* Suggested invoices — not real invoices, so search/filters don't apply */}
         {!loading && suggested.length > 0 && (
-          <div className="px-4 pt-4 flex flex-col gap-4">
+          <div className="px-3 pt-4 flex flex-col gap-4">
+            <h2 className="px-1 text-xs font-medium text-muted-foreground">Suggested</h2>
             {suggested.map((g) => (
               <div key={g.key} onClick={() => { setSelectedGroup(g); setSuggestedOpen(true); }}>
                 <SuggestedInvoiceCard group={g} />
@@ -685,7 +686,8 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             </EmptyHeader>
           </Empty>
         ) : (
-          <div className="px-4 py-4 pb-28 flex flex-col gap-4">
+          <div className="px-3 py-4 pb-28 flex flex-col gap-4">
+            <h2 className="px-1 text-xs font-medium text-muted-foreground">Invoices</h2>
             {visibleInvoices.map((inv) => (
               <div key={inv.id} onClick={() => openInvoice(inv)}>
                 <InvoiceCard invoice={inv} />

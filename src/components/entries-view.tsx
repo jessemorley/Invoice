@@ -206,7 +206,7 @@ function SkeletonCard({ rows = 3 }: { rows?: number }) {
     </div>
   );
 }
-
+  
 function ContentSkeleton() {
   return (
     <div className="flex flex-col gap-4">
@@ -355,7 +355,7 @@ function ClientWeekGroupHeader({ group }: { group: ClientWeekGroup }) {
 function WeekGroupHeader({ group }: { group: WeekGroup }) {
   return (
     <div className="flex items-center gap-3 px-4 py-2.5">
-      <span className="text-sm font-medium text-muted-foreground">
+      <span className="text-xs font-medium text-muted-foreground">
         {group.dateRange}
       </span>
       <div className="flex-1" />
