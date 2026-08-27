@@ -115,7 +115,7 @@ function ExpensesSkeleton() {
       <ViewHeader title="Expenses" searchValue="" onSearchChange={() => {}} loading />
       {/* Desktop */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
-        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
+        <div className="px-3 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
           <div className="flex gap-3">
             <Skeleton className="h-9 flex-1" />
             <Skeleton className="h-9 w-36" />
@@ -149,7 +149,7 @@ function ExpensesSkeleton() {
       </div>
       {/* Mobile */}
       <div className="md:hidden flex-1 overflow-y-auto pb-28">
-        <div className="px-4 py-4 flex flex-col gap-3">
+        <div className="px-3 py-4 flex flex-col gap-3">
           {[...Array(6)].map((_, i) => (
             <Card key={i} className="py-0">
               <CardContent className="px-4 py-3 flex items-center gap-3">
@@ -293,7 +293,7 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
 
       {/* Desktop table */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
-        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
+        <div className="px-3 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1 min-w-48">
@@ -408,7 +408,7 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
             </EmptyHeader>
           </Empty>
         ) : (
-          <div className="px-4 py-4 flex flex-col gap-3">
+          <div className="px-3 py-4 flex flex-col gap-3">
             {sorted.map((exp) => (
               <Card key={exp.id} className="py-0">
                 <CardContent className="p-0">

@@ -32,7 +32,7 @@ function DateTile({ date }: { date: string }) {
   const d = new Date(date + "T00:00:00");
   // Styled after the entry sheet's DateCardPicker cards, scaled down for the row.
   return (
-    <span className="inline-flex w-9 shrink-0 flex-col items-center gap-0.5 rounded-lg bg-muted py-1.5 leading-none dark:bg-input/30">
+    <span className="inline-flex w-9 shrink-0 flex-col items-center gap-0.5 rounded-lg bg-muted py-1.5 leading-none dark:bg-white/[0.04]">
       <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
         {d.toLocaleDateString("en-AU", { weekday: "short" })}
       </span>
@@ -232,7 +232,6 @@ function EntryRow({
   const total = entry.base_amount + entry.bonus_amount;
   const isFuture = entry.date > todayInSydney();
   const status = entry.invoice?.status ?? "uninvoiced";
-  const chipLabel = entry.invoice?.number ?? "Draft";
 
   return (
     <button
@@ -246,15 +245,15 @@ function EntryRow({
         <DateTile date={entry.date} />
         <div className="flex-1 min-w-0">
           {showClient ? (
-            <>
-              <span className="flex h-7 min-w-0 w-fit items-center gap-1.5 rounded-full border pl-[5px] pr-2.5">
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="flex min-w-0 shrink items-center gap-1.5 rounded-full border py-1 pl-[5px] pr-2.5">
                 <ClientSquircle name={entry.client.name} color={entry.client.color} className="size-5 rounded-full text-[8px]" />
                 <span className="text-[13px] text-foreground truncate">{entry.client.name}</span>
               </span>
-              <span className="text-xs text-muted-foreground truncate block mt-0.5">
+              <span className="text-[13px] text-muted-foreground truncate">
                 {description}
               </span>
-            </>
+            </span>
           ) : (
             <>
               <span className="text-sm font-medium text-foreground truncate block">
@@ -267,18 +266,13 @@ function EntryRow({
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <div className="flex flex-col items-end">
-            <span className="flex h-7 items-center text-sm tabular-nums text-foreground">
-              {formatAUD(total)}
-            </span>
-            <span className="flex items-center gap-1.5 mt-0.5">
-              <span
-                className="size-2 rounded-full shrink-0"
-                style={{ backgroundColor: INVOICE_STATUS_COLOR[status] }}
-              />
-              <span className="text-[11px] text-muted-foreground tabular-nums">{chipLabel}</span>
-            </span>
-          </div>
+          <span
+            className="size-2.5 rounded-full shrink-0"
+            style={{ backgroundColor: INVOICE_STATUS_COLOR[status] }}
+          />
+          <span className="text-sm tabular-nums text-foreground">
+            {formatAUD(total)}
+          </span>
         </div>
       </div>
 

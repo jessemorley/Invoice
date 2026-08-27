@@ -33,7 +33,7 @@ function TaxSkeleton() {
     <div className="flex flex-col h-full">
       <PageHeader title="Tax" />
       <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
-        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+        <div className="px-3 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
           <Skeleton className="h-9 w-32" />
           <Card>
             <CardHeader>
@@ -188,7 +188,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
     <div className="flex flex-col h-full">
       <PageHeader title="Tax" />
       <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
-        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+        <div className="px-3 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
           <Select value={String(selected)} onValueChange={(v) => { setSelected(Number(v)); setWfhDraft(null); }}>
             <SelectTrigger className="w-32">
               <SelectValue />
