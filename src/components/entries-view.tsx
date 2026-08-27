@@ -32,7 +32,7 @@ function DateTile({ date }: { date: string }) {
   const d = new Date(date + "T00:00:00");
   // Styled after the entry sheet's DateCardPicker cards, scaled down for the row.
   return (
-    <span className="inline-flex h-8 w-9 shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-input bg-muted leading-none dark:bg-input/30">
+    <span className="inline-flex w-7 shrink-0 flex-col items-center gap-0.5 py-1.5 leading-none">
       <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
         {d.toLocaleDateString("en-AU", { weekday: "short" })}
       </span>
@@ -196,7 +196,7 @@ function SkeletonCard({ rows = 3 }: { rows?: number }) {
   return (
     <div className="flex flex-col">
       <SkeletonGroupHeader />
-      <div className="rounded-xl border overflow-hidden bg-card">
+      <div className="rounded-xl border overflow-hidden bg-[color-mix(in_oklab,var(--card),white_3%)]">
           {Array.from({ length: rows }).map((_, i) => (
             <div key={i}>
               {i > 0 && <Separator />}
@@ -425,7 +425,7 @@ function InvoiceView({
         <div key={group.key} className="flex flex-col">
           <ClientWeekGroupHeader group={group} />
           <div
-            className="rounded-xl border overflow-hidden bg-card"
+            className="rounded-xl border overflow-hidden bg-[color-mix(in_oklab,var(--card),white_3%)]"
             // Inner glow in the client colour. A background-image layer, not an inset
             // box-shadow: bg-card sits on this same element and would paint over that.
             style={{
@@ -470,7 +470,7 @@ function WeekView({
       {visible.map((group) => (
         <div key={group.key} className="flex flex-col">
           <WeekGroupHeader group={group} />
-          <div className="rounded-xl border overflow-hidden bg-card">
+          <div className="rounded-xl border overflow-hidden bg-[color-mix(in_oklab,var(--card),white_3%)]">
               {group.entries.map((entry, i) => (
                 <div key={entry.id}>
                   {i > 0 && <Separator />}
@@ -508,7 +508,7 @@ function ListView({
 
   return (
     <div>
-      <div className="rounded-xl border overflow-hidden bg-card">
+      <div className="rounded-xl border overflow-hidden bg-[color-mix(in_oklab,var(--card),white_3%)]">
           {visible.map((entry, i) => (
             <div key={entry.id}>
               {i > 0 && <Separator />}
