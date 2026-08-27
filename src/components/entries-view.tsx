@@ -247,8 +247,9 @@ function EntryRow({
         <div className="flex-1 min-w-0">
           {showClient ? (
             <>
-              <span className="text-sm font-medium text-foreground truncate block">
-                {entry.client.name}
+              <span className="flex h-7 min-w-0 w-fit items-center gap-1.5 rounded-full border pl-[5px] pr-2.5">
+                <ClientSquircle name={entry.client.name} color={entry.client.color} className="size-5 rounded-full text-[8px]" />
+                <span className="text-[13px] text-foreground truncate">{entry.client.name}</span>
               </span>
               <span className="text-xs text-muted-foreground truncate block mt-0.5">
                 {description}
@@ -267,17 +268,15 @@ function EntryRow({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <div className="flex flex-col items-end">
-            <span className="text-sm tabular-nums text-foreground">
+            <span className="flex h-7 items-center text-sm tabular-nums text-foreground">
               {formatAUD(total)}
             </span>
-            <span
-              className="rounded-full px-1.5 py-px text-[10px] font-medium leading-4 tabular-nums"
-              style={{
-                color: INVOICE_STATUS_COLOR[status],
-                backgroundColor: `${INVOICE_STATUS_COLOR[status]}1a`,
-              }}
-            >
-              {chipLabel}
+            <span className="flex items-center gap-1.5 mt-0.5">
+              <span
+                className="size-2 rounded-full shrink-0"
+                style={{ backgroundColor: INVOICE_STATUS_COLOR[status] }}
+              />
+              <span className="text-[11px] text-muted-foreground tabular-nums">{chipLabel}</span>
             </span>
           </div>
         </div>

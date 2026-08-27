@@ -667,7 +667,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         {/* Suggested invoices — not real invoices, so search/filters don't apply */}
         {!loading && suggested.length > 0 && (
           <div className="px-3 pt-4 flex flex-col gap-4">
-            <h2 className="px-1 text-xs font-medium text-muted-foreground">Suggested</h2>
+            <h2 className="px-3 text-xs font-medium text-muted-foreground">Suggested</h2>
             {suggested.map((g) => (
               <div key={g.key} onClick={() => { setSelectedGroup(g); setSuggestedOpen(true); }}>
                 <SuggestedInvoiceCard group={g} />
@@ -687,7 +687,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
           </Empty>
         ) : (
           <div className="px-3 py-4 pb-28 flex flex-col gap-4">
-            <h2 className="px-1 text-xs font-medium text-muted-foreground">Invoices</h2>
+            <h2 className="px-3 text-xs font-medium text-muted-foreground">Invoices</h2>
             {visibleInvoices.map((inv) => (
               <div key={inv.id} onClick={() => openInvoice(inv)}>
                 <InvoiceCard invoice={inv} />
