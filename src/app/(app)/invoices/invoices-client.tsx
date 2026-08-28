@@ -186,7 +186,9 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
           )}
         </span>
       </div>
-      <div className="flex items-center gap-3 border-t dark:border-white/15 bg-black px-3 py-2.5">
+      {/* Footer sits recessed under the card head: grey in light, near-black in dark.
+          Not a bare bg-black — text-foreground is near-black in light mode. */}
+      <div className="flex items-center gap-3 border-t dark:border-white/15 bg-muted dark:bg-black px-3 py-2.5">
         <span className="flex min-w-0 items-center gap-1.5 rounded-full border py-1 pl-[5px] pr-2.5">
           <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-5 rounded-full text-[8px]" />
           <span className="text-[13px] text-foreground truncate">{invoice.client.name}</span>
@@ -227,7 +229,7 @@ function SuggestedInvoiceCard({ group }: { group: SuggestedInvoice }) {
           <span className="text-[13px] font-medium text-foreground">{group.ready ? "Ready" : "In progress"}</span>
         </span>
       </div>
-      <div className="flex items-center gap-3 border-t border-dashed dark:border-white/15 bg-black px-3 py-2.5">
+      <div className="flex items-center gap-3 border-t border-dashed dark:border-white/15 bg-muted dark:bg-black px-3 py-2.5">
         <span className="flex min-w-0 items-center gap-1.5 rounded-full border py-1 pl-[5px] pr-2.5">
           <ClientSquircle name={group.clientName} color={group.clientColor} className="size-5 rounded-full text-[8px]" />
           <span className="text-[13px] text-foreground truncate">{group.clientName}</span>
@@ -273,7 +275,7 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-4 w-20" />
           </div>
-          <div className="flex items-center gap-3 border-t dark:border-white/15 bg-black px-3 py-2.5">
+          <div className="flex items-center gap-3 border-t dark:border-white/15 bg-muted dark:bg-black px-3 py-2.5">
             <Skeleton className="h-5 w-28 rounded-full" />
             <Skeleton className="h-5 w-14 rounded-full" />
             <Skeleton className="ml-auto h-3 w-12" />
