@@ -122,6 +122,37 @@ describe("calcBatchBonus — one KPI shared across workflows", () => {
     expect(calcBatchBonus(client, [{ workflow: "Apparel", skus: 1 }], flat).bonus).toBe(MAX_BONUS);
   });
 
+  it("ignores a zero-SKU line when capping the bonus", () => {
+    // Apparel carries the higher cap but was not shot; it must not lend that cap
+    // to the Model Shot work, which caps at 20 on its own.
+    const mixed: WorkflowRate[] = [
+      { ...rate("Apparel", 84, 92, 5.0), max_bonus: 200 },
+      { ...rate("Model Shot", 126, 139, 3.08), max_bonus: 20 },
+    ];
+    const lines = [
+      { workflow: "Apparel", skus: 0 },
+      { workflow: "Model Shot", skus: 139 },
+    ];
+    expect(calcBatchBonus(client, lines, mixed).bonus).toBe(20);
+    // and an empty row changes nothing versus omitting it
+    expect(calcBatchBonus(client, lines, mixed).bonus).toBe(
+      calcBatchBonus(client, [{ workflow: "Model Shot", skus: 139 }], mixed).bonus
+    );
+  });
+
+  it("does not pay a flat bonus for a workflow with no SKUs", () => {
+    // Apparel is flat-bonus but unworked; a 5-SKU Model Shot day owes the shared
+    // KPI and must not collect Apparel's flat payout.
+    const mixed: WorkflowRate[] = [
+      { ...rate("Apparel", 84, 92, 5.0), is_flat_bonus: true },
+      rate("Model Shot", 126, 139, 3.08),
+    ];
+    expect(calcBatchBonus(client, [
+      { workflow: "Apparel", skus: 0 },
+      { workflow: "Model Shot", skus: 5 },
+    ], mixed).bonus).toBe(0);
+  });
+
   it("adds super when the client pays it", () => {
     const superClient = { ...client, pays_super: true, super_rate: 0.12 } as Client;
     const result = calcBatchBonus(superClient, [{ workflow: "Apparel", skus: 92 }], RATES);
