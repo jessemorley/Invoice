@@ -70,6 +70,20 @@ export function formatDateShort(dateStr: string): string {
   return `${day} ${month}`;
 }
 
+// "Today" / "Yesterday" / "Tomorrow", else "13 Aug". Takes a YYYY-MM-DD string.
+export function formatDateShortRelative(dateStr: string): string {
+  const today = toLocalDateStr(new Date());
+  if (dateStr === today) return "Today";
+  const shift = (days: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return toLocalDateStr(d);
+  };
+  if (dateStr === shift(-1)) return "Yesterday";
+  if (dateStr === shift(1)) return "Tomorrow";
+  return formatDateShort(dateStr);
+}
+
 export function formatRelativeTime(isoString: string): string {
   const date = new Date(isoString);
   const now = new Date();

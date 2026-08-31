@@ -11,7 +11,7 @@ import type { Invoice, InvoiceEmail, InvoiceStatus, Entry, Client, WorkflowRate 
 import type { SuggestedInvoice } from "@/lib/queries";
 import type { InvoiceFilters } from "@/lib/queries";
 import type { GeneratedInvoice } from "./actions";
-import { formatAUD, formatDateShort, toLocalDateStr } from "@/lib/format";
+import { formatAUD, formatDateShort, formatDateShortRelative, toLocalDateStr } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -158,51 +158,60 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
   );
 }
 
-function emailStatus(email: InvoiceEmail | null): { text: string; icon: typeof Send; destructive?: boolean } | null {
-  if (email?.status === "sent") return { text: "Sent", icon: Send };
+// Email chip: icon carries the status, the label is just when — "13 Aug" / "Yesterday".
+function emailChip(email: InvoiceEmail | null): { text: string; icon: typeof Send; destructive?: boolean } | null {
+  if (email?.status === "sent") {
+    return { text: email.sent_at ? formatDateShortRelative(email.sent_at.slice(0, 10)) : "Sent", icon: Send };
+  }
   if (email?.status === "pending") {
-    const day = new Date(email.scheduled_for).toLocaleDateString("en-AU", { weekday: "short" });
-    return { text: day, icon: Clock };
+    return { text: formatDateShortRelative(toLocalDateStr(new Date(email.scheduled_for))), icon: Clock };
   }
   if (email?.status === "failed") return { text: "Failed", icon: MailWarning, destructive: true };
   if (email?.status === "bounced") return { text: "Bounced", icon: MailWarning, destructive: true };
   return null;
 }
 
+function ClientChip({ name, color }: { name: string; color: string }) {
+  return (
+    <span className="flex min-w-0 items-center gap-1.5 rounded-full border py-1 pl-[5px] pr-2.5">
+      <ClientSquircle name={name} color={color} className="size-5 rounded-full text-[8px]" />
+      <span className="text-[13px] text-foreground truncate">{name}</span>
+    </span>
+  );
+}
+
+// Coloured dot + label on a tint of the same colour.
+function StatusChip({ color, label }: { color: string; label: string }) {
+  return (
+    <span
+      className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] font-medium shrink-0"
+      style={{ color, backgroundColor: `${color}1f` }}
+    >
+      <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+      {label}
+    </span>
+  );
+}
+
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
-  const email = emailStatus(invoice.email);
+  const email = emailChip(invoice.email);
   return (
     <div className="rounded-xl border dark:border-white/15 overflow-hidden cursor-pointer">
-      <div className="flex items-center justify-between gap-3 bg-card px-3 py-3 transition-colors hover:bg-accent/50">
-        <span className="text-[13px] font-medium text-foreground tabular-nums truncate">Invoice {invoice.number}</span>
-        <span className="flex items-center gap-2 shrink-0">
-          <span
-            className="size-2.5 rounded-full"
-            style={{ backgroundColor: INVOICE_STATUS_COLOR[invoice.status] }}
-          />
-          <span className="text-[13px] font-medium text-foreground">{STATUS_LABEL[invoice.status]}</span>
-          {invoice.issued_date && (
-            <span className="text-[13px] text-muted-foreground">{formatDateShort(invoice.issued_date)}</span>
-          )}
-        </span>
+      <div className="flex items-center gap-3 bg-card px-3 py-3 transition-colors hover:bg-accent/50">
+        <span className="text-[13px] font-medium text-foreground tabular-nums shrink-0">{invoice.number}</span>
+        <ClientChip name={invoice.client.name} color={invoice.client.color} />
+        <span className="ml-auto text-[13px] tabular-nums text-foreground shrink-0">{formatAUD(invoice.subtotal)}</span>
       </div>
       {/* Footer sits recessed under the card head: grey in light, near-black in dark.
           Not a bare bg-black — text-foreground is near-black in light mode. */}
       <div className="flex items-center gap-3 border-t dark:border-white/15 bg-muted dark:bg-black px-3 py-2.5">
-        <span className="flex min-w-0 items-center gap-1.5 rounded-full border py-1 pl-[5px] pr-2.5">
-          <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-5 rounded-full text-[8px]" />
-          <span className="text-[13px] text-foreground truncate">{invoice.client.name}</span>
-        </span>
-        {invoice.entry_count > 0 && (
-          <span className="flex items-center gap-1 text-[13px] text-foreground shrink-0">
-            <FileClock className="size-4 shrink-0 opacity-50" />
-            {invoice.entry_count} {invoice.entry_count === 1 ? "entry" : "entries"}
-          </span>
+        {invoice.issued_date && (
+          <span className="text-[13px] text-muted-foreground shrink-0">{formatDateShort(invoice.issued_date)}</span>
         )}
         {email && (
           <span
             className={cn(
-              "flex items-center gap-1 text-[13px] shrink-0",
+              "flex items-center gap-1 rounded-full border px-2.5 py-1 text-[13px] shrink-0",
               email.destructive ? "text-destructive" : "text-foreground"
             )}
           >
@@ -210,7 +219,9 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
             {email.text}
           </span>
         )}
-        <span className="ml-auto text-[13px] tabular-nums text-foreground shrink-0">{formatAUD(invoice.subtotal)}</span>
+        <span className="ml-auto">
+          <StatusChip color={INVOICE_STATUS_COLOR[invoice.status]} label={STATUS_LABEL[invoice.status]} />
+        </span>
       </div>
     </div>
   );
@@ -219,26 +230,22 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
 function SuggestedInvoiceCard({ group }: { group: SuggestedInvoice }) {
   return (
     <div className="rounded-xl border border-dashed dark:border-white/15 overflow-hidden cursor-pointer opacity-70">
-      <div className="flex items-center justify-between gap-3 bg-card px-3 py-3 transition-colors hover:bg-accent/50">
-        <span className="text-[13px] font-medium text-foreground truncate">Invoice {group.dateRange}</span>
-        <span className="flex items-center gap-2 shrink-0">
-          <span
-            className="size-2.5 rounded-full"
-            style={{ backgroundColor: group.ready ? "#3b82f6" : "#9ca3af" }}
-          />
-          <span className="text-[13px] font-medium text-foreground">{group.ready ? "Ready" : "In progress"}</span>
-        </span>
+      <div className="flex items-center gap-3 bg-card px-3 py-3 transition-colors hover:bg-accent/50">
+        <span className="text-[13px] font-medium text-foreground shrink-0">{group.dateRange}</span>
+        <ClientChip name={group.clientName} color={group.clientColor} />
+        <span className="ml-auto text-[13px] tabular-nums text-foreground shrink-0">{formatAUD(group.subtotal)}</span>
       </div>
       <div className="flex items-center gap-3 border-t border-dashed dark:border-white/15 bg-muted dark:bg-black px-3 py-2.5">
-        <span className="flex min-w-0 items-center gap-1.5 rounded-full border py-1 pl-[5px] pr-2.5">
-          <ClientSquircle name={group.clientName} color={group.clientColor} className="size-5 rounded-full text-[8px]" />
-          <span className="text-[13px] text-foreground truncate">{group.clientName}</span>
-        </span>
         <span className="flex items-center gap-1 text-[13px] text-foreground shrink-0">
           <FileClock className="size-4 shrink-0 opacity-50" />
           {group.entryCount} {group.entryCount === 1 ? "entry" : "entries"}
         </span>
-        <span className="ml-auto text-[13px] tabular-nums text-foreground shrink-0">{formatAUD(group.subtotal)}</span>
+        <span className="ml-auto">
+          <StatusChip
+            color={group.ready ? "#3b82f6" : "#9ca3af"}
+            label={group.ready ? "Ready" : "In progress"}
+          />
+        </span>
       </div>
     </div>
   );
