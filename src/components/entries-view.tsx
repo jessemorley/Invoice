@@ -246,10 +246,7 @@ function EntryRow({
         <div className="flex-1 min-w-0">
           {showClient ? (
             <>
-              <span className="flex min-w-0 w-fit items-center gap-1.5">
-                <ClientSquircle name={entry.client.name} color={entry.client.color} className="size-4 rounded-full text-[7px]" />
-                <span className="text-[13px] text-foreground truncate">{entry.client.name}</span>
-              </span>
+              <span className="text-[13px] text-foreground truncate block">{entry.client.name}</span>
               <span className="text-[13px] text-muted-foreground truncate block">
                 {description}
               </span>
@@ -267,7 +264,7 @@ function EntryRow({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span
-            className="size-2.5 rounded-full shrink-0"
+            className="size-2 rounded-full shrink-0"
             style={{ backgroundColor: INVOICE_STATUS_COLOR[status] }}
           />
           <span className="text-sm tabular-nums text-foreground">
