@@ -15,7 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { EntrySheet } from "@/components/entry-sheet";
 import { ViewHeader } from "@/components/view-header";
-import { Check, Plus, RefreshCw, Search } from "lucide-react";
+import { HeaderUserAvatar } from "@/components/header-user-avatar";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, RefreshCw, Search } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { ClientSquircle } from "@/components/client-squircle";
 import { InvoiceStatusBadge, INVOICE_STATUS_COLOR } from "@/components/invoice-status-badge";
@@ -27,6 +29,21 @@ const VIEW_MODE_LABELS: Record<ViewMode, string> = {
   invoice: "Group by invoice",
   none: "No grouping",
 };
+
+// Short forms for the mobile tabs — the full labels are too long for a tab row.
+const VIEW_MODE_TABS: { value: ViewMode; label: string }[] = [
+  { value: "week", label: "Week" },
+  { value: "invoice", label: "Invoice" },
+  { value: "none", label: "All" },
+];
+
+// Matches the tab styling in settings and invoices.
+const TAB_TRIGGER =
+  "data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent";
+
+// The large title docks almost immediately; the header title swaps once it's hidden.
+const HEADER_CHROME_SCROLL = 8;
+const LARGE_TITLE_SCROLL = 32;
 
 function DateTile({ date }: { date: string }) {
   const d = new Date(date + "T00:00:00");
@@ -514,6 +531,8 @@ export function EntriesView({
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [searchValue, setSearchValue] = useState("");
+  const [titleCollapsed, setTitleCollapsed] = useState(false);
+  const [headerRaised, setHeaderRaised] = useState(false);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -597,22 +616,10 @@ export function EntriesView({
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         loading={loading}
-        filterActive={viewMode !== "week"}
-        filterPopover={
-          <div className="flex flex-col">
-            {(["week", "invoice", "none"] as ViewMode[]).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                disabled={loading || isSearching}
-                className={`flex items-center justify-between px-2 py-2 text-sm rounded-sm transition-colors hover:bg-accent disabled:opacity-50 ${viewMode === mode ? "text-foreground font-medium" : "text-muted-foreground"}`}
-              >
-                {VIEW_MODE_LABELS[mode]}
-                {viewMode === mode && <Check className="size-3.5" />}
-              </button>
-            ))}
-          </div>
-        }
+        titleHidden={!titleCollapsed}
+        borderHidden={!headerRaised}
+        searchOnLeft
+        trailing={<HeaderUserAvatar />}
         actions={
           <Button size="sm" className="hidden md:flex" onClick={openNew} disabled={loading}>
             <Plus className="size-4" />
@@ -628,6 +635,8 @@ export function EntriesView({
           if (el.scrollHeight - el.scrollTop - el.clientHeight < 400) {
             setDisplayCount((prev) => prev + PAGE_SIZE);
           }
+          setHeaderRaised(el.scrollTop > HEADER_CHROME_SCROLL);
+          setTitleCollapsed(el.scrollTop > LARGE_TITLE_SCROLL);
         }}
       >
         {/* Pull-to-refresh indicator — sits at top of scroll content, hidden until pulled */}
@@ -645,7 +654,32 @@ export function EntriesView({
             }}
           />
         </div>
-        <div className="px-4 md:px-6 pt-4 pb-6 md:py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
+        {/* Mobile large title: scrolls away, handing off to the header's own title. */}
+        <h2 className="md:hidden px-4 pt-2 pb-1 text-3xl font-semibold tracking-tight">Entries</h2>
+        {/* Grouping moves from the header's filter popover to tabs, like invoices. */}
+        {!loading && (
+          <div className="md:hidden overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <Tabs
+              value={viewMode}
+              onValueChange={(v) => setViewMode(v as ViewMode)}
+              className="w-max gap-0 px-4 pt-3"
+            >
+              <TabsList className="bg-transparent p-0 gap-2 h-auto">
+                {VIEW_MODE_TABS.map((tab) => (
+                  <TabsTrigger
+                    key={tab.value}
+                    value={tab.value}
+                    disabled={isSearching}
+                    className={TAB_TRIGGER}
+                  >
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          </div>
+        )}
+        <div className="px-4 md:px-6 pt-3 pb-6 md:py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
           {/* Desktop filter row */}
           <div className="hidden md:flex items-center gap-3">
             <div className="relative flex-1 min-w-48">
@@ -667,9 +701,11 @@ export function EntriesView({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="week">Group by week</SelectItem>
-                <SelectItem value="invoice">Group by invoice</SelectItem>
-                <SelectItem value="none">No grouping</SelectItem>
+                {VIEW_MODE_TABS.map((tab) => (
+                  <SelectItem key={tab.value} value={tab.value}>
+                    {VIEW_MODE_LABELS[tab.value]}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
