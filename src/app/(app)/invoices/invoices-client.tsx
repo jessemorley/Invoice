@@ -46,6 +46,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SortableTableHead, tableHeadCellBase } from "@/components/sortable-table-head";
 import { cn } from "@/lib/utils";
 import { ViewHeader } from "@/components/view-header";
@@ -53,7 +54,7 @@ import { InvoiceSheet } from "@/components/invoice-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
 import { SuggestedInvoiceSheet } from "@/components/suggested-invoice-sheet";
 import { EntrySheet } from "@/components/entry-sheet";
-import { ChevronDown, Clock, FileClock, FileText, MailWarning, Plus, RefreshCw, Search, SearchX, Send } from "lucide-react";
+import { ChevronDown, Clock, FileClock, FileText, MailWarning, Plus, RefreshCw, Search, SearchX, Send, X } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
 
@@ -91,14 +92,16 @@ function timeframeToDateRange(value: string): { from?: string; to?: string } {
   }
 }
 
+// Matches the tab styling in settings.
+const TAB_TRIGGER =
+  "data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent";
+
 // The mobile empty states sit in a flow-height scroll container, so they need an
 // explicit height to centre against: the viewport less the header and tab row.
 // pb-20 lifts the centred text clear of the floating dock.
 const EMPTY_FILL = "min-h-[calc(100dvh-6.5rem)] pb-20";
 
 const STATUS_TABS = [
-  { value: "all", label: "All" },
-  { value: "suggested", label: "Suggested" },
   { value: "draft", label: "Draft" },
   { value: "issued", label: "Issued" },
   { value: "overdue", label: "Overdue" },
@@ -288,7 +291,7 @@ function SkeletonTableRows({ count = 8 }: { count?: number }) {
 
 function SkeletonMobileCards({ count = 6 }: { count?: number }) {
   return (
-    <div className="px-3 py-4 flex flex-col gap-4">
+    <div className="px-3 py-4 flex flex-col gap-3">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="rounded-xl border dark:border-white/15 overflow-hidden">
           <div className="flex items-center justify-between bg-card px-3 py-3">
@@ -352,7 +355,6 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const entrySheetMeta = useState<{ clients: Client[]; workflowRates: WorkflowRate[] } | null>(null);
   const [entrySheetData, setEntrySheetData] = entrySheetMeta;
-  const [suggestedShown, setSuggestedShown] = useState(true);
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
   useEffect(() => {
     const handler = (e: Event) => {
@@ -368,13 +370,16 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   }, [hasUninvoiced]);
 
   const [searchValue, setSearchValue] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  // Mobile shows either real invoices or suggestions, never both.
+  const [listMode, setListMode] = useState<"invoices" | "suggested">("invoices");
+  // Empty = no status filter. Selecting several stacks them as OR.
+  const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [clientFilter, setClientFilter] = useState("all");
   const [timeframe, setTimeframe] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("issued_date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  const filterKey = `${searchValue}|${statusFilter}|${clientFilter}|${timeframe}|${sortKey}|${sortDir}`;
+  const filterKey = `${searchValue}|${statusFilters.join(",")}|${clientFilter}|${timeframe}|${sortKey}|${sortDir}`;
   const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
   if (prevFilterKey !== filterKey) {
     setPrevFilterKey(filterKey);
@@ -396,8 +401,8 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       );
     }
 
-    if (statusFilter !== "all") {
-      result = result.filter((inv) => displayStatus(inv.status, inv.due_date) === statusFilter);
+    if (statusFilters.length > 0) {
+      result = result.filter((inv) => statusFilters.includes(displayStatus(inv.status, inv.due_date)));
     }
 
     if (clientFilter !== "all") {
@@ -422,18 +427,17 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     });
 
     return result;
-  }, [initialInvoices, statusOverrides, searchValue, statusFilter, clientFilter, timeframe, sortKey, sortDir]);
+  }, [initialInvoices, statusOverrides, searchValue, statusFilters, clientFilter, timeframe, sortKey, sortDir]);
 
-  // Suggested groups aren't invoices yet — they answer to the status tab
-  // (All / Suggested), the client filter and search, but not to timeframe.
+  // Suggested groups aren't invoices yet — they have no status, so the status
+  // chips don't apply. They answer to client and search but not timeframe.
   const visibleSuggested = useMemo(() => {
-    if (statusFilter !== "all" && statusFilter !== "suggested") return [];
     let result = suggested;
     if (clientFilter !== "all") result = result.filter((g) => g.clientId === clientFilter);
     const q = searchValue.trim().toLowerCase();
     if (q) result = result.filter((g) => g.clientName.toLowerCase().includes(q));
     return result;
-  }, [suggested, statusFilter, clientFilter, searchValue]);
+  }, [suggested, clientFilter, searchValue]);
 
   const visibleInvoices = filteredInvoices.slice(0, displayCount);
   const hasMore = displayCount < filteredInvoices.length;
@@ -482,7 +486,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
 
   function clearFilters() {
     setSearchValue("");
-    setStatusFilter("all");
+    setStatusFilters([]);
     setClientFilter("all");
     setTimeframe("all");
   }
@@ -573,7 +577,12 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                 ))}
               </SelectContent>
             </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter} disabled={loading}>
+            {/* Desktop stays single-select; it writes the same array the mobile chips do. */}
+            <Select
+              value={statusFilters.length === 1 ? statusFilters[0] : "all"}
+              onValueChange={(v) => setStatusFilters(v === "all" ? [] : [v])}
+              disabled={loading}
+            >
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -662,74 +671,91 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             style={{ transform: pullState !== "refreshing" ? `rotate(${(pullDistance / 70) * 180}deg)` : undefined }}
           />
         </div>
-        {/* Status tabs scroll away with the cards; overflow sideways when they don't fit */}
+        {!loading && (
+          <Tabs
+            value={listMode}
+            onValueChange={(v) => setListMode(v as typeof listMode)}
+            className="gap-0"
+          >
+            <div className="px-3 pt-3">
+              <TabsList className="bg-transparent p-0 gap-2 h-auto">
+                <TabsTrigger value="invoices" className={TAB_TRIGGER}>Invoices</TabsTrigger>
+                <TabsTrigger value="suggested" className={TAB_TRIGGER}>
+                  Suggested
+                  {suggested.length > 0 && (
+                    <span className="ml-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
+                      {suggested.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+            </div>
+          </Tabs>
+        )}
+        {/* Status chips stack as OR filters; tapping an active one clears it.
+            Suggestions have no status, so the chips grey out on that tab. */}
         {!loading && (
           <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex w-max gap-1.5 px-3 pt-3">
-              {STATUS_TABS.map((tab) => (
-                <button
-                  key={tab.value}
-                  type="button"
-                  onClick={() => setStatusFilter(tab.value)}
-                  aria-pressed={statusFilter === tab.value}
-                  className={cn(
-                    "rounded-full border px-3 py-1 text-[13px] whitespace-nowrap transition-colors",
-                    statusFilter === tab.value
-                      ? "border-transparent bg-primary text-primary-foreground font-medium"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        {/* Suggested invoices — real invoices have no "suggested" status, so the
-            status filter shows them under All and Suggested only. */}
-        {!loading && visibleSuggested.length > 0 && (
-          <div className={cn("px-3 pt-4", filteredInvoices.length === 0 && "pb-28")}>
-            <button
-              type="button"
-              onClick={() => setSuggestedShown((s) => !s)}
-              aria-expanded={suggestedShown}
-              className="flex w-full items-center gap-2 px-3 py-1 text-left"
-            >
-              <h2 className="text-xs font-medium text-muted-foreground">Suggested</h2>
-              <span className="flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
-                {visibleSuggested.length}
-              </span>
-              <ChevronDown
-                className={cn(
-                  "ml-auto size-4 text-muted-foreground transition-transform duration-200",
-                  !suggestedShown && "-rotate-90"
-                )}
-              />
-            </button>
             <div
               className={cn(
-                "grid transition-[grid-template-rows] duration-200 ease-out",
-                suggestedShown ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                "flex w-max gap-1.5 px-3 pt-3 transition-opacity",
+                listMode === "suggested" && "opacity-40"
               )}
             >
-              <div className="overflow-hidden">
-                <div className="flex flex-col gap-4 pt-4">
-                  {visibleSuggested.map((g) => (
-                    <div key={g.key} onClick={() => { setSelectedGroup(g); setSuggestedOpen(true); }}>
-                      <SuggestedInvoiceCard group={g} />
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {STATUS_TABS.map((tab) => {
+                const active = statusFilters.includes(tab.value);
+                return (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    disabled={listMode === "suggested"}
+                    onClick={() =>
+                      setStatusFilters((prev) =>
+                        prev.includes(tab.value)
+                          ? prev.filter((v) => v !== tab.value)
+                          : [...prev, tab.value]
+                      )
+                    }
+                    aria-pressed={active}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] whitespace-nowrap transition-colors",
+                      active
+                        ? "border-transparent bg-primary text-primary-foreground font-medium pr-2"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {tab.label}
+                    {active && <X className="size-3.5 opacity-80" />}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
         {loading ? (
           <SkeletonMobileCards />
+        ) : listMode === "suggested" ? (
+          visibleSuggested.length === 0 ? (
+            <Empty className={EMPTY_FILL}>
+              <EmptyHeader>
+                <EmptyMedia variant="icon"><SearchX /></EmptyMedia>
+                <EmptyTitle>Nothing to suggest</EmptyTitle>
+                <EmptyDescription>
+                  Uninvoiced entries get grouped into suggestions here.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          ) : (
+            <div className="flex flex-col gap-3 px-3 pt-4 pb-28">
+              {visibleSuggested.map((g) => (
+                <div key={g.key} onClick={() => { setSelectedGroup(g); setSuggestedOpen(true); }}>
+                  <SuggestedInvoiceCard group={g} />
+                </div>
+              ))}
+            </div>
+          )
         ) : filteredInvoices.length === 0 ? (
-          // Suggested cards above already answer the filter — don't stack an
-          // empty state on top of visible results.
-          visibleSuggested.length > 0 ? null : initialInvoices.length === 0 ? (
+          initialInvoices.length === 0 ? (
             <Empty className={EMPTY_FILL}>
               <EmptyHeader>
                 <EmptyMedia variant="icon"><FileText /></EmptyMedia>
@@ -741,15 +767,11 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             <Empty className={EMPTY_FILL}>
               <EmptyHeader>
                 <EmptyMedia variant="icon"><SearchX /></EmptyMedia>
-                <EmptyTitle>
-                  {statusFilter === "suggested" ? "Nothing to suggest" : "No matching invoices"}
-                </EmptyTitle>
+                <EmptyTitle>No matching invoices</EmptyTitle>
                 <EmptyDescription>
-                  {statusFilter === "suggested"
-                    ? "Uninvoiced entries get grouped into suggestions here."
-                    : searchValue.trim()
-                    ? `Nothing matches "${searchValue.trim()}"${statusFilter === "all" ? "" : " with this status"}.`
-                    : "No invoices have this status."}
+                  {searchValue.trim()
+                    ? `Nothing matches "${searchValue.trim()}"${statusFilters.length > 0 ? " with these filters" : ""}.`
+                    : "No invoices match these filters."}
                 </EmptyDescription>
               </EmptyHeader>
               <EmptyContent>
@@ -760,8 +782,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             </Empty>
           )
         ) : (
-          <div className="px-3 py-4 pb-28 flex flex-col gap-4">
-            <h2 className="px-3 text-xs font-medium text-muted-foreground">Invoices</h2>
+          <div className="px-3 pt-4 pb-28 flex flex-col gap-3">
             {visibleInvoices.map((inv) => (
               <div key={inv.id} onClick={() => openInvoice(inv)}>
                 <InvoiceCard invoice={inv} />
