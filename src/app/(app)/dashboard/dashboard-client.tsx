@@ -7,7 +7,7 @@ import { formatAUD, fyLabel, fyStartYear } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { InvoiceStatusBadge } from "@/components/invoice-status-badge";
+import { InvoiceStatusBadge, displayStatus } from "@/components/invoice-status-badge";
 import { ClientSquircle } from "@/components/client-squircle";
 import {
   Card,
@@ -358,7 +358,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                       className="flex items-center justify-between py-2.5 cursor-pointer"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <InvoiceStatusBadge number={invoice.number} status={invoice.status} />
+                        <InvoiceStatusBadge number={invoice.number} status={displayStatus(invoice.status, invoice.due_date)} />
                         <div className="flex items-center gap-1.5 min-w-0">
                           <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-[22px] shrink-0" />
                           <span className="text-sm text-muted-foreground truncate">{invoice.client.name}</span>
