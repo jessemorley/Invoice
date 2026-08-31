@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { ClientSquircle } from "@/components/client-squircle";
-import { InvoiceStatusBadge, INVOICE_STATUS_COLOR } from "@/components/invoice-status-badge";
+import { InvoiceStatusBadge, INVOICE_STATUS_COLOR, INVOICE_STATUS_LABEL, displayStatus, type DisplayStatus } from "@/components/invoice-status-badge";
 import { revalidateInvoices, loadEntrySheetData, updateInvoiceStatus } from "./actions";
 import { invalidate } from "@/lib/invalidate";
 import { useInvoiceWorkflow } from "@/hooks/use-invoice-workflow";
@@ -90,24 +90,21 @@ function timeframeToDateRange(value: string): { from?: string; to?: string } {
   }
 }
 
-const STATUS_VARIANT: Record<InvoiceStatus, "outline" | "secondary" | "default"> = {
-  draft:  "outline",
-  issued: "secondary",
-  paid:   "default",
+const STATUS_VARIANT: Record<DisplayStatus, "outline" | "secondary" | "default" | "destructive"> = {
+  draft:   "outline",
+  issued:  "secondary",
+  overdue: "destructive",
+  paid:    "default",
 };
 
-
-const STATUS_LABEL: Record<InvoiceStatus, string> = {
-  draft:  "Draft",
-  issued: "Issued",
-  paid:   "Paid",
-};
+// Only the three stored values are selectable — "overdue" is derived, not set by hand.
+const SETTABLE_STATUSES: InvoiceStatus[] = ["draft", "issued", "paid"];
 
 function StatusBadge({
   status,
   onStatusChange,
 }: {
-  status: InvoiceStatus;
+  status: DisplayStatus;
   onStatusChange: (s: InvoiceStatus) => void;
 }) {
   return (
@@ -118,15 +115,15 @@ function StatusBadge({
             variant={STATUS_VARIANT[status]}
             className="cursor-pointer gap-0.5 pr-1"
           >
-            {STATUS_LABEL[status]}
+            {INVOICE_STATUS_LABEL[status]}
             <ChevronDown className="size-3 opacity-60" />
           </Badge>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-        {(Object.keys(STATUS_LABEL) as InvoiceStatus[]).map((s) => (
+        {SETTABLE_STATUSES.map((s) => (
           <DropdownMenuItem key={s} onSelect={() => onStatusChange(s)}>
-            {STATUS_LABEL[s]}
+            {INVOICE_STATUS_LABEL[s]}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
@@ -195,6 +192,7 @@ function StatusChip({ color, label }: { color: string; label: string }) {
 
 function InvoiceCard({ invoice }: { invoice: Invoice }) {
   const email = emailChip(invoice.email);
+  const status = displayStatus(invoice.status, invoice.due_date);
   return (
     <div className="rounded-xl border dark:border-white/15 overflow-hidden cursor-pointer">
       <div className="flex items-center gap-3 bg-card px-3 py-3 transition-colors hover:bg-accent/50">
@@ -204,7 +202,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
       </div>
       {/* Footer sits recessed under the card head: grey in light, near-black in dark.
           Not a bare bg-black — text-foreground is near-black in light mode. */}
-      <div className="flex items-center gap-3 border-t dark:border-white/15 bg-muted dark:bg-black px-3 py-2.5">
+      <div className="flex items-center gap-3 border-t dark:border-white/15 bg-muted dark:bg-black px-3 py-1.5">
         {invoice.issued_date && (
           <span className="text-[13px] text-muted-foreground shrink-0">{formatDateShort(invoice.issued_date)}</span>
         )}
@@ -220,7 +218,7 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
           </span>
         )}
         <span className="ml-auto">
-          <StatusChip color={INVOICE_STATUS_COLOR[invoice.status]} label={STATUS_LABEL[invoice.status]} />
+          <StatusChip color={INVOICE_STATUS_COLOR[status]} label={INVOICE_STATUS_LABEL[status]} />
         </span>
       </div>
     </div>
@@ -235,7 +233,7 @@ function SuggestedInvoiceCard({ group }: { group: SuggestedInvoice }) {
         <ClientChip name={group.clientName} color={group.clientColor} />
         <span className="ml-auto text-[13px] tabular-nums text-foreground shrink-0">{formatAUD(group.subtotal)}</span>
       </div>
-      <div className="flex items-center gap-3 border-t border-dashed dark:border-white/15 bg-muted dark:bg-black px-3 py-2.5">
+      <div className="flex items-center gap-3 border-t border-dashed dark:border-white/15 bg-muted dark:bg-black px-3 py-1.5">
         <span className="flex items-center gap-1 text-[13px] text-foreground shrink-0">
           <FileClock className="size-4 shrink-0 opacity-50" />
           {group.entryCount} {group.entryCount === 1 ? "entry" : "entries"}
@@ -282,7 +280,7 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-4 w-20" />
           </div>
-          <div className="flex items-center gap-3 border-t dark:border-white/15 bg-muted dark:bg-black px-3 py-2.5">
+          <div className="flex items-center gap-3 border-t dark:border-white/15 bg-muted dark:bg-black px-3 py-1.5">
             <Skeleton className="h-5 w-28 rounded-full" />
             <Skeleton className="h-5 w-14 rounded-full" />
             <Skeleton className="ml-auto h-3 w-12" />
@@ -340,6 +338,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const entrySheetMeta = useState<{ clients: Client[]; workflowRates: WorkflowRate[] } | null>(null);
   const [entrySheetData, setEntrySheetData] = entrySheetMeta;
   const [filterOpen, setFilterOpen] = useState(false);
+  const [suggestedShown, setSuggestedShown] = useState(true);
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
   useEffect(() => {
     const handler = (e: Event) => {
@@ -384,7 +383,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     }
 
     if (statusFilter !== "all") {
-      result = result.filter((inv) => inv.status === statusFilter);
+      result = result.filter((inv) => displayStatus(inv.status, inv.due_date) === statusFilter);
     }
 
     if (clientFilter !== "all") {
@@ -404,7 +403,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         case "number":      return dir * a.number.localeCompare(b.number);
         case "client":      return dir * a.client.name.localeCompare(b.client.name);
         case "total":       return dir * (a.subtotal - b.subtotal);
-        case "status":      return dir * a.status.localeCompare(b.status);
+        case "status":      return dir * displayStatus(a.status, a.due_date).localeCompare(displayStatus(b.status, b.due_date));
       }
     });
 
@@ -555,6 +554,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                 <SelectItem value="all">All status</SelectItem>
                 <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="issued">Issued</SelectItem>
+                <SelectItem value="overdue">Overdue</SelectItem>
                 <SelectItem value="paid">Paid</SelectItem>
               </SelectContent>
             </Select>
@@ -585,7 +585,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                 visibleInvoices.map((inv) => (
                   <TableRow key={inv.id} className="cursor-pointer" onClick={() => openInvoice(inv)}>
                     <TableCell className="py-3 px-6">
-                      <InvoiceStatusBadge number={inv.number} status={inv.status} />
+                      <InvoiceStatusBadge number={inv.number} status={displayStatus(inv.status, inv.due_date)} />
                     </TableCell>
                     <TableCell className="text-[13px] text-muted-foreground py-3 px-6">
                       {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
@@ -604,7 +604,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                     </TableCell>
                     <TableCell className="py-3 px-6 text-right">
                       <StatusBadge
-                        status={inv.status}
+                        status={displayStatus(inv.status, inv.due_date)}
                         onStatusChange={(s) => handleStatusChange(inv.id, s)}
                       />
                     </TableCell>
@@ -639,6 +639,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                 <SelectItem value="all">All status</SelectItem>
                 <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="issued">Issued</SelectItem>
+                <SelectItem value="overdue">Overdue</SelectItem>
                 <SelectItem value="paid">Paid</SelectItem>
               </SelectContent>
             </Select>
@@ -675,13 +676,40 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         </div>
         {/* Suggested invoices — not real invoices, so search/filters don't apply */}
         {!loading && suggested.length > 0 && (
-          <div className="px-3 pt-4 flex flex-col gap-4">
-            <h2 className="px-3 text-xs font-medium text-muted-foreground">Suggested</h2>
-            {suggested.map((g) => (
-              <div key={g.key} onClick={() => { setSelectedGroup(g); setSuggestedOpen(true); }}>
-                <SuggestedInvoiceCard group={g} />
+          <div className="px-3 pt-4">
+            <button
+              type="button"
+              onClick={() => setSuggestedShown((s) => !s)}
+              aria-expanded={suggestedShown}
+              className="flex w-full items-center gap-2 px-3 py-1 text-left"
+            >
+              <h2 className="text-xs font-medium text-muted-foreground">Suggested</h2>
+              <span className="flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
+                {suggested.length}
+              </span>
+              <ChevronDown
+                className={cn(
+                  "ml-auto size-4 text-muted-foreground transition-transform duration-200",
+                  !suggestedShown && "-rotate-90"
+                )}
+              />
+            </button>
+            <div
+              className={cn(
+                "grid transition-[grid-template-rows] duration-200 ease-out",
+                suggestedShown ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+              )}
+            >
+              <div className="overflow-hidden">
+                <div className="flex flex-col gap-4 pt-4">
+                  {suggested.map((g) => (
+                    <div key={g.key} onClick={() => { setSelectedGroup(g); setSuggestedOpen(true); }}>
+                      <SuggestedInvoiceCard group={g} />
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            </div>
           </div>
         )}
         {loading ? (
