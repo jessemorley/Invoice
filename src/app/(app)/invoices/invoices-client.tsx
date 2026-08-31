@@ -44,8 +44,13 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useCurrentUser, userInitials } from "@/components/current-user-context";
+import { useActiveView } from "@/components/active-view-context";
+import { signOut } from "@/app/login/actions";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SortableTableHead, tableHeadCellBase } from "@/components/sortable-table-head";
 import { cn } from "@/lib/utils";
@@ -54,7 +59,7 @@ import { InvoiceSheet } from "@/components/invoice-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
 import { SuggestedInvoiceSheet } from "@/components/suggested-invoice-sheet";
 import { EntrySheet } from "@/components/entry-sheet";
-import { ChevronDown, Clock, FileClock, FileText, MailWarning, Plus, RefreshCw, Search, SearchX, Send, X } from "lucide-react";
+import { ChevronDown, Clock, FileClock, FileText, LogOut, MailWarning, Plus, RefreshCw, Search, SearchX, Send, Settings, X } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
 
@@ -92,14 +97,20 @@ function timeframeToDateRange(value: string): { from?: string; to?: string } {
   }
 }
 
+// The large title starts just below the header, so its first pixel slides under
+// almost immediately — that's when the header takes on its surface and divider.
+const HEADER_CHROME_SCROLL = 8;
+// The title is fully hidden further down; that's when the header title appears.
+const LARGE_TITLE_SCROLL = 32;
+
 // Matches the tab styling in settings.
 const TAB_TRIGGER =
   "data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent";
 
 // The mobile empty states sit in a flow-height scroll container, so they need an
-// explicit height to centre against: the viewport less the header and tab row.
-// pb-20 lifts the centred text clear of the floating dock.
-const EMPTY_FILL = "min-h-[calc(100dvh-6.5rem)] pb-20";
+// explicit height to centre against: the viewport less the header, large title
+// and tab row. pb-20 lifts the centred text clear of the floating dock.
+const EMPTY_FILL = "min-h-[calc(100dvh-11rem)] pb-20";
 
 const STATUS_TABS = [
   { value: "draft", label: "Draft" },
@@ -184,6 +195,44 @@ function emailChip(email: InvoiceEmail | null): { text: string; icon: typeof Sen
   if (email?.status === "failed") return { text: "Failed", icon: MailWarning, destructive: true };
   if (email?.status === "bounced") return { text: "Bounced", icon: MailWarning, destructive: true };
   return null;
+}
+
+// Mobile-only echo of the sidebar's NavUser: same initials, same menu.
+function HeaderUserAvatar() {
+  const user = useCurrentUser();
+  const { setView } = useActiveView();
+  if (!user) return null;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="md:hidden focus:outline-none" aria-label="Account">
+          <Avatar className="size-6 rounded-md">
+            <AvatarFallback className="rounded-md text-[10px]">{userInitials(user.name)}</AvatarFallback>
+          </Avatar>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-56">
+        <div className="flex items-center gap-2 px-1 py-1.5 text-sm">
+          <Avatar className="size-8 rounded-lg">
+            <AvatarFallback className="rounded-lg">{userInitials(user.name)}</AvatarFallback>
+          </Avatar>
+          <div className="grid flex-1 leading-tight min-w-0">
+            <span className="truncate font-medium">{user.name}</span>
+            <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+          </div>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => setView("settings", { settingsTab: "account" })}>
+          <Settings />Settings
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => signOut()}>
+          <LogOut />Log out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 function ClientChip({ name, color }: { name: string; color: string }) {
@@ -291,7 +340,7 @@ function SkeletonTableRows({ count = 8 }: { count?: number }) {
 
 function SkeletonMobileCards({ count = 6 }: { count?: number }) {
   return (
-    <div className="px-3 py-4 flex flex-col gap-3">
+    <div className="px-4 py-4 flex flex-col gap-3">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="rounded-xl border dark:border-white/15 overflow-hidden">
           <div className="flex items-center justify-between bg-card px-3 py-3">
@@ -372,6 +421,8 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [searchValue, setSearchValue] = useState("");
   // Mobile shows either real invoices or suggestions, never both.
   const [listMode, setListMode] = useState<"invoices" | "suggested">("invoices");
+  const [titleCollapsed, setTitleCollapsed] = useState(false);
+  const [headerRaised, setHeaderRaised] = useState(false);
   // Empty = no status filter. Selecting several stacks them as OR.
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [clientFilter, setClientFilter] = useState("all");
@@ -449,6 +500,15 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     }
   }
 
+  // Mobile only: the header gains its surface as soon as the large title touches
+  // it, but only takes over the title text once that title is fully hidden.
+  function handleMobileScroll(e: React.UIEvent<HTMLDivElement>) {
+    handleScroll(e);
+    const { scrollTop } = e.currentTarget;
+    setHeaderRaised(scrollTop > HEADER_CHROME_SCROLL);
+    setTitleCollapsed(scrollTop > LARGE_TITLE_SCROLL);
+  }
+
   function handleSuggestedCreated(created: GeneratedInvoice, group: SuggestedInvoice | null) {
     const client = clients.find((c) => c.id === created.clientId);
     openInvoice({
@@ -523,6 +583,10 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         loading={loading}
+        titleHidden={!titleCollapsed}
+        borderHidden={!headerRaised}
+        searchOnLeft
+        trailing={<HeaderUserAvatar />}
         actions={
           <Button
             size="sm"
@@ -659,7 +723,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       <div
         ref={mobileScrollRef}
         className="md:hidden flex-1 overflow-y-auto"
-        onScroll={handleScroll}
+        onScroll={handleMobileScroll}
       >
         {/* Pull-to-refresh indicator — sits at top of scroll content, hidden until pulled */}
         <div
@@ -671,64 +735,66 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             style={{ transform: pullState !== "refreshing" ? `rotate(${(pullDistance / 70) * 180}deg)` : undefined }}
           />
         </div>
-        {!loading && (
-          <Tabs
-            value={listMode}
-            onValueChange={(v) => setListMode(v as typeof listMode)}
-            className="gap-0"
-          >
-            <div className="px-3 pt-3">
-              <TabsList className="bg-transparent p-0 gap-2 h-auto">
-                <TabsTrigger value="invoices" className={TAB_TRIGGER}>Invoices</TabsTrigger>
-                <TabsTrigger value="suggested" className={TAB_TRIGGER}>
-                  Suggested
-                  {suggested.length > 0 && (
-                    <span className="ml-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
-                      {suggested.length}
-                    </span>
-                  )}
-                </TabsTrigger>
-              </TabsList>
-            </div>
-          </Tabs>
-        )}
-        {/* Status chips stack as OR filters; tapping an active one clears it.
-            Suggestions have no status, so the chips grey out on that tab. */}
+        {/* Large title: scrolls away, handing off to the header's own title. */}
+        <h2 className="px-4 pt-2 pb-1 text-3xl font-semibold tracking-tight">Invoices</h2>
+        {/* Tabs and status chips share one sideways-scrolling row. */}
         {!loading && (
           <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div
-              className={cn(
-                "flex w-max gap-1.5 px-3 pt-3 transition-opacity",
-                listMode === "suggested" && "opacity-40"
-              )}
-            >
-              {STATUS_TABS.map((tab) => {
-                const active = statusFilters.includes(tab.value);
-                return (
-                  <button
-                    key={tab.value}
-                    type="button"
-                    disabled={listMode === "suggested"}
-                    onClick={() =>
-                      setStatusFilters((prev) =>
-                        prev.includes(tab.value)
-                          ? prev.filter((v) => v !== tab.value)
-                          : [...prev, tab.value]
-                      )
-                    }
-                    aria-pressed={active}
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] whitespace-nowrap transition-colors",
-                      active
-                        ? "border-transparent bg-primary text-primary-foreground font-medium pr-2"
-                        : "text-muted-foreground"
+            <div className="flex w-max items-center gap-2 px-4 pt-3">
+              <Tabs
+                value={listMode}
+                onValueChange={(v) => setListMode(v as typeof listMode)}
+                className="gap-0"
+              >
+                <TabsList className="bg-transparent p-0 gap-2 h-auto">
+                  <TabsTrigger value="invoices" className={TAB_TRIGGER}>Invoices</TabsTrigger>
+                  <TabsTrigger value="suggested" className={TAB_TRIGGER}>
+                    Suggested
+                    {suggested.length > 0 && (
+                      <span className="ml-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
+                        {suggested.length}
+                      </span>
                     )}
-                  >
-                    {tab.label}
-                    {active && <X className="size-3.5 opacity-80" />}
-                  </button>
-                );
-              })}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <span className="h-5 w-px shrink-0 bg-border" aria-hidden />
+              {/* Status chips stack as OR filters; tapping an active one clears it.
+                  Suggestions have no status, so the chips grey out on that tab. */}
+              <div
+                className={cn(
+                  "flex items-center gap-1.5 transition-opacity",
+                  listMode === "suggested" && "opacity-40"
+                )}
+              >
+                {STATUS_TABS.map((tab) => {
+                  const active = statusFilters.includes(tab.value);
+                  return (
+                    <button
+                      key={tab.value}
+                      type="button"
+                      disabled={listMode === "suggested"}
+                      onClick={() =>
+                        setStatusFilters((prev) =>
+                          prev.includes(tab.value)
+                            ? prev.filter((v) => v !== tab.value)
+                            : [...prev, tab.value]
+                        )
+                      }
+                      aria-pressed={active}
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] whitespace-nowrap transition-colors",
+                        active
+                          ? "border-transparent bg-primary text-primary-foreground font-medium pr-2"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      {tab.label}
+                      {active && <X className="size-3.5 opacity-80" />}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -746,7 +812,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
               </EmptyHeader>
             </Empty>
           ) : (
-            <div className="flex flex-col gap-3 px-3 pt-4 pb-28">
+            <div className="flex flex-col gap-3 px-4 pt-4 pb-28">
               {visibleSuggested.map((g) => (
                 <div key={g.key} onClick={() => { setSelectedGroup(g); setSuggestedOpen(true); }}>
                   <SuggestedInvoiceCard group={g} />
@@ -782,7 +848,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             </Empty>
           )
         ) : (
-          <div className="px-3 pt-4 pb-28 flex flex-col gap-3">
+          <div className="px-4 pt-4 pb-28 flex flex-col gap-3">
             {visibleInvoices.map((inv) => (
               <div key={inv.id} onClick={() => openInvoice(inv)}>
                 <InvoiceCard invoice={inv} />

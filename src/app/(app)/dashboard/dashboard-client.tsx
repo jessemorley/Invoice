@@ -52,7 +52,7 @@ function DashboardSkeleton() {
     <div className="flex flex-col h-full">
       <PageHeader title="Dashboard" />
       <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
-        <div className="px-3 md:px-6 py-6 mx-auto w-full max-w-6xl grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl grid grid-cols-1 xl:grid-cols-2 gap-4">
           <Card>
             <CardHeader>
               <Skeleton className="h-3 w-40" />
@@ -242,7 +242,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
       <PageHeader title="Dashboard" />
 
       <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
-        <div className="px-3 md:px-6 py-6 mx-auto w-full max-w-6xl grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl grid grid-cols-1 xl:grid-cols-2 gap-4">
           {/* MTD Earnings */}
           <Card>
             <CardHeader>

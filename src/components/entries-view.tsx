@@ -155,7 +155,7 @@ function SkeletonRow() {
   return (
     <>
       {/* Mobile */}
-      <div className="md:hidden flex items-center gap-3 px-3 py-3">
+      <div className="md:hidden flex items-center gap-3 px-3 py-2">
         <Skeleton className="w-9 h-8 rounded-lg shrink-0" />
         <div className="flex-1 min-w-0 flex flex-col gap-1.5">
           <Skeleton className="h-3 w-32" />
@@ -241,16 +241,16 @@ function EntryRow({
       onClick={() => onEdit(entry)}
     >
       {/* Mobile */}
-      <div className={`md:hidden flex items-center gap-3 px-3 py-3 ${isFuture ? "opacity-70" : ""}`}>
+      <div className={`md:hidden flex items-center gap-3 px-3 py-2 ${isFuture ? "opacity-70" : ""}`}>
         <DateTile date={entry.date} />
         <div className="flex-1 min-w-0">
           {showClient ? (
             <>
-              <span className="flex min-w-0 w-fit items-center gap-1.5 rounded-full border py-1 pl-[5px] pr-2.5">
-                <ClientSquircle name={entry.client.name} color={entry.client.color} className="size-5 rounded-full text-[8px]" />
+              <span className="flex min-w-0 w-fit items-center gap-1.5">
+                <ClientSquircle name={entry.client.name} color={entry.client.color} className="size-4 rounded-full text-[7px]" />
                 <span className="text-[13px] text-foreground truncate">{entry.client.name}</span>
               </span>
-              <span className="text-[13px] text-muted-foreground truncate block mt-0.5">
+              <span className="text-[13px] text-muted-foreground truncate block">
                 {description}
               </span>
             </>
@@ -648,7 +648,7 @@ export function EntriesView({
             }}
           />
         </div>
-        <div className="px-3 md:px-6 pt-4 pb-6 md:py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
+        <div className="px-4 md:px-6 pt-4 pb-6 md:py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
           {/* Desktop filter row */}
           <div className="hidden md:flex items-center gap-3">
             <div className="relative flex-1 min-w-48">

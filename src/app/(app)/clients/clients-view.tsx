@@ -79,7 +79,7 @@ function ClientsSkeleton() {
       <ViewHeader title="Clients" searchValue="" onSearchChange={() => {}} loading />
       {/* Desktop */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
-        <div className="px-3 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
+        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
           <div className="flex gap-3">
             <Skeleton className="h-9 flex-1" />
             <Skeleton className="h-9 w-32" />
@@ -117,11 +117,11 @@ function ClientsSkeleton() {
       </div>
       {/* Mobile */}
       <div className="md:hidden flex-1 overflow-y-auto pb-28">
-        <div className="px-3 pt-4 pb-2 flex gap-2">
+        <div className="px-4 pt-4 pb-2 flex gap-2">
           <Skeleton className="h-9 flex-1" />
           <Skeleton className="h-9 w-28" />
         </div>
-        <div className="px-3 py-3 flex flex-col gap-3">
+        <div className="px-4 py-3 flex flex-col gap-3">
           {[...Array(6)].map((_, i) => (
             <Card key={i} className="py-0">
               <CardContent className="p-0">
@@ -239,7 +239,7 @@ if (statusFilter === "active" && !c.is_active) return false;
 
       {/* Desktop table */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
-        <div className="px-3 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
+        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1 min-w-48">
@@ -327,7 +327,7 @@ if (statusFilter === "active" && !c.is_active) return false;
             </EmptyHeader>
           </Empty>
         ) : (
-          <div className="px-3 py-3 flex flex-col gap-3">
+          <div className="px-4 py-3 flex flex-col gap-3">
             {clients.map((client) => (
               <Card key={client.id} className="py-0">
                 <CardContent className="p-0">
