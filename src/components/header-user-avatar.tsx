@@ -23,10 +23,8 @@ export function HeaderUserAvatar() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="md:hidden focus:outline-none" aria-label="Account">
-          {/* Defaults are size-8, rounded-full and bg-muted — the same footprint
-              and surface as the search pill at the other end of the header. */}
-          <Avatar>
-            <AvatarFallback className="text-[11px]">{userInitials(user.name)}</AvatarFallback>
+          <Avatar className="size-7 rounded-lg">
+            <AvatarFallback className="rounded-lg text-[11px]">{userInitials(user.name)}</AvatarFallback>
           </Avatar>
         </button>
       </DropdownMenuTrigger>
