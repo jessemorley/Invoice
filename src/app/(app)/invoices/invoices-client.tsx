@@ -184,7 +184,7 @@ function emailChip(email: InvoiceEmail | null): { text: string; icon: typeof Sen
   return null;
 }
 
-function ClientChip({ name, color }: { name: string; color: string }) {
+export function ClientChip({ name, color }: { name: string; color: string }) {
   return (
     <span className="flex min-w-0 items-center gap-1.5 rounded-full border py-1 pl-[5px] pr-2.5">
       <ClientSquircle name={name} color={color} className="size-5 rounded-full text-[8px]" />
