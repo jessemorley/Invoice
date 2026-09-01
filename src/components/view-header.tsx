@@ -100,7 +100,7 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
             </h1>
             <input
               ref={searchInputRef}
-              className={`absolute inset-0 text-lg font-semibold bg-transparent border-none outline-none w-full text-foreground placeholder:text-muted-foreground/60 transition-opacity duration-150 md:hidden ${searchOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+              className={`absolute inset-0 text-[15px] font-semibold bg-transparent border-none outline-none w-full text-foreground placeholder:text-muted-foreground/60 placeholder:font-semibold transition-opacity duration-150 md:hidden ${searchOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
               placeholder={`Search ${title.toLowerCase()}...`}
               value={searchValue}
               onChange={(e) => onSearchChange(e.target.value)}
