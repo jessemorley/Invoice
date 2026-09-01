@@ -340,7 +340,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
           {/* MTD Earnings */}
           <div className="flex flex-col gap-3">
             <h2 className="px-1.5 text-sm font-medium">Month to date</h2>
-            <Card>
+            <Card className="pb-[14px]">
             <CardHeader>
               <CardTitle className="text-3xl tabular-nums">
                 {formatAUD(mtdEarnings)}
@@ -455,8 +455,8 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
           <div className="flex flex-col gap-3">
             <h2 className="px-1.5 text-sm font-medium">Outstanding</h2>
             {outstanding.length > 0 && (
-              <Card>
-                <CardContent className="flex flex-col divide-y divide-border">
+              <Card className="py-0">
+                <CardContent className="flex flex-col divide-y divide-border px-0">
                   {outstanding.map((invoice) => {
                     const due =
                       invoice.status === "issued" && invoice.due_date
@@ -466,7 +466,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                       <div
                         key={invoice.id}
                         onClick={() => openInvoice(invoice)}
-                        className="flex items-center justify-between py-2.5 cursor-pointer"
+                        className="flex items-center justify-between px-6 py-2.5 cursor-pointer"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="text-[13px] font-medium tabular-nums shrink-0">
@@ -689,7 +689,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
             <h2 className="px-1.5 text-sm font-medium">
               {timeframe === 26 ? 6 : 12}-month earnings
             </h2>
-            <Card>
+            <Card className="pb-[14px]">
               <CardContent>
                 <div className="flex flex-row items-center justify-between gap-2 mb-4">
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
