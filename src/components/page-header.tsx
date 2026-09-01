@@ -1,4 +1,5 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { AppMark } from "@/components/app-mark";
 import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
@@ -10,7 +11,7 @@ interface PageHeaderProps {
   titleHidden?: boolean;
   /** Hidden until the body's large title scrolls under the header. */
   borderHidden?: boolean;
-  /** Mobile: the account name and avatar, rendered leftmost. */
+  /** Mobile: the account name and avatar, rendered rightmost. */
   account?: React.ReactNode;
 }
 
@@ -38,7 +39,7 @@ export function PageHeader({
       <div className="relative flex items-center justify-between gap-2 w-full max-w-6xl mx-auto px-4 md:px-6">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <SidebarTrigger className="hidden md:flex" />
-          {account}
+          <AppMark className="md:hidden size-5 text-foreground/80" />
           {mobileTitle ? (
             <>
               <div className="md:hidden flex-1 min-w-0">{mobileTitle}</div>
@@ -70,7 +71,12 @@ export function PageHeader({
             {title}
           </span>
         )}
-        {children && <div className="flex items-center gap-2">{children}</div>}
+        {(account || children) && (
+          <div className="flex items-center gap-2">
+            {account}
+            {children}
+          </div>
+        )}
       </div>
     </header>
   );

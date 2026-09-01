@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from "react";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { AppMark } from "@/components/app-mark";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +25,7 @@ interface ViewHeaderProps {
   titleHidden?: boolean;
   /** Hidden until the body's large title scrolls under the header. */
   borderHidden?: boolean;
-  /** Mobile: the account name and avatar, rendered leftmost. */
+  /** Mobile: the account name and avatar, rendered rightmost. */
   account?: React.ReactNode;
 }
 
@@ -82,8 +83,9 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
       <div className="relative flex items-center justify-between gap-2 w-full max-w-6xl mx-auto px-4 md:px-6">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <SidebarTrigger className="hidden md:flex" />
-          {/* Mobile: the account name and avatar lead the header. */}
-          {account}
+          {/* Mobile: the app mark and search lead the header. */}
+          <AppMark className="md:hidden size-5 text-foreground/80" />
+          {searchButton}
           <div className="relative flex-1 min-w-0">
             <h1
               className={cn(
@@ -122,7 +124,7 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
           </span>
         )}
         <div className="flex items-center gap-2">
-          {searchButton}
+          {account}
           {filterPopover ? (
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
               <PopoverTrigger asChild>
