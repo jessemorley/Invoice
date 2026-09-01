@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { AppMark } from "@/components/app-mark";
 
 interface ViewHeaderProps {
   title: string;
@@ -25,15 +24,11 @@ interface ViewHeaderProps {
   titleHidden?: boolean;
   /** Hidden until the body's large title scrolls under the header. */
   borderHidden?: boolean;
-  /** Mobile: put the search icon on the left instead of with the right actions. */
-  searchOnLeft?: boolean;
-  /** Mobile: rendered leftmost, before the search icon (the account avatar). */
-  leading?: React.ReactNode;
-  /** Mobile: show the app mark at the far right. */
-  appMark?: boolean;
+  /** Mobile: the account name and avatar, rendered leftmost. */
+  account?: React.ReactNode;
 }
 
-export function ViewHeader({ title, searchValue, onSearchChange, actions, filterOpen, filterActive, onFilterToggle, filterPopover, searchOpen: searchOpenProp, onSearchOpenChange, loading, titleHidden, borderHidden, searchOnLeft, leading, appMark }: ViewHeaderProps) {
+export function ViewHeader({ title, searchValue, onSearchChange, actions, filterOpen, filterActive, onFilterToggle, filterPopover, searchOpen: searchOpenProp, onSearchOpenChange, loading, titleHidden, borderHidden, account }: ViewHeaderProps) {
   // Large-title mode is opt-in: the caller renders its own big heading in the
   // body and tells this header when that heading has scrolled past.
   const collapsingTitle = titleHidden !== undefined;
@@ -69,7 +64,7 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
       onClick={() => (searchOpen ? closeSearch() : openSearch())}
       disabled={loading}
     >
-      {searchOpen ? <X className="size-4" /> : <Search className="size-4" />}
+      {searchOpen ? <X className="size-[18px]" /> : <Search className="size-[18px]" />}
     </Button>
   );
 
@@ -87,9 +82,8 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
       <div className="relative flex items-center justify-between gap-2 w-full max-w-6xl mx-auto px-4 md:px-6">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <SidebarTrigger className="hidden md:flex" />
-          {/* Mobile leading cluster: account first, then search where the view has it. */}
-          {leading}
-          {searchOnLeft && searchButton}
+          {/* Mobile: the account name and avatar lead the header. */}
+          {account}
           <div className="relative flex-1 min-w-0">
             <h1
               className={cn(
@@ -128,7 +122,7 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
           </span>
         )}
         <div className="flex items-center gap-2">
-          {!searchOnLeft && searchButton}
+          {searchButton}
           {filterPopover ? (
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
               <PopoverTrigger asChild>
@@ -167,8 +161,6 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
             </Button>
           ) : null}
           {actions}
-          {/* App mark anchors the far right on mobile, opposite the account avatar. */}
-          {appMark && <AppMark className="md:hidden size-6 text-foreground/80" />}
         </div>
       </div>
     </header>

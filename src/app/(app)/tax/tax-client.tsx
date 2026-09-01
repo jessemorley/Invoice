@@ -192,8 +192,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
       <PageHeader
         title="Tax"
         {...collapsing.headerProps}
-        leading={<HeaderUserAvatar />}
-        appMark
+        account={<HeaderUserAvatar />}
       />
       <div
         className="flex-1 overflow-y-auto pb-28 md:pb-0"

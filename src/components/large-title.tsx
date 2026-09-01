@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-// The large title sits just below the header, so its first pixel slides under
-// almost immediately — that's when the header takes its surface and divider.
-const HEADER_CHROME_SCROLL = 8;
+// Roughly the title's top padding: scrolling that far puts its first pixel
+// under the header, which is when the header takes its surface and divider.
+const HEADER_CHROME_SCROLL = 20;
 // Further down the title is fully hidden; that's when the header title appears.
-const LARGE_TITLE_SCROLL = 32;
+const LARGE_TITLE_SCROLL = 44;
 
 /**
  * Drives the iOS-style collapsing header: a large title in the scroll body that
@@ -34,7 +34,7 @@ export function useCollapsingTitle() {
 /** Mobile-only big heading that scrolls away beneath the fixed header. */
 export function LargeTitle({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <h2 className={cn("md:hidden px-4 pt-2 pb-1 text-3xl font-semibold tracking-tight", className)}>
+    <h2 className={cn("md:hidden px-4 pt-5 pb-1 text-3xl font-semibold tracking-tight", className)}>
       {children}
     </h2>
   );

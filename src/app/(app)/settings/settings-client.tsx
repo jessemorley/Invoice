@@ -781,8 +781,7 @@ export function SettingsClient({
       <PageHeader
         title="Settings"
         {...collapsing.headerProps}
-        leading={<HeaderUserAvatar />}
-        appMark
+        account={<HeaderUserAvatar />}
       />
       <Tabs value={tab} onValueChange={(v) => setTab(v as SettingsTab)} className="flex flex-col flex-1 overflow-hidden gap-0">
         <div

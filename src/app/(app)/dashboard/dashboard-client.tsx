@@ -246,8 +246,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
       <PageHeader
         title="Dashboard"
         {...collapsing.headerProps}
-        leading={<HeaderUserAvatar />}
-        appMark
+        account={<HeaderUserAvatar />}
       />
 
       <div

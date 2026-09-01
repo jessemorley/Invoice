@@ -218,9 +218,7 @@ if (statusFilter === "active" && !c.is_active) return false;
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         {...collapsing.headerProps}
-        searchOnLeft
-        leading={<HeaderUserAvatar />}
-        appMark
+        account={<HeaderUserAvatar />}
         actions={
           <Button size="sm" className="hidden md:flex" onClick={openNew}>
             <Plus className="size-4" />

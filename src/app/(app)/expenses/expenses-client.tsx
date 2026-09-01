@@ -255,9 +255,7 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
         filterActive={hasActiveFilters}
         onFilterToggle={() => setFilterOpen((o) => !o)}
         {...collapsing.headerProps}
-        searchOnLeft
-        leading={<HeaderUserAvatar />}
-        appMark
+        account={<HeaderUserAvatar />}
         actions={
           <Button size="sm" className="hidden md:flex" onClick={openNew}>
             <Plus className="size-4" />

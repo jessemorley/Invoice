@@ -610,9 +610,7 @@ export function EntriesView({
         onSearchChange={setSearchValue}
         loading={loading}
         {...collapsing.headerProps}
-        searchOnLeft
-        leading={<HeaderUserAvatar />}
-        appMark
+        account={<HeaderUserAvatar />}
         actions={
           <Button size="sm" className="hidden md:flex" onClick={openNew} disabled={loading}>
             <Plus className="size-4" />

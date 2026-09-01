@@ -545,8 +545,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
       <PageHeader
         title="Emails"
         {...collapsing.headerProps}
-        leading={<HeaderUserAvatar />}
-        appMark
+        account={<HeaderUserAvatar />}
       >
         <Button size="sm" className="hidden md:flex" disabled={loading} onClick={openNewEmail}>
           <Pencil className="size-4" />

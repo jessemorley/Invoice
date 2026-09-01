@@ -97,7 +97,7 @@ function timeframeToDateRange(value: string): { from?: string; to?: string } {
 // The mobile empty states sit in a flow-height scroll container, so they need an
 // explicit height to centre against: the viewport less the header, large title
 // and tab row. pb-20 lifts the centred text clear of the floating dock.
-const EMPTY_FILL = "min-h-[calc(100dvh-11rem)] pb-20";
+const EMPTY_FILL = "min-h-[calc(100dvh-12rem)] pb-20";
 
 const STATUS_TABS = [
   { value: "draft", label: "Draft" },
@@ -528,9 +528,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         onSearchChange={setSearchValue}
         loading={loading}
         {...collapsing.headerProps}
-        searchOnLeft
-        leading={<HeaderUserAvatar />}
-        appMark
+        account={<HeaderUserAvatar />}
         actions={
           <Button
             size="sm"
