@@ -23,8 +23,8 @@ export function HeaderUserAvatar() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="md:hidden focus:outline-none" aria-label="Account">
-          <Avatar className="size-7 rounded-lg">
-            <AvatarFallback className="rounded-lg text-[11px]">{userInitials(user.name)}</AvatarFallback>
+          <Avatar className="size-8 rounded-lg">
+            <AvatarFallback className="rounded-lg text-xs">{userInitials(user.name)}</AvatarFallback>
           </Avatar>
         </button>
       </DropdownMenuTrigger>

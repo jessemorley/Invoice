@@ -60,12 +60,12 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
     <Button
       size="icon"
       variant="ghost"
-      className="size-8 md:hidden"
+      className="size-9 md:hidden"
       aria-label={searchOpen ? "Close search" : "Search"}
       onClick={() => (searchOpen ? closeSearch() : openSearch())}
       disabled={loading}
     >
-      {searchOpen ? <X className="size-[18px]" /> : <Search className="size-[18px]" />}
+      {searchOpen ? <X className="size-5" /> : <Search className="size-5" />}
     </Button>
   );
 
@@ -83,9 +83,11 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
       <div className="relative flex items-center justify-between gap-2 w-full max-w-6xl mx-auto px-4 md:px-6">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <SidebarTrigger className="hidden md:flex" />
-          {/* Mobile: the app mark and search lead the header. */}
-          <AppMark className="md:hidden size-5 text-foreground/80" />
-          {searchButton}
+          {/* Mobile: the app mark and search share one pill leading the header. */}
+          <div className="md:hidden -ml-1 flex items-center gap-1 rounded-full border border-border bg-card pl-[5px] pr-1">
+            <AppMark className="size-6 text-foreground/80" />
+            {searchButton}
+          </div>
           <div className="relative flex-1 min-w-0">
             <h1
               className={cn(
@@ -131,11 +133,11 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="relative size-8 md:hidden"
+                  className="relative size-9 md:hidden"
                   aria-label="Filter"
                   disabled={loading}
                 >
-                  <SlidersHorizontal className="size-4" />
+                  <SlidersHorizontal className="size-[18px]" />
                   {filterActive && (
                     <span className="absolute top-1 right-1 size-1.5 rounded-full bg-primary" />
                   )}
@@ -151,12 +153,12 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
             <Button
               size="icon"
               variant={filterOpen ? "secondary" : "ghost"}
-              className="relative size-8 md:hidden"
+              className="relative size-9 md:hidden"
               aria-label="Filter"
               onClick={onFilterToggle}
               disabled={loading}
             >
-              <SlidersHorizontal className="size-4" />
+              <SlidersHorizontal className="size-[18px]" />
               {filterActive && !filterOpen && (
                 <span className="absolute top-1 right-1 size-1.5 rounded-full bg-primary" />
               )}

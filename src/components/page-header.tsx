@@ -39,7 +39,9 @@ export function PageHeader({
       <div className="relative flex items-center justify-between gap-2 w-full max-w-6xl mx-auto px-4 md:px-6">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <SidebarTrigger className="hidden md:flex" />
-          <AppMark className="md:hidden size-5 text-foreground/80" />
+          <div className="md:hidden -ml-1 flex items-center justify-center rounded-full border border-border bg-card size-9">
+            <AppMark className="size-6 text-foreground/80" />
+          </div>
           {mobileTitle ? (
             <>
               <div className="md:hidden flex-1 min-w-0">{mobileTitle}</div>
