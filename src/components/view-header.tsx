@@ -61,7 +61,12 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
     <Button
       size="icon"
       variant="ghost"
-      className="size-8 md:hidden"
+      className={cn(
+        "size-8 md:hidden",
+        // On the left it stands alone rather than in a cluster, so a pill gives
+        // it an edge to read against.
+        searchOnLeft && "rounded-full bg-muted hover:bg-muted/80 dark:bg-white/10 dark:hover:bg-white/15"
+      )}
       aria-label={searchOpen ? "Close search" : "Search"}
       onClick={() => (searchOpen ? closeSearch() : openSearch())}
       disabled={loading}
