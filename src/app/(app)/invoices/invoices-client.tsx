@@ -47,6 +47,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { HeaderUserAvatar } from "@/components/header-user-avatar";
+import { LargeTitle, TAB_TRIGGER, useCollapsingTitle } from "@/components/large-title";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SortableTableHead, tableHeadCellBase } from "@/components/sortable-table-head";
 import { cn } from "@/lib/utils";
@@ -92,16 +93,6 @@ function timeframeToDateRange(value: string): { from?: string; to?: string } {
       return {};
   }
 }
-
-// The large title starts just below the header, so its first pixel slides under
-// almost immediately — that's when the header takes on its surface and divider.
-const HEADER_CHROME_SCROLL = 8;
-// The title is fully hidden further down; that's when the header title appears.
-const LARGE_TITLE_SCROLL = 32;
-
-// Matches the tab styling in settings.
-const TAB_TRIGGER =
-  "data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent";
 
 // The mobile empty states sit in a flow-height scroll container, so they need an
 // explicit height to centre against: the viewport less the header, large title
@@ -379,8 +370,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [searchValue, setSearchValue] = useState("");
   // Mobile shows either real invoices or suggestions, never both.
   const [listMode, setListMode] = useState<"invoices" | "suggested">("invoices");
-  const [titleCollapsed, setTitleCollapsed] = useState(false);
-  const [headerRaised, setHeaderRaised] = useState(false);
+  const collapsing = useCollapsingTitle();
   // Empty = no status filter. Selecting several stacks them as OR.
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [clientFilter, setClientFilter] = useState("all");
@@ -458,13 +448,9 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     }
   }
 
-  // Mobile only: the header gains its surface as soon as the large title touches
-  // it, but only takes over the title text once that title is fully hidden.
   function handleMobileScroll(e: React.UIEvent<HTMLDivElement>) {
     handleScroll(e);
-    const { scrollTop } = e.currentTarget;
-    setHeaderRaised(scrollTop > HEADER_CHROME_SCROLL);
-    setTitleCollapsed(scrollTop > LARGE_TITLE_SCROLL);
+    collapsing.onScroll(e.currentTarget);
   }
 
   function handleSuggestedCreated(created: GeneratedInvoice, group: SuggestedInvoice | null) {
@@ -541,10 +527,10 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         loading={loading}
-        titleHidden={!titleCollapsed}
-        borderHidden={!headerRaised}
+        {...collapsing.headerProps}
         searchOnLeft
-        trailing={<HeaderUserAvatar />}
+        leading={<HeaderUserAvatar />}
+        appMark
         actions={
           <Button
             size="sm"
@@ -693,8 +679,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             style={{ transform: pullState !== "refreshing" ? `rotate(${(pullDistance / 70) * 180}deg)` : undefined }}
           />
         </div>
-        {/* Large title: scrolls away, handing off to the header's own title. */}
-        <h2 className="px-4 pt-2 pb-1 text-3xl font-semibold tracking-tight">Invoices</h2>
+        <LargeTitle>Invoices</LargeTitle>
         {/* Tabs and status chips share one sideways-scrolling row. overflow-y-hidden
             because overflow-x-auto alone implies overflow-y:auto, which lets focus
             rings scroll the row vertically by a pixel or two. */}

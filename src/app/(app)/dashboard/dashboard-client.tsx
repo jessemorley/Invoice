@@ -28,6 +28,8 @@ import { invalidate } from "@/lib/invalidate";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
+import { HeaderUserAvatar } from "@/components/header-user-avatar";
+import { LargeTitle, useCollapsingTitle } from "@/components/large-title";
 import {
   ChartContainer,
   ChartTooltip,
@@ -146,6 +148,8 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
     tip.style.transform = `translate(${x}px, ${y}px)`;
   }, [calHover]);
 
+  const collapsing = useCollapsingTitle();
+
   if (!data) return <DashboardSkeleton />;
   const { mtdEarnings, mtdPriorMonth, mtdDailyCumulative, mtdPriorCumulative, outstanding, weeklyEarnings, monthCalendar } = data;
   const weekSlice = timeframe === 26 ? weeklyEarnings.slice(26) : weeklyEarnings;
@@ -239,10 +243,19 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Dashboard" />
+      <PageHeader
+        title="Dashboard"
+        {...collapsing.headerProps}
+        leading={<HeaderUserAvatar />}
+        appMark
+      />
 
-      <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
-        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <div
+        className="flex-1 overflow-y-auto pb-28 md:pb-0"
+        onScroll={(e) => collapsing.onScroll(e.currentTarget)}
+      >
+        <LargeTitle>Dashboard</LargeTitle>
+        <div className="px-4 md:px-6 pt-3 pb-6 md:py-6 mx-auto w-full max-w-6xl grid grid-cols-1 xl:grid-cols-2 gap-4">
           {/* MTD Earnings */}
           <Card>
             <CardHeader>

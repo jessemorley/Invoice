@@ -9,6 +9,8 @@ import { invalidate } from "@/lib/invalidate";
 import { EXPENSE_CATEGORY_LABELS, EXPENSE_CATEGORY_COLORS, EXPENSE_POOL_LABELS } from "@/lib/mock-data";
 import type { ExpenseCategory } from "@/lib/types";
 import { PageHeader } from "@/components/page-header";
+import { HeaderUserAvatar } from "@/components/header-user-avatar";
+import { LargeTitle, useCollapsingTitle } from "@/components/large-title";
 import { cn } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { ClientSquircle } from "@/components/client-squircle";
@@ -72,6 +74,7 @@ function TaxSkeleton() {
 
 export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const currentStartYear = fyStartYear(new Date());
+  const collapsing = useCollapsingTitle();
   const [selected, setSelected] = useState(currentStartYear);
   const [newDate, setNewDate] = useState(() => new Date().toLocaleDateString("en-CA"));
   const [newAmount, setNewAmount] = useState("");
@@ -186,9 +189,18 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Tax" />
-      <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
-        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+      <PageHeader
+        title="Tax"
+        {...collapsing.headerProps}
+        leading={<HeaderUserAvatar />}
+        appMark
+      />
+      <div
+        className="flex-1 overflow-y-auto pb-28 md:pb-0"
+        onScroll={(e) => collapsing.onScroll(e.currentTarget)}
+      >
+        <LargeTitle>Tax</LargeTitle>
+        <div className="px-4 md:px-6 pt-3 pb-6 md:py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
           <Select value={String(selected)} onValueChange={(v) => { setSelected(Number(v)); setWfhDraft(null); }}>
             <SelectTrigger className="w-32">
               <SelectValue />

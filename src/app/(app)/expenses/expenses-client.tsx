@@ -35,6 +35,8 @@ import {
 import { SortableTableHead, tableHeadCellBase } from "@/components/sortable-table-head";
 import { cn } from "@/lib/utils";
 import { ViewHeader } from "@/components/view-header";
+import { HeaderUserAvatar } from "@/components/header-user-avatar";
+import { LargeTitle, useCollapsingTitle } from "@/components/large-title";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ExpenseSheet } from "@/components/expense-sheet";
 import { Paperclip, Plus, Receipt, Search } from "lucide-react";
@@ -192,6 +194,8 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
     return () => window.removeEventListener("dock:new", handler);
   }, []);
 
+  const collapsing = useCollapsingTitle();
+
   if (loading) return <ExpensesSkeleton />;
 
   function openNew() {
@@ -250,6 +254,10 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
         filterOpen={filterOpen}
         filterActive={hasActiveFilters}
         onFilterToggle={() => setFilterOpen((o) => !o)}
+        {...collapsing.headerProps}
+        searchOnLeft
+        leading={<HeaderUserAvatar />}
+        appMark
         actions={
           <Button size="sm" className="hidden md:flex" onClick={openNew}>
             <Plus className="size-4" />
@@ -390,7 +398,11 @@ export function ExpensesClient({ expenses, loading = false }: { expenses: Expens
       </div>
 
       {/* Mobile card list */}
-      <div className="md:hidden flex-1 overflow-y-auto pb-28">
+      <div
+        className="md:hidden flex-1 overflow-y-auto pb-28"
+        onScroll={(e) => collapsing.onScroll(e.currentTarget)}
+      >
+        <LargeTitle>Expenses</LargeTitle>
         {expenses.length === 0 ? (
           <Empty className="h-64">
             <EmptyHeader>

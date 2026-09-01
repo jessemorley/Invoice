@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { AppMark } from "@/components/app-mark";
 
 interface ViewHeaderProps {
   title: string;
@@ -26,11 +27,13 @@ interface ViewHeaderProps {
   borderHidden?: boolean;
   /** Mobile: put the search icon on the left instead of with the right actions. */
   searchOnLeft?: boolean;
-  /** Mobile: rendered at the far right, after the filter button. */
-  trailing?: React.ReactNode;
+  /** Mobile: rendered leftmost, before the search icon (the account avatar). */
+  leading?: React.ReactNode;
+  /** Mobile: show the app mark at the far right. */
+  appMark?: boolean;
 }
 
-export function ViewHeader({ title, searchValue, onSearchChange, actions, filterOpen, filterActive, onFilterToggle, filterPopover, searchOpen: searchOpenProp, onSearchOpenChange, loading, titleHidden, borderHidden, searchOnLeft, trailing }: ViewHeaderProps) {
+export function ViewHeader({ title, searchValue, onSearchChange, actions, filterOpen, filterActive, onFilterToggle, filterPopover, searchOpen: searchOpenProp, onSearchOpenChange, loading, titleHidden, borderHidden, searchOnLeft, leading, appMark }: ViewHeaderProps) {
   // Large-title mode is opt-in: the caller renders its own big heading in the
   // body and tells this header when that heading has scrolled past.
   const collapsingTitle = titleHidden !== undefined;
@@ -61,12 +64,7 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
     <Button
       size="icon"
       variant="ghost"
-      className={cn(
-        "size-8 md:hidden",
-        // On the left it stands alone rather than in a cluster, so a pill gives
-        // it an edge to read against.
-        searchOnLeft && "rounded-full bg-muted hover:bg-muted/80 dark:bg-white/10 dark:hover:bg-white/15"
-      )}
+      className="size-8 md:hidden"
       aria-label={searchOpen ? "Close search" : "Search"}
       onClick={() => (searchOpen ? closeSearch() : openSearch())}
       disabled={loading}
@@ -89,6 +87,8 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
       <div className="relative flex items-center justify-between gap-2 w-full max-w-6xl mx-auto px-4 md:px-6">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <SidebarTrigger className="hidden md:flex" />
+          {/* Mobile leading cluster: account first, then search where the view has it. */}
+          {leading}
           {searchOnLeft && searchButton}
           <div className="relative flex-1 min-w-0">
             <h1
@@ -167,7 +167,8 @@ export function ViewHeader({ title, searchValue, onSearchChange, actions, filter
             </Button>
           ) : null}
           {actions}
-          {trailing}
+          {/* App mark anchors the far right on mobile, opposite the account avatar. */}
+          {appMark && <AppMark className="md:hidden size-6 text-foreground/80" />}
         </div>
       </div>
     </header>

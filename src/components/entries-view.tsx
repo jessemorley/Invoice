@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { EntrySheet } from "@/components/entry-sheet";
 import { ViewHeader } from "@/components/view-header";
 import { HeaderUserAvatar } from "@/components/header-user-avatar";
+import { LargeTitle, TAB_TRIGGER, useCollapsingTitle } from "@/components/large-title";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, RefreshCw, Search } from "lucide-react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
@@ -37,13 +38,6 @@ const VIEW_MODE_TABS: { value: ViewMode; label: string }[] = [
   { value: "none", label: "All" },
 ];
 
-// Matches the tab styling in settings and invoices.
-const TAB_TRIGGER =
-  "data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent";
-
-// The large title docks almost immediately; the header title swaps once it's hidden.
-const HEADER_CHROME_SCROLL = 8;
-const LARGE_TITLE_SCROLL = 32;
 
 function DateTile({ date }: { date: string }) {
   const d = new Date(date + "T00:00:00");
@@ -531,8 +525,7 @@ export function EntriesView({
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [searchValue, setSearchValue] = useState("");
-  const [titleCollapsed, setTitleCollapsed] = useState(false);
-  const [headerRaised, setHeaderRaised] = useState(false);
+  const collapsing = useCollapsingTitle();
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -616,10 +609,10 @@ export function EntriesView({
         searchValue={searchValue}
         onSearchChange={setSearchValue}
         loading={loading}
-        titleHidden={!titleCollapsed}
-        borderHidden={!headerRaised}
+        {...collapsing.headerProps}
         searchOnLeft
-        trailing={<HeaderUserAvatar />}
+        leading={<HeaderUserAvatar />}
+        appMark
         actions={
           <Button size="sm" className="hidden md:flex" onClick={openNew} disabled={loading}>
             <Plus className="size-4" />
@@ -635,8 +628,7 @@ export function EntriesView({
           if (el.scrollHeight - el.scrollTop - el.clientHeight < 400) {
             setDisplayCount((prev) => prev + PAGE_SIZE);
           }
-          setHeaderRaised(el.scrollTop > HEADER_CHROME_SCROLL);
-          setTitleCollapsed(el.scrollTop > LARGE_TITLE_SCROLL);
+          collapsing.onScroll(el);
         }}
       >
         {/* Pull-to-refresh indicator — sits at top of scroll content, hidden until pulled */}
@@ -654,8 +646,7 @@ export function EntriesView({
             }}
           />
         </div>
-        {/* Mobile large title: scrolls away, handing off to the header's own title. */}
-        <h2 className="md:hidden px-4 pt-2 pb-1 text-3xl font-semibold tracking-tight">Entries</h2>
+        <LargeTitle>Entries</LargeTitle>
         {/* Grouping moves from the header's filter popover to tabs, like invoices. */}
         {!loading && (
           <div className="md:hidden overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
