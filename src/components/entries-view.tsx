@@ -658,7 +658,7 @@ export function EntriesView({
         <h2 className="md:hidden px-4 pt-2 pb-1 text-3xl font-semibold tracking-tight">Entries</h2>
         {/* Grouping moves from the header's filter popover to tabs, like invoices. */}
         {!loading && (
-          <div className="md:hidden overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="md:hidden overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <Tabs
               value={viewMode}
               onValueChange={(v) => setViewMode(v as ViewMode)}

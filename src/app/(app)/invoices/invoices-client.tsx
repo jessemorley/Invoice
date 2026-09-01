@@ -695,9 +695,11 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         </div>
         {/* Large title: scrolls away, handing off to the header's own title. */}
         <h2 className="px-4 pt-2 pb-1 text-3xl font-semibold tracking-tight">Invoices</h2>
-        {/* Tabs and status chips share one sideways-scrolling row. */}
+        {/* Tabs and status chips share one sideways-scrolling row. overflow-y-hidden
+            because overflow-x-auto alone implies overflow-y:auto, which lets focus
+            rings scroll the row vertically by a pixel or two. */}
         {!loading && (
-          <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex w-max items-center gap-2 px-4 pt-3">
               <Tabs
                 value={listMode}
