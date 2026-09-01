@@ -222,7 +222,6 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                 <CardTitle className="text-4xl tabular-nums">{formatAUD(income)}</CardTitle>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs text-muted-foreground">{fyLabel(selected)}</span>
                 <div className="flex rounded-md border overflow-hidden">
                   <Button
                     variant="ghost"
