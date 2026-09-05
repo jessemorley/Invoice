@@ -100,7 +100,7 @@
   --warning-foreground: oklch(0.8 0.175 75.807);
   --card: rgb(10 10 10);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: rgb(10 10 10);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);
