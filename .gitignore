@@ -47,4 +47,6 @@ next-env.d.ts
 supabase/.temp
 
 # handoff docs
-/docs/handoff
+/docs/handoff.claude/settings.local.json
+.claude/scheduled_tasks.lock
+tasks/todo.md
