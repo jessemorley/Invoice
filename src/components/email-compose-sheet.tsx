@@ -305,14 +305,14 @@ function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, on
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
         {errorReason && (
-          <div className="rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2 flex items-start gap-2">
-            <p className="flex-1 text-sm text-destructive">{errorReason}</p>
+          <div className="rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2 flex flex-col items-start gap-2">
+            <p className="text-sm text-destructive">{errorReason}</p>
             {onClearBounce && (
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="shrink-0"
+                className="self-end"
                 disabled={clearingBounce}
                 onClick={async () => {
                   setClearingBounce(true);
