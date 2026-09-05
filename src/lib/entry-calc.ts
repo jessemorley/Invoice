@@ -90,7 +90,13 @@ export function calcBatchBonus(
   // The KPI duty is charged to the highest-rate SKUs first. That is what makes
   // Apparel the base being "topped up" by Model Shot, and it keeps the result
   // independent of the order the rows happen to be filled in.
+  // A line with no SKUs is not work done, so it must not reach the cap or the
+  // flat-bonus check below — an empty Apparel row alongside a worked Model Shot row
+  // would otherwise lend Apparel's higher max_bonus (or its flat payout) to a day
+  // where no Apparel was shot. Filtered here rather than in the caller so the
+  // invariant holds for every caller.
   const rated = lines
+    .filter((line) => line.skus > 0)
     .map((line) => ({
       line,
       rate: workflowRates.find(
