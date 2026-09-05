@@ -77,6 +77,27 @@ describe("calcBatchBonus — one KPI shared across workflows", () => {
     );
   });
 
+  it("stays order-independent when two workflows tie on incentive rate", () => {
+    // Equal rates leave the sort with nothing to separate them, so the KPI duty
+    // used to fall on whichever row was typed first. Figures sit under the cap,
+    // where the difference actually shows.
+    const tied: WorkflowRate[] = [
+      rate("Low KPI", 60, 200, 0.5),
+      rate("High KPI", 100, 300, 0.5),
+    ];
+    const lines = [
+      { workflow: "Low KPI", skus: 40 },
+      { workflow: "High KPI", skus: 60 },
+    ];
+    const forward = calcBatchBonus(client, lines, tied).bonus;
+    const reversed = calcBatchBonus(client, [...lines].reverse(), tied).bonus;
+    expect(forward).toBeCloseTo(reversed, 9);
+    // Duty charged to the lower-KPI workflow, where a SKU is worth more of a day
+    // (1/60 > 1/100) — the same "dearest SKUs pay the duty" rule as the rate sort.
+    // 40/60 of the day leaves 0.333 owed; 33.3 High KPI SKUs close it, 26.67 surplus.
+    expect(forward).toBeCloseTo(13.333333, 5);
+  });
+
   it("agrees with calcDayRate when only one line is present", () => {
     for (const skus of [0, 40, 84, 86, 88, 92, 120]) {
       expect(
@@ -120,6 +141,30 @@ describe("calcBatchBonus — one KPI shared across workflows", () => {
   it("pays a flat-bonus workflow in full", () => {
     const flat = [{ ...rate("Apparel", 84, 92, 5.0), is_flat_bonus: true }];
     expect(calcBatchBonus(client, [{ workflow: "Apparel", skus: 1 }], flat).bonus).toBe(MAX_BONUS);
+  });
+
+  it("pays a flat line its own max, not the largest max on the day", () => {
+    // Every live workflow shares max_bonus 40, so this only bites if the rates
+    // ever diverge — but the flat branch must answer for its own lines either way.
+    const mixed: WorkflowRate[] = [
+      { ...rate("Flat", 0, 0, 0), is_flat_bonus: true, max_bonus: 15 },
+      rate("Apparel", 84, 92, 5.0),
+    ];
+    const result = calcBatchBonus(client, [
+      { workflow: "Flat", skus: 0 },
+      { workflow: "Apparel", skus: 10 },
+    ], mixed);
+    expect(result.bonus).toBe(15);
+  });
+
+  it("pays no bonus on a half day, matching calcDayRate", () => {
+    const result = calcBatchBonus(client, [
+      { workflow: "Apparel", skus: 92 },
+      { workflow: "Model Shot", skus: 139 },
+    ], RATES, "half");
+    expect(result.base).toBe(175);
+    expect(result.bonus).toBe(0);
+    expect(result.total).toBe(175);
   });
 
   it("adds super when the client pays it", () => {

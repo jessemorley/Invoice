@@ -63,9 +63,18 @@ export function calcDayRate(
 export function calcBatchBonus(
   client: Client,
   lines: { workflow: string; skus: number }[],
-  workflowRates: WorkflowRate[]
+  workflowRates: WorkflowRate[],
+  dayType: "full" | "half" = "full"
 ): CalcResult {
-  const base = client.rate_full_day ?? 0;
+  const base = dayType === "full"
+    ? (client.rate_full_day ?? 0)
+    : (client.rate_half_day ?? 0);
+
+  // A half day earns no bonus, same as calcDayRate — the KPI is a full day's worth.
+  if (dayType !== "full") {
+    const superAmt = client.pays_super ? base * (client.super_rate || 0.12) : 0;
+    return { base, bonus: 0, superAmt, total: base + superAmt, hoursWorked: null };
+  }
 
   // A mixed day owes ONE KPI between its workflows, and each SKU counts as a
   // fraction of its own workflow's KPI — 1 Apparel is 1/84, 1 Model Shot is 1/126 —
@@ -90,22 +99,32 @@ export function calcBatchBonus(
     }))
     .filter((x): x is { line: (typeof lines)[number]; rate: WorkflowRate } => !!x.rate);
 
-  // Flat-bonus workflows pay out in full without reference to SKUs or KPI.
-  // ponytail: unreachable today — only Own Brand is flat, and it is a top-level
-  // billing mode with no SKU lines, so it never reaches this multi-line path.
-  // Kept correct rather than deleted in case a flat workflow gains batch lines.
-  const flat = rated.find((x) => x.rate.is_flat_bonus);
-  if (flat) {
-    const bonus = flat.rate.max_bonus;
-    const subtotal = base + bonus;
+  const maxBonus = rated.reduce((max, x) => Math.max(max, x.rate.max_bonus), 0);
+
+  // Flat-bonus workflows pay out in full without reference to SKUs or KPI, and the
+  // payout is the flat lines' own max — not the largest max on the day, which would
+  // let a SKU line's cap inflate it.
+  const flatBonus = rated
+    .filter((x) => x.rate.is_flat_bonus)
+    .reduce((max, x) => Math.max(max, x.rate.max_bonus), 0);
+  if (rated.some((x) => x.rate.is_flat_bonus)) {
+    // ponytail: flat wins outright — no live workflow mixes a flat line with SKU
+    // lines (Own Brand is the only flat one and never reaches this path). Revisit
+    // if a client ever needs both on one day.
+    const subtotal = base + flatBonus;
     const superAmt = client.pays_super ? subtotal * (client.super_rate || 0.12) : 0;
-    return { base, bonus, superAmt, total: subtotal + superAmt, hoursWorked: null };
+    return { base, bonus: flatBonus, superAmt, total: subtotal + superAmt, hoursWorked: null };
   }
 
   let owed = 1;
   let bonus = 0;
+  // Equal rates would otherwise leave the duty with whichever row was typed first
+  // (Array.prototype.sort is stable), so KPI ascending breaks the tie: the duty goes
+  // to the workflow where a SKU is worth more of a day.
   for (const { line, rate } of [...rated].sort(
-    (a, b) => b.rate.incentive_rate_per_sku - a.rate.incentive_rate_per_sku
+    (a, b) =>
+      b.rate.incentive_rate_per_sku - a.rate.incentive_rate_per_sku ||
+      a.rate.kpi - b.rate.kpi
   )) {
     if (rate.kpi <= 0) continue;
     const share = line.skus / rate.kpi;
@@ -120,8 +139,7 @@ export function calcBatchBonus(
   // still short of a full day's KPI — no bonus at all
   if (owed > 0) bonus = 0;
 
-  // one day owes one capped bonus, not one cap per line
-  bonus = Math.min(bonus, rated.reduce((max, x) => Math.max(max, x.rate.max_bonus), 0));
+  bonus = Math.min(bonus, maxBonus);
 
   const subtotal = base + bonus;
   const superAmt = client.pays_super ? subtotal * (client.super_rate || 0.12) : 0;
