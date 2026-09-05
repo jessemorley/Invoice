@@ -109,7 +109,7 @@ export function SuggestedInvoiceSheet({
                   {entry.hours_worked != null && (
                     <span className="tabular-nums text-muted-foreground shrink-0">{entry.hours_worked}h</span>
                   )}
-                  <span className="tabular-nums shrink-0">{formatAUD(entry.base_amount)}</span>
+                  <span className="tabular-nums shrink-0">{formatAUD(entry.base_amount + entry.bonus_amount)}</span>
                 </button>
               ))
             ) : (

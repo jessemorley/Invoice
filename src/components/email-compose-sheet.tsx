@@ -161,13 +161,15 @@ interface ComposeContentProps {
   initialScheduledFor?: Date | null;
   editingId?: string;
   errorReason?: string | null;
+  onClearBounce?: () => Promise<void>;
 }
 
-function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, onClose, onSent, initialTo, initialCc, initialBcc, initialSubject, initialBody, initialScheduledFor, editingId, errorReason }: ComposeContentProps) {
+function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, onClose, onSent, initialTo, initialCc, initialBcc, initialSubject, initialBody, initialScheduledFor, editingId, errorReason, onClearBounce }: ComposeContentProps) {
   const [chips, setChips] = useState<string[]>(() =>
     initialTo ?? (invoice?.client.email ? [invoice.client.email] : [])
   );
   const [chipInput, setChipInput] = useState("");
+  const [clearingBounce, setClearingBounce] = useState(false);
   const [ccChips, setCcChips] = useState<string[]>(() => initialCc ?? []);
   const [ccInput, setCcInput] = useState("");
   const [bccChips, setBccChips] = useState<string[]>(() => initialBcc ?? []);
@@ -303,9 +305,28 @@ function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, on
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-5">
         {errorReason && (
-          <p className="rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2 text-sm text-destructive">
-            {errorReason}
-          </p>
+          <div className="rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2 flex items-start gap-2">
+            <p className="flex-1 text-sm text-destructive">{errorReason}</p>
+            {onClearBounce && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                disabled={clearingBounce}
+                onClick={async () => {
+                  setClearingBounce(true);
+                  try {
+                    await onClearBounce();
+                  } finally {
+                    setClearingBounce(false);
+                  }
+                }}
+              >
+                {clearingBounce ? "Clearing…" : "Mark as delivered"}
+              </Button>
+            )}
+          </div>
         )}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
@@ -459,11 +480,13 @@ interface EmailComposeSheetProps {
   editingId?: string;
   /** Bounce/failure reason shown as a destructive banner above the form. */
   errorReason?: string | null;
+  /** Supplied only for bounced rows — clears a false bounce back to "sent". */
+  onClearBounce?: () => Promise<void>;
   /** Render even without an invoice — free-form compose with no PDF attachment. */
   freeform?: boolean;
 }
 
-export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessName, userName, bodyTemplate, onSent, initialTo, initialCc, initialBcc, initialSubject, initialBody, initialScheduledFor, editingId, errorReason, freeform }: EmailComposeSheetProps) {
+export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessName, userName, bodyTemplate, onSent, initialTo, initialCc, initialBcc, initialSubject, initialBody, initialScheduledFor, editingId, errorReason, onClearBounce, freeform }: EmailComposeSheetProps) {
   // Mount only while usable: invoice flows clear `invoice` on close, freeform
   // relies on `open` — either way ComposeContent remounts with fresh state.
   if (!invoice && !(freeform && open)) return null;
@@ -491,6 +514,7 @@ export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessN
           initialScheduledFor={initialScheduledFor}
           editingId={editingId}
           errorReason={errorReason}
+          onClearBounce={onClearBounce}
         />
       </AdaptiveSheetContent>
     </AdaptiveSheet>

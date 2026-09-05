@@ -3,7 +3,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import type { DashboardData } from "@/lib/types";
 import { useInvoiceWorkflow } from "@/hooks/use-invoice-workflow";
-import { formatAUD, fyLabel, fyStartYear } from "@/lib/format";
+import { formatAUD } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -248,11 +248,11 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
 
   const now = new Date();
   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const currentFY = fyLabel(fyStartYear(lastMonth));
-  const priorFY = fyLabel(fyStartYear(lastMonth) - 1);
+  // The series are trailing weeks vs the same weeks shifted back 52 weeks —
+  // not financial years, so don't label them as ones.
   const chartConfig = {
-    current: { label: currentFY, color: "var(--color-primary)" },
-    prior: { label: priorFY, color: "var(--color-muted-foreground)" },
+    current: { label: "This period", color: "var(--color-primary)" },
+    prior: { label: "Year prior", color: "var(--color-muted-foreground)" },
   };
   const priorMonthName = lastMonth.toLocaleDateString("en-AU", {
     month: "short",
@@ -502,7 +502,9 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                                   ],
                               }}
                             />
-                            {formatAUD(invoice.total)}
+                            {/* Super is a fund liability, not receivable income —
+                                outstanding tracks the ex-super subtotal. */}
+                            {formatAUD(invoice.subtotal)}
                           </span>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -695,11 +697,11 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1.5">
                       <div className="h-2 w-6 rounded-sm bg-primary" />
-                      <span>{currentFY}</span>
+                      <span>{chartConfig.current.label}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <div className="h-2 w-6 rounded-sm bg-muted-foreground/40" />
-                      <span>{priorFY}</span>
+                      <span>{chartConfig.prior.label}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
