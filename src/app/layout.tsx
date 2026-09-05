@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -22,7 +21,7 @@ export const metadata: Metadata = {
   description: "Freelance invoicing app",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Invoices",
   },
   icons: {
@@ -45,14 +44,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
-      suppressHydrationWarning
+      className={`${inter.variable} ${jetbrainsMono.variable} dark h-full antialiased`}
     >
       <body className="h-full bg-background text-foreground">
-        <ThemeProvider>
-          <TooltipProvider>{children}</TooltipProvider>
-          <Toaster position="top-center" />
-        </ThemeProvider>
+        <TooltipProvider>{children}</TooltipProvider>
+        <Toaster position="top-center" />
         <SpeedInsights />
       </body>
     </html>
