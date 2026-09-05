@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState, useTransition, useActionState } from "react";
-import { useTheme } from "next-themes";
 import { invalidate } from "@/lib/invalidate";
 import { PageHeader } from "@/components/page-header";
 import { HeaderUserAvatar } from "@/components/header-user-avatar";
@@ -659,7 +658,6 @@ function EmailTab({
 }
 
 function AccountTab({ email, name }: { email: string; name: string }) {
-  const { theme, setTheme } = useTheme();
   const [nameState, nameAction, namePending] = useActionState(updateDisplayName, null);
   const [pwState, pwAction, pwPending] = useActionState(changePassword, null);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -719,26 +717,6 @@ function AccountTab({ email, name }: { email: string; name: string }) {
               </div>
             </form>
           )}
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Appearance</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <span className="text-sm">Theme</span>
-            <Select value={theme ?? "system"} onValueChange={setTheme}>
-              <SelectTrigger className="w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="light">Light</SelectItem>
-                <SelectItem value="dark">Dark</SelectItem>
-                <SelectItem value="system">Auto</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </CardContent>
       </Card>
     </div>
