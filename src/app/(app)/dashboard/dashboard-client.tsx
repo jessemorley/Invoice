@@ -3,7 +3,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import type { DashboardData } from "@/lib/types";
 import { useInvoiceWorkflow } from "@/hooks/use-invoice-workflow";
-import { formatAUD, fyLabel, fyStartYear } from "@/lib/format";
+import { formatAUD } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -59,6 +59,29 @@ const audFormatter = new Intl.NumberFormat("en-AU", {
 });
 function formatChartAUD(value: number) {
   return audFormatter.format(value);
+}
+
+// Trend row appended to the earnings tooltip: this point vs the same point a
+// year earlier. Rendered once, after the last series row. Returns null when
+// there's no prior-year baseline to compare against (first year of data).
+function TooltipTrend({ current, prior }: { current: number; prior: number }) {
+  if (!prior) return null;
+  const up = current >= prior;
+  const percent = Math.abs(((current - prior) / prior) * 100).toFixed(0);
+  return (
+    <div className="flex basis-full items-center gap-1.5 border-t pt-1.5 mt-0.5 text-xs font-medium">
+      {up ? (
+        <TrendingUp className="size-3 text-success" />
+      ) : (
+        <TrendingDown className="size-3 text-destructive" />
+      )}
+      {/* No "year on year" suffix — the rows above already name both years,
+          and it made the trend the widest line in the tooltip. */}
+      <span className={up ? "text-success" : "text-destructive"}>
+        {up ? "Up" : "Down"} {percent}%
+      </span>
+    </div>
+  );
 }
 
 function DashboardSkeleton() {
@@ -248,11 +271,11 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
 
   const now = new Date();
   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const currentFY = fyLabel(fyStartYear(lastMonth));
-  const priorFY = fyLabel(fyStartYear(lastMonth) - 1);
+  // Trailing weeks vs the same weeks shifted back exactly 52 weeks — a rolling
+  // window, not calendar or financial years.
   const chartConfig = {
-    current: { label: currentFY, color: "var(--color-primary)" },
-    prior: { label: priorFY, color: "var(--color-muted-foreground)" },
+    current: { label: "This year", color: "var(--color-primary)" },
+    prior: { label: "Last year", color: "var(--color-muted-foreground)" },
   };
   const priorMonthName = lastMonth.toLocaleDateString("en-AU", {
     month: "short",
@@ -502,7 +525,9 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                                   ],
                               }}
                             />
-                            {formatAUD(invoice.total)}
+                            {/* Super is a fund liability, not receivable income —
+                                outstanding tracks the ex-super subtotal. */}
+                            {formatAUD(invoice.subtotal)}
                           </span>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -695,11 +720,11 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1.5">
                       <div className="h-2 w-6 rounded-sm bg-primary" />
-                      <span>{currentFY}</span>
+                      <span>{chartConfig.current.label}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <div className="h-2 w-6 rounded-sm bg-muted-foreground/40" />
-                      <span>{priorFY}</span>
+                      <span>{chartConfig.prior.label}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -809,7 +834,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                             labelFormatter={(_value, payload) =>
                               payload[0]?.payload?.week ?? ""
                             }
-                            formatter={(value, name) => (
+                            formatter={(value, name, item) => (
                               <>
                                 <span className="text-muted-foreground">
                                   {chartConfig[name as keyof typeof chartConfig]
@@ -818,6 +843,14 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                                 <span className="font-mono font-medium tabular-nums ml-auto pl-4">
                                   {formatChartAUD(Number(value))}
                                 </span>
+                                {/* Once, after the last row — both values live
+                                    on the same payload. */}
+                                {name === "prior" && (
+                                  <TooltipTrend
+                                    current={item.payload.current}
+                                    prior={item.payload.prior}
+                                  />
+                                )}
                               </>
                             )}
                           />
@@ -859,7 +892,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                       <ChartTooltip
                         content={
                           <ChartTooltipContent
-                            formatter={(value, name) => (
+                            formatter={(value, name, item) => (
                               <>
                                 <span className="text-muted-foreground">
                                   {chartConfig[name as keyof typeof chartConfig]
@@ -868,6 +901,14 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                                 <span className="font-mono font-medium tabular-nums ml-auto pl-4">
                                   {formatChartAUD(Number(value))}
                                 </span>
+                                {/* Once, after the last row — both values live
+                                    on the same payload. */}
+                                {name === "prior" && (
+                                  <TooltipTrend
+                                    current={item.payload.current}
+                                    prior={item.payload.prior}
+                                  />
+                                )}
                               </>
                             )}
                           />

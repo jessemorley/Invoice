@@ -31,17 +31,21 @@ export async function POST(req: Request) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
-  // Only flip rows that reached "sent" — never resurrect cancelled/deleted rows.
+  // Only flip rows that reached "sent" — never resurrect cancelled/deleted rows,
+  // and never re-bounce one the user cleared as a false positive (Resend can
+  // redeliver the same event, and the 404 path below makes Svix retry).
   const { data: row, error } = await supabase
     .from("scheduled_emails")
     .update({ status: "bounced", error: event.data.bounce.message })
     .eq("resend_id", event.data.email_id)
     .eq("status", "sent")
+    .is("bounce_cleared_at", null)
     .select("user_id, subject, to_address")
     .maybeSingle();
   if (error) return new Response(`db update failed: ${error.message}`, { status: 500 });
-  // No matching sent row (row deleted, already re-sent, or bounce raced the
-  // sent-update): 404 makes Svix retry with backoff, then give up visibly.
+  // No matching sent row (row deleted, already re-sent, cleared as a false
+  // bounce, or the bounce raced the sent-update): 404 makes Svix retry with
+  // backoff, then give up visibly.
   if (!row) return new Response("no matching sent row", { status: 404 });
 
   // Status changed outside a server action — expire the tag directly

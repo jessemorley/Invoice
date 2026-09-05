@@ -575,6 +575,7 @@ export type Database = {
         Row: {
           bcc_address: string | null
           body_text: string
+          bounce_cleared_at: string | null
           cc_address: string | null
           created_at: string
           error: string | null
@@ -594,6 +595,7 @@ export type Database = {
         Insert: {
           bcc_address?: string | null
           body_text: string
+          bounce_cleared_at?: string | null
           cc_address?: string | null
           created_at?: string
           error?: string | null
@@ -613,6 +615,7 @@ export type Database = {
         Update: {
           bcc_address?: string | null
           body_text?: string
+          bounce_cleared_at?: string | null
           cc_address?: string | null
           created_at?: string
           error?: string | null

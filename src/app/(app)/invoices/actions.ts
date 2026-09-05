@@ -634,6 +634,27 @@ export async function sendScheduledEmailNow(scheduledEmailId: string): Promise<v
   refresh();
 }
 
+export async function clearBouncedEmail(scheduledEmailId: string): Promise<void> {
+  const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
+
+  // Resend sometimes reports a bounce for mail that was actually delivered.
+  // The row already has sent_at and an archived PDF — the bounce only changed
+  // status and error, so clearing both is the whole undo.
+  const { error } = await supabase
+    .from("scheduled_emails")
+    // bounce_cleared_at is terminal — the webhook skips cleared rows, so a
+    // redelivered bounce for this resend_id can't undo the clear.
+    .update({ status: "sent", error: null, bounce_cleared_at: new Date().toISOString() })
+    .eq("id", scheduledEmailId)
+    .eq("user_id", userId)
+    .eq("status", "bounced");
+
+  if (error) throw new Error(`clearBouncedEmail: ${error.message}`);
+
+  updateTag(CACHE_TAGS.scheduledEmails);
+  refresh();
+}
+
 export async function getSentEmailPdfUrl(scheduledEmailId: string): Promise<string | null> {
   const { userId, token } = await getAuth();
   const supabase = createTokenClient(token);
