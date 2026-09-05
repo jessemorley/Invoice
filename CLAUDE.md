@@ -10,9 +10,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev      # start dev server at localhost:3000
 npm run build    # production build (runs type-check + Next.js compiler)
 npm run lint     # ESLint
+npm test         # Vitest (single run); npm run test:watch to watch
 ```
 
-There are no automated tests. Verify changes manually via the dev server.
+Vitest covers the pure logic in `src/lib/` (rate and tax calculation, formatting)
+and a few component behaviours. There is no end-to-end or browser coverage, so
+UI changes still need verifying manually via the dev server.
 
 ## Stack
 

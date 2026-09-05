@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { act, render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FloatingDock } from "./floating-dock";
 
@@ -134,14 +134,18 @@ describe("overflow menu", () => {
     expect(screen.queryByRole("button", { name: /^clients$/i })).not.toBeInTheDocument();
   });
 
-  it("shows secondary nav items after menu button tap", async () => {
+  it("shows every nav item after menu button tap", async () => {
     const user = userEvent.setup();
     renderDock();
     await user.click(screen.getByRole("button", { name: /menu/i }));
-    expect(screen.getByRole("button", { name: /dashboard/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /clients/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /expenses/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /settings/i })).toBeInTheDocument();
+    const menu = within(screen.getByTestId("dock-menu"));
+    // Primary tabs are listed alongside the secondary ones
+    expect(menu.getByRole("button", { name: /^dashboard$/i })).toBeInTheDocument();
+    expect(menu.getByRole("button", { name: /^entries$/i })).toBeInTheDocument();
+    expect(menu.getByRole("button", { name: /^invoices$/i })).toBeInTheDocument();
+    expect(menu.getByRole("button", { name: /^clients$/i })).toBeInTheDocument();
+    expect(menu.getByRole("button", { name: /^expenses$/i })).toBeInTheDocument();
+    expect(menu.getByRole("button", { name: /^settings$/i })).toBeInTheDocument();
   });
 
   it("closes when overlay is clicked", async () => {

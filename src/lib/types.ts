@@ -76,6 +76,8 @@ export type Invoice = {
   // Required, not optional — an optional field silently reads as undefined
   // wherever a query forgets to map it, which is how notes went missing here.
   notes: string | null;
+  // 0 when unknown (paths that don't fetch it) or genuinely entry-less; UI hides the chip either way
+  entry_count: number;
 };
 
 export type Expense = {

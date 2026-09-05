@@ -8,6 +8,8 @@ import { stripSelfBcc } from "@/lib/merge-bcc";
 import { invalidate } from "@/lib/invalidate";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
+import { HeaderUserAvatar } from "@/components/header-user-avatar";
+import { LargeTitle, useCollapsingTitle } from "@/components/large-title";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -395,6 +397,7 @@ function EmailsTable({
 }
 
 export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
+  const collapsing = useCollapsingTitle();
   const [composeOpen, setComposeOpen] = useState(false);
   const [sentSheetOpen, setSentSheetOpen] = useState(false);
   const [composeInvoice, setComposeInvoice] = useState<InvoiceDetail | null>(null);
@@ -539,7 +542,11 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
 
   return (
     <div className="flex flex-col h-full max-md:bg-card">
-      <PageHeader title="Emails">
+      <PageHeader
+        title="Emails"
+        {...collapsing.headerProps}
+        account={<HeaderUserAvatar />}
+      >
         <Button size="sm" className="hidden md:flex" disabled={loading} onClick={openNewEmail}>
           <Pencil className="size-4" />
           Compose
@@ -569,7 +576,11 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
         )}
       </PageHeader>
 
-      <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
+      <div
+        className="flex-1 overflow-y-auto pb-28 md:pb-0"
+        onScroll={(e) => collapsing.onScroll(e.currentTarget)}
+      >
+        <LargeTitle>Emails</LargeTitle>
         <div className="px-4 md:px-6 pb-6 pt-1 md:pt-6 mx-auto w-full max-w-6xl flex flex-col gap-0 md:gap-4">
           {!loading && scheduled.length > 0 && (
             <EmailsTable title="Scheduled" emails={scheduled} onRowClick={handleEmailRowClick} showStatus selected={selected} onToggle={toggleSelected} pendingDeleteIds={pendingDelete} onSwipeDelete={handleSwipeDelete} />

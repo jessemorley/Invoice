@@ -9,6 +9,8 @@ import { invalidate } from "@/lib/invalidate";
 import { EXPENSE_CATEGORY_LABELS, EXPENSE_CATEGORY_COLORS, EXPENSE_POOL_LABELS } from "@/lib/mock-data";
 import type { ExpenseCategory } from "@/lib/types";
 import { PageHeader } from "@/components/page-header";
+import { HeaderUserAvatar } from "@/components/header-user-avatar";
+import { LargeTitle, useCollapsingTitle } from "@/components/large-title";
 import { cn } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { ClientSquircle } from "@/components/client-squircle";
@@ -72,6 +74,7 @@ function TaxSkeleton() {
 
 export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
   const currentStartYear = fyStartYear(new Date());
+  const collapsing = useCollapsingTitle();
   const [selected, setSelected] = useState(currentStartYear);
   const [newDate, setNewDate] = useState(() => new Date().toLocaleDateString("en-CA"));
   const [newAmount, setNewAmount] = useState("");
@@ -186,9 +189,17 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Tax" />
-      <div className="flex-1 overflow-y-auto pb-28 md:pb-0">
-        <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
+      <PageHeader
+        title="Tax"
+        {...collapsing.headerProps}
+        account={<HeaderUserAvatar />}
+      />
+      <div
+        className="flex-1 overflow-y-auto pb-28 md:pb-0"
+        onScroll={(e) => collapsing.onScroll(e.currentTarget)}
+      >
+        <LargeTitle>Tax</LargeTitle>
+        <div className="px-4 md:px-6 pt-3 pb-6 md:py-6 mx-auto w-full max-w-6xl flex flex-col gap-4">
           <Select value={String(selected)} onValueChange={(v) => { setSelected(Number(v)); setWfhDraft(null); }}>
             <SelectTrigger className="w-32">
               <SelectValue />
@@ -203,14 +214,14 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
           </Select>
 
           {/* Tier 1 — Hero: revenue + toggleable chart (monthly bars / profit-tax split) */}
+          <div className="flex flex-col gap-3">
+          <h2 className="px-1.5 text-sm font-medium">Revenue</h2>
           <Card>
             <CardHeader className="flex flex-row items-start justify-between gap-2">
               <div>
-                <CardDescription>Revenue</CardDescription>
                 <CardTitle className="text-4xl tabular-nums">{formatAUD(income)}</CardTitle>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs text-muted-foreground">{fyLabel(selected)}</span>
                 <div className="flex rounded-md border overflow-hidden">
                   <Button
                     variant="ghost"
@@ -341,12 +352,14 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
               </div>
             </CardContent>
           </Card>
+          </div>
 
           {/* Tier 3a — Revenue & expenses, side by side */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-3">
+            <h2 className="px-1.5 text-sm font-medium">Revenue</h2>
             <Card>
               <CardHeader>
-                <CardDescription>Revenue</CardDescription>
                 <CardTitle className="text-2xl tabular-nums">{formatAUD(income)}</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col divide-y divide-border">
@@ -370,9 +383,11 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                 )}
               </CardContent>
             </Card>
+            </div>
+            <div className="flex flex-col gap-3">
+            <h2 className="px-1.5 text-sm font-medium">Expenses</h2>
             <Card>
               <CardHeader>
-                <CardDescription>Expenses</CardDescription>
                 <CardTitle className="text-2xl tabular-nums">{formatAUD(totalExpenses)}</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
@@ -409,21 +424,21 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                 )}
               </CardContent>
             </Card>
+            </div>
           </div>
 
           {/* Tier 3a2 — Working from home (ATO fixed-rate method) */}
+          <div className="flex flex-col gap-3">
+          <h2 className="px-1.5 text-sm font-medium">Working from home</h2>
           <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Working from home</CardTitle>
-              <CardDescription className="tabular-nums">
-                {wfhRate
-                  ? `${formatAUD(wfhDeduction)} deduction — fixed rate ${Math.round(wfhRate * 100)}c/hr`
-                  : `No fixed rate applies to ${fyLabel(selected)}`}
-              </CardDescription>
-            </CardHeader>
-            {wfhRate && (
               <CardContent className="flex flex-col gap-2">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 py-2 px-3 rounded-lg border border-border">
+                {!wfhRate ? (
+                  <p className="text-sm text-muted-foreground">
+                    No fixed rate applies to {fyLabel(selected)}
+                  </p>
+                ) : (
+                  <>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
                   <label htmlFor="wfh-hours" className="text-sm text-muted-foreground">
                     Hours worked from home
                   </label>
@@ -454,19 +469,20 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                     </Button>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground px-3">
-                  {weekdaysWithoutEntries > 0 &&
-                    `Calculate fills ${weekdaysWithoutEntries} weekdays with no entry logged × 8 h = ${wfhSeedHours} h. `}
+                <p className="text-xs text-muted-foreground">
                   Covers electricity, gas, internet, phone and stationery.
                 </p>
+                  </>
+                )}
               </CardContent>
-            )}
           </Card>
+          </div>
 
           {/* Tier 4 — PAYG instalments (data entry, demoted) */}
+          <div className="flex flex-col gap-3">
+          <h2 className="px-1.5 text-sm font-medium">PAYG instalments</h2>
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">PAYG instalments</CardTitle>
               <CardDescription>
                 {paygInstalments.length === 0
                   ? "None recorded"
@@ -520,6 +536,7 @@ export function TaxClient({ fyTotals }: { fyTotals?: TaxFyTotals[] }) {
                 </div>
               </CardContent>
             </Card>
+          </div>
         </div>
       </div>
     </div>

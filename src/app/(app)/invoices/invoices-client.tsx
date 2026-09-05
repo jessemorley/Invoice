@@ -3,20 +3,19 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { ClientSquircle } from "@/components/client-squircle";
-import { InvoiceStatusBadge, INVOICE_STATUS_COLOR } from "@/components/invoice-status-badge";
-import { revalidateInvoices, loadEntrySheetData, generateInvoices, updateInvoiceStatus } from "./actions";
+import { InvoiceStatusBadge, INVOICE_STATUS_COLOR, INVOICE_STATUS_LABEL, displayStatus, type DisplayStatus } from "@/components/invoice-status-badge";
+import { revalidateInvoices, loadEntrySheetData, updateInvoiceStatus } from "./actions";
 import { invalidate } from "@/lib/invalidate";
 import { useInvoiceWorkflow } from "@/hooks/use-invoice-workflow";
 import type { Invoice, InvoiceEmail, InvoiceStatus, Entry, Client, WorkflowRate } from "@/lib/types";
 import type { SuggestedInvoice } from "@/lib/queries";
 import type { InvoiceFilters } from "@/lib/queries";
 import type { GeneratedInvoice } from "./actions";
-import { formatAUD, formatDateShort, toLocalDateStr } from "@/lib/format";
+import { formatAUD, formatDateShort, formatDateShortRelative, toLocalDateStr } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import {
   Select,
@@ -26,11 +25,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
-import {
   Empty,
+  EmptyContent,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
@@ -50,6 +46,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { HeaderUserAvatar } from "@/components/header-user-avatar";
+import { LargeTitle, TAB_TRIGGER, useCollapsingTitle } from "@/components/large-title";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SortableTableHead, tableHeadCellBase } from "@/components/sortable-table-head";
 import { cn } from "@/lib/utils";
 import { ViewHeader } from "@/components/view-header";
@@ -57,7 +56,7 @@ import { InvoiceSheet } from "@/components/invoice-sheet";
 import { GenerateSheet } from "@/components/generate-sheet";
 import { SuggestedInvoiceSheet } from "@/components/suggested-invoice-sheet";
 import { EntrySheet } from "@/components/entry-sheet";
-import { ChevronDown, Clock, FileText, MailWarning, Plus, RefreshCw, Search, Send } from "lucide-react";
+import { ChevronDown, Clock, FileClock, FileText, MailWarning, Plus, RefreshCw, Search, SearchX, Send, X } from "lucide-react";
 
 type SortKey = NonNullable<InvoiceFilters["sortKey"]>;
 
@@ -95,24 +94,33 @@ function timeframeToDateRange(value: string): { from?: string; to?: string } {
   }
 }
 
-const STATUS_VARIANT: Record<InvoiceStatus, "outline" | "secondary" | "default"> = {
-  draft:  "outline",
-  issued: "secondary",
-  paid:   "default",
+// The mobile empty states sit in a flow-height scroll container, so they need an
+// explicit height to centre against: the viewport less the header, large title
+// and tab row. pb-20 lifts the centred text clear of the floating dock.
+const EMPTY_FILL = "min-h-[calc(100dvh-12rem)] pb-20";
+
+const STATUS_TABS = [
+  { value: "draft", label: "Draft" },
+  { value: "issued", label: "Issued" },
+  { value: "overdue", label: "Overdue" },
+  { value: "paid", label: "Paid" },
+] as const;
+
+const STATUS_VARIANT: Record<DisplayStatus, "outline" | "secondary" | "default" | "destructive"> = {
+  draft:   "outline",
+  issued:  "secondary",
+  overdue: "destructive",
+  paid:    "default",
 };
 
-
-const STATUS_LABEL: Record<InvoiceStatus, string> = {
-  draft:  "Draft",
-  issued: "Issued",
-  paid:   "Paid",
-};
+// Only the three stored values are selectable — "overdue" is derived, not set by hand.
+const SETTABLE_STATUSES: InvoiceStatus[] = ["draft", "issued", "paid"];
 
 function StatusBadge({
   status,
   onStatusChange,
 }: {
-  status: InvoiceStatus;
+  status: DisplayStatus;
   onStatusChange: (s: InvoiceStatus) => void;
 }) {
   return (
@@ -123,15 +131,15 @@ function StatusBadge({
             variant={STATUS_VARIANT[status]}
             className="cursor-pointer gap-0.5 pr-1"
           >
-            {STATUS_LABEL[status]}
+            {INVOICE_STATUS_LABEL[status]}
             <ChevronDown className="size-3 opacity-60" />
           </Badge>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-        {(Object.keys(STATUS_LABEL) as InvoiceStatus[]).map((s) => (
+        {SETTABLE_STATUSES.map((s) => (
           <DropdownMenuItem key={s} onSelect={() => onStatusChange(s)}>
-            {STATUS_LABEL[s]}
+            {INVOICE_STATUS_LABEL[s]}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
@@ -148,7 +156,7 @@ const EMAIL_VARIANT: Record<InvoiceEmail["status"], "default" | "secondary" | "d
 
 function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate?: boolean }) {
   const date = email.status === "sent" && email.sent_at
-    ? formatDateShort(email.sent_at.slice(0, 10))
+    ? formatDateShort(toLocalDateStr(new Date(email.sent_at)))
     : email.status === "pending"
     ? formatDateShort(toLocalDateStr(new Date(email.scheduled_for)))
     : null;
@@ -163,88 +171,94 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
   );
 }
 
-function emailStatus(email: InvoiceEmail | null): { text: string; icon: typeof Send; destructive?: boolean } | null {
-  if (email?.status === "sent") return { text: "Sent", icon: Send };
+// Email chip: icon carries the status, the label is just when — "13 Aug" / "Yesterday".
+function emailChip(email: InvoiceEmail | null): { text: string; icon: typeof Send; destructive?: boolean } | null {
+  if (email?.status === "sent") {
+    return { text: email.sent_at ? formatDateShortRelative(toLocalDateStr(new Date(email.sent_at))) : "Sent", icon: Send };
+  }
   if (email?.status === "pending") {
-    const day = new Date(email.scheduled_for).toLocaleDateString("en-AU", { weekday: "short" });
-    return { text: day, icon: Clock };
+    return { text: formatDateShortRelative(toLocalDateStr(new Date(email.scheduled_for))), icon: Clock };
   }
   if (email?.status === "failed") return { text: "Failed", icon: MailWarning, destructive: true };
   if (email?.status === "bounced") return { text: "Bounced", icon: MailWarning, destructive: true };
   return null;
 }
 
-function InvoiceCard({ invoice }: { invoice: Invoice }) {
-  const email = emailStatus(invoice.email);
+export function ClientChip({ name, color }: { name: string; color: string }) {
   return (
-    <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer">
-      <div className={cn("flex flex-col w-16 shrink-0", !email && "self-center")}>
-        <span className="text-sm font-medium text-foreground tabular-nums truncate">{invoice.number}</span>
+    <span className="flex min-w-0 items-center gap-1.5 rounded-full border py-1 pl-[5px] pr-2.5">
+      <ClientSquircle name={name} color={color} className="size-5 rounded-full text-[8px]" />
+      <span className="text-[13px] text-foreground truncate">{name}</span>
+    </span>
+  );
+}
+
+// Coloured dot + label on a tint of the same colour.
+function StatusChip({ color, label }: { color: string; label: string }) {
+  return (
+    <span
+      className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] font-medium shrink-0"
+      style={{ color, backgroundColor: `${color}1f` }}
+    >
+      <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+      {label}
+    </span>
+  );
+}
+
+function InvoiceCard({ invoice }: { invoice: Invoice }) {
+  const email = emailChip(invoice.email);
+  const status = displayStatus(invoice.status, invoice.due_date);
+  return (
+    <div className="rounded-xl border dark:border-white/15 overflow-hidden cursor-pointer">
+      <div className="flex items-center gap-3 bg-card px-3 py-3 transition-colors hover:bg-accent/50">
+        <span className="text-[13px] font-medium text-foreground tabular-nums shrink-0">{invoice.number}</span>
+        <ClientChip name={invoice.client.name} color={invoice.client.color} />
+        <span className="ml-auto text-[13px] tabular-nums text-foreground shrink-0">{formatAUD(invoice.subtotal)}</span>
+      </div>
+      {/* Footer sits recessed under the card head: grey in light, near-black in dark.
+          Not a bare bg-black — text-foreground is near-black in light mode. */}
+      <div className="flex items-center gap-3 border-t dark:border-white/15 bg-muted dark:bg-black px-3 py-1.5">
+        {invoice.issued_date && (
+          <span className="text-[13px] text-muted-foreground shrink-0">{formatDateShort(invoice.issued_date)}</span>
+        )}
         {email && (
           <span
             className={cn(
-              "flex items-center gap-1 text-xs mt-0.5",
-              email.destructive ? "text-destructive" : "text-muted-foreground"
+              "flex items-center gap-1 rounded-full border px-2.5 py-1 text-[13px] shrink-0",
+              email.destructive ? "text-destructive" : "text-foreground"
             )}
           >
-            <email.icon className="size-3 shrink-0" />
+            <email.icon className="size-4 shrink-0 opacity-50" />
             {email.text}
           </span>
         )}
-      </div>
-      <div className="flex flex-1 min-w-0 items-center gap-2">
-        <ClientSquircle name={invoice.client.name} color={invoice.client.color} className="size-8" />
-        <div className="min-w-0">
-          <span className="text-sm text-foreground truncate block">{invoice.client.name}</span>
-          <span className="text-xs text-muted-foreground mt-0.5 block">
-            {invoice.issued_date ? formatDateShort(invoice.issued_date) : "—"}
-          </span>
-        </div>
-      </div>
-      <div className="flex flex-col items-end gap-0.5 shrink-0">
-        <span className="text-sm tabular-nums text-foreground">{formatAUD(invoice.subtotal)}</span>
-        <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <span
-            className="size-1.5 rounded-full shrink-0"
-            style={{ backgroundColor: INVOICE_STATUS_COLOR[invoice.status] }}
-          />
-          {STATUS_LABEL[invoice.status]}
+        <span className="ml-auto">
+          <StatusChip color={INVOICE_STATUS_COLOR[status]} label={INVOICE_STATUS_LABEL[status]} />
         </span>
       </div>
     </div>
   );
 }
 
-function SuggestedInvoiceCard({ group, creating, onCreate }: { group: SuggestedInvoice; creating: boolean; onCreate: () => void }) {
+function SuggestedInvoiceCard({ group }: { group: SuggestedInvoice }) {
   return (
-    <div className="flex items-start gap-3 px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer opacity-70">
-      <div className="flex w-16 shrink-0 items-center">
-        <Button
-          variant="outline"
-          size="xs"
-          disabled={creating}
-          onClick={(e) => { e.stopPropagation(); onCreate(); }}
-        >
-          {creating ? <Spinner /> : "Create"}
-        </Button>
+    <div className="rounded-xl border border-dashed dark:border-white/15 overflow-hidden cursor-pointer opacity-70">
+      <div className="flex items-center gap-3 bg-card px-3 py-3 transition-colors hover:bg-accent/50">
+        <span className="text-[13px] font-medium text-foreground shrink-0">{group.dateRange}</span>
+        <ClientChip name={group.clientName} color={group.clientColor} />
+        <span className="ml-auto text-[13px] tabular-nums text-foreground shrink-0">{formatAUD(group.subtotal)}</span>
       </div>
-      <div className="flex flex-1 min-w-0 items-center gap-2">
-        <ClientSquircle name={group.clientName} color={group.clientColor} className="size-8" />
-        <div className="min-w-0">
-          <span className="text-sm text-foreground truncate block">{group.clientName}</span>
-          <span className="text-xs text-muted-foreground mt-0.5 block truncate">
-            {group.dateRange} · {group.entryCount} {group.entryCount === 1 ? "entry" : "entries"}
-          </span>
-        </div>
-      </div>
-      <div className="flex flex-col items-end gap-0.5 shrink-0">
-        <span className="text-sm tabular-nums text-foreground">{formatAUD(group.subtotal)}</span>
-        <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <span
-            className="size-1.5 rounded-full shrink-0"
-            style={{ backgroundColor: group.ready ? "#3b82f6" : "#9ca3af" }}
+      <div className="flex items-center gap-3 border-t border-dashed dark:border-white/15 bg-muted dark:bg-black px-3 py-1.5">
+        <span className="flex items-center gap-1 text-[13px] text-foreground shrink-0">
+          <FileClock className="size-4 shrink-0 opacity-50" />
+          {group.entryCount} {group.entryCount === 1 ? "entry" : "entries"}
+        </span>
+        <span className="ml-auto">
+          <StatusChip
+            color={group.ready ? "#3b82f6" : "#9ca3af"}
+            label={group.ready ? "Ready" : "In progress"}
           />
-          {group.ready ? "Ready" : "In progress"}
         </span>
       </div>
     </div>
@@ -277,27 +291,17 @@ function SkeletonMobileCards({ count = 6 }: { count?: number }) {
   return (
     <div className="px-4 py-4 flex flex-col gap-3">
       {Array.from({ length: count }).map((_, i) => (
-        <Card key={i} className="py-0">
-          <CardContent className="p-0">
-            <div className="flex items-center gap-3 px-4 py-3">
-              <div className="flex flex-col gap-1.5 w-16 shrink-0">
-                <Skeleton className="h-3 w-14" />
-                <Skeleton className="h-3 w-12" />
-              </div>
-              <div className="flex-1 flex items-center gap-2">
-                <Skeleton className="size-8 rounded-[30%] shrink-0" />
-                <div className="flex flex-col gap-1.5">
-                  <Skeleton className="h-3 w-24" />
-                  <Skeleton className="h-3 w-20" />
-                </div>
-              </div>
-              <div className="flex flex-col items-end gap-1.5 shrink-0">
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="h-5 w-14 rounded-full" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div key={i} className="rounded-xl border dark:border-white/15 overflow-hidden">
+          <div className="flex items-center justify-between bg-card px-3 py-3">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+          <div className="flex items-center gap-3 border-t dark:border-white/15 bg-muted dark:bg-black px-3 py-1.5">
+            <Skeleton className="h-5 w-28 rounded-full" />
+            <Skeleton className="h-5 w-14 rounded-full" />
+            <Skeleton className="ml-auto h-3 w-12" />
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -344,13 +348,11 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   const [newInvoiceOpen, setNewInvoiceOpen] = useState(false);
   const [suggestedOpen, setSuggestedOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<SuggestedInvoice | null>(null);
-  const [creatingKey, setCreatingKey] = useState<string | null>(null);
   const entryReturnRef = useRef<"invoice" | "suggested">("invoice");
   const [entrySheetOpen, setEntrySheetOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const entrySheetMeta = useState<{ clients: Client[]; workflowRates: WorkflowRate[] } | null>(null);
   const [entrySheetData, setEntrySheetData] = entrySheetMeta;
-  const [filterOpen, setFilterOpen] = useState(false);
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
   useEffect(() => {
     const handler = (e: Event) => {
@@ -366,13 +368,17 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
   }, [hasUninvoiced]);
 
   const [searchValue, setSearchValue] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  // Mobile shows either real invoices or suggestions, never both.
+  const [listMode, setListMode] = useState<"invoices" | "suggested">("invoices");
+  const collapsing = useCollapsingTitle();
+  // Empty = no status filter. Selecting several stacks them as OR.
+  const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [clientFilter, setClientFilter] = useState("all");
   const [timeframe, setTimeframe] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("issued_date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  const filterKey = `${searchValue}|${statusFilter}|${clientFilter}|${timeframe}|${sortKey}|${sortDir}`;
+  const filterKey = `${searchValue}|${statusFilters.join(",")}|${clientFilter}|${timeframe}|${sortKey}|${sortDir}`;
   const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
   if (prevFilterKey !== filterKey) {
     setPrevFilterKey(filterKey);
@@ -394,8 +400,8 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       );
     }
 
-    if (statusFilter !== "all") {
-      result = result.filter((inv) => inv.status === statusFilter);
+    if (statusFilters.length > 0) {
+      result = result.filter((inv) => statusFilters.includes(displayStatus(inv.status, inv.due_date)));
     }
 
     if (clientFilter !== "all") {
@@ -415,12 +421,22 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         case "number":      return dir * a.number.localeCompare(b.number);
         case "client":      return dir * a.client.name.localeCompare(b.client.name);
         case "total":       return dir * (a.subtotal - b.subtotal);
-        case "status":      return dir * a.status.localeCompare(b.status);
+        case "status":      return dir * displayStatus(a.status, a.due_date).localeCompare(displayStatus(b.status, b.due_date));
       }
     });
 
     return result;
-  }, [initialInvoices, statusOverrides, searchValue, statusFilter, clientFilter, timeframe, sortKey, sortDir]);
+  }, [initialInvoices, statusOverrides, searchValue, statusFilters, clientFilter, timeframe, sortKey, sortDir]);
+
+  // Suggested groups aren't invoices yet — they have no status, so the status
+  // chips don't apply. They answer to client and search but not timeframe.
+  const visibleSuggested = useMemo(() => {
+    let result = suggested;
+    if (clientFilter !== "all") result = result.filter((g) => g.clientId === clientFilter);
+    const q = searchValue.trim().toLowerCase();
+    if (q) result = result.filter((g) => g.clientName.toLowerCase().includes(q));
+    return result;
+  }, [suggested, clientFilter, searchValue]);
 
   const visibleInvoices = filteredInvoices.slice(0, displayCount);
   const hasMore = displayCount < filteredInvoices.length;
@@ -430,6 +446,11 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     if (el.scrollHeight - el.scrollTop - el.clientHeight < 400 && hasMore) {
       setDisplayCount((prev) => Math.min(prev + PAGE_SIZE, filteredInvoices.length));
     }
+  }
+
+  function handleMobileScroll(e: React.UIEvent<HTMLDivElement>) {
+    handleScroll(e);
+    collapsing.onScroll(e.currentTarget);
   }
 
   function handleSuggestedCreated(created: GeneratedInvoice, group: SuggestedInvoice | null) {
@@ -452,20 +473,8 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       status: "draft",
       email: null,
       notes: null,
+      entry_count: group?.entryCount ?? 0,
     });
-  }
-
-  async function handleQuickCreate(group: SuggestedInvoice) {
-    setCreatingKey(group.key);
-    try {
-      const { invoices } = await generateInvoices([group.key]);
-      invalidate("invoices", "entries");
-      if (invoices[0]) handleSuggestedCreated(invoices[0], group);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to create invoice");
-    } finally {
-      setCreatingKey(null);
-    }
   }
 
   function handleEntryClick(entryId: string, from: "invoice" | "suggested" = "invoice") {
@@ -477,6 +486,13 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       if (entry) setSelectedEntry(entry);
       if (!entrySheetData) setEntrySheetData({ clients, workflowRates });
     });
+  }
+
+  function clearFilters() {
+    setSearchValue("");
+    setStatusFilters([]);
+    setClientFilter("all");
+    setTimeframe("all");
   }
 
   function handleSort(key: SortKey) {
@@ -504,18 +520,15 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
     return { active: sortKey === key, dir: sortDir, onSort: () => handleSort(key) };
   }
 
-  const hasActiveFilters = timeframe !== "all" || statusFilter !== "all" || clientFilter !== "all";
-
   return (
     <div className="flex flex-col h-full">
       <ViewHeader
         title="Invoices"
         searchValue={searchValue}
         onSearchChange={setSearchValue}
-        filterOpen={filterOpen}
-        filterActive={hasActiveFilters}
-        onFilterToggle={() => setFilterOpen((o) => !o)}
         loading={loading}
+        {...collapsing.headerProps}
+        account={<HeaderUserAvatar />}
         actions={
           <Button
             size="sm"
@@ -570,7 +583,12 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                 ))}
               </SelectContent>
             </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter} disabled={loading}>
+            {/* Desktop stays single-select; it writes the same array the mobile chips do. */}
+            <Select
+              value={statusFilters.length === 1 ? statusFilters[0] : "all"}
+              onValueChange={(v) => setStatusFilters(v === "all" ? [] : [v])}
+              disabled={loading}
+            >
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -578,6 +596,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                 <SelectItem value="all">All status</SelectItem>
                 <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="issued">Issued</SelectItem>
+                <SelectItem value="overdue">Overdue</SelectItem>
                 <SelectItem value="paid">Paid</SelectItem>
               </SelectContent>
             </Select>
@@ -601,16 +620,18 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
               ) : filteredInvoices.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
-                    No invoices match these filters.
+                    {initialInvoices.length === 0
+                      ? "No invoices yet. Invoices you create will appear here."
+                      : "No invoices match these filters."}
                   </TableCell>
                 </TableRow>
               ) : (
                 visibleInvoices.map((inv) => (
                   <TableRow key={inv.id} className="cursor-pointer" onClick={() => openInvoice(inv)}>
                     <TableCell className="py-3 px-6">
-                      <InvoiceStatusBadge number={inv.number} status={inv.status} />
+                      <InvoiceStatusBadge number={inv.number} status={displayStatus(inv.status, inv.due_date)} />
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground py-3 px-6">
+                    <TableCell className="text-[13px] text-muted-foreground py-3 px-6">
                       {inv.issued_date ? formatDateShort(inv.issued_date) : "—"}
                     </TableCell>
                     <TableCell className="py-3 px-6">
@@ -627,7 +648,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
                     </TableCell>
                     <TableCell className="py-3 px-6 text-right">
                       <StatusBadge
-                        status={inv.status}
+                        status={displayStatus(inv.status, inv.due_date)}
                         onStatusChange={(s) => handleStatusChange(inv.id, s)}
                       />
                     </TableCell>
@@ -640,51 +661,11 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
         </div>
       </div>
 
-      {/* Mobile filter bar — collapsible */}
-      <div className={`md:hidden grid transition-[grid-template-rows] duration-200 ease-out ${filterOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
-        <div className="overflow-hidden">
-          <div className="border-b px-4 py-2 flex gap-2">
-            <Select value={timeframe} onValueChange={setTimeframe} disabled={loading}>
-              <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
-                <SelectValue placeholder="Timeframe" />
-              </SelectTrigger>
-              <SelectContent>
-                {TIMEFRAME_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter} disabled={loading}>
-              <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All status</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="issued">Issued</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={clientFilter} onValueChange={setClientFilter} disabled={loading}>
-              <SelectTrigger size="sm" className="flex-1 min-w-0 text-xs">
-                <SelectValue placeholder="Client" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All clients</SelectItem>
-                {clients.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
-
       {/* Mobile card list */}
       <div
         ref={mobileScrollRef}
         className="md:hidden flex-1 overflow-y-auto"
-        onScroll={handleScroll}
+        onScroll={handleMobileScroll}
       >
         {/* Pull-to-refresh indicator — sits at top of scroll content, hidden until pulled */}
         <div
@@ -696,44 +677,125 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
             style={{ transform: pullState !== "refreshing" ? `rotate(${(pullDistance / 70) * 180}deg)` : undefined }}
           />
         </div>
-        {/* Suggested invoices — not real invoices, so search/filters don't apply */}
-        {!loading && suggested.length > 0 && (
-          <div className="px-4 pt-4 flex flex-col gap-3">
-            {suggested.map((g) => (
-              <Card
-                key={g.key}
-                className="py-0 border-dashed"
-                onClick={() => { setSelectedGroup(g); setSuggestedOpen(true); }}
+        <LargeTitle>Invoices</LargeTitle>
+        {/* Tabs and status chips share one sideways-scrolling row. overflow-y-hidden
+            because overflow-x-auto alone implies overflow-y:auto, which lets focus
+            rings scroll the row vertically by a pixel or two. */}
+        {!loading && (
+          <div className="overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex w-max items-center gap-2 px-4 pt-3">
+              <Tabs
+                value={listMode}
+                onValueChange={(v) => setListMode(v as typeof listMode)}
+                className="gap-0"
               >
-                <CardContent className="p-0">
-                  <SuggestedInvoiceCard
-                    group={g}
-                    creating={creatingKey === g.key}
-                    onCreate={() => handleQuickCreate(g)}
-                  />
-                </CardContent>
-              </Card>
-            ))}
+                <TabsList className="bg-transparent p-0 gap-2 h-auto">
+                  <TabsTrigger value="invoices" className={TAB_TRIGGER}>Invoices</TabsTrigger>
+                  <TabsTrigger value="suggested" className={TAB_TRIGGER}>
+                    Suggested
+                    {suggested.length > 0 && (
+                      <span className="ml-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
+                        {suggested.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <span className="h-5 w-px shrink-0 bg-border" aria-hidden />
+              {/* Status chips stack as OR filters; tapping an active one clears it.
+                  Suggestions have no status, so the chips grey out on that tab. */}
+              <div
+                className={cn(
+                  "flex items-center gap-1.5 transition-opacity",
+                  listMode === "suggested" && "opacity-40"
+                )}
+              >
+                {STATUS_TABS.map((tab) => {
+                  const active = statusFilters.includes(tab.value);
+                  return (
+                    <button
+                      key={tab.value}
+                      type="button"
+                      disabled={listMode === "suggested"}
+                      onClick={() =>
+                        setStatusFilters((prev) =>
+                          prev.includes(tab.value)
+                            ? prev.filter((v) => v !== tab.value)
+                            : [...prev, tab.value]
+                        )
+                      }
+                      aria-pressed={active}
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] whitespace-nowrap transition-colors",
+                        active
+                          ? "border-transparent bg-primary text-primary-foreground font-medium pr-2"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      {tab.label}
+                      {active && <X className="size-3.5 opacity-80" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
         {loading ? (
           <SkeletonMobileCards />
+        ) : listMode === "suggested" ? (
+          visibleSuggested.length === 0 ? (
+            <Empty className={EMPTY_FILL}>
+              <EmptyHeader>
+                <EmptyMedia variant="icon"><SearchX /></EmptyMedia>
+                <EmptyTitle>Nothing to suggest</EmptyTitle>
+                <EmptyDescription>
+                  Uninvoiced entries get grouped into suggestions here.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          ) : (
+            <div className="flex flex-col gap-3 px-4 pt-4 pb-28">
+              {visibleSuggested.map((g) => (
+                <div key={g.key} onClick={() => { setSelectedGroup(g); setSuggestedOpen(true); }}>
+                  <SuggestedInvoiceCard group={g} />
+                </div>
+              ))}
+            </div>
+          )
         ) : filteredInvoices.length === 0 ? (
-          <Empty className="h-64">
-            <EmptyHeader>
-              <EmptyMedia variant="icon"><FileText /></EmptyMedia>
-              <EmptyTitle>No invoices yet</EmptyTitle>
-              <EmptyDescription>Invoices you create will appear here.</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
+          initialInvoices.length === 0 ? (
+            <Empty className={EMPTY_FILL}>
+              <EmptyHeader>
+                <EmptyMedia variant="icon"><FileText /></EmptyMedia>
+                <EmptyTitle>No invoices yet</EmptyTitle>
+                <EmptyDescription>Invoices you create will appear here.</EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          ) : (
+            <Empty className={EMPTY_FILL}>
+              <EmptyHeader>
+                <EmptyMedia variant="icon"><SearchX /></EmptyMedia>
+                <EmptyTitle>No matching invoices</EmptyTitle>
+                <EmptyDescription>
+                  {searchValue.trim()
+                    ? `Nothing matches "${searchValue.trim()}"${statusFilters.length > 0 ? " with these filters" : ""}.`
+                    : "No invoices match these filters."}
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <Button variant="outline" size="sm" onClick={clearFilters}>
+                  Clear filters
+                </Button>
+              </EmptyContent>
+            </Empty>
+          )
         ) : (
-          <div className="px-4 py-4 pb-28 flex flex-col gap-3">
+          <div className="px-4 pt-4 pb-28 flex flex-col gap-3">
             {visibleInvoices.map((inv) => (
-              <Card key={inv.id} className="py-0" onClick={() => openInvoice(inv)}>
-                <CardContent className="p-0">
-                  <InvoiceCard invoice={inv} />
-                </CardContent>
-              </Card>
+              <div key={inv.id} onClick={() => openInvoice(inv)}>
+                <InvoiceCard invoice={inv} />
+              </div>
             ))}
             {hasMore && <div className="h-8" />}
           </div>

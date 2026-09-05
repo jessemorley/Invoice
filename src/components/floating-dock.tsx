@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LayoutDashboard, FileText, Receipt, Mail, Users, Wallet, Landmark, Settings, Plus, Menu, X } from "lucide-react";
+import { LayoutDashboard, FileClock, Receipt, Mail, Users, Wallet, Landmark, Settings, Plus, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useActiveView, type ViewId } from "@/components/active-view-context";
 
 const PRIMARY_TABS: { view: ViewId; icon: React.ComponentType<{ className?: string; strokeWidth?: number }>; label: string }[] = [
   { view: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { view: "entries", icon: FileText, label: "Entries" },
+  { view: "entries", icon: FileClock, label: "Entries" },
   { view: "invoices", icon: Receipt, label: "Invoices" },
 ];
 
@@ -90,20 +90,28 @@ export function FloatingDock() {
         {menuOpen && (
           <div
             className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-[calc(100vw-2rem)] max-w-sm bg-background border border-border/50 rounded-xl shadow-lg overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200"
+            data-testid="dock-menu"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-1">
-              {SECONDARY_TABS.map((tab) => {
+            <div className="flex flex-col divide-y divide-border/50">
+              {[...PRIMARY_TABS, ...SECONDARY_TABS].map((tab) => {
                 const Icon = tab.icon;
+                const active = view === tab.view;
                 return (
                   <button
                     key={tab.view}
                     aria-label={tab.label}
+                    aria-current={active ? "page" : undefined}
                     onClick={() => handleSecondaryTap(tab.view)}
-                    className="flex w-full items-center gap-3 px-3 py-2.5 text-sm hover:bg-muted rounded-md transition-colors duration-200 touch-manipulation"
+                    className="flex w-full items-center gap-3 px-4 py-3.5 text-base hover:bg-muted transition-colors duration-200 touch-manipulation"
                   >
-                    <Icon className="size-[18px] text-muted-foreground" strokeWidth={1.75} />
-                    <span className="font-medium">{tab.label}</span>
+                    <Icon
+                      className={cn("size-5", active ? "text-foreground" : "text-muted-foreground")}
+                      strokeWidth={1.75}
+                    />
+                    <span className={cn("font-medium", !active && "text-muted-foreground")}>
+                      {tab.label}
+                    </span>
                   </button>
                 );
               })}

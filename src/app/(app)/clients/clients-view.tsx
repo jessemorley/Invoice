@@ -29,8 +29,11 @@ import {
 import { SortableTableHead, tableHeadCellBase } from "@/components/sortable-table-head";
 import { cn } from "@/lib/utils";
 import { ViewHeader } from "@/components/view-header";
+import { HeaderUserAvatar } from "@/components/header-user-avatar";
+import { LargeTitle, TAB_TRIGGER, useCollapsingTitle } from "@/components/large-title";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientSheet } from "@/components/client-sheet";
-import { Check, Plus, Search, Users } from "lucide-react";
+import { Plus, Search, Users } from "lucide-react";
 import {
   Empty,
   EmptyHeader,
@@ -167,6 +170,8 @@ export function ClientsView({ clients: allClients, loading = false }: { clients:
     return () => window.removeEventListener("dock:new", handler);
   }, [openNew]);
 
+  const collapsing = useCollapsingTitle();
+
   if (loading) return <ClientsSkeleton />;
 
   function openClient(client: Client) {
@@ -206,29 +211,14 @@ if (statusFilter === "active" && !c.is_active) return false;
       return 0;
     });
 
-  const hasActiveFilters = statusFilter !== "active";
-
   return (
     <div className="flex flex-col h-full">
       <ViewHeader
         title="Clients"
         searchValue={searchValue}
         onSearchChange={setSearchValue}
-        filterActive={hasActiveFilters}
-        filterPopover={
-          <div className="flex flex-col">
-            {(["all", "active", "inactive"] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`flex items-center justify-between px-2 py-2 text-sm rounded-sm transition-colors hover:bg-accent ${statusFilter === s ? "text-foreground font-medium" : "text-muted-foreground"}`}
-              >
-                {STATUS_LABELS[s]}
-                {statusFilter === s && <Check className="size-3.5" />}
-              </button>
-            ))}
-          </div>
-        }
+        {...collapsing.headerProps}
+        account={<HeaderUserAvatar />}
         actions={
           <Button size="sm" className="hidden md:flex" onClick={openNew}>
             <Plus className="size-4" />
@@ -317,7 +307,27 @@ if (statusFilter === "active" && !c.is_active) return false;
       </div>
 
       {/* Mobile card list */}
-      <div className="md:hidden flex-1 overflow-y-auto pb-28">
+      <div
+        className="md:hidden flex-1 overflow-y-auto pb-28"
+        onScroll={(e) => collapsing.onScroll(e.currentTarget)}
+      >
+        <LargeTitle>Clients</LargeTitle>
+        {/* Status filter moves from the header popover into tabs. */}
+        <div className="overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <Tabs
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
+            className="w-max gap-0 px-4 pt-3"
+          >
+            <TabsList className="bg-transparent p-0 gap-2 h-auto">
+              {(["all", "active", "inactive"] as const).map((s) => (
+                <TabsTrigger key={s} value={s} className={TAB_TRIGGER}>
+                  {STATUS_LABELS[s]}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
         {clients.length === 0 ? (
           <Empty className="h-64">
             <EmptyHeader>

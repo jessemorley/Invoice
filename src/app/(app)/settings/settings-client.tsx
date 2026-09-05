@@ -4,6 +4,8 @@ import { useRef, useState, useTransition, useActionState } from "react";
 import { useTheme } from "next-themes";
 import { invalidate } from "@/lib/invalidate";
 import { PageHeader } from "@/components/page-header";
+import { HeaderUserAvatar } from "@/components/header-user-avatar";
+import { LargeTitle, TAB_TRIGGER, useCollapsingTitle } from "@/components/large-title";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -746,6 +748,13 @@ function AccountTab({ email, name }: { email: string; name: string }) {
 const VALID_TABS = ["info", "invoicing", "email", "account"] as const;
 type SettingsTab = (typeof VALID_TABS)[number];
 
+const SETTINGS_TABS: { value: SettingsTab; label: string }[] = [
+  { value: "info", label: "Info" },
+  { value: "invoicing", label: "Invoicing" },
+  { value: "email", label: "Email" },
+  { value: "account", label: "Account" },
+];
+
 export function SettingsClient({
   loading,
   userEmail,
@@ -760,6 +769,7 @@ export function SettingsClient({
     : "info";
   const [tab, setTab] = useState<SettingsTab>(validInitial);
   const [prevInitialTab, setPrevInitialTab] = useState(initialTab);
+  const collapsing = useCollapsingTitle();
 
   if (initialTab !== prevInitialTab && VALID_TABS.includes(initialTab as SettingsTab)) {
     setPrevInitialTab(initialTab);
@@ -768,17 +778,26 @@ export function SettingsClient({
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Settings" />
+      <PageHeader
+        title="Settings"
+        {...collapsing.headerProps}
+        account={<HeaderUserAvatar />}
+      />
       <Tabs value={tab} onValueChange={(v) => setTab(v as SettingsTab)} className="flex flex-col flex-1 overflow-hidden gap-0">
-        <div className="px-4 md:px-6 pt-4 mx-auto w-full max-w-6xl">
-          <TabsList className="bg-transparent p-0 gap-2 h-auto">
-            <TabsTrigger value="info" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Info</TabsTrigger>
-            <TabsTrigger value="invoicing" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Invoicing</TabsTrigger>
-            <TabsTrigger value="email" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Email</TabsTrigger>
-            <TabsTrigger value="account" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-none hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 dark:data-[state=active]:bg-accent dark:data-[state=active]:border-transparent">Account</TabsTrigger>
-          </TabsList>
-        </div>
-        <div className="flex-1 overflow-auto pb-28 md:pb-0">
+        <div
+          className="flex-1 overflow-auto pb-28 md:pb-0"
+          onScroll={(e) => collapsing.onScroll(e.currentTarget)}
+        >
+          <LargeTitle>Settings</LargeTitle>
+          <div className="px-4 md:px-6 pt-3 md:pt-4 mx-auto w-full max-w-6xl overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <TabsList className="bg-transparent p-0 gap-2 h-auto">
+              {SETTINGS_TABS.map((t) => (
+                <TabsTrigger key={t.value} value={t.value} className={TAB_TRIGGER}>
+                  {t.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
           {loading ? (
             <LoadingSkeleton />
           ) : (
