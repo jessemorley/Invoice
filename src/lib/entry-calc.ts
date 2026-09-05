@@ -90,13 +90,16 @@ export function calcBatchBonus(
     }))
     .filter((x): x is { line: (typeof lines)[number]; rate: WorkflowRate } => !!x.rate);
 
-  const maxBonus = rated.reduce((max, x) => Math.max(max, x.rate.max_bonus), 0);
-
-  // flat-bonus workflows pay out in full without reference to SKUs or KPI
-  if (rated.some((x) => x.rate.is_flat_bonus)) {
-    const subtotal = base + maxBonus;
+  // Flat-bonus workflows pay out in full without reference to SKUs or KPI.
+  // ponytail: unreachable today — only Own Brand is flat, and it is a top-level
+  // billing mode with no SKU lines, so it never reaches this multi-line path.
+  // Kept correct rather than deleted in case a flat workflow gains batch lines.
+  const flat = rated.find((x) => x.rate.is_flat_bonus);
+  if (flat) {
+    const bonus = flat.rate.max_bonus;
+    const subtotal = base + bonus;
     const superAmt = client.pays_super ? subtotal * (client.super_rate || 0.12) : 0;
-    return { base, bonus: maxBonus, superAmt, total: subtotal + superAmt, hoursWorked: null };
+    return { base, bonus, superAmt, total: subtotal + superAmt, hoursWorked: null };
   }
 
   let owed = 1;
@@ -117,7 +120,8 @@ export function calcBatchBonus(
   // still short of a full day's KPI — no bonus at all
   if (owed > 0) bonus = 0;
 
-  bonus = Math.min(bonus, maxBonus);
+  // one day owes one capped bonus, not one cap per line
+  bonus = Math.min(bonus, rated.reduce((max, x) => Math.max(max, x.rate.max_bonus), 0));
 
   const subtotal = base + bonus;
   const superAmt = client.pays_super ? subtotal * (client.super_rate || 0.12) : 0;

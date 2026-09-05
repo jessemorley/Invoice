@@ -156,7 +156,7 @@ const EMAIL_VARIANT: Record<InvoiceEmail["status"], "default" | "secondary" | "d
 
 function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate?: boolean }) {
   const date = email.status === "sent" && email.sent_at
-    ? formatDateShort(email.sent_at.slice(0, 10))
+    ? formatDateShort(toLocalDateStr(new Date(email.sent_at)))
     : email.status === "pending"
     ? formatDateShort(toLocalDateStr(new Date(email.scheduled_for)))
     : null;
@@ -174,7 +174,7 @@ function EmailBadge({ email, showDate = false }: { email: InvoiceEmail; showDate
 // Email chip: icon carries the status, the label is just when — "13 Aug" / "Yesterday".
 function emailChip(email: InvoiceEmail | null): { text: string; icon: typeof Send; destructive?: boolean } | null {
   if (email?.status === "sent") {
-    return { text: email.sent_at ? formatDateShortRelative(email.sent_at.slice(0, 10)) : "Sent", icon: Send };
+    return { text: email.sent_at ? formatDateShortRelative(toLocalDateStr(new Date(email.sent_at))) : "Sent", icon: Send };
   }
   if (email?.status === "pending") {
     return { text: formatDateShortRelative(toLocalDateStr(new Date(email.scheduled_for))), icon: Clock };
