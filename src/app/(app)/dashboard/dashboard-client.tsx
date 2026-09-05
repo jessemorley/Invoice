@@ -61,6 +61,29 @@ function formatChartAUD(value: number) {
   return audFormatter.format(value);
 }
 
+// Trend row appended to the earnings tooltip: this point vs the same point a
+// year earlier. Rendered once, after the last series row. Returns null when
+// there's no prior-year baseline to compare against (first year of data).
+function TooltipTrend({ current, prior }: { current: number; prior: number }) {
+  if (!prior) return null;
+  const up = current >= prior;
+  const percent = Math.abs(((current - prior) / prior) * 100).toFixed(0);
+  return (
+    <div className="flex basis-full items-center gap-1.5 border-t pt-1.5 mt-0.5 text-xs font-medium">
+      {up ? (
+        <TrendingUp className="size-3 text-success" />
+      ) : (
+        <TrendingDown className="size-3 text-destructive" />
+      )}
+      {/* No "year on year" suffix — the rows above already name both years,
+          and it made the trend the widest line in the tooltip. */}
+      <span className={up ? "text-success" : "text-destructive"}>
+        {up ? "Up" : "Down"} {percent}%
+      </span>
+    </div>
+  );
+}
+
 function DashboardSkeleton() {
   return (
     <div className="flex flex-col h-full">
@@ -248,11 +271,11 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
 
   const now = new Date();
   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  // The series are trailing weeks vs the same weeks shifted back 52 weeks —
-  // not financial years, so don't label them as ones.
+  // Trailing weeks vs the same weeks shifted back exactly 52 weeks — a rolling
+  // window, not calendar or financial years.
   const chartConfig = {
-    current: { label: "This period", color: "var(--color-primary)" },
-    prior: { label: "Year prior", color: "var(--color-muted-foreground)" },
+    current: { label: "This year", color: "var(--color-primary)" },
+    prior: { label: "Last year", color: "var(--color-muted-foreground)" },
   };
   const priorMonthName = lastMonth.toLocaleDateString("en-AU", {
     month: "short",
@@ -811,7 +834,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                             labelFormatter={(_value, payload) =>
                               payload[0]?.payload?.week ?? ""
                             }
-                            formatter={(value, name) => (
+                            formatter={(value, name, item) => (
                               <>
                                 <span className="text-muted-foreground">
                                   {chartConfig[name as keyof typeof chartConfig]
@@ -820,6 +843,14 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                                 <span className="font-mono font-medium tabular-nums ml-auto pl-4">
                                   {formatChartAUD(Number(value))}
                                 </span>
+                                {/* Once, after the last row — both values live
+                                    on the same payload. */}
+                                {name === "prior" && (
+                                  <TooltipTrend
+                                    current={item.payload.current}
+                                    prior={item.payload.prior}
+                                  />
+                                )}
                               </>
                             )}
                           />
@@ -861,7 +892,7 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                       <ChartTooltip
                         content={
                           <ChartTooltipContent
-                            formatter={(value, name) => (
+                            formatter={(value, name, item) => (
                               <>
                                 <span className="text-muted-foreground">
                                   {chartConfig[name as keyof typeof chartConfig]
@@ -870,6 +901,14 @@ export function DashboardClient({ data }: { data?: DashboardData }) {
                                 <span className="font-mono font-medium tabular-nums ml-auto pl-4">
                                   {formatChartAUD(Number(value))}
                                 </span>
+                                {/* Once, after the last row — both values live
+                                    on the same payload. */}
+                                {name === "prior" && (
+                                  <TooltipTrend
+                                    current={item.payload.current}
+                                    prior={item.payload.prior}
+                                  />
+                                )}
                               </>
                             )}
                           />
