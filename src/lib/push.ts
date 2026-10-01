@@ -50,6 +50,17 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           body
         );
+        // A successful push is the only proof the endpoint is alive, so it is
+        // what resets the 90-day TTL. savePushSubscription only runs when the
+        // user toggles the switch, so without this a perfectly healthy
+        // subscription keeps its original updated_at and the nightly prune
+        // job deletes it — silently, with no error anywhere.
+        // The BEFORE UPDATE trigger sets updated_at = now(), so writing the
+        // endpoint back to itself is enough to reset the clock.
+        await supabase
+          .from("push_subscriptions")
+          .update({ endpoint: sub.endpoint })
+          .eq("endpoint", sub.endpoint);
       } catch (err) {
         const statusCode = (err as { statusCode?: number }).statusCode;
         if (statusCode === 404 || statusCode === 410) {
