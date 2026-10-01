@@ -162,14 +162,16 @@ interface ComposeContentProps {
   editingId?: string;
   errorReason?: string | null;
   onClearBounce?: () => Promise<void>;
+  onCancelSend?: () => Promise<void>;
 }
 
-function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, onClose, onSent, initialTo, initialCc, initialBcc, initialSubject, initialBody, initialScheduledFor, editingId, errorReason, onClearBounce }: ComposeContentProps) {
+function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, onClose, onSent, initialTo, initialCc, initialBcc, initialSubject, initialBody, initialScheduledFor, editingId, errorReason, onClearBounce, onCancelSend }: ComposeContentProps) {
   const [chips, setChips] = useState<string[]>(() =>
     initialTo ?? (invoice?.client.email ? [invoice.client.email] : [])
   );
   const [chipInput, setChipInput] = useState("");
   const [clearingBounce, setClearingBounce] = useState(false);
+  const [cancellingSend, setCancellingSend] = useState(false);
   const [ccChips, setCcChips] = useState<string[]>(() => initialCc ?? []);
   const [ccInput, setCcInput] = useState("");
   const [bccChips, setBccChips] = useState<string[]>(() => initialBcc ?? []);
@@ -324,6 +326,25 @@ function ComposeContent({ invoice, businessName, userName = "", bodyTemplate, on
                 }}
               >
                 {clearingBounce ? "Clearing…" : "Mark as delivered"}
+              </Button>
+            )}
+            {onCancelSend && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="self-end text-destructive border-destructive/40 hover:text-destructive"
+                disabled={cancellingSend}
+                onClick={async () => {
+                  setCancellingSend(true);
+                  try {
+                    await onCancelSend();
+                  } finally {
+                    setCancellingSend(false);
+                  }
+                }}
+              >
+                {cancellingSend ? "Cancelling…" : "Cancel send"}
               </Button>
             )}
           </div>
@@ -482,11 +503,13 @@ interface EmailComposeSheetProps {
   errorReason?: string | null;
   /** Supplied only for bounced rows — clears a false bounce back to "sent". */
   onClearBounce?: () => Promise<void>;
+  /** Supplied for failed/bounced rows — cancels the send without leaving the sheet. */
+  onCancelSend?: () => Promise<void>;
   /** Render even without an invoice — free-form compose with no PDF attachment. */
   freeform?: boolean;
 }
 
-export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessName, userName, bodyTemplate, onSent, initialTo, initialCc, initialBcc, initialSubject, initialBody, initialScheduledFor, editingId, errorReason, onClearBounce, freeform }: EmailComposeSheetProps) {
+export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessName, userName, bodyTemplate, onSent, initialTo, initialCc, initialBcc, initialSubject, initialBody, initialScheduledFor, editingId, errorReason, onClearBounce, onCancelSend, freeform }: EmailComposeSheetProps) {
   // Mount only while usable: invoice flows clear `invoice` on close, freeform
   // relies on `open` — either way ComposeContent remounts with fresh state.
   if (!invoice && !(freeform && open)) return null;
@@ -515,6 +538,7 @@ export function EmailComposeSheet({ open, onOpenChangeAction, invoice, businessN
           editingId={editingId}
           errorReason={errorReason}
           onClearBounce={onClearBounce}
+          onCancelSend={onCancelSend}
         />
       </AdaptiveSheetContent>
     </AdaptiveSheet>

@@ -498,10 +498,16 @@ export async function updateScheduledEmail(scheduledEmailId: string, data: Email
       subject: data.subject,
       body_text: data.body_text,
       scheduled_for: data.scheduled_for,
+      status: "pending",
+      error: null,
     })
     .eq("id", scheduledEmailId)
     .eq("user_id", userId)
-    .eq("status", "pending")
+    // Editing a failed/bounced row is a retry: re-arm it to pending and clear
+    // the stale error, same as sendScheduledEmailNow. Gating on "pending" alone
+    // meant .single() matched zero rows and threw "Cannot coerce the result to
+    // a single JSON object" — the only way to retry from compose.
+    .in("status", ["pending", "failed", "bounced"])
     .select("user_id, invoice_id, cc_address, bcc_address, filename, mark_issued, scheduled_for")
     .single();
 
@@ -546,10 +552,13 @@ export async function rescheduleScheduledEmail(scheduledEmailId: string, data: R
 
   const { data: row, error } = await supabase
     .from("scheduled_emails")
-    .update({ scheduled_for: scheduledFor })
+    .update({ scheduled_for: scheduledFor, status: "pending", error: null })
     .eq("id", scheduledEmailId)
     .eq("user_id", userId)
-    .eq("status", "pending")
+    // Rescheduling a failed/bounced row re-arms it — the failed-row menu offers
+    // Reschedule, so "pending" alone would throw on .single(). See
+    // updateScheduledEmail for the same fix.
+    .in("status", ["pending", "failed", "bounced"])
     .select("user_id, invoice_id, to_address, cc_address, bcc_address, subject, body_text, filename, mark_issued")
     .single();
 
@@ -596,11 +605,15 @@ export async function sendScheduledEmailNow(scheduledEmailId: string): Promise<v
     },
   ]);
 
+  // Retrying a failed/bounced row re-arms it: status back to pending and the
+  // stale error cleared, so the row doesn't keep showing the previous failure
+  // while the new attempt is in flight. "sent" and "cancelled" are excluded —
+  // neither should be resendable from here.
   const { data: row, error } = await supabase
     .from("scheduled_emails")
-    .update({ scheduled_for: new Date().toISOString() })
+    .update({ scheduled_for: new Date().toISOString(), status: "pending", error: null })
     .eq("id", scheduledEmailId)
-    .eq("status", "pending")
+    .in("status", ["pending", "failed", "bounced"])
     .eq("user_id", userId)
     .select("user_id, invoice_id, to_address, cc_address, bcc_address, subject, body_text, filename, mark_issued, scheduled_for")
     .single();
