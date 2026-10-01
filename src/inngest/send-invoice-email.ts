@@ -6,15 +6,32 @@ import { inngest } from "@/lib/inngest";
 import type { SendInvoiceEmailEvent } from "@/lib/inngest";
 import { sendPushToUser } from "@/lib/push";
 import { CACHE_TAGS } from "@/lib/queries";
+import { renderInvoicePdf } from "@/lib/render-invoice-pdf";
+
+// A short-lived user JWT is the only identity this job can legitimately use:
+// fetchInvoiceDetail embeds clients/entries/invoice_line_items, and those
+// nested rows are guarded by RLS alone (the .eq("user_id") filter applies only
+// to the top-level invoices row). A service-role key here would drop that guard.
+//
+// Both clients must be stateless. supabase-js defaults to persistSession +
+// autoRefreshToken, which in a long-lived server process share session state
+// across job runs and start refresh timers — concurrent or repeated runs then
+// clobber each other and consume the single-use hashed_token against stale
+// state, surfacing as "Email link is invalid or has expired".
+const STATELESS = {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+} as const;
 
 async function mintUserToken(userEmail: string): Promise<string> {
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    STATELESS
   );
   const anon = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    STATELESS
   );
 
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
@@ -108,7 +125,6 @@ export const sendInvoiceEmail = inngest.createFunction(
     );
     const resend = new Resend(process.env.RESEND_API_KEY!);
     const fromAddress = `Jesse Morley <${process.env.FROM_ADDRESS!}>`;
-    const nextjsBaseUrl = process.env.NEXTJS_BASE_URL!;
 
     // Free-form emails (no invoice) skip the PDF entirely.
     let attachments: { filename: string; content: string }[] | undefined;
@@ -120,29 +136,21 @@ export const sendInvoiceEmail = inngest.createFunction(
         throw new NonRetriableError(`Failed to fetch user: ${userError?.message}`);
       }
 
-      const userToken = await mintUserToken(userData.user.email).catch((err) => {
-        throw new NonRetriableError(`Failed to mint user token: ${err.message}`);
-      });
+      // Retriable: a consumed or expired OTP is transient, and marking it
+      // non-retriable guaranteed the send never got a second attempt.
+      const userToken = await mintUserToken(userData.user.email);
 
-      const pdfRes = await fetch(`${nextjsBaseUrl}/api/invoices/${invoice_id}/pdf`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}`,
-          "Content-Type": "application/json",
-          "x-vercel-protection-bypass": process.env.VERCEL_BYPASS_SECRET ?? "",
-        },
-        body: JSON.stringify({ user_id, token: userToken }),
-      });
+      // Rendered in-process. The old self-fetch to /api/invoices/[id]/pdf went
+      // out over the network to this same Next.js process, which needed
+      // NEXTJS_BASE_URL, INTERNAL_API_SECRET and the Vercel bypass secret to
+      // come back in. The POST route stays for any out-of-process caller.
+      const result = await renderInvoicePdf(invoice_id, user_id, userToken);
+      if (!result) throw new NonRetriableError(`Invoice ${invoice_id} not found`);
 
-      if (!pdfRes.ok) throw new Error(`PDF fetch failed: ${pdfRes.status}`);
-
-      const pdfBytes = new Uint8Array(await pdfRes.arrayBuffer());
-      let binary = "";
-      const chunk = 8192;
-      for (let i = 0; i < pdfBytes.length; i += chunk) {
-        binary += String.fromCharCode(...pdfBytes.slice(i, i + chunk));
-      }
-      const pdfBase64 = btoa(binary);
+      const pdfBytes = result.bytes;
+      // Buffer.from is a view, not a copy, so this avoids the chunked
+      // String.fromCharCode loop that was here to dodge arg-count limits.
+      const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
 
       const storagePath = `${user_id}/${invoice_id}/${scheduled_email_id}.pdf`;
       const uploadResult = await supabase.storage
