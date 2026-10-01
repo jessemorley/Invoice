@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { ComposePrefill, DashboardEmail, InvoiceDetail } from "@/lib/types";
-import { loadScheduledEmail, loadSelfBccAddress, deleteEmails, clearBouncedEmail } from "@/app/(app)/invoices/actions";
+import { loadScheduledEmail, loadSelfBccAddress, deleteEmails, clearBouncedEmail, cancelScheduledEmail } from "@/app/(app)/invoices/actions";
 import { stripSelfBcc } from "@/lib/merge-bcc";
 import { invalidate } from "@/lib/invalidate";
 import { toast } from "sonner";
@@ -412,6 +412,9 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
   const [pendingDelete, setPendingDelete] = useState<Set<string>>(new Set());
   // Set only while a bounced row is open — gates the "Mark as delivered" button.
   const [bouncedId, setBouncedId] = useState<string | null>(null);
+  // Failed *or* bounced: clicking either from this view opens compose directly
+  // (never the invoice sheet), so the cancel action has to live in the banner.
+  const [brokenId, setBrokenId] = useState<string | null>(null);
   const deleteTimers = useRef<Map<string, number>>(new Map());
 
   const loading = !emails;
@@ -451,6 +454,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
     }
     const failReason = emailIsBroken(email) ? email.error : null;
     setBouncedId(email.status === "bounced" ? email.id : null);
+    setBrokenId(emailIsBroken(email) ? email.id : null);
     // Free-form emails have no invoice to load — edit directly.
     if (!email.invoice_id) {
       const selfBcc = await loadSelfBccAddress();
@@ -606,7 +610,7 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
         open={composeOpen}
         onOpenChangeAction={(open) => {
           setComposeOpen(open);
-          if (!open) { setComposeInvoice(null); setComposePrefill(null); setBouncedId(null); }
+          if (!open) { setComposeInvoice(null); setComposePrefill(null); setBouncedId(null); setBrokenId(null); }
         }}
         invoice={composeInvoice}
         businessName={composeBusinessName}
@@ -630,6 +634,20 @@ export function EmailsClient({ emails }: { emails?: DashboardEmail[] }) {
                 setComposePrefill(null);
                 setBouncedId(null);
                 toast.success("Marked as delivered");
+              }
+            : undefined
+        }
+        onCancelSend={
+          brokenId
+            ? async () => {
+                await cancelScheduledEmail(brokenId);
+                invalidate("emails");
+                setComposeOpen(false);
+                setComposeInvoice(null);
+                setComposePrefill(null);
+                setBouncedId(null);
+                setBrokenId(null);
+                toast.success("Send cancelled");
               }
             : undefined
         }

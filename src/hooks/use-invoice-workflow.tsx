@@ -5,6 +5,7 @@ import type { ComposePrefill, Invoice, InvoiceDetail } from "@/lib/types";
 import type { ScheduledEmail } from "@/lib/queries";
 import { loadScheduledEmail, cancelScheduledEmail, sendScheduledEmailNow } from "@/app/(app)/invoices/actions";
 import { invalidate } from "@/lib/invalidate";
+import { toast } from "sonner";
 import { stripSelfBcc } from "@/lib/merge-bcc";
 import { DEFAULT_FOLLOWUP_TEMPLATE, invoiceTemplateVars, renderEmailTemplate } from "@/lib/email-templates";
 import { InvoiceSheet } from "@/components/invoice-sheet";
@@ -179,6 +180,15 @@ export function useInvoiceWorkflow({ onEntryClick }: { onEntryClick?: (entryId: 
           scheduledEmail && (scheduledEmail.status === "failed" || scheduledEmail.status === "bounced")
             ? scheduledEmail.error
             : null
+        }
+        onCancelSend={
+          scheduledEmail && (scheduledEmail.status === "failed" || scheduledEmail.status === "bounced")
+            ? async () => {
+                await handleCancelEmail(scheduledEmail.id);
+                setComposeOpen(false);
+                toast.success("Send cancelled");
+              }
+            : undefined
         }
       />
       <RescheduleDialog

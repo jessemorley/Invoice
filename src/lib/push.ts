@@ -50,6 +50,15 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           body
         );
+        // A successful push proves the endpoint is alive, so reset the 90-day
+        // prune clock. PushManager also re-asserts the subscription on app
+        // launch; this covers the server side independently of the client ever
+        // opening the app. The BEFORE UPDATE trigger sets updated_at = now(),
+        // so writing the endpoint back to itself is enough.
+        await supabase
+          .from("push_subscriptions")
+          .update({ endpoint: sub.endpoint })
+          .eq("endpoint", sub.endpoint);
       } catch (err) {
         const statusCode = (err as { statusCode?: number }).statusCode;
         if (statusCode === 404 || statusCode === 410) {
