@@ -652,20 +652,59 @@ export function InvoiceSheet({
                 Email
               </Button>
             )}
-            {(scheduledEmail?.status === "failed" || scheduledEmail?.status === "bounced") && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-destructive border-destructive/40 hover:text-destructive"
-                onClick={onSendClick}
-              >
-                <Mail className="size-3.5" />
-                {scheduledEmail.status === "bounced" ? "Bounced" : "Failed"} — Retry
-              </Button>
-            )}
+            {/* Failed/bounced rows get a full Email row with actions below —
+                the old "Failed — Retry" button here routed through
+                handleSendClick, which clears the prefill and so threw away the
+                drafted message instead of retrying it. */}
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
+
+          {(scheduledEmail?.status === "failed" || scheduledEmail?.status === "bounced") && (
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Email</label>
+              <div className="flex items-center justify-between h-9 px-3 rounded-lg border border-destructive/40 text-sm">
+                <span className="text-muted-foreground truncate min-w-0">{scheduledEmail.to_address}</span>
+                <div className="flex items-center gap-2 shrink-0 ml-2">
+                  <Badge variant="outline" className="text-destructive border-destructive/40">
+                    {scheduledEmail.status}
+                  </Badge>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="size-7 shrink-0 -mr-1">
+                        <MoreHorizontal className="size-4" />
+                        <span className="sr-only">Email actions</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={onEditEmail}>
+                        <Mail className="size-4" />
+                        Edit email
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onSendNow?.(scheduledEmail.id)}>
+                        <Send className="size-4" />
+                        Retry now
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={onReschedule}>
+                        <CalendarClock className="size-4" />
+                        Reschedule
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => onCancelEmail?.(scheduledEmail.id)}
+                      >
+                        Cancel send
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+              {scheduledEmail.error && (
+                <p className="text-xs text-destructive">{scheduledEmail.error}</p>
+              )}
+            </div>
+          )}
 
           {(scheduledEmail?.status === "pending" || scheduledEmail?.status === "sent") && (
             <div className="flex flex-col gap-2">
