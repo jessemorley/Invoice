@@ -17,6 +17,13 @@ When you hit one of these during a task, do **not** fix it inline — that bloat
 - Symptom: test fixture builds `cc_address` as `string | null | undefined`, but `DashboardEmail` declares `string | null`. Surfaces under `npx tsc --noEmit`; `npm run build` does not fail because test files are excluded from the build's type-check.
 - Fix: not attempted. Confirmed present on `main` (unrelated to the FY expense filters / WFH deduction work). Re-confirmed 2026-09-05 on `main` at 937c592, still reproducing unchanged. Either widen `DashboardEmail.cc_address` to optional or make the fixture supply an explicit `null`.
 
+### slow mutations on mobile (~2s to save an entry) — server actions call `refresh()`
+
+- First noted: 2026-10-20 (Jesse, on iPhone, during feature/offline-first-launch phase 1 testing)
+- Symptom: saving an entry takes about 2s on mobile, both on prod and on the preview. On desktop it is nearly instant.
+- Likely cause (not measured): each save does two round trips over the phone network. First the server action (insert, `updateTag`, then `refresh()`, which re-renders `/` server-side inside the action response: a `getAuthUser()` call to Supabase auth plus the entries SSR preload). Then `invalidate()` re-reads the data from the browser. There are 41 `refresh()` calls across `src/app`. Since phase 1, views read in the browser, so `refresh()` only re-renders server data the mounted page ignores.
+- Fix: not attempted. Next step: time the action and the re-read separately on a device before changing anything. Candidates are dropping `refresh()` where only view data changed, and optimistic updates.
+
 ## Resolved
 
 ### four user-identified defects: bounce clearing, suggested-invoice bonus, outstanding super, FY chart labels
