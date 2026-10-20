@@ -15,23 +15,25 @@ export function loadSw(build: string | null = "abc123") {
   const listeners: Record<string, (e: unknown) => void> = {};
   const store = new Map<string, Map<string, Res>>();
   const key = (url: string, ignoreSearch?: boolean) => (ignoreSearch ? url.split("?")[0] : url);
+  // Cache APIs take a Request or a URL string.
+  const urlOf = (req: { url: string } | string) => (typeof req === "string" ? req : req.url);
   const caches = {
     open: async (name: string) => {
       if (!store.has(name)) store.set(name, new Map());
       const c = store.get(name)!;
       return {
-        match: async (req: { url: string }, opts?: { ignoreSearch?: boolean }) => {
-          if (!opts?.ignoreSearch) return c.get(req.url);
-          for (const [url, r] of c) if (key(url, true) === key(req.url, true)) return r;
+        match: async (req: { url: string } | string, opts?: { ignoreSearch?: boolean }) => {
+          if (!opts?.ignoreSearch) return c.get(urlOf(req));
+          for (const [url, r] of c) if (key(url, true) === key(urlOf(req), true)) return r;
         },
-        put: async (req: { url: string }, r: Res) => void c.set(req.url, r),
+        put: async (req: { url: string } | string, r: Res) => void c.set(urlOf(req), r),
       };
     },
     // CacheStorage.match: searches every cache, oldest first.
-    match: async (req: { url: string }, opts?: { ignoreSearch?: boolean }) => {
+    match: async (req: { url: string } | string, opts?: { ignoreSearch?: boolean }) => {
       for (const c of store.values()) {
-        if (!opts?.ignoreSearch && c.has(req.url)) return c.get(req.url);
-        if (opts?.ignoreSearch) for (const [url, r] of c) if (key(url, true) === key(req.url, true)) return r;
+        if (!opts?.ignoreSearch && c.has(urlOf(req))) return c.get(urlOf(req));
+        if (opts?.ignoreSearch) for (const [url, r] of c) if (key(url, true) === key(urlOf(req), true)) return r;
       }
     },
     delete: async (name: string) => store.delete(name),
