@@ -1,61 +1,7 @@
 // Runs the real public/sw.js against stubbed worker globals to pin down which
 // requests the offline shell may cache — user data must never land in it.
-import { readFileSync } from "fs";
-import { resolve } from "path";
-import vm from "vm";
 import { describe, expect, it, vi } from "vitest";
-
-const SRC = readFileSync(resolve(__dirname, "../../public/sw.js"), "utf8");
-const ORIGIN = "https://app.test";
-
-type Res = { ok: boolean; type: string; body: string; clone(): Res };
-const res = (body: string, ok = true, type = "basic"): Res => ({ ok, type, body, clone() { return this; } });
-
-function loadSw(build: string | null = "abc123") {
-  const listeners: Record<string, (e: unknown) => void> = {};
-  const store = new Map<string, Map<string, Res>>();
-  const key = (url: string, ignoreSearch?: boolean) => (ignoreSearch ? url.split("?")[0] : url);
-  const caches = {
-    open: async (name: string) => {
-      if (!store.has(name)) store.set(name, new Map());
-      const c = store.get(name)!;
-      return {
-        match: async (req: { url: string }, opts?: { ignoreSearch?: boolean }) => {
-          if (!opts?.ignoreSearch) return c.get(req.url);
-          for (const [url, r] of c) if (key(url, true) === key(req.url, true)) return r;
-        },
-        put: async (req: { url: string }, r: Res) => void c.set(req.url, r),
-      };
-    },
-    delete: async (name: string) => store.delete(name),
-    keys: async () => [...store.keys()],
-  };
-  const self = {
-    location: { href: `${ORIGIN}/sw.js${build ? `?build=${build}` : ""}`, origin: ORIGIN },
-    addEventListener: (type: string, fn: (e: unknown) => void) => (listeners[type] = fn),
-    clients: { claim: async () => {}, matchAll: async () => [] },
-    registration: {},
-    skipWaiting: () => {},
-    navigator: {},
-  };
-  const fetch = vi.fn(async () => res("network"));
-  vm.runInNewContext(SRC, { self, caches, fetch, URL, Promise, console });
-
-  async function request(path: string, init: { method?: string; mode?: string } = {}) {
-    const url = path.startsWith("http") ? path : ORIGIN + path;
-    let response: Promise<Res> | undefined;
-    const waits: Promise<unknown>[] = [];
-    listeners.fetch({
-      request: { url, method: init.method ?? "GET", mode: init.mode ?? "cors" },
-      respondWith: (p: Promise<Res>) => (response = p),
-      waitUntil: (p: Promise<unknown>) => waits.push(p),
-    });
-    const out = response && (await response);
-    await Promise.all(waits);
-    return out;
-  }
-  return { request, fetch, store };
-}
+import { loadSw, res, ORIGIN } from "@/test/sw-harness";
 
 describe("sw.js fetch handler", () => {
   it("handles navigations to / (any view) and hashed static files", async () => {
@@ -116,5 +62,83 @@ describe("sw.js fetch handler", () => {
     await sw.request("/_next/static/chunks/missing.js");
     expect([...(sw.store.get("pages-abc123")?.values() ?? [])]).toEqual([]);
     expect([...(sw.store.get("static-abc123")?.values() ?? [])]).toEqual([]);
+  });
+});
+
+describe("sw.js lifecycle", () => {
+  it("activates immediately and takes control of open pages", async () => {
+    const sw = loadSw();
+    await sw.fire("install");
+    expect(sw.self.skipWaiting).toHaveBeenCalled();
+    await sw.fire("activate");
+    expect(sw.self.clients.claim).toHaveBeenCalled();
+  });
+
+  it("prunes old builds' caches on activate, keeping the current build and unrelated caches", async () => {
+    const sw = loadSw("new");
+    for (const name of ["pages-oldest", "static-oldest", "pages-old", "static-old", "pages-new", "static-new", "someone-else"]) sw.store.set(name, new Map());
+    await sw.fire("activate");
+    const left = [...sw.store.keys()];
+    expect(left).toEqual(expect.arrayContaining(["pages-new", "static-new", "someone-else"]));
+    expect(left).not.toContain("pages-oldest");
+    expect(left).not.toContain("static-oldest");
+  });
+});
+
+// Regression: phase 3 must not change push or badge behaviour. iOS cancels
+// the subscription if a push arrives without a visible notification.
+describe("sw.js push and badge (unchanged)", () => {
+  const push = (data: unknown) => ({ data: data === undefined ? null : typeof data === "string"
+    ? { json: () => JSON.parse(data), text: () => data }
+    : { json: () => data, text: () => JSON.stringify(data) } });
+
+  it("always shows a notification, with the payload's title, body and url", async () => {
+    const sw = loadSw();
+    await sw.fire("push", push({ title: "Invoice sent", body: "INV-1", url: "/?view=invoices", tag: "t" }));
+    expect(sw.self.registration.showNotification).toHaveBeenCalledWith("Invoice sent", expect.objectContaining({ body: "INV-1", tag: "t", data: { url: "/?view=invoices" } }));
+  });
+
+  it("still shows a notification for a non-JSON payload", async () => {
+    const sw = loadSw();
+    await sw.fire("push", { data: { json: () => { throw new SyntaxError("bad"); }, text: () => "plain text" } });
+    expect(sw.self.registration.showNotification).toHaveBeenCalledWith("Invoicing", expect.objectContaining({ body: "plain text" }));
+  });
+
+  it("still shows a notification for an empty push", async () => {
+    const sw = loadSw();
+    await sw.fire("push", push(undefined));
+    expect(sw.self.registration.showNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it("sets or clears the app-icon badge from badgeCount", async () => {
+    const sw = loadSw();
+    await sw.fire("push", push({ badgeCount: 4 }));
+    expect(sw.self.navigator.setAppBadge).toHaveBeenCalledWith(4);
+    await sw.fire("push", push({ badgeCount: 0 }));
+    expect(sw.self.navigator.clearAppBadge).toHaveBeenCalledTimes(1);
+  });
+
+  it("focuses a window already on the target url when a notification is tapped", async () => {
+    const sw = loadSw();
+    const win = { url: "/?view=invoices", focus: vi.fn(), navigate: vi.fn(async () => {}) };
+    sw.windows.push(win);
+    const notification = { close: vi.fn(), data: { url: "/?view=invoices" } };
+    await sw.fire("notificationclick", { notification });
+    expect(notification.close).toHaveBeenCalled();
+    expect(win.focus).toHaveBeenCalled();
+    expect(win.navigate).not.toHaveBeenCalled();
+  });
+
+  it("navigates an existing window, or opens one, for the tapped notification's url", async () => {
+    const sw = loadSw();
+    const win = { url: "/", focus: vi.fn(), navigate: vi.fn(async () => {}) };
+    sw.windows.push(win);
+    await sw.fire("notificationclick", { notification: { close: vi.fn(), data: { url: "/?view=emails" } } });
+    expect(win.navigate).toHaveBeenCalledWith("/?view=emails");
+    expect(win.focus).toHaveBeenCalled();
+
+    const empty = loadSw();
+    await empty.fire("notificationclick", { notification: { close: vi.fn(), data: { url: "/?view=emails" } } });
+    expect(empty.self.clients.openWindow).toHaveBeenCalledWith("/?view=emails");
   });
 });
