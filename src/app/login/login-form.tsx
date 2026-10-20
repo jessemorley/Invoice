@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { clearCache } from "@/lib/view-cache";
 import { signIn } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,12 @@ import { Label } from "@/components/ui/label";
 
 export function LoginForm() {
   const [state, action, pending] = useActionState(signIn, null);
+
+  // Reaching login means no valid session (logout, expiry or a proxy
+  // redirect): drop the previous user's saved view data.
+  useEffect(() => {
+    clearCache();
+  }, []);
 
   return (
     <form action={action} className="flex flex-col gap-4">

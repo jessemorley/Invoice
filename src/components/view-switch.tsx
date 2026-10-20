@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { readCache, writeCache } from "@/lib/view-cache";
 import type { InvalidationTag } from "@/lib/invalidate";
 import { useActiveView, type ViewId } from "@/components/active-view-context";
 import type { DashboardData, DashboardEmail, Entry, Expense, Client, WorkflowRate, Invoice } from "@/lib/types";
@@ -67,13 +68,17 @@ const TAG_TO_VIEWS: Record<InvalidationTag, ViewId[]> = {
   payg:     ["tax"],
 };
 
+const CACHED_VIEWS = ["dashboard", "entries", "invoices", "clients", "expenses", "settings", "tax", "emails"] as const satisfies readonly ViewId[];
+
 type InitialEntriesData = { entries: Entry[]; clients: Client[]; workflowRates: WorkflowRate[] };
 
 export function ViewSwitch({
+  userId,
   userEmail,
   userName,
   initialEntriesData,
 }: {
+  userId: string;
   userEmail: string;
   userName: string;
   initialEntriesData?: InitialEntriesData;
@@ -94,19 +99,49 @@ export function ViewSwitch({
     initialEntriesData ? new Set<ViewId>(["entries"]) : new Set<ViewId>()
   );
 
+  // Resolves once the saved data has been checked against userId (and wiped
+  // if it belonged to someone else). Writes wait on it so a wipe can't
+  // clobber them.
+  const cacheReady = useRef<Promise<unknown>>(Promise.resolve());
+
+  // Show last-seen data straight away. `prev ??` keeps anything already
+  // fetched (or the SSR preload): a saved copy never overwrites newer data.
+  // Declared before the reveal effect so cacheReady is set before any fetch.
+  useEffect(() => {
+    cacheReady.current = readCache(userId, CACHED_VIEWS).then((cached) => {
+      function fill<T>(set: Dispatch<SetStateAction<T | null>>, v: ViewId) {
+        const value = cached[v as (typeof CACHED_VIEWS)[number]];
+        if (value !== undefined) set((prev) => prev ?? (value as T));
+      }
+      fill(setDashboardData, "dashboard");
+      fill(setEntriesData, "entries");
+      fill(setInvoicesData, "invoices");
+      fill(setClientsData, "clients");
+      fill(setExpensesData, "expenses");
+      fill(setSettingsData, "settings");
+      fill(setTaxData, "tax");
+      fill(setEmailsData, "emails");
+    });
+  }, [userId]);
+
   const fetchView = useCallback((v: ViewId) => {
+    // ponytail: last write wins; two overlapping fetches of one view can land out of order (same as the state)
+    const save = <T,>(data: T) => {
+      cacheReady.current.then(() => writeCache(v, data));
+      return data;
+    };
     switch (v) {
-      case "dashboard": loadDashboardViewData().then(setDashboardData); break;
-      case "entries":   loadEntriesViewData().then(setEntriesData); break;
-      case "invoices":  loadInvoicesViewData().then((data) => {
+      case "dashboard": loadDashboardViewData().then(save).then(setDashboardData); break;
+      case "entries":   loadEntriesViewData().then(save).then(setEntriesData); break;
+      case "invoices":  loadInvoicesViewData().then(save).then((data) => {
         setInvoicesData(data);
         window.dispatchEvent(new CustomEvent("dock:uninvoiced-count", { detail: data.uninvoicedCount }));
       }); break;
-      case "clients":   loadClientsViewData().then(setClientsData); break;
-      case "expenses":  loadExpensesViewData().then(setExpensesData); break;
-      case "settings":  loadSettingsViewData().then(setSettingsData); break;
-      case "tax":       loadTaxViewData().then(setTaxData); break;
-      case "emails":    loadEmailsViewData().then(setEmailsData); break;
+      case "clients":   loadClientsViewData().then(save).then(setClientsData); break;
+      case "expenses":  loadExpensesViewData().then(save).then(setExpensesData); break;
+      case "settings":  loadSettingsViewData().then(save).then(setSettingsData); break;
+      case "tax":       loadTaxViewData().then(save).then(setTaxData); break;
+      case "emails":    loadEmailsViewData().then(save).then(setEmailsData); break;
     }
   }, []);
 
@@ -141,13 +176,18 @@ export function ViewSwitch({
     return () => window.removeEventListener("data:invalidate", handler);
   }, [fetchView]);
 
-  // Re-fetch the active view when the user returns to the tab
+  // Re-fetch the active view when the user returns to the tab or the
+  // connection comes back
   useEffect(() => {
     function handler() {
       if (document.visibilityState === "visible") fetchView(view);
     }
     document.addEventListener("visibilitychange", handler);
-    return () => document.removeEventListener("visibilitychange", handler);
+    window.addEventListener("online", handler);
+    return () => {
+      document.removeEventListener("visibilitychange", handler);
+      window.removeEventListener("online", handler);
+    };
   }, [view, fetchView]);
 
   return (

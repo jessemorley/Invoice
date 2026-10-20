@@ -19,7 +19,7 @@ The app uses a single route (`/`) with a `?view=` search param rather than separ
 
 ## Data fetching
 
-Views fetch their data lazily on first reveal via browser loaders in `src/lib/view-loaders.ts`, which query Supabase directly with the user's session (RLS applies). Data is held in local `useState` inside `ViewSwitch`. `src/app/(app)/actions.ts` only keeps the SSR preload of the entries view for `/`.
+Views fetch their data lazily on first reveal via browser loaders in `src/lib/view-loaders.ts`, which query Supabase directly with the user's session (RLS applies). Data is held in local `useState` inside `ViewSwitch` and saved to IndexedDB (`src/lib/view-cache.ts`, keyed to the user ID): on launch the saved copy fills empty views immediately, never overwriting fresher data, and each view still re-fetches on first reveal. The login page clears the saved data. `src/app/(app)/actions.ts` only keeps the SSR preload of the entries view for `/`.
 
 Tab switches update the URL with `window.history.replaceState`, not `router.replace`, so they never fetch the route from the server.
 

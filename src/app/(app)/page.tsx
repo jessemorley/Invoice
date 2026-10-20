@@ -3,11 +3,11 @@ import { getAuthUser } from "@/lib/auth";
 import { loadEntriesViewData } from "@/app/(app)/actions";
 
 async function ViewSwitchWithUser({ wantsEntries }: { wantsEntries: boolean }) {
-  const [{ email, name }, initialEntriesData] = await Promise.all([
+  const [{ id, email, name }, initialEntriesData] = await Promise.all([
     getAuthUser(),
     wantsEntries ? loadEntriesViewData() : Promise.resolve(undefined),
   ]);
-  return <ViewSwitch userEmail={email} userName={name} initialEntriesData={initialEntriesData} />;
+  return <ViewSwitch userId={id} userEmail={email} userName={name} initialEntriesData={initialEntriesData} />;
 }
 
 export default async function AppPage({
