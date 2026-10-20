@@ -1,5 +1,6 @@
 // Browser-side view loaders for ViewSwitch: read straight from Supabase with
 // the user's session instead of going through a server action.
+import { isAuthRetryableFetchError } from "@supabase/supabase-js";
 import { createBrowserSupabase } from "./supabase";
 import { todayInSydney } from "./format";
 import {
@@ -22,12 +23,22 @@ import {
   buildTaxTotals,
 } from "./reads";
 
-// getSession() reads the cookie locally — no network round trip. RLS enforces
-// access either way; userId only scopes the queries as the server did.
+// The session is gone for good (logged out, or the refresh token was
+// rejected), as opposed to unreachable while offline.
+export class SignedOutError extends Error {}
+
+// getSession() reads the cookie locally — no network round trip unless the
+// access token has expired. RLS enforces access either way; userId only
+// scopes the queries as the server did.
 async function auth() {
   const supabase = createBrowserSupabase();
-  const { data } = await supabase.auth.getSession();
-  if (!data.session) throw new Error("Unauthenticated");
+  const { data, error } = await supabase.auth.getSession();
+  if (!data.session) {
+    // Offline with an expired token: auth-js keeps the session and reports a
+    // retryable error. Anything else means there is no session to restore.
+    if (error && isAuthRetryableFetchError(error)) throw error;
+    throw new SignedOutError();
+  }
   return { supabase, userId: data.session.user.id };
 }
 

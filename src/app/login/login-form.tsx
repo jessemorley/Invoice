@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
-import { clearCache } from "@/lib/view-cache";
+import { clearCache, clearCachedPages } from "@/lib/view-cache";
 import { signIn } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,9 +11,10 @@ export function LoginForm() {
   const [state, action, pending] = useActionState(signIn, null);
 
   // Reaching login means no valid session (logout, expiry or a proxy
-  // redirect): drop the previous user's saved view data.
+  // redirect): drop the previous user's saved view data and cached pages.
   useEffect(() => {
     clearCache();
+    clearCachedPages();
   }, []);
 
   return (

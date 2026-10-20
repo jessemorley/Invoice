@@ -46,6 +46,7 @@ import {
   loadSettingsViewData,
   loadTaxViewData,
   loadEmailsViewData,
+  SignedOutError,
 } from "@/lib/view-loaders";
 
 type DashboardState = { data: DashboardData } | null;
@@ -70,23 +71,19 @@ const TAG_TO_VIEWS: Record<InvalidationTag, ViewId[]> = {
 
 const CACHED_VIEWS = ["dashboard", "entries", "invoices", "clients", "expenses", "settings", "tax", "emails"] as const satisfies readonly ViewId[];
 
-type InitialEntriesData = { entries: Entry[]; clients: Client[]; workflowRates: WorkflowRate[] };
-
 export function ViewSwitch({
   userId,
   userEmail,
   userName,
-  initialEntriesData,
 }: {
   userId: string;
   userEmail: string;
   userName: string;
-  initialEntriesData?: InitialEntriesData;
 }) {
   const { view, settingsTab } = useActiveView();
 
   const [dashboardData, setDashboardData] = useState<DashboardState>(null);
-  const [entriesData, setEntriesData] = useState<EntriesState>(initialEntriesData ?? null);
+  const [entriesData, setEntriesData] = useState<EntriesState>(null);
   const [invoicesData, setInvoicesData] = useState<InvoicesState>(null);
   const [clientsData, setClientsData] = useState<ClientsState>(null);
   const [expensesData, setExpensesData] = useState<ExpensesState>(null);
@@ -94,10 +91,7 @@ export function ViewSwitch({
   const [taxData, setTaxData] = useState<TaxState>(null);
   const [emailsData, setEmailsData] = useState<EmailsState>(null);
 
-  // Pre-mark entries as revealed if server-loaded data was provided
-  const revealed = useRef<Set<ViewId>>(
-    initialEntriesData ? new Set<ViewId>(["entries"]) : new Set<ViewId>()
-  );
+  const revealed = useRef<Set<ViewId>>(new Set());
 
   // Resolves once the saved data has been checked against userId (and wiped
   // if it belonged to someone else). Writes wait on it so a wipe can't
@@ -105,7 +99,7 @@ export function ViewSwitch({
   const cacheReady = useRef<Promise<unknown>>(Promise.resolve());
 
   // Show last-seen data straight away. `prev ??` keeps anything already
-  // fetched (or the SSR preload): a saved copy never overwrites newer data.
+  // fetched: a saved copy never overwrites newer data.
   // Declared before the reveal effect so cacheReady is set before any fetch.
   useEffect(() => {
     cacheReady.current = readCache(userId, CACHED_VIEWS).then((cached) => {
@@ -130,19 +124,25 @@ export function ViewSwitch({
       cacheReady.current.then(() => writeCache(v, data));
       return data;
     };
+    let load: Promise<unknown>;
     switch (v) {
-      case "dashboard": loadDashboardViewData().then(save).then(setDashboardData); break;
-      case "entries":   loadEntriesViewData().then(save).then(setEntriesData); break;
-      case "invoices":  loadInvoicesViewData().then(save).then((data) => {
+      case "dashboard": load = loadDashboardViewData().then(save).then(setDashboardData); break;
+      case "entries":   load = loadEntriesViewData().then(save).then(setEntriesData); break;
+      case "invoices":  load = loadInvoicesViewData().then(save).then((data) => {
         setInvoicesData(data);
         window.dispatchEvent(new CustomEvent("dock:uninvoiced-count", { detail: data.uninvoicedCount }));
       }); break;
-      case "clients":   loadClientsViewData().then(save).then(setClientsData); break;
-      case "expenses":  loadExpensesViewData().then(save).then(setExpensesData); break;
-      case "settings":  loadSettingsViewData().then(save).then(setSettingsData); break;
-      case "tax":       loadTaxViewData().then(save).then(setTaxData); break;
-      case "emails":    loadEmailsViewData().then(save).then(setEmailsData); break;
+      case "clients":   load = loadClientsViewData().then(save).then(setClientsData); break;
+      case "expenses":  load = loadExpensesViewData().then(save).then(setExpensesData); break;
+      case "settings":  load = loadSettingsViewData().then(save).then(setSettingsData); break;
+      case "tax":       load = loadTaxViewData().then(save).then(setTaxData); break;
+      case "emails":    load = loadEmailsViewData().then(save).then(setEmailsData); break;
     }
+    // A cached page can outlive the session; the proxy's redirect never runs.
+    load.catch((e) => {
+      if (e instanceof SignedOutError) window.location.replace("/login");
+      else throw e;
+    });
   }, []);
 
   // Signal to the splash that the app shell has hydrated. Deferred via

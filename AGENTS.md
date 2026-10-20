@@ -19,7 +19,11 @@ The app uses a single route (`/`) with a `?view=` search param rather than separ
 
 ## Data fetching
 
-Views fetch their data lazily on first reveal via browser loaders in `src/lib/view-loaders.ts`, which query Supabase directly with the user's session (RLS applies). Data is held in local `useState` inside `ViewSwitch` and saved to IndexedDB (`src/lib/view-cache.ts`, keyed to the user ID): on launch the saved copy fills empty views immediately, never overwriting fresher data, and each view still re-fetches on first reveal. The login page clears the saved data. `src/app/(app)/actions.ts` only keeps the SSR preload of the entries view for `/`.
+Views fetch their data lazily on first reveal via browser loaders in `src/lib/view-loaders.ts`, which query Supabase directly with the user's session (RLS applies). Data is held in local `useState` inside `ViewSwitch` and saved to IndexedDB (`src/lib/view-cache.ts`, keyed to the user ID): on launch the saved copy fills empty views immediately, never overwriting fresher data, and each view still re-fetches on first reveal. The login page clears the saved data.
+
+## Offline app shell
+
+`public/sw.js` serves navigations to `/` and `/_next/static/*` from cache (caches named `pages-<build>` / `static-<build>`, build = commit SHA via `NEXT_PUBLIC_BUILD_ID`) and refreshes the page in the background. Never put view data in the HTML of `/`: a cached copy would be stale. If a loader finds the session gone for good it throws `SignedOutError` and `ViewSwitch` sends the user to `/login`, which clears both the IndexedDB data and the cached pages. `src/lib/sw.test.ts` pins down which requests the worker may cache.
 
 Tab switches update the URL with `window.history.replaceState`, not `router.replace`, so they never fetch the route from the server.
 

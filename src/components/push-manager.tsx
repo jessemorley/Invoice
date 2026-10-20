@@ -46,7 +46,8 @@ function refreshPushSubscription() {
 export function PushManager() {
   useEffect(() => {
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+      // A new build changes the script URL, so the browser installs the new worker.
+      navigator.serviceWorker.register(`/sw.js?build=${process.env.NEXT_PUBLIC_BUILD_ID}`).catch(() => {});
       refreshPushSubscription();
     }
 
