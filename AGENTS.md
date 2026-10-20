@@ -12,14 +12,16 @@ The app uses a single route (`/`) with a `?view=` search param rather than separ
 
 **Adding a new view:**
 1. Create the client component (e.g. `src/app/(app)/newview/newview-client.tsx`)
-2. Add a server action loader to `src/app/(app)/actions.ts`
+2. Add a browser loader to `src/lib/view-loaders.ts` (query bodies go in `src/lib/reads.ts`)
 3. Add state, a `fetchView` case, and a render slot to `ViewSwitch`
 4. Add the tag mapping to `TAG_TO_VIEWS` in `ViewSwitch`
 5. Add the tab to `src/components/floating-dock.tsx` and `src/components/app-nav.tsx`
 
 ## Data fetching
 
-Views fetch their data lazily on first reveal via server actions in `src/app/(app)/actions.ts`. Data is held in local `useState` inside `ViewSwitch`.
+Views fetch their data lazily on first reveal via browser loaders in `src/lib/view-loaders.ts`, which query Supabase directly with the user's session (RLS applies). Data is held in local `useState` inside `ViewSwitch`. `src/app/(app)/actions.ts` only keeps the SSR preload of the entries view for `/`.
+
+Tab switches update the URL with `window.history.replaceState`, not `router.replace`, so they never fetch the route from the server.
 
 ## Data refresh after mutations
 

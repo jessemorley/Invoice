@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 export type ViewId = "dashboard" | "entries" | "invoices" | "emails" | "clients" | "expenses" | "tax" | "settings";
 
@@ -14,7 +14,6 @@ type ActiveViewContextValue = {
 const ActiveViewContext = createContext<ActiveViewContextValue | null>(null);
 
 export function ActiveViewProvider({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
   // useSearchParams is server-safe and returns the request URL's params during
   // SSR, so seeding state from it in a lazy initializer keeps server and client
   // initial renders identical — no hydration mismatch on data-active.
@@ -31,9 +30,11 @@ export function ActiveViewProvider({ children }: { children: React.ReactNode }) 
       setViewState(v);
       setSettingsTab(opts?.settingsTab);
       const url = opts?.settingsTab ? `/?view=${v}&tab=${opts.settingsTab}` : `/?view=${v}`;
-      router.replace(url, { scroll: false });
+      // Native history, not router.replace: Next keeps useSearchParams in sync
+      // without fetching the route from the server, so tab switches work offline.
+      window.history.replaceState(null, "", url);
     },
-    [router]
+    []
   );
 
   return (

@@ -45,7 +45,7 @@ import {
   loadSettingsViewData,
   loadTaxViewData,
   loadEmailsViewData,
-} from "@/app/(app)/actions";
+} from "@/lib/view-loaders";
 
 type DashboardState = { data: DashboardData } | null;
 type EntriesState = { entries: Entry[]; clients: Client[]; workflowRates: WorkflowRate[] } | null;
