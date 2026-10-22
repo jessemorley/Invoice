@@ -143,9 +143,13 @@ describe("overflow menu", () => {
     expect(menu.queryByRole("button", { name: /^dashboard$/i })).not.toBeInTheDocument();
     expect(menu.queryByRole("button", { name: /^entries$/i })).not.toBeInTheDocument();
     expect(menu.queryByRole("button", { name: /^invoices$/i })).not.toBeInTheDocument();
-    expect(menu.getByRole("button", { name: /^clients$/i })).toBeInTheDocument();
-    expect(menu.getByRole("button", { name: /^expenses$/i })).toBeInTheDocument();
-    expect(menu.getByRole("button", { name: /^settings$/i })).toBeInTheDocument();
+    expect(menu.getAllByRole("button").map((b) => b.getAttribute("aria-label"))).toEqual([
+      "Emails",
+      "Clients",
+      "Expenses",
+      "Tax",
+      "Settings",
+    ]);
   });
 
   it("closes when overlay is clicked", async () => {

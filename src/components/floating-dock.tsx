@@ -178,7 +178,7 @@ export function FloatingDock() {
             {/* Divider */}
             <div className="relative z-10 w-px h-6 bg-border" />
 
-            {/* Menu button — active when on a secondary view */}
+            {/* Menu button — the active secondary view is highlighted inside the menu, not here */}
             <button
               aria-label="Menu"
               onClick={() => setMenuOpen((o) => !o)}
