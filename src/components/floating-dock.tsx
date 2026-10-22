@@ -94,7 +94,7 @@ export function FloatingDock() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex flex-col divide-y divide-border/50">
-              {[...PRIMARY_TABS, ...SECONDARY_TABS].map((tab) => {
+              {SECONDARY_TABS.map((tab) => {
                 const Icon = tab.icon;
                 const active = view === tab.view;
                 return (
