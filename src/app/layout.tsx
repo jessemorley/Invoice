@@ -27,6 +27,12 @@ export const metadata: Metadata = {
   icons: {
     apple: "/app_icon.png",
   },
+  // Next emits only `mobile-web-app-capable`. Without the legacy Apple tag,
+  // fresh iOS 26 installs size the standalone web view short by the status
+  // bar height under black-translucent, leaving a blank strip at the bottom.
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+  },
 };
 
 export const viewport: Viewport = {
