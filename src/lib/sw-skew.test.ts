@@ -55,4 +55,28 @@ describe("sw.js after a deploy", () => {
     sw.fetch.mockRejectedValue(new TypeError("offline"));
     expect((await sw.request("/", { mode: "navigate" }))!.body).toBe("new page");
   });
+
+  it("prefers the current build's / over the previous build's exact view URL", async () => {
+    const sw = loadSw("new");
+    sw.store.set("pages-old", new Map([[ORIGIN + "/?view=entries", res("old page")]]));
+    sw.store.set("pages-new", new Map([[ORIGIN + "/", res("new page")]]));
+    sw.fetch.mockRejectedValue(new TypeError("offline"));
+    expect((await sw.request("/?view=entries", { mode: "navigate" }))!.body).toBe("new page");
+  });
+
+  it("drops the previous build's cached pages too when redirected to /login", async () => {
+    const sw = loadSw("new");
+    sw.store.set("pages-old", new Map([[ORIGIN + "/", res("signed-in page")]]));
+    sw.fetch.mockResolvedValueOnce(res("", false, "opaqueredirect"));
+    await sw.request("/", { mode: "navigate" });
+    expect([...sw.store.keys()].filter((k) => k.startsWith("pages-"))).toEqual([]);
+  });
+
+  it("copies a script served from the previous build's cache into this build's, so the next activate can't strand it", async () => {
+    const sw = loadSw("new");
+    const url = ORIGIN + "/_next/static/chunks/app-123.js";
+    sw.store.set("static-old", new Map([[url, res("cached js")]]));
+    await sw.request("/_next/static/chunks/app-123.js");
+    expect(sw.store.get("static-new")?.get(url)?.body).toBe("cached js");
+  });
 });

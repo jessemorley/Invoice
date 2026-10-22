@@ -54,10 +54,14 @@ function staleCaches(keys) {
   });
 }
 
-// Cache first per full URL (notifications open "/?view=…"), falling back to
-// the previous build's copy and then any cached "/" variant; always refresh
-// from the network in the background. `fresh=1` (UpdateReloader, after a
-// deploy) goes to the network first so the old build isn't served again.
+// Cache first per full URL (notifications open "/?view=…"), then any "/"
+// variant, this build's before the previous build's. The previous build's
+// cache can mix builds (its "/" refreshed, a view URL not); an older page
+// there is still served on purpose: its scripts are cached, whereas a newer
+// page's may never have been downloaded, and UpdateReloader reloads it once
+// online. Always refresh from the network in the background. `fresh=1`
+// (UpdateReloader, after a deploy) goes to the network first so the old build
+// isn't served again.
 async function servePage(event) {
   const url = new URL(event.request.url);
   const fresh = url.searchParams.has("fresh");
@@ -66,17 +70,19 @@ async function servePage(event) {
   const cache = await caches.open(PAGES_CACHE);
   const cached =
     (await cache.match(key)) ||
-    (await caches.match(key)) ||
     (await cache.match(key, { ignoreSearch: true })) ||
+    (await caches.match(key)) ||
     (await caches.match(key, { ignoreSearch: true }));
   const network = fetch(event.request).then(async (res) => {
     if (res.ok) {
       await cache.put(key, res.clone());
     } else if (res.type === "opaqueredirect") {
       // The proxy only redirects "/" to /login, so the session is gone: drop
-      // the user's cached pages. The open page finds out from its own data
-      // loaders (SignedOutError in view-loaders.ts) and goes to /login.
-      await caches.delete(PAGES_CACHE);
+      // the user's cached pages, every build's. The open page finds out from
+      // its own data loaders (SignedOutError in view-loaders.ts) and goes to
+      // /login.
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => k.startsWith("pages-")).map((k) => caches.delete(k)));
     }
     return res;
   });
@@ -87,11 +93,14 @@ async function servePage(event) {
 }
 
 // Hashed filenames never change content, so cache first with no refresh.
+// A hit in the previous build's cache is copied into ours, since the next
+// activate deletes that cache while pages still pointing at it may survive.
 async function serveStatic(req) {
-  const cached = await caches.match(req); // this build's or the previous one's
-  if (cached) return cached;
-  const res = await fetch(req);
-  if (res.ok) await (await caches.open(STATIC_CACHE)).put(req, res.clone());
+  const cache = await caches.open(STATIC_CACHE);
+  const own = await cache.match(req);
+  if (own) return own;
+  const res = (await caches.match(req)) || (await fetch(req));
+  if (res.ok) await cache.put(req, res.clone());
   return res;
 }
 
