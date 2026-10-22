@@ -114,7 +114,7 @@ function ExpenseCard({ expense, onClick }: { expense: Expense; onClick: () => vo
 function ExpensesSkeleton() {
   return (
     <div className="flex flex-col h-full">
-      <ViewHeader title="Expenses" searchValue="" onSearchChange={() => {}} loading />
+      <ViewHeader title="Expenses" searchValue="" onSearchChange={() => {}} loading titleHidden borderHidden account={<HeaderUserAvatar />} />
       {/* Desktop */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
         <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
@@ -151,6 +151,7 @@ function ExpensesSkeleton() {
       </div>
       {/* Mobile */}
       <div className="md:hidden flex-1 overflow-y-auto pb-28">
+        <LargeTitle>Expenses</LargeTitle>
         <div className="px-4 py-4 flex flex-col gap-3">
           {[...Array(6)].map((_, i) => (
             <Card key={i} className="py-0">
