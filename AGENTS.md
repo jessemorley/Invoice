@@ -11,11 +11,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
 The app uses a single route (`/`) with a `?view=` search param rather than separate Next.js pages. All views are rendered in `src/components/view-switch.tsx` and toggled with CSS (`hidden` / `contents`). Tab switches are instant — no network round-trip.
 
 **Adding a new view:**
-1. Create the client component (e.g. `src/app/(app)/newview/newview-client.tsx`)
-2. Add a browser loader to `src/lib/view-loaders.ts` (query bodies go in `src/lib/reads.ts`)
-3. Add state, a `fetchView` case, and a render slot to `ViewSwitch`
-4. Add the tag mapping to `TAG_TO_VIEWS` in `ViewSwitch`
-5. Add the tab to `src/components/floating-dock.tsx` and `src/components/app-nav.tsx`
+1. Add the view to `VIEWS` in `src/components/active-view-context.tsx` (`ViewId`, the dock and the sidebar all come from it)
+2. Create the client component (e.g. `src/app/(app)/newview/newview-client.tsx`)
+3. Add a browser loader to `src/lib/view-loaders.ts` (query bodies go in `src/lib/reads.ts`)
+4. Add state, a `fetchView` case, and a render slot to `ViewSwitch`
+5. Add the tag mapping to `TAG_TO_VIEWS` in `ViewSwitch`
 
 ## Data fetching
 

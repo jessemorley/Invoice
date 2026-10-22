@@ -2,8 +2,22 @@
 
 import { createContext, useCallback, useContext, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { LayoutDashboard, FileClock, Receipt, Mail, Users, Wallet, Landmark, Settings } from "lucide-react";
 
-export type ViewId = "dashboard" | "entries" | "invoices" | "emails" | "clients" | "expenses" | "tax" | "settings";
+// Every view, in nav order. ViewId is derived from this, so a new view can't
+// miss the dock or the sidebar. `primary` views sit in the dock; the rest are in its menu.
+export const VIEWS = [
+  { view: "dashboard", label: "Dashboard", icon: LayoutDashboard, primary: true },
+  { view: "entries", label: "Entries", icon: FileClock, primary: true },
+  { view: "invoices", label: "Invoices", icon: Receipt, primary: true },
+  { view: "emails", label: "Emails", icon: Mail, primary: false },
+  { view: "clients", label: "Clients", icon: Users, primary: false },
+  { view: "expenses", label: "Expenses", icon: Wallet, primary: false },
+  { view: "tax", label: "Tax", icon: Landmark, primary: false },
+  { view: "settings", label: "Settings", icon: Settings, primary: false },
+] as const;
+
+export type ViewId = (typeof VIEWS)[number]["view"];
 
 type ActiveViewContextValue = {
   view: ViewId;
