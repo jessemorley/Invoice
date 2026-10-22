@@ -4,6 +4,7 @@ import { Sidebar, SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { FloatingDock } from "@/components/floating-dock";
 import { AppSplash } from "@/components/app-splash";
 import { PushManager } from "@/components/push-manager";
+import { UpdateReloader } from "@/components/update-reloader";
 import { ActiveViewProvider } from "@/components/active-view-context";
 import { CurrentUserProvider } from "@/components/current-user-context";
 import { getAuthUser } from "@/lib/auth";
@@ -36,6 +37,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </Suspense>
       <AppSplash />
       <PushManager />
+      <UpdateReloader />
     </SidebarProvider>
   );
 }

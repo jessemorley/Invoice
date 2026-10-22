@@ -24,6 +24,13 @@ When you hit one of these during a task, do **not** fix it inline — that bloat
 - Likely cause (not measured): each save does two round trips over the phone network. First the server action (insert, `updateTag`, then `refresh()`, which re-renders `/` server-side inside the action response: a `getAuthUser()` call to Supabase auth plus the entries SSR preload). Then `invalidate()` re-reads the data from the browser. There are 41 `refresh()` calls across `src/app`. Since phase 1, views read in the browser, so `refresh()` only re-renders server data the mounted page ignores.
 - Fix: not attempted. Next step: time the action and the re-read separately on a device before changing anything. Candidates are dropping `refresh()` where only view data changed, and optimistic updates.
 
+### blank gap in the bottom safe area on a fresh home-screen install
+
+- First noted: 2026-10-21 (Jesse, on iPhone, during feature/offline-first-launch testing)
+- Symptom: a blank strip in the bottom safe area (home-indicator area). It appears on prod and on the previews when the web app is newly added to the home screen. Jesse's existing prod home-screen app displays correctly.
+- Notes: the offline-first branches don't touch layout or CSS. iOS snapshots some web-app settings (manifest, viewport and status-bar metas) when the app is added, so the existing install may still be using older settings that a new install doesn't get.
+- Fix: not attempted. Jesse chose to leave it for now.
+
 ## Resolved
 
 ### four user-identified defects: bounce clearing, suggested-invoice bonus, outstanding super, FY chart labels
