@@ -13,7 +13,8 @@ vi.mock("next/navigation", () => ({
 const mockSetView = vi.fn();
 let mockView = "entries";
 
-vi.mock("@/components/active-view-context", () => ({
+vi.mock("@/components/active-view-context", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/active-view-context")>()),
   useActiveView: () => ({ view: mockView, setView: mockSetView }),
 }));
 

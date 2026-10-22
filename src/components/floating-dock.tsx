@@ -1,23 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LayoutDashboard, FileClock, Receipt, Mail, Users, Wallet, Landmark, Settings, Plus, Menu, X } from "lucide-react";
+import { Plus, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useActiveView, type ViewId } from "@/components/active-view-context";
+import { useActiveView, VIEWS, type ViewId } from "@/components/active-view-context";
 
-const PRIMARY_TABS: { view: ViewId; icon: React.ComponentType<{ className?: string; strokeWidth?: number }>; label: string }[] = [
-  { view: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { view: "entries", icon: FileClock, label: "Entries" },
-  { view: "invoices", icon: Receipt, label: "Invoices" },
-];
-
-const SECONDARY_TABS: { view: ViewId; icon: React.ComponentType<{ className?: string; strokeWidth?: number }>; label: string }[] = [
-  { view: "emails", icon: Mail, label: "Emails" },
-  { view: "clients", icon: Users, label: "Clients" },
-  { view: "expenses", icon: Wallet, label: "Expenses" },
-  { view: "tax", icon: Landmark, label: "Tax" },
-  { view: "settings", icon: Settings, label: "Settings" },
-];
+const PRIMARY_TABS = VIEWS.filter((t) => t.primary);
+const SECONDARY_TABS = VIEWS.filter((t) => !t.primary);
 
 const DOCK_NEW_VIEWS = new Set<ViewId>(["entries", "invoices", "emails", "expenses", "clients"]);
 

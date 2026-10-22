@@ -1,17 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useActiveView, type ViewId } from "@/components/active-view-context";
+import { useActiveView, VIEWS, type ViewId } from "@/components/active-view-context";
 import { signOut } from "@/app/login/actions";
 import {
-  LayoutDashboard,
-  FileText,
-  Receipt,
-  Mail,
-  Users,
   Settings,
-  Wallet,
-  Landmark,
   ChevronsUpDown,
   LogOut,
 } from "lucide-react";
@@ -38,24 +31,13 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
-const navItems: { view: ViewId; label: string; icon: React.ComponentType }[] = [
-  { view: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { view: "entries", label: "Entries", icon: FileText },
-  { view: "invoices", label: "Invoices", icon: Receipt },
-  { view: "emails", label: "Emails", icon: Mail },
-  { view: "clients", label: "Clients", icon: Users },
-  { view: "expenses", label: "Expenses", icon: Wallet },
-  { view: "tax", label: "Tax", icon: Landmark },
-  { view: "settings", label: "Settings", icon: Settings },
-];
-
 function NavItem({
   view,
   label,
   icon: Icon,
   currentView,
   onNavigate,
-}: (typeof navItems)[0] & { currentView: ViewId; onNavigate: (view: ViewId) => void }) {
+}: (typeof VIEWS)[number] & { currentView: ViewId; onNavigate: (view: ViewId) => void }) {
   const isActive = currentView === view;
   return (
     <SidebarMenuItem>
@@ -152,7 +134,7 @@ export function AppSidebar({ user }: { user: { name: string; email: string } }) 
         <SidebarGroup className="px-3 py-1 group-data-[collapsible=icon]:px-2">
           <SidebarGroupContent>
             <SidebarMenu className="gap-2">
-              {navItems.map((item) => (
+              {VIEWS.map((item) => (
                 <NavItem key={item.view} {...item} currentView={activeView} onNavigate={handleNavigate} />
               ))}
             </SidebarMenu>
