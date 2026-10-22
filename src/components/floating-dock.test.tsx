@@ -134,18 +134,22 @@ describe("overflow menu", () => {
     expect(screen.queryByRole("button", { name: /^clients$/i })).not.toBeInTheDocument();
   });
 
-  it("shows every nav item after menu button tap", async () => {
+  it("shows only secondary nav items after menu button tap", async () => {
     const user = userEvent.setup();
     renderDock();
     await user.click(screen.getByRole("button", { name: /menu/i }));
     const menu = within(screen.getByTestId("dock-menu"));
-    // Primary tabs are listed alongside the secondary ones
-    expect(menu.getByRole("button", { name: /^dashboard$/i })).toBeInTheDocument();
-    expect(menu.getByRole("button", { name: /^entries$/i })).toBeInTheDocument();
-    expect(menu.getByRole("button", { name: /^invoices$/i })).toBeInTheDocument();
-    expect(menu.getByRole("button", { name: /^clients$/i })).toBeInTheDocument();
-    expect(menu.getByRole("button", { name: /^expenses$/i })).toBeInTheDocument();
-    expect(menu.getByRole("button", { name: /^settings$/i })).toBeInTheDocument();
+    // Primary tabs live on the dock itself, not in the menu
+    expect(menu.queryByRole("button", { name: /^dashboard$/i })).not.toBeInTheDocument();
+    expect(menu.queryByRole("button", { name: /^entries$/i })).not.toBeInTheDocument();
+    expect(menu.queryByRole("button", { name: /^invoices$/i })).not.toBeInTheDocument();
+    expect(menu.getAllByRole("button").map((b) => b.getAttribute("aria-label"))).toEqual([
+      "Emails",
+      "Clients",
+      "Expenses",
+      "Tax",
+      "Settings",
+    ]);
   });
 
   it("closes when overlay is clicked", async () => {

@@ -31,6 +31,13 @@ When you hit one of these during a task, do **not** fix it inline — that bloat
 - Notes: the offline-first branches don't touch layout or CSS. iOS snapshots some web-app settings (manifest, viewport and status-bar metas) when the app is added, so the existing install may still be using older settings that a new install doesn't get.
 - Fix: not attempted. Jesse chose to leave it for now.
 
+### tab definitions duplicated between the mobile dock and the desktop sidebar
+
+- First noted: 2026-10-22 (review of PR #111, fix/dock-menu-secondary-only)
+- Symptom: views are listed twice. `PRIMARY_TABS` + `SECONDARY_TABS` in `src/components/floating-dock.tsx` cover mobile, and `navItems` in `src/components/app-nav.tsx` covers desktop. Each file has its own view/label/icon entries, and the icons already differ (Entries is `FileClock` on the dock and `FileText` in the sidebar). The two dock arrays also repeat the same inline type annotation.
+- Risk: AGENTS.md says to add a new view to both files. If one is missed, the two navs drift apart. Since #111 the dock menu lists only `SECONDARY_TABS`, so a view missing from both dock arrays has no way in on mobile. The dock menu test asserts the exact menu list, which catches items removed from `SECONDARY_TABS` but not a new view that was never added.
+- Fix: not attempted. Option: one shared `NAV_ITEMS` (view, label, icon, `primary: boolean`) imported by both components, with the dock splitting it by `primary`. That means picking one Entries icon.
+
 ## Resolved
 
 ### blank gap in the bottom safe area on a fresh home-screen install

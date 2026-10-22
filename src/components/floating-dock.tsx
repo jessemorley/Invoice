@@ -94,7 +94,7 @@ export function FloatingDock() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex flex-col divide-y divide-border/50">
-              {[...PRIMARY_TABS, ...SECONDARY_TABS].map((tab) => {
+              {SECONDARY_TABS.map((tab) => {
                 const Icon = tab.icon;
                 const active = view === tab.view;
                 return (
@@ -178,7 +178,7 @@ export function FloatingDock() {
             {/* Divider */}
             <div className="relative z-10 w-px h-6 bg-border" />
 
-            {/* Menu button — active when on a secondary view */}
+            {/* Menu button — the active secondary view is highlighted inside the menu, not here */}
             <button
               aria-label="Menu"
               onClick={() => setMenuOpen((o) => !o)}
