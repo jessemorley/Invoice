@@ -23,7 +23,7 @@ Views fetch their data lazily on first reveal via browser loaders in `src/lib/vi
 
 ## Offline app shell
 
-`public/sw.js` serves navigations to `/` and `/_next/static/*` from cache (caches named `pages-<build>` / `static-<build>`, build = commit SHA via `NEXT_PUBLIC_BUILD_ID`) and refreshes the page in the background. Never put view data in the HTML of `/`: a cached copy would be stale. If a loader finds the session gone for good it throws `SignedOutError` and `ViewSwitch` sends the user to `/login`, which clears both the IndexedDB data and the cached pages. `src/lib/sw.test.ts` pins down which requests the worker may cache.
+`public/sw.js` serves navigations to `/` and `/_next/static/*` from cache (caches named `pages-<build>` / `static-<build>`, build = commit SHA via `NEXT_PUBLIC_BUILD_ID`) and refreshes the page in the background. Never put view data in the HTML of `/`: a cached copy would be stale. If a loader finds the session gone for good it throws `SignedOutError` and `ViewSwitch` sends the user to `/login`, which clears both the IndexedDB data and the cached pages. After a deploy, `UpdateReloader` (`src/components/update-reloader.tsx`) compares the running build with `GET /api/version` on launch, resume and reconnect, and reloads into the new build with `?fresh=1` (network-first in the worker) when no sheet or dialog is open, otherwise the next time the app is backgrounded. The worker keeps the previous build's caches as well as the current ones, so the first launch after an update still works offline. `src/lib/sw.test.ts` and `src/lib/sw-skew.test.ts` pin down the worker's behaviour.
 
 Tab switches update the URL with `window.history.replaceState`, not `router.replace`, so they never fetch the route from the server.
 
