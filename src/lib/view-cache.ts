@@ -71,6 +71,17 @@ export async function writeCache(view: string, data: unknown, store: Store = idb
   }
 }
 
+// The service worker's cached HTML for "/" (public/sw.js) carries the user's
+// identity, so it goes when the user does. Scripts are kept.
+export async function clearCachedPages(): Promise<void> {
+  try {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter((k) => k.startsWith("pages-")).map((k) => caches.delete(k)));
+  } catch {
+    // best-effort
+  }
+}
+
 export async function clearCache(store: Store = idbStore): Promise<void> {
   try {
     await store.clear();

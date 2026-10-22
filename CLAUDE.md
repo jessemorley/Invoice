@@ -31,7 +31,7 @@ UI changes still need verifying manually via the dev server.
 
 View data is read in the browser: `src/lib/view-loaders.ts` calls the query bodies in `src/lib/reads.ts` with the browser Supabase client (`createBrowserSupabase()` in `src/lib/supabase.ts`). `reads.ts` must stay free of `next/*` imports. Pure view logic (`buildDashboardData`, `buildTaxTotals`, `buildInvoicesView`) lives there too and runs in the device's timezone, so never derive dates with `toISOString()` from a local-midnight `Date`.
 
-Server-side reads (actions, API routes, the PDF renderer, SSR of `/`) still go through `src/lib/queries.ts`.
+Server-side reads (actions, API routes, the PDF renderer) still go through `src/lib/queries.ts`. `/` embeds no view data — the service worker caches its HTML (see AGENTS.md "Offline app shell").
 
 Queries in `src/lib/queries.ts` use Next.js `"use cache"` + `cacheTag(CACHE_TAGS.xxx)`. Mutations must call `revalidateTag(CACHE_TAGS.xxx)` (server-side) *and* `invalidate(tag)` (client-side) to keep both the Next.js cache and the SPA state in sync.
 

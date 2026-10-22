@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { readCache, writeCache } from "./view-cache";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { clearCachedPages, readCache, writeCache } from "./view-cache";
 
 function memoryStore(initial: Record<string, unknown> = {}) {
   const map = new Map(Object.entries(initial));
@@ -34,5 +34,24 @@ describe("readCache", () => {
     const broken = { get: fail, set: fail, clear: fail };
     expect(await readCache("u1", ["entries"], broken)).toEqual({});
     await expect(writeCache("entries", [], broken)).resolves.toBeUndefined();
+  });
+});
+
+describe("clearCachedPages", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("deletes the service worker's page caches (user-specific HTML) and keeps scripts", async () => {
+    const names = new Set(["pages-abc", "pages-old", "static-abc", "other"]);
+    vi.stubGlobal("caches", {
+      keys: async () => [...names],
+      delete: async (n: string) => names.delete(n),
+    });
+    await clearCachedPages();
+    expect([...names].sort()).toEqual(["other", "static-abc"]);
+  });
+
+  it("is a no-op where CacheStorage is unavailable", async () => {
+    vi.stubGlobal("caches", undefined);
+    await expect(clearCachedPages()).resolves.toBeUndefined();
   });
 });
