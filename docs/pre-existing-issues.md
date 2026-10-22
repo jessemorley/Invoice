@@ -19,6 +19,14 @@ When you hit one of these during a task, do **not** fix it inline — that bloat
 
 ## Resolved
 
+### blank gap in the bottom safe area on a fresh home-screen install
+
+- First noted: 2026-10-21 (Jesse, on iPhone, during feature/offline-first-launch testing)
+- Resolved: 2026-10-22 (fix/ios-standalone-viewport-gap)
+- Cause: an iOS 26 standalone bug with `statusBarStyle: "black-translucent"` + `viewport-fit=cover`. The web view is drawn from the top of the screen but sized as if the status bar took space, so it ends 62pt short (measured in Web Inspector: `screen.height` 874, `innerHeight` 812, `safe-area-inset-top` 62px). The dock is fixed to that short viewport, so it sat too high as well. Older installs were saved with `"default"` (black-translucent arrived in #102 on 2026-09-05) and never hit it.
+- Ruled out: a fixed element positioned inside the strip never paints (the web view itself is short, so no CSS/JS can fill it); rewriting the viewport meta doesn't make iOS re-measure; adding the legacy `apple-mobile-web-app-capable` tag made no difference. Landscape shows no gap, since it has no top inset.
+- Fix: `statusBarStyle: "default"` in `src/app/layout.tsx`. Verified on a fresh install. iOS snapshots this at install time, so affected installs need deleting and re-adding. Revisit black-translucent if WebKit fixes the sizing.
+
 ### four user-identified defects: bounce clearing, suggested-invoice bonus, outstanding super, FY chart labels
 
 - First noted: 2026-09-05 (user-identified)
