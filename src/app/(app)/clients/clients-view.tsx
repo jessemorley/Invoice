@@ -79,7 +79,7 @@ function ClientCard({ client, onClick }: { client: Client; onClick: () => void }
 function ClientsSkeleton() {
   return (
     <div className="flex flex-col h-full">
-      <ViewHeader title="Clients" searchValue="" onSearchChange={() => {}} loading />
+      <ViewHeader title="Clients" searchValue="" onSearchChange={() => {}} loading titleHidden borderHidden account={<HeaderUserAvatar />} />
       {/* Desktop */}
       <div className="hidden md:flex flex-col flex-1 overflow-y-auto">
         <div className="px-4 md:px-6 py-6 mx-auto w-full max-w-6xl flex flex-col gap-4 flex-1">
@@ -120,10 +120,16 @@ function ClientsSkeleton() {
       </div>
       {/* Mobile */}
       <div className="md:hidden flex-1 overflow-y-auto pb-28">
-        <div className="px-4 pt-4 pb-2 flex gap-2">
-          <Skeleton className="h-9 flex-1" />
-          <Skeleton className="h-9 w-28" />
-        </div>
+        <LargeTitle>Clients</LargeTitle>
+        <Tabs value="all" className="w-max gap-0 px-4 pt-3">
+          <TabsList className="bg-transparent p-0 gap-2 h-auto">
+            {(["all", "active", "inactive"] as const).map((s) => (
+              <TabsTrigger key={s} value={s} className={TAB_TRIGGER} disabled>
+                {STATUS_LABELS[s]}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
         <div className="px-4 py-3 flex flex-col gap-3">
           {[...Array(6)].map((_, i) => (
             <Card key={i} className="py-0">
