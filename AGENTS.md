@@ -12,14 +12,20 @@ The app uses a single route (`/`) with a `?view=` search param rather than separ
 
 **Adding a new view:**
 1. Create the client component (e.g. `src/app/(app)/newview/newview-client.tsx`)
-2. Add a server action loader to `src/app/(app)/actions.ts`
+2. Add a browser loader to `src/lib/view-loaders.ts` (query bodies go in `src/lib/reads.ts`)
 3. Add state, a `fetchView` case, and a render slot to `ViewSwitch`
 4. Add the tag mapping to `TAG_TO_VIEWS` in `ViewSwitch`
 5. Add the tab to `src/components/floating-dock.tsx` and `src/components/app-nav.tsx`
 
 ## Data fetching
 
-Views fetch their data lazily on first reveal via server actions in `src/app/(app)/actions.ts`. Data is held in local `useState` inside `ViewSwitch`.
+Views fetch their data lazily on first reveal via browser loaders in `src/lib/view-loaders.ts`, which query Supabase directly with the user's session (RLS applies). Data is held in local `useState` inside `ViewSwitch` and saved to IndexedDB (`src/lib/view-cache.ts`, keyed to the user ID): on launch the saved copy fills empty views immediately, never overwriting fresher data, and each view still re-fetches on first reveal. The login page clears the saved data.
+
+## Offline app shell
+
+`public/sw.js` serves navigations to `/` and `/_next/static/*` from cache (caches named `pages-<build>` / `static-<build>`, build = commit SHA via `NEXT_PUBLIC_BUILD_ID`) and refreshes the page in the background. Never put view data in the HTML of `/`: a cached copy would be stale. If a loader finds the session gone for good it throws `SignedOutError` and `ViewSwitch` sends the user to `/login`, which clears both the IndexedDB data and the cached pages. After a deploy, `UpdateReloader` (`src/components/update-reloader.tsx`) compares the running build with `GET /api/version` on launch, resume and reconnect, and reloads into the new build with `?fresh=1` (network-first in the worker) when no sheet or dialog is open, otherwise the next time the app is backgrounded. The worker keeps the previous build's caches as well as the current ones, so the first launch after an update still works offline. `src/lib/sw.test.ts` and `src/lib/sw-skew.test.ts` pin down the worker's behaviour.
+
+Tab switches update the URL with `window.history.replaceState`, not `router.replace`, so they never fetch the route from the server.
 
 ## Data refresh after mutations
 

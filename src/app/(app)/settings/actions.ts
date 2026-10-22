@@ -8,13 +8,8 @@ import { sendTestPush } from "@/lib/push";
 import { inngest } from "@/lib/inngest";
 import { nextWeeklyCutoff } from "@/lib/format";
 import {
-  fetchBusinessDetails,
-  fetchInvoiceSequence,
   fetchUserPreferences,
   CACHE_TAGS,
-  type BusinessDetails,
-  type InvoiceSequence,
-  type UserPreferences,
   type WeeklyInvoiceReminderCutoff,
 } from "@/lib/queries";
 
@@ -48,20 +43,6 @@ export type NotificationFormData = {
   weekly_invoice_reminder: boolean;
   weekly_invoice_reminder_cutoff: WeeklyInvoiceReminderCutoff;
 };
-
-export async function fetchSettings(): Promise<{
-  businessDetails: BusinessDetails | null;
-  invoiceSequence: InvoiceSequence | null;
-  userPreferences: UserPreferences | null;
-}> {
-  const { userId, token } = await getAuth();
-  const [businessDetails, invoiceSequence, userPreferences] = await Promise.all([
-    fetchBusinessDetails(userId, token),
-    fetchInvoiceSequence(userId, token),
-    fetchUserPreferences(userId, token),
-  ]);
-  return { businessDetails, invoiceSequence, userPreferences };
-}
 
 export async function saveBusinessDetails(data: BusinessDetailsFormData) {
   const [supabase, userId] = await Promise.all([createClient(), getAuthUserId()]);
