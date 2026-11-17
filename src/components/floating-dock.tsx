@@ -1,12 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Plus, Menu, X } from "lucide-react";
+import { AnimateIcon } from "@animate-ui/react/icons";
+import { Plus } from "@/components/animate-ui/icons/plus";
+import { Menu } from "@/components/animate-ui/icons/menu";
+import { X } from "@/components/animate-ui/icons/x";
 import { cn } from "@/lib/utils";
 import { useActiveView, VIEWS, type ViewId } from "@/components/active-view-context";
 
 const PRIMARY_TABS = VIEWS.filter((t) => t.primary);
 const SECONDARY_TABS = VIEWS.filter((t) => !t.primary);
+
+// Touch has no hover: animate on press, and let the animation finish after a quick tap.
+function Pressable({ children }: { children: React.ReactElement }) {
+  return <AnimateIcon animateOnTap completeOnStop asChild>{children}</AnimateIcon>;
+}
 
 const DOCK_NEW_VIEWS = new Set<ViewId>(["entries", "invoices", "emails", "expenses", "clients"]);
 
@@ -87,21 +95,22 @@ export function FloatingDock() {
                 const Icon = tab.icon;
                 const active = view === tab.view;
                 return (
-                  <button
-                    key={tab.view}
-                    aria-label={tab.label}
-                    aria-current={active ? "page" : undefined}
-                    onClick={() => handleSecondaryTap(tab.view)}
-                    className="flex w-full items-center gap-3 px-4 py-3.5 text-base hover:bg-muted transition-colors duration-200 touch-manipulation"
-                  >
-                    <Icon
-                      className={cn("size-5", active ? "text-foreground" : "text-muted-foreground")}
-                      strokeWidth={1.75}
-                    />
-                    <span className={cn("font-medium", !active && "text-muted-foreground")}>
-                      {tab.label}
-                    </span>
-                  </button>
+                  <Pressable key={tab.view}>
+                    <button
+                      aria-label={tab.label}
+                      aria-current={active ? "page" : undefined}
+                      onClick={() => handleSecondaryTap(tab.view)}
+                      className="flex w-full items-center gap-3 px-4 py-3.5 text-base hover:bg-muted transition-colors duration-200 touch-manipulation"
+                    >
+                      <Icon
+                        className={cn("size-5", active ? "text-foreground" : "text-muted-foreground")}
+                        strokeWidth={1.75}
+                      />
+                      <span className={cn("font-medium", !active && "text-muted-foreground")}>
+                        {tab.label}
+                      </span>
+                    </button>
+                  </Pressable>
                 );
               })}
             </div>
@@ -122,17 +131,19 @@ export function FloatingDock() {
             />
 
             {/* Plus button — active for primary views, greyed out otherwise */}
-            <button
-              aria-label="New"
-              disabled={!DOCK_NEW_VIEWS.has(view)}
-              onClick={() => window.dispatchEvent(new CustomEvent("dock:new", { detail: view }))}
-              className={cn(
-                "relative z-10 flex items-center justify-center p-3 rounded-full transition-colors duration-150 touch-manipulation",
-                DOCK_NEW_VIEWS.has(view) ? "text-primary" : "text-muted-foreground/30"
-              )}
-            >
-              <Plus className="size-6" strokeWidth={1.75} />
-            </button>
+            <Pressable>
+              <button
+                aria-label="New"
+                disabled={!DOCK_NEW_VIEWS.has(view)}
+                onClick={() => window.dispatchEvent(new CustomEvent("dock:new", { detail: view }))}
+                className={cn(
+                  "relative z-10 flex items-center justify-center p-3 rounded-full transition-colors duration-150 touch-manipulation",
+                  DOCK_NEW_VIEWS.has(view) ? "text-primary" : "text-muted-foreground/30"
+                )}
+              >
+                <Plus className="size-6" strokeWidth={1.75} />
+              </button>
+            </Pressable>
 
             {/* Divider */}
             <div className="relative z-10 w-px h-6 bg-border" />
@@ -143,23 +154,24 @@ export function FloatingDock() {
                 const Icon = tab.icon;
                 const isActive = view === tab.view;
                 return (
-                  <button
-                    key={tab.view}
-                    aria-label={tab.label}
-                    onClick={() => handlePrimaryTap(tab.view)}
-                    className={cn(
-                      "relative z-10 flex items-center justify-center p-3 rounded-full transition-colors duration-150 touch-manipulation",
-                      isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    <Icon className="size-6 relative" strokeWidth={isActive ? 2.25 : 1.75} />
-                    {/* Badge on invoices tab */}
-                    {tab.view === "invoices" && uninvoicedCount > 0 && (
-                      <span className="absolute top-1.5 right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
-                        {uninvoicedCount}
-                      </span>
-                    )}
-                  </button>
+                  <Pressable key={tab.view}>
+                    <button
+                      aria-label={tab.label}
+                      onClick={() => handlePrimaryTap(tab.view)}
+                      className={cn(
+                        "relative z-10 flex items-center justify-center p-3 rounded-full transition-colors duration-150 touch-manipulation",
+                        isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <Icon className="size-6 relative" strokeWidth={isActive ? 2.25 : 1.75} />
+                      {/* Badge on invoices tab */}
+                      {tab.view === "invoices" && uninvoicedCount > 0 && (
+                        <span className="absolute top-1.5 right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground leading-none">
+                          {uninvoicedCount}
+                        </span>
+                      )}
+                    </button>
+                  </Pressable>
                 );
               })}
             </div>
@@ -168,15 +180,17 @@ export function FloatingDock() {
             <div className="relative z-10 w-px h-6 bg-border" />
 
             {/* Menu button — the active secondary view is highlighted inside the menu, not here */}
-            <button
-              aria-label="Menu"
-              onClick={() => setMenuOpen((o) => !o)}
-              className="relative z-10 flex items-center justify-center p-3 rounded-full text-muted-foreground hover:text-foreground transition-colors duration-150 touch-manipulation"
-            >
-              {menuOpen
-                ? <X className="size-6" strokeWidth={1.75} />
-                : <Menu className="size-6" strokeWidth={1.75} />}
-            </button>
+            <Pressable>
+              <button
+                aria-label="Menu"
+                onClick={() => setMenuOpen((o) => !o)}
+                className="relative z-10 flex items-center justify-center p-3 rounded-full text-muted-foreground hover:text-foreground transition-colors duration-150 touch-manipulation"
+              >
+                {menuOpen
+                  ? <X className="size-6" strokeWidth={1.75} />
+                  : <Menu className="size-6" strokeWidth={1.75} />}
+              </button>
+            </Pressable>
 
           </div>
         </nav>

@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { AnimateIcon } from "@animate-ui/react/icons";
 
 function NavItem({
   view,
@@ -41,14 +42,16 @@ function NavItem({
   const isActive = currentView === view;
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton
-        isActive={isActive}
-        onClick={() => onNavigate(view)}
-        className={cn("cursor-pointer")}
-      >
-        <Icon />
-        <span>{label}</span>
-      </SidebarMenuButton>
+      <AnimateIcon animateOnHover asChild>
+        <SidebarMenuButton
+          isActive={isActive}
+          onClick={() => onNavigate(view)}
+          className={cn("cursor-pointer")}
+        >
+          <Icon />
+          <span>{label}</span>
+        </SidebarMenuButton>
+      </AnimateIcon>
     </SidebarMenuItem>
   );
 }
