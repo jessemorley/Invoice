@@ -12,3 +12,11 @@ window.matchMedia ??= (query: string) =>
     removeListener: () => {},
     dispatchEvent: () => false,
   }) as unknown as MediaQueryList;
+
+// jsdom has no IntersectionObserver; animate-ui's AnimateIcon (via motion's useInView) needs it.
+globalThis.IntersectionObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() { return []; }
+} as unknown as typeof IntersectionObserver;

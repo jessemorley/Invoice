@@ -2,18 +2,26 @@
 
 import { createContext, useCallback, useContext, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { LayoutDashboard, FileClock, Receipt, Mail, Users, Wallet, Landmark, Settings } from "lucide-react";
+// Animated on hover/press via an <AnimateIcon> ancestor in the sidebar and dock.
+import { LayoutDashboard } from "@/components/animate-ui/icons/layout-dashboard";
+import { FileClock } from "@/components/animate-ui/icons/file-clock";
+import { FileCheck } from "@/components/animate-ui/icons/file-check";
+import { BookText } from "@/components/animate-ui/icons/book-text";
+import { Mail } from "@/components/animate-ui/icons/mail";
+import { Users } from "@/components/animate-ui/icons/users";
+import { Wallet } from "@/components/animate-ui/icons/wallet";
+import { Settings } from "@/components/animate-ui/icons/settings";
 
 // Every view, in nav order. ViewId is derived from this, so a new view can't
 // miss the dock or the sidebar. `primary` views sit in the dock; the rest are in its menu.
 export const VIEWS = [
   { view: "dashboard", label: "Dashboard", icon: LayoutDashboard, primary: true },
   { view: "entries", label: "Entries", icon: FileClock, primary: true },
-  { view: "invoices", label: "Invoices", icon: Receipt, primary: true },
+  { view: "invoices", label: "Invoices", icon: FileCheck, primary: true },
   { view: "emails", label: "Emails", icon: Mail, primary: false },
   { view: "clients", label: "Clients", icon: Users, primary: false },
   { view: "expenses", label: "Expenses", icon: Wallet, primary: false },
-  { view: "tax", label: "Tax", icon: Landmark, primary: false },
+  { view: "tax", label: "Tax", icon: BookText, primary: false },
   { view: "settings", label: "Settings", icon: Settings, primary: false },
 ] as const;
 
