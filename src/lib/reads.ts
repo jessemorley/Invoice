@@ -739,6 +739,7 @@ export type BusinessDetails = {
   address: string;
   suburb: string;
   email: string;
+  website: string;
   super_fund: string;
   super_fund_abn: string;
   super_usi: string;

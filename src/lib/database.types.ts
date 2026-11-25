@@ -47,6 +47,7 @@ export type Database = {
           bsb: string
           business_name: string
           email: string
+          website: string
           id: string
           include_super_in_totals: boolean
           name: string
@@ -64,6 +65,7 @@ export type Database = {
           bsb?: string
           business_name?: string
           email?: string
+          website?: string
           id?: string
           include_super_in_totals?: boolean
           name?: string
@@ -81,6 +83,7 @@ export type Database = {
           bsb?: string
           business_name?: string
           email?: string
+          website?: string
           id?: string
           include_super_in_totals?: boolean
           name?: string
