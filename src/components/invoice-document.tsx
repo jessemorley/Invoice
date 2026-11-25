@@ -23,8 +23,8 @@ const PAD = 12;
 const s = StyleSheet.create({
   page: {
     fontFamily: "Helvetica-Bold",
-    fontSize: 7.5,
-    lineHeight: 1.05,
+    fontSize: 8,
+    lineHeight: 1.12,
     color: "#161616",
     backgroundColor: "#ecece9",
     textTransform: "uppercase",
@@ -49,8 +49,8 @@ const s = StyleSheet.create({
   r: { textAlign: "right" },
   val: { fontFamily: "Helvetica", fontSize: 12, lineHeight: 1.1, textTransform: "none" },
   amt: { fontSize: 12, lineHeight: 1.1 },
-  date: { fontSize: 6.75, lineHeight: 1.1, paddingTop: 3 },
-  sub: { fontSize: 6.75, lineHeight: 1.1, marginTop: 6 },
+  date: { fontSize: 8, lineHeight: 1.12, paddingTop: 3 },
+  sub: { fontSize: 8, lineHeight: 1.12, marginTop: 6 },
 
   notes: { justifyContent: "flex-end", paddingBottom: 22.5 },
   // lineHeight needs fontSize alongside it, or react-pdf resolves it against 18pt.
