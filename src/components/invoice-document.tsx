@@ -41,11 +41,13 @@ const s = StyleSheet.create({
 
   cell: { minHeight: ROW, paddingHorizontal: PAD, paddingVertical: 4, justifyContent: "center" },
   c1: { width: C1 },
-  c2: { flex: 1 },
-  cQty: { width: 48 },
+  c2: { width: C2 },
+  cQty: { width: 56 },
   c3: { width: C3 },
+  rate: { flex: 1 },
   c4: { flex: 1 },
-  descWrap: { width: C2, flexDirection: "row" },
+  // Qty/Hours sits just right of the centre line, sharing column 3 with Rate.
+  rateWrap: { width: C3, flexDirection: "row" },
   r: { textAlign: "right" },
   val: { fontFamily: "Helvetica", fontSize: 12, lineHeight: 1.1, textTransform: "none" },
   amt: { fontSize: 12, lineHeight: 1.1 },
@@ -145,14 +147,14 @@ function Row(p: { date?: string; desc: string; sub?: string | null; qty?: string
   return (
     <View style={[s.row, s.bb]} wrap={false}>
       <View style={[s.cell, s.c1, s.br]}><Text style={s.date}>{p.date ?? ""}</Text></View>
-      <View style={s.descWrap}>
-        <View style={[s.cell, s.c2, s.br]}>
-          <Text style={p.subAmount ? s.sub : s.val}>{p.desc}</Text>
-          {p.sub ? <Text style={s.sub}>{p.sub}</Text> : null}
-        </View>
-        {p.showQty ? <View style={[s.cell, s.cQty, s.br]}><Text style={[s.val, s.r]}>{p.qty ?? ""}</Text></View> : null}
+      <View style={[s.cell, s.c2, s.br]}>
+        <Text style={p.subAmount ? s.sub : s.val}>{p.desc}</Text>
+        {p.sub ? <Text style={s.sub}>{p.sub}</Text> : null}
       </View>
-      <View style={[s.cell, s.c3, s.br]}><Text style={[s.val, s.r]}>{p.rate ?? ""}</Text></View>
+      <View style={s.rateWrap}>
+        {p.showQty ? <View style={[s.cell, s.cQty, s.br]}><Text style={[s.val, s.r]}>{p.qty ?? ""}</Text></View> : null}
+        <View style={[s.cell, s.rate, s.br]}><Text style={[s.val, s.r]}>{p.rate ?? ""}</Text></View>
+      </View>
       <View style={[s.cell, s.c4]}><Text style={[p.subAmount ? s.sub : s.amt, s.r]}>{p.amount}</Text></View>
     </View>
   );
@@ -275,12 +277,13 @@ export function InvoiceDocument({ invoice, business }: Props) {
           </View>
         </View>
 
-        <View style={[s.row, { height: 78 }]}>
+        {/* Height follows the client address; the left cell stretches to match. */}
+        <View style={s.row}>
           <View style={[s.left, s.br, s.bb, s.split, { paddingTop: 12 }]}>
             <Text>{invoice.number}</Text>
             <Text>Dates</Text>
           </View>
-          <View style={[s.right, { paddingTop: 12 }]}>
+          <View style={[s.right, { paddingTop: 12, paddingBottom: 22 }]}>
             <Text>{client.name}</Text>
             {/* ABN identifies the client on a tax invoice; email is the fallback. */}
             {client.abn ? <Text>ABN {client.abn}</Text> : client.email ? <Text>{client.email}</Text> : null}
@@ -289,32 +292,22 @@ export function InvoiceDocument({ invoice, business }: Props) {
           </View>
         </View>
 
-        <View style={[s.row, s.bb, { height: 78 }]}>
-          <View style={[s.left, s.br, { paddingTop: 11 }]}>
+        <View style={[s.row, s.bb]}>
+          <View style={[s.left, s.br, { paddingTop: 12, paddingBottom: 22 }]}>
             {invoice.issued_date ? <Text>Issued{"\n"}{fmtDateShort(invoice.issued_date)}</Text> : null}
             {invoice.due_date ? <Text style={s.gap}>Due{"\n"}{fmtDateShort(invoice.due_date)}</Text> : null}
           </View>
-          <View style={[s.right, { paddingTop: 11 }]}>
-            {(business.bsb || business.account_number)
-              ? <Text>Pay to{"\n"}BSB {business.bsb}{"\n"}Account Number {business.account_number}</Text>
-              : null}
-            {showSuperDetails && business.super_fund ? (
-              <Text style={s.gap}>
-                {business.super_fund}{"\n"}Member {business.super_member_number}, ABN {business.super_fund_abn}
-                {business.super_usi ? `\nUSI ${business.super_usi}` : ""}
-              </Text>
-            ) : null}
-          </View>
+          <View style={s.right} />
         </View>
 
         {/* Table head */}
         <View style={[s.row, s.bb]}>
           <View style={[s.cell, s.c1, s.br]}><Text>{qtyFirst ? "Qty" : "Date"}</Text></View>
-          <View style={s.descWrap}>
-            <View style={[s.cell, s.c2, s.br]}><Text>{descriptionHeader}</Text></View>
+          <View style={[s.cell, s.c2, s.br]}><Text>{descriptionHeader}</Text></View>
+          <View style={s.rateWrap}>
             {qtyCol ? <View style={[s.cell, s.cQty, s.br]}><Text style={s.r}>{showHours ? "Hours" : "Qty"}</Text></View> : null}
+            <View style={[s.cell, s.rate, s.br]}><Text style={s.r}>{showRate ? "Rate" : ""}</Text></View>
           </View>
-          <View style={[s.cell, s.c3, s.br]}><Text style={s.r}>{showRate ? "Rate" : ""}</Text></View>
           <View style={[s.cell, s.c4]}><Text style={s.r}>Amount</Text></View>
         </View>
 
@@ -327,7 +320,16 @@ export function InvoiceDocument({ invoice, business }: Props) {
         {/* Spacer + notes (left) and totals (right) fill the rest of the page */}
         <View style={[s.row, { flex: 1 }]}>
           <View style={[s.left, s.br, s.bb, s.notes]}>
-            {invoice.notes ? <Text style={s.notesText}>{invoice.notes}</Text> : null}
+            {(business.bsb || business.account_number)
+              ? <Text>Pay to{"\n"}BSB {business.bsb}{"\n"}Account Number {business.account_number}</Text>
+              : null}
+            {showSuperDetails && business.super_fund ? (
+              <Text style={s.gap}>
+                {business.super_fund}{"\n"}Member {business.super_member_number}, ABN {business.super_fund_abn}
+                {business.super_usi ? `\nUSI ${business.super_usi}` : ""}
+              </Text>
+            ) : null}
+            {invoice.notes ? <Text style={[s.notesText, { marginTop: 12 }]}>{invoice.notes}</Text> : null}
           </View>
           <View style={{ flex: 1 }}>
             <View style={[s.bb, { flex: 1 }]} />
