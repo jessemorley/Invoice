@@ -19,7 +19,7 @@ const LINE = "0.75pt solid #5a5a5a";
 const C1 = 99, C2 = 198.75, C3 = 148.5; // column 4 takes the rest
 const ROW = 24;
 // Invoice No/To and Dates rows share one height so the grid stays even.
-const MID_ROW = 78;
+const MID_ROW = 70;
 const PAD = 12;
 
 const s = StyleSheet.create({
