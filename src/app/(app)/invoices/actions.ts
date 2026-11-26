@@ -84,7 +84,7 @@ export type InvoiceFormData = {
   paid_date: string;
   due_date: string;
   notes: string;
-  project: string;
+  project?: string;
 };
 
 export async function loadUninvoicedGroups() {
@@ -851,7 +851,8 @@ export async function updateInvoice(id: string, data: InvoiceFormData) {
       issued_date: data.issued_date || null,
       due_date: dueDate,
       notes: data.notes || null,
-      project: data.project.trim() || null,
+      // Tabs on the previous build send no project: leave it untouched rather than throw or clear it
+      ...(data.project !== undefined && { project: data.project.trim() || null }),
       paid_date: data.paid_date || null,
     })
     .eq("id", id)
