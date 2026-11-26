@@ -21,6 +21,9 @@ const ROW = 24;
 // Invoice No/To and Dates rows share one height so the grid stays even.
 const MID_ROW = 70;
 const PAD = 12;
+const FOOTER = 75;
+// Notes/totals block: three total rows plus room for payment details.
+const TOTALS_MIN = 120;
 
 const s = StyleSheet.create({
   page: {
@@ -30,6 +33,7 @@ const s = StyleSheet.create({
     color: "#161616",
     backgroundColor: "#ffffff",
     textTransform: "uppercase",
+    paddingBottom: FOOTER, // the fixed footer sits in this space on every page
   },
   row: { flexDirection: "row" },
   bb: { borderBottom: LINE },
@@ -60,7 +64,7 @@ const s = StyleSheet.create({
   notes: { justifyContent: "flex-end", paddingBottom: 22.5 },
   // lineHeight needs fontSize alongside it, or react-pdf resolves it against 18pt.
   notesText: { width: 184, fontFamily: "Helvetica", fontSize: 7.5, textTransform: "none", lineHeight: 1.1 },
-  footer: { height: 75, justifyContent: "flex-end", paddingBottom: 10 },
+  footer: { height: FOOTER, justifyContent: "flex-end", paddingBottom: 10 },
 });
 
 function fmtAmount(n: number): string {
@@ -146,11 +150,11 @@ function entryDescription(entry: Entry): string {
 
 // One grid row. `sub` is the small second line under the description
 // (time range, manual-entry detail, line-item details).
-function Row(p: { date?: string; desc: string; sub?: string | null; qty?: string; rate?: string; amount?: string; showQty: boolean; short?: boolean }) {
+function Row(p: { date?: string; desc: string; sub?: string | null; qty?: string; rate?: string; amount?: string; showQty: boolean; short?: boolean; last?: boolean }) {
   const cell = p.short ? [s.cell, s.short] : [s.cell];
   const main = (
     // A row with a sub-line drops its bottom border so the two read as one block.
-    <View style={p.sub ? s.row : [s.row, s.bb]} wrap={false}>
+    <View style={p.sub ? s.row : [s.row, s.bb]} wrap={false} minPresenceAhead={p.last && !p.sub ? TOTALS_MIN : undefined}>
       <View style={[...cell, s.c1, s.br]}><Text style={s.date}>{p.date ?? ""}</Text></View>
       <View style={[...cell, s.c2, s.br]}><Text style={p.short ? undefined : s.val}>{p.desc}</Text></View>
       <View style={s.rateWrap}>
@@ -162,14 +166,14 @@ function Row(p: { date?: string; desc: string; sub?: string | null; qty?: string
   );
   if (!p.sub) return main;
   return (
-    <>
+    <View wrap={false} minPresenceAhead={p.last ? TOTALS_MIN : undefined}>
       {main}
       <Row desc={p.sub} showQty={p.showQty} short />
-    </>
+    </View>
   );
 }
 
-function EntryRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
+function EntryRow({ entry, showQty, last }: { entry: Entry; showQty: boolean; last: boolean }) {
   const qty = entry.billing_type === "hourly" && entry.hours_worked != null
     ? String(entry.hours_worked)
     : entry.billing_type === "manual" && entry.skus != null
@@ -187,7 +191,7 @@ function EntryRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
     ? fmtAmount(isOwnBrand ? lineTotal : entry.base_amount)
     : entry.skus
     ? fmtAmount(entry.base_amount / entry.skus)
-    : lineTotal === 0
+    : entry.skus === 0 || lineTotal === 0
     ? ""
     : fmtAmount(lineTotal); // manual, no SKU count: one unit, so rate = amount
   // manual entries with no amount entered show a blank cell rather than 0.00
@@ -202,7 +206,7 @@ function EntryRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
 
   return (
     <Row date={time ? `${fmtDateDay(entry.date)}\n${time}` : fmtDateDay(entry.date)} desc={entryDescription(entry)} sub={sub}
-      qty={qty} rate={rate} amount={amount} showQty={showQty} />
+      qty={qty} rate={rate} amount={amount} showQty={showQty} last={last} />
   );
 }
 
@@ -220,14 +224,14 @@ function timeRangeLabel(entry: Entry): string {
   return label;
 }
 
-function LineItemRow({ item, showQty, qtyFirst }: { item: LineItem; showQty: boolean; qtyFirst: boolean }) {
+function LineItemRow({ item, showQty, qtyFirst, last }: { item: LineItem; showQty: boolean; qtyFirst: boolean; last: boolean }) {
   // Blank quantity bills as 1 × amount (lineItemTotal), so show it that way.
   const qty = String(item.quantity ?? 1);
   return (
     <Row desc={item.description} sub={item.details}
       date={qtyFirst ? qty : undefined} qty={qty}
       rate={fmtAmount(item.amount)}
-      amount={fmtAmount(lineItemTotal(item))} showQty={showQty} />
+      amount={fmtAmount(lineItemTotal(item))} showQty={showQty} last={last} />
   );
 }
 
@@ -267,7 +271,6 @@ export function InvoiceDocument({ invoice, business }: Props) {
 
   return (
     <Document>
-      {/* ponytail: one fixed A4 grid; rows that overflow wrap onto a second page without the header grid. Add a fixed repeating header when invoices get that long. */}
       <Page size="A4" style={s.page}>
         {/* Top block: each cell's bottom label names the cell below it */}
         <View style={[s.row, s.bb, { height: 142.5 }]}>
@@ -321,22 +324,31 @@ export function InvoiceDocument({ invoice, business }: Props) {
           <View style={[s.cell, s.c4]}><Text style={s.r}>Amount</Text></View>
         </View>
 
-        {rows.map((row) =>
-          row.type === "entry" ? <EntryRow key={`e-${row.entry.id}`} entry={row.entry} showQty={qtyCol} />
-          : row.type === "sku_bonus" ? <Row key={`sku-${row.entry.id}`} desc={skuBonusLabel(row.entry)} amount={fmtAmount(row.entry.bonus_amount)} showQty={qtyCol} short />
-          : <LineItemRow key={`li-${row.item.id}`} item={row.item} showQty={qtyCol} qtyFirst={qtyFirst} />
-        )}
+        {/* Later pages get a top margin and rule so rows don't start flush with the edge.
+            ponytail: no repeated table head; react-pdf drops Text inside a fixed View's render. */}
+        <View fixed render={({ pageNumber }) => (pageNumber > 1 ? <View style={[s.bb, { height: ROW }]} /> : null)} />
+
+        {/* The last row carries minPresenceAhead so it moves to the next page with the totals rather than leave them alone */}
+        {rows.map((row, i) => {
+          const last = i === rows.length - 1;
+          return row.type === "entry" ? <EntryRow key={`e-${row.entry.id}`} entry={row.entry} showQty={qtyCol} last={last} />
+          : row.type === "sku_bonus" ? <Row key={`sku-${row.entry.id}`} desc={skuBonusLabel(row.entry)} amount={fmtAmount(row.entry.bonus_amount)} showQty={qtyCol} short last={last} />
+          : <LineItemRow key={`li-${row.item.id}`} item={row.item} showQty={qtyCol} qtyFirst={qtyFirst} last={last} />;
+        })}
 
         {/* Spacer + notes (left) and totals (right) fill the rest of the page */}
-        <View style={[s.row, { flex: 1 }]}>
+        <View style={[s.row, { flex: 1, minHeight: TOTALS_MIN }]} wrap={false}>
           <View style={[s.left, s.br, s.bb, s.notes]}>
             {(business.bsb || business.account_number)
               ? <Text>Pay to{"\n"}BSB {business.bsb}  Account {business.account_number}</Text>
               : null}
-            {showSuperDetails && business.super_fund ? (
+            {showSuperDetails && (business.super_fund || business.super_usi) ? (
               <Text style={s.gap}>
-                {business.super_fund}{"\n"}Member {business.super_member_number}, ABN {business.super_fund_abn}
-                {business.super_usi ? `\nUSI ${business.super_usi}` : ""}
+                {business.super_fund
+                  ? `${business.super_fund}\nMember ${business.super_member_number}, ABN ${business.super_fund_abn}`
+                  : ""}
+                {business.super_fund && business.super_usi ? "\n" : ""}
+                {business.super_usi ? `USI ${business.super_usi}` : ""}
               </Text>
             ) : null}
             {invoice.notes ? <Text style={[s.notesText, { marginTop: 12 }]}>{invoice.notes}</Text> : null}
@@ -349,8 +361,8 @@ export function InvoiceDocument({ invoice, business }: Props) {
           </View>
         </View>
 
-        {/* Footer */}
-        <View style={s.row}>
+        {/* Footer, pinned to the bottom of every page */}
+        <View style={[s.row, { position: "absolute", bottom: 0, left: 0, right: 0 }]} fixed>
           <View style={[s.left, s.br, s.footer]}>
             {business.email ? <Text>{business.email}</Text> : null}
             {business.website ? <Text>{business.website}</Text> : null}
