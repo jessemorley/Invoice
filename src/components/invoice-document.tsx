@@ -19,7 +19,7 @@ const LINE = "0.75pt solid #5a5a5a";
 const C1 = 99, C2 = 198.75, C3 = 148.5; // column 4 takes the rest
 const ROW = 24;
 // Invoice No/To and Dates rows share one height so the grid stays even.
-const MID_ROW = 72;
+const MID_ROW = 78;
 const PAD = 12;
 
 const s = StyleSheet.create({
@@ -306,7 +306,9 @@ export function InvoiceDocument({ invoice, business }: Props) {
             {invoice.issued_date ? <Text>Issued{"\n"}{fmtDateShort(invoice.issued_date)}</Text> : null}
             {invoice.due_date ? <Text style={s.gap}>Due{"\n"}{fmtDateShort(invoice.due_date)}</Text> : null}
           </View>
-          <View style={s.right} />
+          <View style={[s.right, { paddingTop: 12 }]}>
+            {invoice.project ? <Text>Project{"\n"}{invoice.project}</Text> : null}
+          </View>
         </View>
 
         {/* Table head */}
