@@ -237,6 +237,7 @@ export async function fetchInvoiceDetail(invoiceId: string, userId: string, toke
     super_amount: data.super_amount,
     total: data.total,
     notes: data.notes ?? null,
+    project: data.project ?? null,
     client: {
       id: client.id,
       name: client.name,

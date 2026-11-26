@@ -4,96 +4,67 @@ import {
   Text,
   View,
   StyleSheet,
+  Font,
 } from "@react-pdf/renderer";
 import type { InvoiceDetail } from "@/lib/types";
 import type { BusinessDetails } from "@/lib/queries";
 import { lineItemTotal } from "@/lib/utils";
 
-const SANS = "Helvetica";
+// Grid layout from the invoice-pdf-recreate template (A4 @ 96dpi), converted
+// to points (x0.75). Column widths and fixed row heights mirror its CSS grid.
+// Wrap whole words; react-pdf hyphenates mid-word by default ("Inte-gration").
+Font.registerHyphenationCallback((word) => [word]);
+
+const LINE = "0.75pt solid #5a5a5a";
+const C1 = 99, C2 = 198.75, C3 = 148.5; // column 4 takes the rest
+const ROW = 24;
+// Invoice No/To and Dates rows share one height so the grid stays even.
+const MID_ROW = 70;
+const PAD = 12;
+const FOOTER = 75;
+// Notes/totals block: three total rows plus room for payment details.
+const TOTALS_MIN = 120;
 
 const s = StyleSheet.create({
   page: {
-    fontFamily: SANS,
-    fontSize: 10,
-    color: "#000000",
-    paddingTop: 28,
-    paddingBottom: 40,
-    paddingHorizontal: 32,
+    fontFamily: "Helvetica-Bold",
+    fontSize: 7.8,
+    lineHeight: 1.10,
+    color: "#161616",
     backgroundColor: "#ffffff",
-    lineHeight: 1.2,
+    textTransform: "uppercase",
+    paddingBottom: FOOTER, // the fixed footer sits in this space on every page
   },
+  row: { flexDirection: "row" },
+  bb: { borderBottom: LINE },
+  br: { borderRight: LINE },
+  left: { width: C1 + C2, paddingHorizontal: PAD },
+  right: { flex: 1, paddingHorizontal: PAD },
+  split: { justifyContent: "space-between", paddingBottom: 6 },
 
-  topHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 52,
-  },
-  addressBlock: { fontSize: 10 },
-  addressLine: { marginBottom: 2 },
+  title: { alignSelf: "flex-end", fontFamily: "Helvetica", fontSize: 40.5, letterSpacing: -0.8, lineHeight: 1 },
+  gap: { marginTop: 4.5 },
 
-  invoiceTitle: {
-    fontFamily: SANS,
-    fontSize: 39,
-    marginBottom: 72,
-    letterSpacing: -0.5,
-  },
+  cell: { minHeight: ROW, paddingHorizontal: PAD, paddingVertical: 4, justifyContent: "center" },
+  c1: { width: C1 },
+  c2: { width: C2 },
+  cQty: { width: 56 },
+  c3: { width: C3 },
+  rate: { flex: 1 },
+  c4: { flex: 1 },
+  // Qty/Hours sits just right of the centre line, sharing column 3 with Rate.
+  rateWrap: { width: C3, flexDirection: "row" },
+  r: { textAlign: "right" },
+  val: { fontFamily: "Helvetica", fontSize: 12, lineHeight: 1.1, textTransform: "none" },
+  amt: { fontSize: 12, lineHeight: 1.1 },
+  date: { paddingTop: 3 },
+  // Short rows: KPI bonus and description sub-lines.
+  short: { minHeight: 16, paddingVertical: 2 },
 
-  metaContainer: {
-    flexDirection: "row",
-    marginBottom: 95,
-    fontSize: 10,
-  },
-  datesBlock: { width: "28%" },
-  datesLine: { marginBottom: 3 },
-  bankBlock: { flex: 1 },
-  bankLine: { marginBottom: 3 },
-
-  // Table — no borders anywhere
-  tableHeader: {
-    flexDirection: "row",
-    paddingBottom: 6,
-    marginBottom: 2,
-  },
-  tableRow: {
-    flexDirection: "row",
-    paddingTop: 5,
-    paddingBottom: 2,
-  },
-  tableSubRow: {
-    flexDirection: "row",
-    paddingBottom: 4,
-  },
-
-  colDate:   { width: "22%", fontSize: 10 },
-  colItem:   { width: "37%", fontSize: 10 },
-  colQty:    { width: "11%", fontSize: 10, textAlign: "right" },
-  colRate:   { width: "11%", fontSize: 10, textAlign: "right" },
-  colAmount: { flex: 1,      fontSize: 10, textAlign: "right" },
-
-  subText: { fontSize: 7.5, color: "#555555" },
-
-  tableWrapper: { marginBottom: 100 },
-
-  // Totals — full width, label left, value right
-  totalsSection: { fontSize: 10 },
-  totalsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 4,
-  },
-  totalsGrandRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 4,
-    marginTop: 28,
-  },
-  totalsValue: { textAlign: "right" },
-  totalsLabelBold: {},
-  totalsValueBold: { textAlign: "right" },
-
-  // Notes — pushed to the foot of the page by marginTop: "auto"
-  notesSection: { marginTop: "auto", paddingTop: 40 },
-  notesBody: { fontSize: 10 },
+  notes: { justifyContent: "flex-end", paddingBottom: 22.5 },
+  // lineHeight needs fontSize alongside it, or react-pdf resolves it against 18pt.
+  notesText: { width: 184, fontFamily: "Helvetica", fontSize: 7.5, textTransform: "none", lineHeight: 1.1 },
+  footer: { height: FOOTER, justifyContent: "flex-end", paddingBottom: 10 },
 });
 
 function fmtAmount(n: number): string {
@@ -142,10 +113,7 @@ type LineItem = InvoiceDetail["line_items"][0];
 type RowData =
   | { type: "entry"; entry: Entry }
   | { type: "sku_bonus"; entry: Entry }
-  | { type: "time_range"; entry: Entry }
-  | { type: "entry_detail"; entry: Entry }
-  | { type: "line_item"; item: LineItem }
-  | { type: "line_item_detail"; item: LineItem };
+  | { type: "line_item"; item: LineItem };
 
 function buildRows(entries: Entry[], lineItems: LineItem[]): RowData[] {
   const rows: RowData[] = [];
@@ -158,21 +126,8 @@ function buildRows(entries: Entry[], lineItems: LineItem[]): RowData[] {
     if (entry.bonus_amount > 0 && entry.skus != null) {
       rows.push({ type: "sku_bonus", entry });
     }
-    if (entry.billing_type === "hourly" && entry.start_time && entry.finish_time) {
-      rows.push({ type: "time_range", entry });
-    }
-    if (entry.billing_type === "manual" && entry.label && entry.description) {
-      rows.push({ type: "entry_detail", entry });
-    }
   }
-
-  for (const item of lineItems) {
-    rows.push({ type: "line_item", item });
-    if (item.details) {
-      rows.push({ type: "line_item_detail", item });
-    }
-  }
-
+  for (const item of lineItems) rows.push({ type: "line_item", item });
   return rows;
 }
 
@@ -193,8 +148,32 @@ function entryDescription(entry: Entry): string {
   return entry.label ?? entry.description ?? "";
 }
 
-function EntryRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
-  const description = entryDescription(entry);
+// One grid row. `sub` is the small second line under the description
+// (time range, manual-entry detail, line-item details).
+function Row(p: { date?: string; desc: string; sub?: string | null; qty?: string; rate?: string; amount?: string; showQty: boolean; short?: boolean; last?: boolean }) {
+  const cell = p.short ? [s.cell, s.short] : [s.cell];
+  const main = (
+    // A row with a sub-line drops its bottom border so the two read as one block.
+    <View style={p.sub ? s.row : [s.row, s.bb]} wrap={false} minPresenceAhead={p.last && !p.sub ? TOTALS_MIN : undefined}>
+      <View style={[...cell, s.c1, s.br]}><Text style={s.date}>{p.date ?? ""}</Text></View>
+      <View style={[...cell, s.c2, s.br]}><Text style={p.short ? undefined : s.val}>{p.desc}</Text></View>
+      <View style={s.rateWrap}>
+        {p.showQty ? <View style={[...cell, s.cQty, s.br]}><Text style={[s.val, s.r]}>{p.qty ?? ""}</Text></View> : null}
+        <View style={[...cell, s.rate, s.br]}><Text style={[s.val, s.r]}>{p.rate ?? ""}</Text></View>
+      </View>
+      <View style={[...cell, s.c4]}><Text style={[s.amt, s.r]}>{p.amount ?? ""}</Text></View>
+    </View>
+  );
+  if (!p.sub) return main;
+  return (
+    <View wrap={false} minPresenceAhead={p.last ? TOTALS_MIN : undefined}>
+      {main}
+      <Row desc={p.sub} showQty={p.showQty} short />
+    </View>
+  );
+}
+
+function EntryRow({ entry, showQty, last }: { entry: Entry; showQty: boolean; last: boolean }) {
   const qty = entry.billing_type === "hourly" && entry.hours_worked != null
     ? String(entry.hours_worked)
     : entry.billing_type === "manual" && entry.skus != null
@@ -212,50 +191,29 @@ function EntryRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
     ? fmtAmount(isOwnBrand ? lineTotal : entry.base_amount)
     : entry.skus
     ? fmtAmount(entry.base_amount / entry.skus)
-    : "";
+    : entry.skus === 0 || lineTotal === 0
+    ? ""
+    : fmtAmount(lineTotal); // manual, no SKU count: one unit, so rate = amount
   // manual entries with no amount entered show a blank cell rather than 0.00
   const amount = entry.billing_type === "manual" && lineTotal === 0
     ? ""
     : fmtAmount(isOwnBrand ? lineTotal : entry.skus == null ? lineTotal : entry.base_amount);
+  // Time range goes under the date; only manual detail stays under the description.
+  const time = entry.billing_type === "hourly" && entry.start_time && entry.finish_time
+    ? timeRangeLabel(entry)
+    : null;
+  const sub = entry.billing_type === "manual" && entry.label ? entry.description : null;
 
   return (
-    <View style={s.tableRow}>
-      <Text style={s.colDate}>{fmtDateDay(entry.date)}</Text>
-      <Text style={s.colItem}>{description}</Text>
-      {showQty ? <Text style={s.colQty}>{qty}</Text> : null}
-      <Text style={s.colRate}>{rate}</Text>
-      <Text style={s.colAmount}>{amount}</Text>
-    </View>
+    <Row date={time ? `${fmtDateDay(entry.date)}\n${time}` : fmtDateDay(entry.date)} desc={entryDescription(entry)} sub={sub}
+      qty={qty} rate={rate} amount={amount} showQty={showQty} last={last} />
   );
 }
 
-function SkuBonusRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
-  const label = entry.batch_lines?.length
-    ? `  + KPI bonus (${entry.batch_lines.map((l) => `${l.skus} ${l.workflow}`).join(" + ")})`
-    : entry.skus != null
-    ? `  + KPI bonus (${entry.skus} SKUs)`
-    : `  + bonus`;
-  return (
-    <View style={s.tableRow}>
-      <Text style={s.colDate} />
-      <Text style={[s.colItem, s.subText]}>{label}</Text>
-      {showQty ? <Text style={s.colQty} /> : null}
-      <Text style={s.colRate} />
-      <Text style={[s.colAmount, s.subText]}>{fmtAmount(entry.bonus_amount)}</Text>
-    </View>
-  );
-}
-
-function EntrySubRow({ label, showQty }: { label: string; showQty: boolean }) {
-  return (
-    <View style={s.tableSubRow}>
-      <Text style={s.colDate} />
-      <Text style={[s.colItem, s.subText]}>{label}</Text>
-      {showQty ? <Text style={s.colQty} /> : null}
-      <Text style={s.colRate} />
-      <Text style={s.colAmount} />
-    </View>
-  );
+function skuBonusLabel(entry: Entry): string {
+  return entry.batch_lines?.length
+    ? `+ KPI bonus (${entry.batch_lines.map((l) => `${l.skus} ${l.workflow}`).join(" + ")})`
+    : `+ KPI bonus (${entry.skus} SKUs)`;
 }
 
 function timeRangeLabel(entry: Entry): string {
@@ -266,26 +224,22 @@ function timeRangeLabel(entry: Entry): string {
   return label;
 }
 
-function LineItemDetailRow({ item, showQty, showRate }: { item: LineItem; showQty: boolean; showRate: boolean }) {
+function LineItemRow({ item, showQty, qtyFirst, last }: { item: LineItem; showQty: boolean; qtyFirst: boolean; last: boolean }) {
+  // Blank quantity bills as 1 × amount (lineItemTotal), so show it that way.
+  const qty = String(item.quantity ?? 1);
   return (
-    <View style={s.tableSubRow}>
-      <Text style={s.colDate} />
-      <Text style={[s.colItem, s.subText]}>{item.details}</Text>
-      {showQty ? <Text style={s.colQty} /> : null}
-      {showRate ? <Text style={s.colRate} /> : null}
-      <Text style={s.colAmount} />
-    </View>
+    <Row desc={item.description} sub={item.details}
+      date={qtyFirst ? qty : undefined} qty={qty}
+      rate={fmtAmount(item.amount)}
+      amount={fmtAmount(lineItemTotal(item))} showQty={showQty} last={last} />
   );
 }
 
-function LineItemRow({ item, showQty, showRate }: { item: LineItem; showQty: boolean; showRate: boolean }) {
+function Total({ label, value }: { label: string; value: number }) {
   return (
-    <View style={s.tableRow}>
-      <Text style={s.colDate} />
-      <Text style={s.colItem}>{item.description}</Text>
-      {showQty ? <Text style={s.colQty}>{item.quantity != null ? String(item.quantity) : ""}</Text> : null}
-      {showRate ? <Text style={s.colRate}>{item.quantity != null ? fmtAmount(item.amount) : ""}</Text> : null}
-      <Text style={s.colAmount}>{fmtAmount(lineItemTotal(item))}</Text>
+    <View style={[s.row, s.bb]}>
+      <View style={[s.cell, s.c3, s.br]}><Text>{label}</Text></View>
+      <View style={[s.cell, s.c4]}><Text style={[s.amt, s.r]}>${fmtAmount(value)}</Text></View>
     </View>
   );
 }
@@ -302,114 +256,118 @@ export function InvoiceDocument({ invoice, business }: Props) {
   const superRatePct = Math.round(client.super_rate * 100);
   const descriptionHeader = client.entry_label ?? "Description";
   const showHours = invoice.entries.some((e) => e.billing_type === "hourly");
-  const showRate = invoice.entries.length > 0;
+  const showRate = invoice.entries.length > 0 || invoice.line_items.length > 0;
   const showQty =
     showHours ||
     invoice.line_items.length > 0 ||
     invoice.entries.some((e) => e.billing_type === "manual" && e.skus != null);
+
+  // No dated entries (custom lines only): qty takes over the date column
+  // instead of squeezing the description.
+  const qtyFirst = showQty && invoice.entries.length === 0;
+  const qtyCol = showQty && !qtyFirst;
 
   const rows = buildRows(invoice.entries, invoice.line_items);
 
   return (
     <Document>
       <Page size="A4" style={s.page}>
-        {/* Top header */}
-        <View style={s.topHeader}>
-          <View style={s.addressBlock}>
-            <Text style={s.addressLine}>{business.business_name || business.name}</Text>
-            {business.abn ? <Text style={s.addressLine}>ABN {business.abn}</Text> : null}
-            {business.address ? <Text style={s.addressLine}>{business.address}</Text> : null}
-            {business.suburb ? <Text style={s.addressLine}>{business.suburb}</Text> : null}
-          </View>
-          <View style={s.addressBlock}>
-            <Text style={s.addressLine}>{client.name}</Text>
-            {/* ABN identifies the client on a tax invoice; email is the fallback. */}
-            {client.abn
-              ? <Text style={s.addressLine}>ABN {client.abn}</Text>
-              : client.email ? <Text style={s.addressLine}>{client.email}</Text> : null}
-            {client.address ? <Text style={s.addressLine}>{client.address}</Text> : null}
-            {client.suburb ? <Text style={s.addressLine}>{client.suburb}</Text> : null}
-          </View>
-        </View>
-
-        {/* Invoice title */}
-        <Text style={s.invoiceTitle}>Invoice {invoice.number}</Text>
-
-        {/* Meta row */}
-        <View style={s.metaContainer}>
-          <View style={s.datesBlock}>
-            {invoice.issued_date ? <Text style={s.datesLine}>Issued {fmtDateShort(invoice.issued_date)}</Text> : null}
-            {invoice.due_date
-              ? <Text style={s.datesLine}>Due {fmtDateShort(invoice.due_date)}</Text>
-              : null}
-          </View>
-          <View style={s.bankBlock}>
-            {(business.bsb || business.account_number)
-              ? <Text style={s.bankLine}>BSB {business.bsb}  Account Number {business.account_number}</Text>
-              : null}
-            {showSuperDetails && business.super_fund
-              ? <Text style={s.bankLine}>{business.super_fund}, Member {business.super_member_number}, ABN {business.super_fund_abn}</Text>
-              : null}
-            {showSuperDetails && business.super_usi
-              ? <Text style={s.bankLine}>USI {business.super_usi}</Text>
-              : null}
-          </View>
-        </View>
-
-        {/* Table */}
-        <View style={s.tableWrapper}>
-          <View style={s.tableHeader}>
-            <Text style={s.colDate}>Date</Text>
-            <Text style={s.colItem}>{descriptionHeader}</Text>
-            {showQty ? <Text style={s.colQty}>{showHours ? "Hours" : "Qty"}</Text> : null}
-            {showRate ? <Text style={s.colRate}>Rate</Text> : null}
-            <Text style={s.colAmount}>Amount</Text>
-          </View>
-
-          {rows.map((row, i) => {
-            if (row.type === "entry") {
-              return <EntryRow key={`e-${row.entry.id}`} entry={row.entry} showQty={showQty} />;
-            }
-            if (row.type === "sku_bonus") {
-              return <SkuBonusRow key={`sku-${row.entry.id}`} entry={row.entry} showQty={showQty} />;
-            }
-            if (row.type === "time_range") {
-              return <EntrySubRow key={`tr-${row.entry.id}-${i}`} label={timeRangeLabel(row.entry)} showQty={showQty} />;
-            }
-            if (row.type === "entry_detail") {
-              return <EntrySubRow key={`ed-${row.entry.id}`} label={row.entry.description!} showQty={showQty} />;
-            }
-            if (row.type === "line_item_detail") {
-              return <LineItemDetailRow key={`lid-${row.item.id}`} item={row.item} showQty={showQty} showRate={showRate} />;
-            }
-            return <LineItemRow key={`li-${row.item.id}`} item={row.item} showQty={showQty} showRate={showRate} />;
-          })}
-        </View>
-
-        {/* Totals */}
-        <View style={s.totalsSection}>
-          <View style={s.totalsRow}>
-            <Text>Subtotal</Text>
-            <Text style={s.totalsValue}>{fmtAmount(invoice.subtotal)}</Text>
-          </View>
-          {showSuper && (
-            <View style={s.totalsRow}>
-              <Text>Super ({superRatePct}%)</Text>
-              <Text style={s.totalsValue}>{fmtAmount(invoice.super_amount)}</Text>
+        {/* Top block: each cell's bottom label names the cell below it */}
+        <View style={[s.row, s.bb, { height: 142.5 }]}>
+          <View style={[s.left, s.br, s.split, { paddingTop: 10 }]}>
+            <View>
+              <Text>{business.business_name || business.name}</Text>
+              {business.abn ? <Text>ABN {business.abn}</Text> : null}
+              {business.address ? <Text>{business.address}</Text> : null}
+              {business.suburb ? <Text>{business.suburb}</Text> : null}
             </View>
-          )}
-          <View style={s.totalsGrandRow}>
-            <Text style={s.totalsLabelBold}>Total</Text>
-            <Text style={s.totalsValueBold}>{fmtAmount(showSuper ? invoice.total : invoice.subtotal)}</Text>
+            <Text>Invoice No</Text>
+          </View>
+          <View style={[s.right, s.split, { paddingTop: 18 }]}>
+            <Text style={s.title}>Invoice</Text>
+            <Text>To</Text>
           </View>
         </View>
 
-        {/* Notes — foot of the page */}
-        {invoice.notes ? (
-          <View style={s.notesSection}>
-            <Text style={s.notesBody}>{invoice.notes}</Text>
+        <View style={[s.row, { height: MID_ROW }]}>
+          <View style={[s.left, s.br, s.bb, s.split, { paddingTop: 12 }]}>
+            <Text>{invoice.number}</Text>
+            <Text>Dates</Text>
           </View>
-        ) : null}
+          <View style={[s.right, { paddingTop: 12 }]}>
+            <Text>{client.name}</Text>
+            {/* ABN identifies the client on a tax invoice; email is the fallback. */}
+            {client.abn ? <Text>ABN {client.abn}</Text> : client.email ? <Text>{client.email}</Text> : null}
+            {client.address ? <Text>{client.address}</Text> : null}
+            {client.suburb ? <Text>{client.suburb}</Text> : null}
+          </View>
+        </View>
+
+        <View style={[s.row, s.bb, { height: MID_ROW }]}>
+          <View style={[s.left, s.br, { paddingTop: 12 }]}>
+            {invoice.issued_date ? <Text>Issued{"\n"}{fmtDateShort(invoice.issued_date)}</Text> : null}
+            {invoice.due_date ? <Text style={s.gap}>Due{"\n"}{fmtDateShort(invoice.due_date)}</Text> : null}
+          </View>
+          <View style={[s.right, { paddingTop: 12 }]}>
+            {invoice.project ? <Text>Project{"\n"}{invoice.project}</Text> : null}
+          </View>
+        </View>
+
+        {/* Table head */}
+        <View style={[s.row, s.bb]}>
+          <View style={[s.cell, s.c1, s.br]}><Text>{qtyFirst ? "Qty" : "Date"}</Text></View>
+          <View style={[s.cell, s.c2, s.br]}><Text>{descriptionHeader}</Text></View>
+          <View style={s.rateWrap}>
+            {qtyCol ? <View style={[s.cell, s.cQty, s.br]}><Text style={s.r}>{showHours ? "Hours" : "Qty"}</Text></View> : null}
+            <View style={[s.cell, s.rate, s.br]}><Text style={s.r}>{showRate ? "Rate" : ""}</Text></View>
+          </View>
+          <View style={[s.cell, s.c4]}><Text style={s.r}>Amount</Text></View>
+        </View>
+
+        {/* Later pages get a top margin and rule so rows don't start flush with the edge.
+            ponytail: no repeated table head; react-pdf drops Text inside a fixed View's render. */}
+        <View fixed render={({ pageNumber }) => (pageNumber > 1 ? <View style={[s.bb, { height: ROW }]} /> : null)} />
+
+        {/* The last row carries minPresenceAhead so it moves to the next page with the totals rather than leave them alone */}
+        {rows.map((row, i) => {
+          const last = i === rows.length - 1;
+          return row.type === "entry" ? <EntryRow key={`e-${row.entry.id}`} entry={row.entry} showQty={qtyCol} last={last} />
+          : row.type === "sku_bonus" ? <Row key={`sku-${row.entry.id}`} desc={skuBonusLabel(row.entry)} amount={fmtAmount(row.entry.bonus_amount)} showQty={qtyCol} short last={last} />
+          : <LineItemRow key={`li-${row.item.id}`} item={row.item} showQty={qtyCol} qtyFirst={qtyFirst} last={last} />;
+        })}
+
+        {/* Spacer + notes (left) and totals (right) fill the rest of the page */}
+        <View style={[s.row, { flex: 1, minHeight: TOTALS_MIN }]} wrap={false}>
+          <View style={[s.left, s.br, s.bb, s.notes]}>
+            {(business.bsb || business.account_number)
+              ? <Text>Pay to{"\n"}BSB {business.bsb}  Account {business.account_number}</Text>
+              : null}
+            {showSuperDetails && (business.super_fund || business.super_usi) ? (
+              <Text style={s.gap}>
+                {business.super_fund
+                  ? `${business.super_fund}\nMember ${business.super_member_number}, ABN ${business.super_fund_abn}`
+                  : ""}
+                {business.super_fund && business.super_usi ? "\n" : ""}
+                {business.super_usi ? `USI ${business.super_usi}` : ""}
+              </Text>
+            ) : null}
+            {invoice.notes ? <Text style={[s.notesText, { marginTop: 12 }]}>{invoice.notes}</Text> : null}
+          </View>
+          <View style={{ flex: 1 }}>
+            <View style={[s.bb, { flex: 1 }]} />
+            <Total label="Subtotal" value={invoice.subtotal} />
+            {showSuper ? <Total label={`Super (${superRatePct}%)`} value={invoice.super_amount} /> : null}
+            <Total label="Total" value={showSuper ? invoice.total : invoice.subtotal} />
+          </View>
+        </View>
+
+        {/* Footer, pinned to the bottom of every page */}
+        <View style={[s.row, { position: "absolute", bottom: 0, left: 0, right: 0 }]} fixed>
+          <View style={[s.left, s.br, s.footer]}>
+            {business.email ? <Text>{business.email}</Text> : null}
+            {business.website ? <Text>{business.website}</Text> : null}
+          </View>
+        </View>
       </Page>
     </Document>
   );

@@ -163,7 +163,7 @@ export async function readDashboardLineItems(supabase: Supabase, userId: string)
 export async function readOutstandingInvoices(supabase: Supabase, userId: string): Promise<Invoice[]> {
   const { data, error } = await supabase
     .from("invoices")
-    .select("id, invoice_number, issued_date, due_date, paid_date, subtotal, super_amount, total, status, notes, clients(id, name, billing_type, color)")
+    .select("id, invoice_number, issued_date, due_date, paid_date, subtotal, super_amount, total, status, notes, project, clients(id, name, billing_type, color)")
     .eq("user_id", userId)
     .in("status", ["draft", "issued"]);
 
@@ -184,6 +184,7 @@ export async function readOutstandingInvoices(supabase: Supabase, userId: string
       status: inv.status as InvoiceStatus,
       email: null,
       notes: inv.notes ?? null,
+      project: inv.project ?? null,
       entry_count: 0,
     };
   });
@@ -257,6 +258,7 @@ export async function readInvoices(supabase: Supabase, userId: string, filters: 
         sent_at: activeEmail.sent_at,
       } : null,
       notes: inv.notes ?? null,
+      project: inv.project ?? null,
       entry_count: (inv.entries as Array<{ count: number }> | null)?.[0]?.count ?? 0,
     };
   });
@@ -739,6 +741,7 @@ export type BusinessDetails = {
   address: string;
   suburb: string;
   email: string;
+  website: string;
   super_fund: string;
   super_fund_abn: string;
   super_usi: string;

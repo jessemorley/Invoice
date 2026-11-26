@@ -61,6 +61,7 @@ export async function createInvoice(clientId: string): Promise<Invoice> {
     client: { id: c.id, name: c.name, color: c.color ?? "#9ca3af", billing_type: c.billing_type as Invoice["client"]["billing_type"] },
     email: null,
     notes: null,
+    project: null,
     entry_count: 0,
   };
 }
@@ -83,6 +84,7 @@ export type InvoiceFormData = {
   paid_date: string;
   due_date: string;
   notes: string;
+  project?: string;
 };
 
 export async function loadUninvoicedGroups() {
@@ -849,6 +851,8 @@ export async function updateInvoice(id: string, data: InvoiceFormData) {
       issued_date: data.issued_date || null,
       due_date: dueDate,
       notes: data.notes || null,
+      // Tabs on the previous build send no project: leave it untouched rather than throw or clear it
+      ...(data.project !== undefined && { project: data.project.trim() || null }),
       paid_date: data.paid_date || null,
     })
     .eq("id", id)

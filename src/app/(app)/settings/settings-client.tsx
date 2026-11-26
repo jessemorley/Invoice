@@ -108,6 +108,7 @@ function InfoTab({
     address: businessDetails?.address ?? "",
     suburb: businessDetails?.suburb ?? "",
     email: businessDetails?.email ?? "",
+    website: businessDetails?.website ?? "",
     super_fund: businessDetails?.super_fund ?? "",
     super_fund_abn: businessDetails?.super_fund_abn ?? "",
     super_usi: businessDetails?.super_usi ?? "",
@@ -185,6 +186,13 @@ function InfoTab({
             type="email"
             value={bizForm.email}
             onChange={(v) => setBiz("email", v)}
+            disabled={bizPending}
+          />
+          <Field
+            label="Website"
+            id="website"
+            value={bizForm.website}
+            onChange={(v) => setBiz("website", v)}
             disabled={bizPending}
           />
         </CardContent>

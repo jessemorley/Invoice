@@ -47,6 +47,7 @@ export type Database = {
           bsb: string
           business_name: string
           email: string
+          website: string
           id: string
           include_super_in_totals: boolean
           name: string
@@ -64,6 +65,7 @@ export type Database = {
           bsb?: string
           business_name?: string
           email?: string
+          website?: string
           id?: string
           include_super_in_totals?: boolean
           name?: string
@@ -81,6 +83,7 @@ export type Database = {
           bsb?: string
           business_name?: string
           email?: string
+          website?: string
           id?: string
           include_super_in_totals?: boolean
           name?: string
@@ -464,6 +467,7 @@ export type Database = {
           invoice_number: string
           issued_date: string | null
           notes: string | null
+          project: string | null
           paid_date: string | null
           status: Database["public"]["Enums"]["invoice_status"]
           subtotal: number
@@ -479,6 +483,7 @@ export type Database = {
           invoice_number: string
           issued_date?: string | null
           notes?: string | null
+          project?: string | null
           paid_date?: string | null
           status?: Database["public"]["Enums"]["invoice_status"]
           subtotal?: number
@@ -494,6 +499,7 @@ export type Database = {
           invoice_number?: string
           issued_date?: string | null
           notes?: string | null
+          project?: string | null
           paid_date?: string | null
           status?: Database["public"]["Enums"]["invoice_status"]
           subtotal?: number

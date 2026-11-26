@@ -473,6 +473,7 @@ export function InvoicesClient({ invoices: initialInvoices = EMPTY_INVOICES, uni
       status: "draft",
       email: null,
       notes: null,
+      project: null,
       entry_count: group?.entryCount ?? 0,
     });
   }

@@ -95,6 +95,7 @@ function defaultForm(invoice: Invoice): InvoiceFormData {
     paid_date: invoice.paid_date ?? "",
     due_date: invoice.due_date ?? "",
     notes: invoice.notes ?? "",
+    project: invoice.project ?? "",
   };
 }
 
@@ -302,6 +303,7 @@ export function InvoiceSheet({
           super_amount: 0,
           total: 0,
           notes: null,
+          project: null,
           client: {
             id: client.id,
             name: client.name,
@@ -540,6 +542,12 @@ export function InvoiceSheet({
               <label className="text-sm font-medium">Paid</label>
               <DateTimeInput type="date" value={form!.paid_date} onChange={(v) => set("paid_date", v)} />
             </div>
+          </div>
+
+          {/* Project — shown beside the dates on the PDF */}
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="invoice-project" className="text-sm font-medium">Project <span className="text-muted-foreground font-normal">(optional)</span></label>
+            <Input id="invoice-project" className="text-sm" value={form!.project} onChange={(e) => set("project", e.target.value)} />
           </div>
 
           {/* Summary */}
