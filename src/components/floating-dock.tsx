@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimateIcon } from "@animate-ui/react/icons";
 import { Plus } from "@/components/animate-ui/icons/plus";
 import { Menu } from "@/components/animate-ui/icons/menu";
-import { X } from "@/components/animate-ui/icons/x";
 import { cn } from "@/lib/utils";
 import { useActiveView, VIEWS, type ViewId } from "@/components/active-view-context";
 
@@ -94,9 +93,10 @@ export function FloatingDock() {
               {SECONDARY_TABS.map((tab) => {
                 const Icon = tab.icon;
                 const active = view === tab.view;
+                // No press animation: the tap closes the menu, unmounting the icon before it could play
                 return (
-                  <Pressable key={tab.view}>
-                    <button
+                  <button
+                      key={tab.view}
                       aria-label={tab.label}
                       aria-current={active ? "page" : undefined}
                       onClick={() => handleSecondaryTap(tab.view)}
@@ -110,7 +110,6 @@ export function FloatingDock() {
                         {tab.label}
                       </span>
                     </button>
-                  </Pressable>
                 );
               })}
             </div>
@@ -180,17 +179,14 @@ export function FloatingDock() {
             <div className="relative z-10 w-px h-6 bg-border" />
 
             {/* Menu button — the active secondary view is highlighted inside the menu, not here */}
-            <Pressable>
-              <button
-                aria-label="Menu"
-                onClick={() => setMenuOpen((o) => !o)}
-                className="relative z-10 flex items-center justify-center p-3 rounded-full text-muted-foreground hover:text-foreground transition-colors duration-150 touch-manipulation"
-              >
-                {menuOpen
-                  ? <X className="size-6" strokeWidth={1.75} />
-                  : <Menu className="size-6" strokeWidth={1.75} />}
-              </button>
-            </Pressable>
+            {/* One icon morphing lines → X with the open state; swapping icons unmounted it before it could animate */}
+            <button
+              aria-label="Menu"
+              onClick={() => setMenuOpen((o) => !o)}
+              className="relative z-10 flex items-center justify-center p-3 rounded-full text-muted-foreground hover:text-foreground transition-colors duration-150 touch-manipulation"
+            >
+              <Menu animate={menuOpen} className="size-6" strokeWidth={1.75} />
+            </button>
 
           </div>
         </nav>
