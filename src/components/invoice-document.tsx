@@ -25,8 +25,8 @@ const PAD = 12;
 const s = StyleSheet.create({
   page: {
     fontFamily: "Helvetica-Bold",
-    fontSize: 8,
-    lineHeight: 1.12,
+    fontSize: 7.8,
+    lineHeight: 1.10,
     color: "#161616",
     backgroundColor: "#ffffff",
     textTransform: "uppercase",
@@ -53,8 +53,7 @@ const s = StyleSheet.create({
   r: { textAlign: "right" },
   val: { fontFamily: "Helvetica", fontSize: 12, lineHeight: 1.1, textTransform: "none" },
   amt: { fontSize: 12, lineHeight: 1.1 },
-  date: { fontSize: 8, lineHeight: 1.12, paddingTop: 3 },
-  sub: { fontSize: 8, lineHeight: 1.12 },
+  date: { paddingTop: 3 },
   // Short rows: KPI bonus and description sub-lines.
   short: { minHeight: 16, paddingVertical: 2 },
 
@@ -153,7 +152,7 @@ function Row(p: { date?: string; desc: string; sub?: string | null; qty?: string
     // A row with a sub-line drops its bottom border so the two read as one block.
     <View style={p.sub ? s.row : [s.row, s.bb]} wrap={false}>
       <View style={[...cell, s.c1, s.br]}><Text style={s.date}>{p.date ?? ""}</Text></View>
-      <View style={[...cell, s.c2, s.br]}><Text style={p.short ? s.sub : s.val}>{p.desc}</Text></View>
+      <View style={[...cell, s.c2, s.br]}><Text style={p.short ? undefined : s.val}>{p.desc}</Text></View>
       <View style={s.rateWrap}>
         {p.showQty ? <View style={[...cell, s.cQty, s.br]}><Text style={[s.val, s.r]}>{p.qty ?? ""}</Text></View> : null}
         <View style={[...cell, s.rate, s.br]}><Text style={[s.val, s.r]}>{p.rate ?? ""}</Text></View>
@@ -332,7 +331,7 @@ export function InvoiceDocument({ invoice, business }: Props) {
         <View style={[s.row, { flex: 1 }]}>
           <View style={[s.left, s.br, s.bb, s.notes]}>
             {(business.bsb || business.account_number)
-              ? <Text>Pay to{"\n"}BSB {business.bsb}{"\n"}Account Number {business.account_number}</Text>
+              ? <Text>Pay to{"\n"}BSB {business.bsb}  Account {business.account_number}</Text>
               : null}
             {showSuperDetails && business.super_fund ? (
               <Text style={s.gap}>
