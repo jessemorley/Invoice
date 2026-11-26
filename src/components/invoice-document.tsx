@@ -18,6 +18,8 @@ Font.registerHyphenationCallback((word) => [word]);
 const LINE = "0.75pt solid #5a5a5a";
 const C1 = 99, C2 = 198.75, C3 = 148.5; // column 4 takes the rest
 const ROW = 24;
+// Invoice No/To and Dates rows share one height so the grid stays even.
+const MID_ROW = 72;
 const PAD = 12;
 
 const s = StyleSheet.create({
@@ -52,7 +54,9 @@ const s = StyleSheet.create({
   val: { fontFamily: "Helvetica", fontSize: 12, lineHeight: 1.1, textTransform: "none" },
   amt: { fontSize: 12, lineHeight: 1.1 },
   date: { fontSize: 8, lineHeight: 1.12, paddingTop: 3 },
-  sub: { fontSize: 8, lineHeight: 1.12, marginTop: 6 },
+  sub: { fontSize: 8, lineHeight: 1.12 },
+  // Short rows: KPI bonus and description sub-lines.
+  short: { minHeight: 16, paddingVertical: 2 },
 
   notes: { justifyContent: "flex-end", paddingBottom: 22.5 },
   // lineHeight needs fontSize alongside it, or react-pdf resolves it against 18pt.
@@ -143,20 +147,26 @@ function entryDescription(entry: Entry): string {
 
 // One grid row. `sub` is the small second line under the description
 // (time range, manual-entry detail, line-item details).
-function Row(p: { date?: string; desc: string; sub?: string | null; qty?: string; rate?: string; amount: string; showQty: boolean; subAmount?: boolean }) {
-  return (
-    <View style={[s.row, s.bb]} wrap={false}>
-      <View style={[s.cell, s.c1, s.br]}><Text style={s.date}>{p.date ?? ""}</Text></View>
-      <View style={[s.cell, s.c2, s.br]}>
-        <Text style={p.subAmount ? s.sub : s.val}>{p.desc}</Text>
-        {p.sub ? <Text style={s.sub}>{p.sub}</Text> : null}
-      </View>
+function Row(p: { date?: string; desc: string; sub?: string | null; qty?: string; rate?: string; amount?: string; showQty: boolean; short?: boolean }) {
+  const cell = p.short ? [s.cell, s.short] : [s.cell];
+  const main = (
+    // A row with a sub-line drops its bottom border so the two read as one block.
+    <View style={p.sub ? s.row : [s.row, s.bb]} wrap={false}>
+      <View style={[...cell, s.c1, s.br]}><Text style={s.date}>{p.date ?? ""}</Text></View>
+      <View style={[...cell, s.c2, s.br]}><Text style={p.short ? s.sub : s.val}>{p.desc}</Text></View>
       <View style={s.rateWrap}>
-        {p.showQty ? <View style={[s.cell, s.cQty, s.br]}><Text style={[s.val, s.r]}>{p.qty ?? ""}</Text></View> : null}
-        <View style={[s.cell, s.rate, s.br]}><Text style={[s.val, s.r]}>{p.rate ?? ""}</Text></View>
+        {p.showQty ? <View style={[...cell, s.cQty, s.br]}><Text style={[s.val, s.r]}>{p.qty ?? ""}</Text></View> : null}
+        <View style={[...cell, s.rate, s.br]}><Text style={[s.val, s.r]}>{p.rate ?? ""}</Text></View>
       </View>
-      <View style={[s.cell, s.c4]}><Text style={[p.subAmount ? s.sub : s.amt, s.r]}>{p.amount}</Text></View>
+      <View style={[...cell, s.c4]}><Text style={[s.amt, s.r]}>{p.amount ?? ""}</Text></View>
     </View>
+  );
+  if (!p.sub) return main;
+  return (
+    <>
+      {main}
+      <Row desc={p.sub} showQty={p.showQty} short />
+    </>
   );
 }
 
@@ -185,14 +195,14 @@ function EntryRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
   const amount = entry.billing_type === "manual" && lineTotal === 0
     ? ""
     : fmtAmount(isOwnBrand ? lineTotal : entry.skus == null ? lineTotal : entry.base_amount);
-  const sub = entry.billing_type === "hourly" && entry.start_time && entry.finish_time
+  // Time range goes under the date; only manual detail stays under the description.
+  const time = entry.billing_type === "hourly" && entry.start_time && entry.finish_time
     ? timeRangeLabel(entry)
-    : entry.billing_type === "manual" && entry.label
-    ? entry.description
     : null;
+  const sub = entry.billing_type === "manual" && entry.label ? entry.description : null;
 
   return (
-    <Row date={fmtDateDay(entry.date)} desc={entryDescription(entry)} sub={sub}
+    <Row date={time ? `${fmtDateDay(entry.date)}\n${time}` : fmtDateDay(entry.date)} desc={entryDescription(entry)} sub={sub}
       qty={qty} rate={rate} amount={amount} showQty={showQty} />
   );
 }
@@ -277,13 +287,12 @@ export function InvoiceDocument({ invoice, business }: Props) {
           </View>
         </View>
 
-        {/* Height follows the client address; the left cell stretches to match. */}
-        <View style={s.row}>
+        <View style={[s.row, { height: MID_ROW }]}>
           <View style={[s.left, s.br, s.bb, s.split, { paddingTop: 12 }]}>
             <Text>{invoice.number}</Text>
             <Text>Dates</Text>
           </View>
-          <View style={[s.right, { paddingTop: 12, paddingBottom: 22 }]}>
+          <View style={[s.right, { paddingTop: 12 }]}>
             <Text>{client.name}</Text>
             {/* ABN identifies the client on a tax invoice; email is the fallback. */}
             {client.abn ? <Text>ABN {client.abn}</Text> : client.email ? <Text>{client.email}</Text> : null}
@@ -292,8 +301,8 @@ export function InvoiceDocument({ invoice, business }: Props) {
           </View>
         </View>
 
-        <View style={[s.row, s.bb]}>
-          <View style={[s.left, s.br, { paddingTop: 12, paddingBottom: 22 }]}>
+        <View style={[s.row, s.bb, { height: MID_ROW }]}>
+          <View style={[s.left, s.br, { paddingTop: 12 }]}>
             {invoice.issued_date ? <Text>Issued{"\n"}{fmtDateShort(invoice.issued_date)}</Text> : null}
             {invoice.due_date ? <Text style={s.gap}>Due{"\n"}{fmtDateShort(invoice.due_date)}</Text> : null}
           </View>
@@ -313,7 +322,7 @@ export function InvoiceDocument({ invoice, business }: Props) {
 
         {rows.map((row) =>
           row.type === "entry" ? <EntryRow key={`e-${row.entry.id}`} entry={row.entry} showQty={qtyCol} />
-          : row.type === "sku_bonus" ? <Row key={`sku-${row.entry.id}`} desc={skuBonusLabel(row.entry)} amount={fmtAmount(row.entry.bonus_amount)} showQty={qtyCol} subAmount />
+          : row.type === "sku_bonus" ? <Row key={`sku-${row.entry.id}`} desc={skuBonusLabel(row.entry)} amount={fmtAmount(row.entry.bonus_amount)} showQty={qtyCol} short />
           : <LineItemRow key={`li-${row.item.id}`} item={row.item} showQty={qtyCol} qtyFirst={qtyFirst} />
         )}
 
