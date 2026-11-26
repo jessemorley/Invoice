@@ -26,7 +26,7 @@ const s = StyleSheet.create({
     fontSize: 8,
     lineHeight: 1.12,
     color: "#161616",
-    backgroundColor: "#ecece9",
+    backgroundColor: "#ffffff",
     textTransform: "uppercase",
   },
   row: { flexDirection: "row" },
@@ -176,7 +176,9 @@ function EntryRow({ entry, showQty }: { entry: Entry; showQty: boolean }) {
     ? fmtAmount(isOwnBrand ? lineTotal : entry.base_amount)
     : entry.skus
     ? fmtAmount(entry.base_amount / entry.skus)
-    : "";
+    : lineTotal === 0
+    ? ""
+    : fmtAmount(lineTotal); // manual, no SKU count: one unit, so rate = amount
   // manual entries with no amount entered show a blank cell rather than 0.00
   const amount = entry.billing_type === "manual" && lineTotal === 0
     ? ""
